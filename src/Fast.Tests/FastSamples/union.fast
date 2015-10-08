@@ -1,0 +1,34 @@
+Alphabet A[r:real]{Z(0),O(1),B(2)}
+
+Public Lang q1 : A {
+     Z() where (r > 1.0)
+   | O(x) where (r > 1.0) given (q2 x)
+   | B(x,y) where (r > 1.0) given (q2 x) (q2 y)
+} 
+
+Lang q2 : A {
+     Z() where (r > 1.0)
+   | O(x) where (r > 1.0) given (q1 x)
+   | B(x,y) where (r > 1.0) given (q1 x) (q1 y)
+} 
+
+Public Lang r1 : A {
+     Z() where (r < 2.0)
+   | O(x) where (r < 2.0) given (r2 x)
+   | B(x,y) where (r < 2.0) given (r2 x) (r2 y)
+} 
+
+Lang r2 : A {
+     Z() where (r < 2.0)
+   | O(x) where (r < 2.0) given (r1 x)
+   | B(x,y) where (r < 2.0) given (r1 x) (r1 y)
+} 
+
+Def union_q1r1 : A := (union q1 r1)
+
+Tree t_1 : A := (B [1.5] (Z [1.2]) (Z [3.0]))
+
+Tree t_2 : A := (B [0.5] (Z [1.2]) (Z [1.4]))
+
+Tree t_12 : A := (B [1.3] (Z [1.2]) (Z [1.4]))
+Tree t_not : A := (B [10.5] (Z [3.2]) (Z [0.4]))

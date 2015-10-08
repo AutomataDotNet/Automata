@@ -1,0 +1,36 @@
+Enum Color {red, blue, green}
+
+Alphabet A[s:string, b:bool, r:real, c:Color, i:int]{zero(0),one(1),two(2)}
+
+Alphabet B[i:real, j:bool]{kaks(2), nuull(0)}
+
+Public Lang q : A {
+     zero() where ((true ? "bb" : @"aaa") == "foo")
+   | one(x) where ((((1 == 1) and ((true and b) ? (1 == 1) : (c == Color.red))) and (s == @"\x39red")) and (i == 1)) given (q x) (q x)
+   | two(x,y) given (q x)
+} 
+
+Public Trans p : A -> B {
+     two(x,y) where (1.7 <= 0.3) to (kaks [0.05, true] (p x) (p x))	 
+   | zero() to (nuull [5/2, false] )
+}
+
+Public Lang q2 : B {
+   kaks(x,y) where (i == (3.5 + 0.5)) given (q2 x) (q2 y)
+   | nuull()
+} 
+
+Public Trans r : B -> B {
+     kaks(x,y) to (kaks [0.05, true] (r x) (r x))
+	 | nuull() to (nuull [0.0,true])
+}
+
+Def a : A -> B := (compose p r)
+
+Def bb : B -> B := (restrict_inp r q2)
+
+Def cc : B := (union q2 q2)
+
+Def dd : B := (intersect q2 q2)
+
+Def ddd : B := (domain bb)

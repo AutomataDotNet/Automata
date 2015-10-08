@@ -1,0 +1,36 @@
+Alphabet A[s:string]{zero(0), two(2)}
+
+Alphabet B[j:bool]{nolla(0), kaksi(2)}
+
+Public Trans p : A -> B {
+     two(x,y) to (kaksi [true] (a x) (a y))	 
+   | two(x,y) to (kaksi [false] (b x) (a y))	 
+   | two(x,y) to (kaksi [false] (a x) (b y))	 
+   | two(x,y) to (kaksi [false] (b x) (b y))	 
+   | zero() to (nolla [false] )
+}
+
+Trans a : A -> B {
+     two(x,y) where (s == "a") to (kaksi [true] (a x) (a y))	 
+   | two(x,y) where (s == "a") to (kaksi [false] (b x) (a y))	 
+   | two(x,y) where (s == "a") to (kaksi [false] (a x) (b y))	 
+   | two(x,y) where (s == "a") to (kaksi [false] (b x) (b y))	 
+   | zero() where (s == "a") to (nolla [false] )
+}
+
+Trans b : A -> B {
+     two(x,y) where (not (s == "a")) to (kaksi [true] (a x) (a y))	  
+   | two(x,y) where (not (s == "a")) to (kaksi [false] (b x) (a y))	 
+   | two(x,y) where (not (s == "a")) to (kaksi [false] (a x) (b y))	 
+   | two(x,y) where (not (s == "a")) to (kaksi [false] (b x) (b y))	 
+   | zero() where (not (s == "a")) to (nolla [false] )
+}
+
+Tree t1 : A := (two ["a"] (zero ["a"]) (zero ["b"]))
+
+Tree t2 : B := (apply p t1)
+
+Print t1
+
+Print t2
+

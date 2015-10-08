@@ -1,0 +1,909 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
+using Microsoft.Automata.Internal;
+
+namespace Microsoft.Automata
+{
+    /// <summary>
+    /// Provides functionality to convert .NET regex patterns to corresponding symbolic finite automata.
+    /// </summary>
+    public class RegexToAutomatonConverter<S> : IRegexConverter<S>
+    {
+        ICharAlgebra<S> solver;
+        internal IUnicodeCategoryTheory<S> categorizer;
+        //records friendly descriptions of conditions for visualization purposes
+        internal Dictionary<S, string> description = new Dictionary<S, string>();
+
+        RegexToAutomatonBuilder<RegexNode, S> automBuilder;
+
+        /// <summary>
+        /// The character solver associated with the regex converter
+        /// </summary>
+        public ICharAlgebra<S> Solver
+        {
+            get
+            {
+                return solver;
+            }
+        }
+
+        /// <summary>
+        /// Constructs a regex to symbolic finite automata converter
+        /// </summary>
+        /// <param name="solver">solver for character constraints</param>
+        public RegexToAutomatonConverter(ICharAlgebra<S> solver)
+        {
+            this.solver = solver;
+            this.categorizer = new UnicodeCategoryTheory<S>(solver);
+            description.Add(solver.True, "");
+            description.Add(solver.False, "[]");
+            this.automBuilder = new RegexToAutomatonBuilder<RegexNode, S>(solver, ConvertNode);
+            //this.converterHelper.Callback = ConvertNode;
+        }
+
+        /// <summary>
+        /// Constructs a regex to symbolic finite automata converter
+        /// </summary>
+        /// <param name="solver">solver for character constraints</param>
+        /// <param name="categorizer">maps unicode categories to corresponding character conditions</param>
+        internal RegexToAutomatonConverter(ICharAlgebra<S> solver, IUnicodeCategoryTheory<S> categorizer)
+        {
+            this.solver = solver;
+            this.categorizer = categorizer;
+            description.Add(solver.True, "");
+            description.Add(solver.False, "[]");
+            this.automBuilder = new RegexToAutomatonBuilder<RegexNode, S>(solver, ConvertNode);
+            //this.converterHelper.Callback = (node, start, end) => ConvertNode(node, start, end);
+        }
+
+        /// <summary>
+        /// Converts a .NET regex pattern into an eqivalent symbolic automaton.
+        /// Same as Convert(regex, RegexOptions.None).
+        /// </summary>
+        public Automaton<S> Convert(string regex)
+        {
+            return Convert(regex, RegexOptions.None);
+        }
+
+        /// <summary>
+        /// Converts a single string into an automaton that accepts that string and no other strings.
+        /// </summary>
+        public Automaton<S> ConvertString(string symbol)
+        {
+            List<Move<S>> moves = new List<Move<S>>();
+            for (int i = 0; i < symbol.Length; i++)
+                moves.Add(Move<S>.Create(i, i + 1, solver.MkCharConstraint(false, symbol[i])));
+            Automaton<S> autom = Automaton<S>.Create(0, new int[] { symbol.Length }, moves);
+            return autom;
+        }
+
+        /// <summary>
+        /// Convert a regex pattern to an equivalent symbolic finite automaton
+        /// </summary>
+        /// <param name="regex">the given .NET regex pattern</param>
+        /// <param name="options">regular expression options for the pattern</param>
+        public Automaton<S> Convert(string regex, RegexOptions options)
+        {
+            return Convert(regex, options, false);
+        }
+
+        /// <summary>
+        /// Convert a regex pattern to an equivalent symbolic finite automaton
+        /// </summary>
+        /// <param name="regex">the given .NET regex pattern</param>
+        /// <param name="options">regular expression options for the pattern</param>
+        /// <param name="keepBoundaryStates">used for testing purposes, when true boundary states are not eliminated</param>
+        public Automaton<S> Convert(string regex, RegexOptions options, bool keepBoundaryStates)
+        {
+            automBuilder.Reset();
+            //filter out the RightToLeft option that turns around the parse tree
+            //but has no semantical meaning regarding the regex
+            var options1 = (options & ~RegexOptions.RightToLeft);
+
+            RegexTree tree = RegexParser.Parse(regex, options1);
+            var aut = ConvertNode(tree._root);
+            //delay accessing the condition
+            Func<bool, S> getWordLetterCondition = (b => categorizer.WordLetterCondition);
+            if (!keepBoundaryStates)
+                aut.EliminateWordBoundaries(solver, getWordLetterCondition);
+            return aut;
+        }
+
+
+        internal Tuple<string,Automaton<S>>[] ConvertCaptures(string regex, out bool isLoop)
+        {
+            //automBuilder.Reset();
+            automBuilder.isBeg = false;
+            automBuilder.isEnd = false;
+            var options = RegexOptions.Singleline | RegexOptions.ExplicitCapture;
+            RegexTree tree = RegexParser.Parse(regex, options);
+            List<Tuple<string, Automaton<S>>> automata = new List<Tuple<string, Automaton<S>>>();
+            //delay accessing the condition
+            Func<bool, S> getWordLetterCondition = (b => categorizer.WordLetterCondition);
+            var rootnode = tree._root._children[0];
+            isLoop = (rootnode._type == RegexNode.Loop);
+            if (isLoop)
+                rootnode = rootnode._children[0];
+            foreach (var aut in ConvertCaptures(rootnode, id => tree._capslist[id]))
+            {
+                aut.Item2.EliminateWordBoundaries(solver, getWordLetterCondition);
+                automata.Add(aut);
+            }
+            return automata.ToArray();
+        }
+
+        /// <summary>
+        /// Must be called if aut was created with keepBoundaryStates=true.
+        /// </summary>
+        public void EliminateBoundaryStates(Automaton<S> aut)
+        {
+            Func<bool, S> getWordLetterCondition = (b => categorizer.WordLetterCondition);
+            aut.EliminateWordBoundaries(solver, getWordLetterCondition);
+        }
+
+        static string DescribeRegexNodeType(int node_type)
+        {
+            switch (node_type)
+            {
+                case RegexNode.Alternate:
+                    return "Alternate";
+                case RegexNode.Beginning:
+                    return "Beginning";
+                case RegexNode.Bol:
+                    return "Bol";
+                case RegexNode.Capture:  // (?<name> regex)
+                    return "Capture";
+                case RegexNode.Concatenate:
+                    return "Concatenate";
+                case RegexNode.Empty:
+                    return "Empty";
+                case RegexNode.End:
+                    return "End";
+                case RegexNode.EndZ:
+                    return "EndZ";
+                case RegexNode.Eol:
+                    return "Eol";
+                case RegexNode.Loop:
+                    return "Loop";
+                case RegexNode.Multi:
+                    return "Multi";
+                case RegexNode.Notone:
+                    return "Notone";
+                case RegexNode.Notoneloop:
+                    return "Notoneloop";
+                case RegexNode.One:
+                    return "One";
+                case RegexNode.Oneloop:
+                    return "Oneloop";
+                case RegexNode.Set:
+                    return "Set";
+                case RegexNode.Setloop:
+                    return "Setloop";
+                case RegexNode.ECMABoundary:
+                    return "ECMABoundary";
+                case RegexNode.Boundary:
+                    return "Boundary";
+                case RegexNode.Nothing:
+                    return "Nothing";
+                case RegexNode.Nonboundary:
+                    return "Nonboundary";
+                case RegexNode.NonECMABoundary:
+                    return "NonECMABoundary";
+                case RegexNode.Greedy:
+                    return "Greedy";
+                case RegexNode.Group:
+                    return "Group";
+                case RegexNode.Lazyloop:
+                    return "Lazyloop";
+                case RegexNode.Prevent:
+                    return "Prevent";
+                case RegexNode.Require:
+                    return "Require";
+                case RegexNode.Testgroup:
+                    return "Testgroup";
+                case RegexNode.Testref:
+                    return "Testref";
+                case RegexNode.Notonelazy:
+                    return "Notonelazy";
+                case RegexNode.Onelazy:
+                    return "Onelazy";
+                case RegexNode.Setlazy:
+                    return "Setlazy";
+                case RegexNode.Ref:
+                    return "Ref";
+                case RegexNode.Start:
+                    return "Start";
+                default:
+                    throw new AutomataException(AutomataExceptionKind.UnrecognizedRegex);
+            }
+        }
+
+        internal Tuple<string,Automaton<S>>[] ConvertCaptures(RegexNode node, Func<int,string> getCaptureName)
+        {
+            if (node._type == RegexNode.Capture)//single capture
+                return new Tuple<string, Automaton<S>>[] { new Tuple<string, Automaton<S>>(getCaptureName(node._m), ConvertNode(node)) };
+
+            if (node._type != RegexNode.Concatenate)
+                return new Tuple<string,Automaton<S>>[]{new Tuple<string,Automaton<S>>("",ConvertNode(node))};
+
+            List<Tuple<string,Automaton<S>>> res = new List<Tuple<string,Automaton<S>>>();
+            List<RegexNode> between_captures = new List<RegexNode>();
+            foreach (var n in node._children) 
+            {
+                if (n._type != RegexNode.Capture)
+                    between_captures.Add(n);
+                else
+                {
+                    if (between_captures.Count > 0)
+                    {
+                        var aut = this.automBuilder.MkConcatenate(between_captures.ToArray());
+                        res.Add(new Tuple<string, Automaton<S>>("",aut));
+                        between_captures.Clear();
+                    }
+                    var capture = ConvertNode(n);
+                    string capture_name = getCaptureName(n._m);
+                    res.Add(new Tuple<string, Automaton<S>>(capture_name, capture));
+                }
+            }
+            if (between_captures.Count > 0)
+            {
+                var aut = this.automBuilder.MkConcatenate(between_captures.ToArray());
+                res.Add(new Tuple<string, Automaton<S>>("", aut));
+                between_captures.Clear();
+            }
+            return res.ToArray();
+        }
+
+        internal Automaton<S> ConvertNode(RegexNode node)
+        {
+            //node = node.Reduce();
+            switch (node._type)
+            {
+                case RegexNode.Alternate:
+                    return this.automBuilder.MkUnion(node._children.ToArray());
+                case RegexNode.Beginning: 
+                    return this.automBuilder.MkBeginning();
+                case RegexNode.Bol:
+                    return this.automBuilder.MkBol(solver.MkCharConstraint(false, '\n'));
+                case RegexNode.Capture:  //paranthesis (...)
+                    return ConvertNode(node.Child(0));
+                case RegexNode.Concatenate:
+                    return this.automBuilder.MkConcatenate(node._children.ToArray());
+                case RegexNode.Empty:
+                    return this.automBuilder.MkEmptyWord();
+                case RegexNode.End:
+                case RegexNode.EndZ: 
+                    return this.automBuilder.MkEnd();
+                case RegexNode.Eol: 
+                    return this.automBuilder.MkEol(solver.MkCharConstraint(false,'\n'));
+                case RegexNode.Loop: 
+                    return automBuilder.MkLoop(node._children[0], node._m, node._n); 
+                case RegexNode.Multi: 
+                    return ConvertNodeMulti(node);
+                case RegexNode.Notone: 
+                    return ConvertNodeNotone(node);
+                case RegexNode.Notoneloop: 
+                    return ConvertNodeNotoneloop(node);
+                case RegexNode.One: 
+                    return ConvertNodeOne(node);
+                case RegexNode.Oneloop: 
+                    return ConvertNodeOneloop(node);
+                case RegexNode.Set:
+                    return ConvertNodeSet(node);
+                case RegexNode.Setloop: 
+                    return ConvertNodeSetloop(node);
+                case RegexNode.ECMABoundary:
+                case RegexNode.Boundary:
+                    return automBuilder.MkWordBoundary();
+                case RegexNode.Nothing:
+                    return automBuilder.MkEmptyAutomaton();
+                //currently not supported cases
+                case RegexNode.Nonboundary:
+                case RegexNode.NonECMABoundary:
+                    throw new AutomataException(@"Regex construct not supported: \B");
+                case RegexNode.Greedy:
+                    throw new AutomataException("Regex construct not supported: greedy constructs (?>) (?<)");
+                case RegexNode.Group:
+                    throw new AutomataException("Regex construct not supported: grouping (?:)");
+                case RegexNode.Lazyloop:
+                    throw new AutomataException("Regex construct not supported: lazy constructs *? +? ?? {,}?");
+                case RegexNode.Prevent:
+                    throw new AutomataException("Regex construct not supported: prevent constructs (?!) (?<!)");
+                case RegexNode.Require:
+                    throw new AutomataException("Regex construct not supported: require constructs (?=) (?<=)"); 
+                case RegexNode.Testgroup:
+                    throw new AutomataException("Regex construct not supported: test construct (?(...) | )");
+                case RegexNode.Testref:
+                    throw new AutomataException("Regex construct not supported: test cosntruct (?(n) | )");
+                case RegexNode.Notonelazy:
+                    throw new AutomataException("Regex construct not supported: lazy construct .*?");
+                case RegexNode.Onelazy:
+                    throw new AutomataException("Regex construct not supported: lazy construct a*?");
+                case RegexNode.Setlazy:
+                    throw new AutomataException(@"Regex construct not supported: lazy construct \d*?");
+                case RegexNode.Ref:
+                    throw new AutomataException(@"Regex construct not supported: references \1");
+                case RegexNode.Start:
+                    throw new AutomataException(@"Regex construct not supported: \G");
+                default:
+                    throw new AutomataException(AutomataExceptionKind.UnrecognizedRegex);
+            }
+        }
+
+        #region Character sequences
+        /// <summary>
+        /// Sequence of characters in node._str
+        /// </summary>
+        private Automaton<S> ConvertNodeMulti(RegexNode node)
+        {
+            //sequence of characters
+            string sequence = node._str;
+            int count = sequence.Length;
+            bool ignoreCase = ((node._options & RegexOptions.IgnoreCase) != 0);
+
+            S[] conds = new S[count];
+
+            for (int i = 0; i < count; i++)
+            {
+                List<char[]> ranges = new List<char[]>();
+                char c = sequence[i];
+                ranges.Add(new char[] { c, c });
+                S cond = solver.MkRangesConstraint(ignoreCase, ranges);
+                //TBD: fix the following description
+                if (!description.ContainsKey(cond))
+                    description[cond] = Rex.RexEngine.Escape(c);
+                conds[i] = cond;
+            }
+
+            return automBuilder.MkSeq(conds);
+        }
+
+        /// <summary>
+        /// Matches chacter any character except node._ch
+        /// </summary>
+        private Automaton<S> ConvertNodeNotone(RegexNode node)
+        {
+            bool ignoreCase = ((node._options & RegexOptions.IgnoreCase) != 0);
+
+            S cond = solver.MkNot(solver.MkCharConstraint(ignoreCase, node._ch));
+
+            if (!description.ContainsKey(cond))
+                description[cond] = string.Format("[^{0}]", Rex.RexEngine.Escape(node._ch));
+
+            return automBuilder.MkSeq(cond);
+        }
+
+        /// <summary>
+        /// Matches only node._ch
+        /// </summary>
+        private Automaton<S> ConvertNodeOne(RegexNode node)
+        {
+            bool ignoreCase = ((node._options & RegexOptions.IgnoreCase) != 0);
+
+            S cond = solver.MkCharConstraint(ignoreCase, node._ch);
+            if (!description.ContainsKey(cond))
+                description[cond] = Rex.RexEngine.Escape(node._ch);
+
+            return automBuilder.MkSeq(cond);
+        }
+
+        #endregion
+
+        #region Character sets
+
+        private Automaton<S> ConvertNodeSet(RegexNode node)
+        {
+            //ranges and categories are encoded in set
+            string set = node._str;
+
+            S moveCond = CreateConditionFromSet((node._options & RegexOptions.IgnoreCase) != 0, set);
+
+            if (moveCond.Equals(solver.False))
+                return Automaton<S>.Empty; //the condition is unsatisfiable
+
+            if (!description.ContainsKey(moveCond))
+                description[moveCond] = RegexCharClass.SetDescription(set);
+
+            return automBuilder.MkSeq(moveCond);
+        }
+
+        private const int SETLENGTH = 1;
+        private const int CATEGORYLENGTH = 2;
+        private const int SETSTART = 3;
+        private const char Lastchar = '\uFFFF';
+
+        internal S CreateConditionFromSet(bool ignoreCase, string set)
+        {
+            //char at position 0 is 1 iff the set is negated
+            //bool negate = ((int)set[0] == 1);
+            bool negate = RegexCharClass.IsNegated(set);
+
+            //following are conditions over characters in the set
+            //these will become disjuncts of a single disjunction
+            //or conjuncts of a conjunction in case negate is true
+            //negation is pushed in when the conditions are created
+            List<S> conditions = new List<S>();
+
+            #region ranges
+            var ranges = ComputeRanges(set);
+
+            foreach (var range in ranges)
+            {
+                S cond = solver.MkRangeConstraint(ignoreCase, range.First, range.Second);
+                conditions.Add(negate ? solver.MkNot(cond) : cond);
+            }
+            #endregion
+
+            #region categories
+            int setLength = set[SETLENGTH];
+            int catLength = set[CATEGORYLENGTH];
+            //int myEndPosition = SETSTART + setLength + catLength;
+
+            int catStart = setLength + SETSTART;
+            int j = catStart;
+            while (j < catStart + catLength)
+            {
+                //singleton categories are stored as unicode characters whose code is 
+                //1 + the unicode category code as a short
+                //thus - 1 is applied to exctarct the actual code of the category
+                //the category itself may be negated e.g. \D instead of \d
+                short catCode = (short)set[j++];
+                if (catCode != 0)
+                {
+                    //note that double negation cancels out the negation of the category
+                    S cond = MapCategoryCodeToCondition(Math.Abs(catCode) - 1);
+                    conditions.Add(catCode < 0 ^ negate ? solver.MkNot(cond) : cond);
+                }
+                else
+                {
+                    //special case for a whole group G of categories surrounded by 0's
+                    //essentially 0 C1 C2 ... Cn 0 ==> G = (C1 | C2 | ... | Cn)
+                    catCode = (short)set[j++];
+                    if (catCode == 0)
+                        continue; //empty set of categories
+
+                    //collect individual category codes into this set
+                    var catCodes = new HashSet<int>();
+                    //if the first catCode is negated, the group as a whole is negated
+                    bool negGroup = (catCode < 0);
+
+                    while (catCode != 0)
+                    {
+                        catCodes.Add(Math.Abs(catCode) - 1);
+                        catCode = (short)set[j++];
+                    }
+
+                    // C1 | C2 | ... | Cn
+                    S catCondDisj = MapCategoryCodeSetToCondition(catCodes);
+
+                    S catGroupCond = (negate ^ negGroup ? solver.MkNot(catCondDisj) : catCondDisj);
+                    conditions.Add(catGroupCond);
+                }
+            }
+            #endregion
+
+            #region Subtractor
+            S subtractorCond = default(S);
+            if (set.Length > j)
+            {
+                //the set has a subtractor-set at the end
+                //all characters in the subtractor-set are excluded from the set
+                //note that the subtractor sets may be nested, e.g. in r=[a-z-[b-g-[cd]]]
+                //the subtractor set [b-g-[cd]] has itself a subtractor set [cd]
+                //thus r is the set of characters between a..z except b,e,f,g
+                var subtractor = set.Substring(j);
+                subtractorCond = CreateConditionFromSet(ignoreCase, subtractor);
+            }
+
+            #endregion
+
+            S moveCond;
+            //if there are no ranges and no groups then there are no conditions 
+            //this situation arises for SingleLine regegex option and .
+            //and means that all characters are accepted
+            if (conditions.Count == 0)
+                moveCond = (negate ? solver.False : solver.True);
+            else
+                moveCond = (negate ? solver.MkAnd(conditions) : solver.MkOr(conditions));
+
+            //Subtelty of regex sematics:
+            //note that the subtractor is not within the scope of the negation (if there is a negation)
+            //thus the negated subtractor is conjuncted with moveCond after the negation has been 
+            //performed above
+            if (!object.Equals(subtractorCond, default(S)))
+            {
+                moveCond = solver.MkAnd(moveCond, solver.MkNot(subtractorCond));
+            }
+
+            return moveCond;
+        }
+
+        private static List<Pair<char, char>> ComputeRanges(string set)
+        {
+            int setLength = set[SETLENGTH];
+
+            var ranges = new List<Pair<char, char>>(setLength);
+            int i = SETSTART;
+            int end = i + setLength;
+            while (i < end)
+            {
+                char first = set[i];
+                i++;
+
+                char last;
+                if (i < end)
+                    last = (char)(set[i] - 1);
+                else
+                    last = Lastchar;
+                i++;
+                ranges.Add(new Pair<char, char>(first, last));
+            }
+            return ranges;
+        }
+
+        private S MapCategoryCodeSetToCondition(HashSet<int> catCodes)
+        {
+            //TBD: perhaps other common cases should be specialized similarly 
+            //check first if all word character category combinations are covered
+            //which is the most common case, then use the combined predicate \w
+            //rather than a disjunction of the component category predicates
+            //the word character class \w covers categories 0,1,2,3,4,8,18
+            S catCond = default(S);
+            if (catCodes.Contains(0) && catCodes.Contains(1) && catCodes.Contains(2) && catCodes.Contains(3) &&
+                catCodes.Contains(4) && catCodes.Contains(8) && catCodes.Contains(18))
+            {
+                catCodes.Remove(0);
+                catCodes.Remove(1);
+                catCodes.Remove(2);
+                catCodes.Remove(3);
+                catCodes.Remove(4);
+                catCodes.Remove(8);
+                catCodes.Remove(18);
+                catCond = categorizer.WordLetterCondition;
+            }
+            foreach (var cat in catCodes)
+            {
+                S cond = MapCategoryCodeToCondition(cat);
+                catCond = (object.Equals(catCond, default(S)) ? cond : solver.MkOr(catCond, cond));
+            }
+            return catCond;
+        }
+
+        private S MapCategoryCodeToCondition(int code)
+        {
+            //whitespace has special code 99
+            if (code == 99)
+                return categorizer.WhiteSpaceCondition;
+
+            //other codes must be valid UnicodeCategory codes
+            if (code < 0 || code > 29)
+                throw new ArgumentOutOfRangeException("code", "Must be in the range 0..29 or equal to 99");
+
+            return categorizer.CategoryCondition(code);
+        }
+
+        #endregion
+
+        #region Loops
+
+        private Automaton<S> ConvertNodeNotoneloop(RegexNode node)
+        {
+            bool ignoreCase = ((node._options & RegexOptions.IgnoreCase) != 0);
+            S cond = solver.MkNot(solver.MkCharConstraint(ignoreCase, node._ch));
+            if (!description.ContainsKey(cond))
+                description[cond] = string.Format("[^{0}]", Rex.RexEngine.Escape(node._ch));
+
+            Automaton<S> loop = automBuilder.MkOneLoop(cond, node._m, node._n);
+            return loop;
+        }
+
+        private Automaton<S> ConvertNodeOneloop(RegexNode node)
+        {
+            bool ignoreCase = ((node._options & RegexOptions.IgnoreCase) != 0);
+            S cond = solver.MkCharConstraint(ignoreCase, node._ch);
+            if (!description.ContainsKey(cond))
+                description[cond] = string.Format("{0}", Rex.RexEngine.Escape(node._ch));
+
+            Automaton<S> loop = automBuilder.MkOneLoop(cond, node._m, node._n);
+            return loop;
+        }
+
+        private Automaton<S> ConvertNodeSetloop(RegexNode node)
+        {
+            //ranges and categories are encoded in set
+            string set = node._str;
+
+            S moveCond = CreateConditionFromSet((node._options & RegexOptions.IgnoreCase) != 0, set);
+
+            if (moveCond.Equals(solver.False))
+            {
+                if (node._m == 0)
+                    return Automaton<S>.Epsilon; // (Empty)* = Epsilon
+                else
+                    return Automaton<S>.Empty;
+            }
+
+            if (!description.ContainsKey(moveCond))
+                description[moveCond] = RegexCharClass.SetDescription(set);
+
+
+            Automaton<S> loop = automBuilder.MkOneLoop(moveCond, node._m, node._n);
+            return loop;
+        }
+
+        #endregion
+
+        #region IDescribe<S> Members
+
+        public string Describe(S label)
+        {
+            if (!description.ContainsKey(label))
+            {
+                string descr = solver.PrettyPrint(label);
+                description[label] = descr;
+                return descr;
+            }
+
+            return description[label];
+        }
+
+        #endregion
+    }
+
+
+    #region more specialized converters
+    internal class RegexToAutomatonConverterCharSet : RegexToAutomatonConverter<BDD>
+    {
+        CharSetSolver bddBuilder;
+        Chooser chooser;
+        public Chooser Chooser
+        {
+            get { return chooser; }
+        }
+
+        public RegexToAutomatonConverterCharSet(CharSetSolver solver) : base(solver, new Internal.UnicodeCategoryToCharSetProvider(solver))
+        {
+            this.bddBuilder = solver;
+            this.chooser = new Chooser();
+        }
+
+        //public static RegexToAutomatonConverterCharSet Create(BitWidth encoding)
+        //{
+        //    var solver = new CharSetSolver(encoding);
+        //    return new RegexToAutomatonConverterCharSet(solver);
+        //}
+
+        /// <summary>
+        /// Describe the bdd as a regex character set
+        /// </summary>
+        new public string Describe(BDD label)
+        {
+
+            string res;
+            if (description.TryGetValue(label, out res))
+            {
+                string res1 = res.Replace(@"\p{Nd}", @"\d").Replace(@"\P{Nd}", @"\D");
+                return res1;
+            }
+
+            if (this.categorizer.WordLetterCondition == label)
+                return @"\w";
+            if (this.Solver.MkNot(this.categorizer.WordLetterCondition) == label)
+                return @"\W";
+            if (this.categorizer.WhiteSpaceCondition == label)
+                return @"\s";
+            if (this.Solver.MkNot(this.categorizer.WhiteSpaceCondition) == label)
+                return @"\S";
+
+            var ranges = bddBuilder.ToRanges(label);
+            if (ranges.Length == 1 && ranges[0].First == ranges[0].Second)
+            {
+                string res1 = StringUtility.Escape((char)ranges[0].First);
+                description[label] = res1;
+                return res1;
+            }
+
+            res = "[";
+            for (int i = 0; i < ranges.Length; i++ )
+            {
+                var range = ranges[i];
+                if (range.First == range.Second)
+                    res += StringUtility.EscapeWithNumericSpace((char)range.First);
+                else if (range.First == range.Second - 1)
+                {
+                    res += StringUtility.EscapeWithNumericSpace((char)range.First);
+                    res += StringUtility.EscapeWithNumericSpace((char)range.Second);
+                }
+                else
+                {
+                    res += StringUtility.EscapeWithNumericSpace((char)range.First);
+                    res += "-";
+                    res += StringUtility.EscapeWithNumericSpace((char)range.Second);
+                }
+            }
+            res += "]";
+            description[label] = res;
+            return res;
+        }
+
+        /// <summary>
+        /// Generates a random member accepted by fa. 
+        /// Assumes that fa has no dead states, or else termination is not guaranteed.
+        /// </summary>
+        public string GenerateMember(Automaton<BDD> fa)
+        {
+            if (fa.IsEmpty)
+                throw new AutomataException(AutomataExceptionKind.AutomatonMustBeNonempty);
+            var sb = new System.Text.StringBuilder();
+            int state = fa.InitialState;
+            while (!fa.IsFinalState(state) || (fa.OutDegree(state) > 0 && chooser.ChooseTrueOrFalse()))
+            {
+                var move = fa.GetNthMoveFrom(state, chooser.Choose(fa.GetMovesCountFrom(state)));
+                if (!move.IsEpsilon)
+                    sb.Append((char)(bddBuilder.Choose(move.Label)));
+                state = move.TargetState;
+            }
+            return sb.ToString();
+        }
+    }
+
+    internal class RegexToAutomatonConverterRanges : RegexToAutomatonConverter<HashSet<Pair<char,char>>>
+    {
+        CharRangeSolver solver;
+        Chooser chooser;
+        public Chooser Chooser
+        {
+            get { return chooser; }
+        }
+
+        public RegexToAutomatonConverterRanges(CharRangeSolver solver)
+            : base(solver, new Internal.UnicodeCategoryToRangesProvider(solver))
+        {
+            this.solver = solver;
+            this.chooser = new Chooser();
+        }
+
+        //public static RegexToAutomatonConverterBDD Create(CharacterEncoding encoding)
+        //{
+        //    var solver = new CharSetSolver(encoding);
+        //    return new RegexToAutomatonConverterBDD(solver);
+        //}
+
+        /// <summary>
+        /// Describe range set
+        /// </summary>
+        new public string Describe(HashSet<Pair<char, char>> label)
+        {
+
+            string res;
+            res = "";
+            List<Pair<char, char>> ranges = new List<Pair<char, char>>(label);
+            for (int i = 0; i < ranges.Count; i++)
+            {
+                var range = ranges[i];
+                if (range.First == range.Second)
+                    res += Rex.RexEngine.Escape(range.First);
+                else
+                {
+                    res += "[";
+                    res += Rex.RexEngine.Escape(range.First);
+                    res += "-";
+                    res += Rex.RexEngine.Escape(range.Second);
+                    res += "]";
+                }
+                if (i < ranges.Count - 1)
+                    res += "|";
+            }
+            return res;
+        }
+
+        /// <summary>
+        /// Generates a random member accepted by fa. 
+        /// Assumes that fa has no dead states, or else termination is not guaranteed.
+        /// </summary>
+        public string GenerateMember(Automaton<HashSet<Pair<char, char>>> fa)
+        {
+            if (fa.IsEmpty)
+                throw new AutomataException(AutomataExceptionKind.AutomatonMustBeNonempty);
+            var sb = new System.Text.StringBuilder();
+            int state = fa.InitialState;
+            while (!fa.IsFinalState(state) || (fa.OutDegree(state) > 0 && chooser.ChooseTrueOrFalse()))
+            {
+                var move = fa.GetNthMoveFrom(state, chooser.Choose(fa.GetMovesCountFrom(state)));
+                if (!move.IsEpsilon)
+                {
+                    Pair<char, char> someRange = new Pair<char,char>('\0','\0');
+                    foreach (var range in move.Label)
+                    {
+                        someRange = range;
+                        break;
+                    }
+                    int offset = chooser.Choose(Math.Max(1,(int)someRange.Second - (int)someRange.First));
+                    char someChar = (char)((int)someRange.First + offset);
+                    sb.Append(someChar);
+                }
+                state = move.TargetState;
+            }
+            return sb.ToString();
+        }
+    }
+
+    internal class RegexToAutomatonConverterHashSet : RegexToAutomatonConverter<HashSet<char>>
+    {
+        HashSetSolver solver;
+        Chooser chooser;
+        public Chooser Chooser
+        {
+            get { return chooser; }
+        }
+
+        public RegexToAutomatonConverterHashSet(HashSetSolver solver)
+            : base(solver, new Internal.UnicodeCategoryToHashSetProvider(solver))
+        {
+            this.solver = solver;
+            this.chooser = new Chooser();
+        }
+
+        /// <summary>
+        /// Describe hash set
+        /// </summary>
+        new public string Describe(HashSet<char> label)
+        {
+            var ranges = new Internal.Utilities.UnicodeCategoryRangesGenerator.Ranges();
+            foreach (char c in label)
+                ranges.Add((int)c);
+
+            string res = "";
+            for (int i = 0; i < ranges.ranges.Count; i++)
+            {
+                var range = ranges.ranges[i];
+                if (range[0] == range[1])
+                    res += Rex.RexEngine.Escape((char)range[0]);
+                else
+                {
+                    res += "[";
+                    res += Rex.RexEngine.Escape((char)range[0]);
+                    res += "-";
+                    res += Rex.RexEngine.Escape((char)range[1]);
+                    res += "]";
+                }
+                if (i < ranges.ranges.Count - 1)
+                    res += "|";
+            }
+            description[label] = res;
+            return res;
+        }
+
+        /// <summary>
+        /// Generates a random member accepted by fa. 
+        /// Assumes that fa has no dead states, or else termination is not guaranteed.
+        /// </summary>
+        public string GenerateMember(Automaton<HashSet<char>> fa)
+        {
+            if (fa.IsEmpty)
+                throw new AutomataException(AutomataExceptionKind.AutomatonMustBeNonempty);
+            var sb = new System.Text.StringBuilder();
+            int state = fa.InitialState;
+            while (!fa.IsFinalState(state) || (fa.OutDegree(state) > 0 && chooser.ChooseTrueOrFalse()))
+            {
+                var move = fa.GetNthMoveFrom(state, chooser.Choose(fa.GetMovesCountFrom(state)));
+                if (!move.IsEpsilon)
+                {
+                    char someChar = '\0';
+                    foreach (var c in move.Label)
+                    {
+                        someChar = c;
+                        break;
+                    }
+                    sb.Append(someChar);
+                }
+                state = move.TargetState;
+            }
+            return sb.ToString();
+        }
+    }
+
+    #endregion
+}
+

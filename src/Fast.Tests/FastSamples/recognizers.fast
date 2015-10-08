@@ -1,0 +1,49 @@
+Alphabet Node[i:int,x:real,y:real,s:string]{Three(3),One(1),Zero(0),Cons(2),Nil(0)}
+Public Lang goodinp:Node{
+	  Nil()
+	| Cons(x1,x2) given (inp2 x1) (goodinp x2)
+}
+Lang inp2:Node{
+	  Zero()
+	| Three(a,l,r) given (inp3 a) (inp2 l) (inp2 r)
+}
+Lang inp3:Node{
+	  Zero()
+}
+Public Lang badout:Node{
+	  Cons(x1,x2) given (twoeln x1)
+	| Cons(x1,x2) given (badout x2)
+}
+Lang twoeln:Node{
+	   Three(a,l,r) given (twoel a)
+	 | Three(a,l,r) given (twoeln l)
+	 | Three(a,l,r) given (twoeln r)
+}
+Lang twoel:Node{
+	  One(a) given (oneel a)
+}
+Lang oneel:Node{
+	  One(a) given (zeroel a)
+}
+Lang zeroel:Node{
+	  Zero()
+}
+Public Trans t0 : Node -> Node {
+	  Zero() to (Zero [i,x,y,s])
+	| Three(x1,x2,x3) to (Three [i,x,y,s] x1 x2 x3)
+	| Cons(x1,x2) where ((s == "45") or ((s == "40") or ((s == "2") or (s == "7")))) to (Cons [i,x,y,s] (t0 x1) (t0 x2))
+	| Cons(x1,x2) where (not ((s == "45") or ((s == "40") or ((s == "2") or (s == "7"))))) to (Cons [i,x,y,s] x1 (t0 x2))
+	| Nil() to (Nil [i,x,y,s])
+	| Three(x1,x2,x3) where (true and ((true and true) and (true and (0.002 == 0.637)))) to (Three [i,x,y,s] (One [i,x,y,s] x1) (t0 x2) (t0 x3))
+}
+Public Trans t1 : Node -> Node {
+	  Zero() to (Zero [i,x,y,s])
+	| Three(x1,x2,x3) to (Three [i,x,y,s] x1 x2 x3)
+	| Cons(x1,x2) where (s == "29") to (Cons [i,x,y,s] (t1 x1) (t1 x2))
+	| Cons(x1,x2) where (not (s == "29")) to (Cons [i,x,y,s] x1 (t1 x2))
+	| Nil() to (Nil [i,x,y,s])
+	| Three(x1,x2,x3) where ((x > 0.205) and (true and true)) to (Three [i,x,y,s] (One [i,x,y,s] x1) (t0 x2) (t0 x3))
+}
+Def t_0_1 : Node -> Node := (compose t0 t1)
+Def t_0_1_r : Node -> Node := (restrict_inp t_0_1 goodinp)
+Def t_0_1_rr : Node -> Node := (restrict_out t_0_1_r badout)

@@ -1,0 +1,22 @@
+//Example of preimage computation
+AssertTrue (eq_lang evenTree (pre_image mapInc oddTree))
+//Trees with even elements
+Lang evenTree : BT {
+     Nil()    where (even i)
+   | Bin(l,r) where (even i) given (evenTree l) (evenTree r)
+} 
+//Trees with odd elements
+Lang oddTree : BT {
+     Nil()    where (odd i)
+   | Bin(l,r) where (odd i) given (oddTree l) (oddTree r)
+}
+//Increment every node in the tree by 1
+Public Trans mapInc : BT -> BT {
+     Nil()    to    (Nil [(i + 1)])
+   | Bin(l,r) to (Bin [(i + 1)] (mapInc l) (mapInc r))   
+} 
+//Functions and alphabet
+Fun even (i:int) : bool := ((i % 2) == 0)
+Fun odd (i:int) : bool := (not (even i))
+Alphabet BT [i:int] {Nil(0),Bin(2)}
+           

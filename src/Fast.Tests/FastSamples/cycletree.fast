@@ -1,0 +1,23 @@
+Alphabet BT[i:int]{Two(2),Zero(0)}
+
+Public Lang cycletree:BT{
+	Two(x,y) where (i == 0) given (pre x) (post y)
+}
+
+Lang pre:BT{
+	  Zero() where (i < 0)
+	| Two(x,y) where (i < 0) given (pre x) (in y)
+}
+
+Lang in:BT{
+	  Zero() where (i == 0)
+	| Two(x,y) where (i == 0) given (post x) (pre y)
+}
+
+Lang post:BT{
+	  Zero() where (i > 0)
+	| Two(x,y) where (i > 0) given (in x) (post y)
+}
+
+Def ct:BT := (complement cycletree)
+Print ct

@@ -1,0 +1,22 @@
+//Constants definitinos in Fast
+//Enum definitions (enum types in Fast are required to start with a capital letter)
+Enum Color {red, blue, green}
+//Constants
+Const pi : real := 3.14159
+Const piby4 : real := (pi / 4.0)
+Const red : Color := Color.red
+
+Alphabet A[r:real, c:Color]{zero(0),one(1),two(2)}
+
+//Language where every leaf is labeled with Color.red
+Lang l (a: A) {
+     two(x,y) given (l x) (l y)
+   | zero() where (a.c == Color.red)
+}
+//Example of transformation
+Public Trans t (a: A) : A {
+     two(x,y) where ((pi <= 3.4) and (a.c == Color.red)) given (l x) (l y) to (two [(a.r + 0.1), a.c] (t y) (t x))	 
+   | zero() to (zero [(piby4 + 5/2), a.c])
+}
+// Output the transducer
+Print t

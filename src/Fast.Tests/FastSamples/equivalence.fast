@@ -1,0 +1,30 @@
+//Language equivalence
+Alphabet A[r:real]{Z(0),O(1),B(2)}
+//Language definitions
+Public Lang q1 : A {
+     Z() where (r > 1.0)
+   | O(x) where (r > 1.0) given (q2 x)
+   | B(x,y) where (r > 1.0) given (q2 x) (q2 y)
+} 
+Lang q2 : A {
+     Z() where (r > 1.0)
+   | O(x) where (r > 1.0) given (q1 x)
+   | B(x,y) where (r > 1.0) given (q1 x) (q1 y)
+} 
+
+Public Lang r1 : A {
+     Z() where (r < 2.0)
+   | O(x) where (r < 2.0) given (r2 x)
+   | B(x,y) where (r < 2.0) given (r2 x) (r2 y)
+}
+Lang r2 : A {
+     Z() where (r < 2.0)
+   | O(x) where (r < 2.0) given (r1 x)
+   | B(x,y) where (r < 2.0) given (r1 x) (r1 y)
+} 
+//Checks whether the intersection is commutative using equivalence
+Def q1r1 : A := (intersect q1 r1)
+Def r1q1 : A := (intersect r1 q1)
+AssertTrue (eq_lang q1r1 r1q1)
+
+Print (eq_lang q1r1 q1)

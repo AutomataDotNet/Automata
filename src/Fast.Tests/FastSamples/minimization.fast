@@ -1,0 +1,28 @@
+// Datatype definition
+Alphabet HtmlE[tag : string]{nil(0),val(1),attr(2),node(3)}
+// Language of HTML trees
+Public Lang nodeTree : HtmlE {
+    node(x1,x2,x3) given (attrTree x1) (nodeTree x2) (nodeTree x3)
+  | nil() where (tag == "") 
+}
+Lang attrTree:HtmlE {
+    attr(x1,x2) given (valTree x1) (attrTree x2)
+  | nil() where (tag == "") 
+}
+Lang valTree:HtmlE {
+    val(x1) where (not (tag == "")) given (valTree x1)
+  | nil() where (tag == "") 
+}
+
+Public Lang badOutput : HtmlE {
+    node(x1,x2,x3) where (tag == "script")
+  | node(x1,x2,x3) given (badOutput x2)
+  | node(x1,x2,x3) given (badOutput x3) 
+}
+
+AssertTrue (eq_lang badOutput (minimize badOutput))
+//AssertTrue (eq_lang nodeTree (minimize nodeTree))
+//AssertTrue (eq_lang attrTree (minimize attrTree))
+//AssertTrue (eq_lang valTree (minimize valTree))
+
+

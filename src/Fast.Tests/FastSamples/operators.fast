@@ -1,0 +1,7 @@
+
+Alphabet A[r:int]{zero(0),one(1)}
+
+Public Trans q : A -> A { 
+     zero() where ((r + r + r + r) > 5 * 7 + 4) and (r < 10) && true || true to (zero [r])
+   | one(x) to (zero [r])
+} 

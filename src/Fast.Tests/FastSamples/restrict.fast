@@ -1,0 +1,44 @@
+Alphabet A[r:real]{Z(0),B(2)}
+
+//Restriction over input and output
+Def t1il1 : A -> A := (restrict_inp t1 l1)
+Def t1ol1 : A -> A := (restrict_out t1 l1)
+
+Tree t_1 : A := (B [1.5] (Z [1.5]) (Z [1.4]))
+Tree t_11 : A := (apply t1 t_1)
+Tree t_12 : A := (apply t1il1 t_1)
+
+Tree t_2 : A := (B [1.0] (Z [1.2]) (Z [1.4]))
+Tree t_21 : A := (apply t1 t_2)
+Tree t_22 : A := (apply t1il1 t_2)
+
+Tree t_3 : A := (B [1.6] (Z [1.7]) (Z [1.8]))
+Tree t_31 : A := (apply t1 t_3)
+Tree t_32 : A := (apply t1ol1 t_3)
+
+Tree t_4 : A := (B [1.3] (Z [1.7]) (Z [1.8]))
+Tree t_41 : A := (apply t1 t_4)
+Tree t_42 : A := (apply t1ol1 t_4)
+
+Print t_42
+
+
+
+//Language we use for restriction
+Public Lang l1 : A {
+     Z() where (r > 1.0)
+   | B(x,y) where (r > 1.0) given (l2 x)
+} 
+Lang l2 : A {
+     Z() where (r > 1.0)
+   | B(x,y) where (r > 1.0) given (l1 x)
+} 
+//Transformation
+Public Trans t1 : A -> A {
+	 Z() where (r < 3.0) to (Z [(r - 0.5)])
+   | B(x,y) where (r < 3.0) to (B [(r - 0.5)] (t2 x) (t2 y))      
+}
+Trans t2 : A -> A {
+	 Z() where (r < 3.0) to (Z [(r - 0.5)])
+   | B(x,y) where (r < 3.0) to (B [(r - 0.5)] (t1 x) (t1 y)) 
+}

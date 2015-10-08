@@ -1,0 +1,21 @@
+//Language complement
+Alphabet BTree[]{Zero(0),One(1),Two(2)}
+
+Public Lang q1 : BTree {
+     Zero() 
+   | Two(x,y) given (q1 x) (q1 y)
+} 
+//The language of all trees
+Public Lang tot : BTree {
+     Zero() 
+   | One(x) 
+   | Two(x,y) 
+} 
+ 
+Def complement_q1 : BTree := (complement q1)
+Def c_complement_q1 : BTree :=(complement complement_q1)
+Print c_complement_q1
+//Show correctness
+Def unionq1cq1 : BTree := (union complement_q1 q1)
+//the union of q1 and its complement is the same as the language of all trees
+AssertTrue (eq_lang unionq1cq1 tot)

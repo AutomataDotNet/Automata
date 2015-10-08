@@ -1,0 +1,30 @@
+Automata.NET can be built using Visual Studio 2013 from Main.sln.
+All compiled files are placed in the top level bin folder.
+
+The main projects are: Automata, Automata.Z3, and Fast
+that are accompanied by corresponding unit test projects.
+
+All projects use .NET Framework Version 4.5.
+
+Automata can be built first and has no dependencies. 
+
+Automata.Z3 depends on Automata and Z3
+- Z3 can be downloaded separately from GitHub or codeplex
+
+The Z3 x86 binaries: Microsoft.Z3.dll, libz3.dll
+should be placed in the folder ext/Z3/release/x86
+
+FAST stands for Functional Abstraction of Symbolic Transductions.
+Fast project depends on Z3, Automata, and Automata.Z3. 
+It uses tree automata and tree transducer algorithms.
+
+Fast uses a custom parser that is generated with 
+- Gardens Point LEX 
+and 
+- Gardens Point Parser Generator
+These tools can be downloaded from codeplex in order to regenerate 
+the fast parser if modifications are made to the fast.lex or fast.y files.
+See the file: src/Fast/parser/genparser.bat for details.
+
+
+

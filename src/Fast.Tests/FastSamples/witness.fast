@@ -1,0 +1,16 @@
+Alphabet A[r:real]{Z(0),O(1),B(2)}
+
+Public Lang q1 : A {
+     Z() 
+   | O(x) given (q2 x)
+   | B(x,y) given (q2 x) (q2 y)
+} 
+Lang q2 : A {
+	Z()
+    |B(x,y)  given (q1 x) (q1 y)
+} 
+
+Tree t_1 : A := (get_witness (complement q1)) 
+Print t_1
+
+AssertFalse (contains q1 t_1)

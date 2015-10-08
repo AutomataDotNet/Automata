@@ -1,0 +1,55 @@
+Alphabet A[s:string]{Z(0), B(2)}
+
+Alphabet B[j:bool]{Z(0), B(2)}
+
+Alphabet C[i:int]{Z(0), B(2)}
+
+Public Trans p : A -> B {
+     B(x,y) to (B [true] (a x) (a y))	 
+   | B(x,y) to (B [false] (b x) (a y))	 
+   | B(x,y) to (B [false] (a x) (b y))	 
+   | B(x,y) to (B [false] (b x) (b y))	 
+   | Z() to (Z [false] )
+}
+
+Trans a : A -> B {
+     B(x,y) where (s == "a") to (B [true] (a x) (a y))	 
+   | B(x,y) where (s == "a") to (B [false] (b x) (a y))	 
+   | B(x,y) where (s == "a") to (B [false] (a x) (b y))	 
+   | B(x,y) where (s == "a") to (B [false] (b x) (b y))	 
+   | Z() where (s == "a") to (Z [false] )
+}
+
+Trans b : A -> B {
+     B(x,y) where (not (s == "a")) to (B [true] (a x) (a y))	  
+   | B(x,y) where (not (s == "a")) to (B [false] (b x) (a y))	 
+   | B(x,y) where (not (s == "a")) to (B [false] (a x) (b y))	 
+   | B(x,y) where (not (s == "a")) to (B [false] (b x) (b y))	 
+   | Z() where (not (s == "a")) to (Z [false] )
+}
+
+Public Trans q : B -> C {
+       B(x,y) where j to (B [2] (q x) (q y))
+	 | B(x,y) where (not j) to (q y)
+	 | Z() to (Z [0])
+}
+
+
+Def p_q : A -> C := (compose p q)
+
+Tree t_1 : A := (B ["a"] (Z ["a"]) (Z ["b"]))
+
+Tree t_111 : B := (apply p t_1)
+
+Tree t_112 : C := (apply q t_111)
+
+Tree t_12 : C := (apply p_q t_1)
+
+
+Tree t_2 : A := (B ["b"] (Z ["a"]) (Z ["a"]))
+
+Tree t_211 : B := (apply p t_2)
+
+Tree t_212 : C := (apply q t_211)
+
+Tree t_22 : C := (apply p_q t_2)

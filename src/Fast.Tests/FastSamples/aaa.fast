@@ -1,0 +1,55 @@
+Alphabet Node[i:int,s:string]{Three(3),One(1),Zero(0),Cons(2),Nil(0)}
+Public Lang goodinp:Node{
+	  Nil()
+	| Cons(x1,x2) given (inp2 x1) (goodinp x2)
+}
+Lang inp2:Node{
+	  Zero()
+	| Three(a,l,r) given (inp3 a) (inp2 l) (inp2 r)
+}
+Lang inp3:Node{
+	  Zero()
+}
+Public Lang badout:Node{
+	  Cons(x1,x2) given (twoeln x1)
+	| Cons(x1,x2) given (badout x2)
+}
+Lang twoeln:Node{
+	   Three(a,l,r) given (twoel a)
+	 | Three(a,l,r) given (twoeln l)
+	 | Three(a,l,r) given (twoeln r)
+}
+Lang twoel:Node{
+	  One(a) given (oneel a)
+}
+Lang oneel:Node{
+	  One(a) given (zeroel a)
+}
+Lang zeroel:Node{
+	  Zero()
+}
+Public Trans t1: Node -> Node{
+     Nil() to (Nil [i, s])
+   | Cons (y1,y2) where (s == "a")
+        to (Cons [i, s] (t1 y1) (t1 y2))
+   | Cons (y1,y2) where (not (s == "a")) to (Cons [i, s] y1 (t1 y2))
+   | Zero() to (Zero [i, s]) 
+   | Three(y1,y2,y3) where (i > 1)
+        to (Three [i,s] (One [i,"tag"] y1) (t1 y2) (t1 y3))
+}
+Public Trans t2: Node -> Node {
+     Nil() to (Nil[i, s])
+   | Cons (y1,y2) where ((s == "a") or (s == "b")) 
+        to (Cons[i, s] (t2 y1) (t2 y2))
+   | Cons (y1,y2 ) where (not ((s == "a") or (s == "b")))
+        to (Cons[i, s] y1 (t2 y2)) 
+   | Zero() to (Zero [i,s])
+   | Three(y1,y2,y3) where (i < 3)
+        to (Three [i,s] (One [i,"tag"] y1) (t2 y2) (t2 y3))
+}
+Def t_0_1 : Node -> Node := (compose t1 t2)
+Def t_0_1_r : Node -> Node := (restrict_inp t_0_1 goodinp)
+Def t_0_1_rr : Node -> Node := (restrict_out t_0_1_r badout)
+Def la : Node := (domain t_0_1_rr)
+Print "t1 and t2 are conflicting"
+Print (is_empty_lang la)

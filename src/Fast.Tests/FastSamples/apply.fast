@@ -1,0 +1,14 @@
+
+Alphabet A{zero(0),one(1),two(2)}
+Visible Trans q : A -> A { 
+     zero() where (true and true) to (zero [])
+   | one(x) to (zero [])
+   | two(x,y) given (no_twos y) to (one [] (q x))
+} 
+
+Lang no_twos : A { 
+     zero()
+   | one(x) given (no_twos x) (no_twos x)
+}
+
+

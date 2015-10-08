@@ -1,0 +1,103 @@
+// Auxiliary functions
+
+Fun isSafeNode (name:string) : bool := ((((((((((((((((((((name == "div") or (name == "style")) or (name == "p")) or (name == "b")) or (name == "span")) or (name == "caption")) or
+									   (name == "tr")) or (name == "td")) or (name == "table")) or (name == "tfoot")) or (name == "th")) or (name == "center")) or
+									   (name == "svg")) or (name == "textarea")) or (name == "circle")) or (name == "img")) or (name == "a")) or (name == "html")) or
+									   (name == "body")) or (name == "input"))
+
+Fun isSafeAttribute (name:string) : bool := ((((((((name == "style") or (name == "href")) or (name == "id")) or (name == "name")) or (name == "align")) or (name == "width"))
+									   or (name == "height")) or (name == "type"))
+
+Fun needsPrefix (name:string) : bool := ((name == "name") or (name == "id"))
+
+Fun needsURLWhiteList (name:string) : bool := (((name == "src") or (name == "style")) or (name == "href"))
+
+
+Alphabet HTML[tag:string]{empty(0),value(1),attr(2),node(3)}
+
+// Language of trees
+Public Lang wellFormedTree : HTML{
+     node(fa,fc,ns) given (wellFormedAttributeTree fa) (wellFormedTree fc) (wellFormedTree ns)  
+   | empty() where (tag == "")
+}
+
+Lang wellFormedAttributeTree : HTML {
+     attr(attVal,na) given (attributeValue attVal) (wellFormedAttributeTree na)    
+   | empty() where (tag == "")
+}
+
+Lang attributeValue : HTML {
+     value(nv) given (attributeValue nv)
+   | empty() where (tag == "")
+}
+
+// Transformations
+
+Public Trans removeBadNodes : HTML -> HTML {
+     node(fa,fc,ns) where (isSafeNode tag) to (node [tag] fa (removeBadNodes fc) (removeBadNodes ns))	 
+   | node(fa,fc,ns) where (not (isSafeNode tag)) to (removeBadNodes ns)	 
+   | empty() to (empty [tag])
+}
+
+Public Trans prefixIds : HTML -> HTML {
+     node(fa,fc,ns) to (node [tag] (prefixIds fa) (prefixIds fc) (prefixIds ns)) 
+   | attr(attVal,na) where (needsPrefix tag) to (attr [tag] 
+													(value ["p"] 
+														(value ["r"] 
+															(value ["e"] 
+																(value ["f"] 
+																	(value ["0"] 
+																		(value ["1"]	
+																			na
+																		)
+																	)
+																)
+															)
+														)
+													)
+													(prefixIds na)
+												) 
+   | empty() to (empty [tag])
+}
+
+
+Public Trans removeBadAttributes : HTML -> HTML {
+     node(fa,fc,ns) to (node [tag] (removeBadAttributes fa) (removeBadAttributes fc) (removeBadAttributes ns))	 
+   | attr(v,na) where (isSafeAttribute tag) to (attr [tag] v (removeBadAttributes na))
+   | attr(v,na) where (not (isSafeAttribute tag)) to (removeBadAttributes na)	 
+   | empty() to (empty [tag])
+}
+
+
+// text-align:center will in the future be encoded as a sequence of values
+Public Trans convertDeprecated : HTML -> HTML {
+     node(fa,fc,ns) where (tag == "center") to 
+		(node ["div"] 
+			(attr 
+				["style"] 
+				(value 
+					["text-align:center;"] 
+					(empty [""])
+				)
+				(empty [""])
+			) 
+			(convertDeprecated fc) 
+			(convertDeprecated ns)
+		) 
+   | empty() to (empty [tag])
+}
+
+//TODO deletion based on given
+Public Trans whiteListURL : HTML -> HTML {
+     node(fa,fc,ns) to (node [tag] (whiteListURL fa) (whiteListURL fc) (whiteListURL ns)) 
+   | attr(x,y) where (needsURLWhiteList tag) to (attr [tag] x y)    
+}
+
+
+
+Def s1 : HTML -> HTML := (compose removeBadNodes prefixIds)
+Def s2 : HTML -> HTML := (compose s1 convertDeprecated)
+
+//Def sani : HTML -> HTML := (restrict_inp s2 wellFormedTree)
+
+Def proo : HTML -> HTML := (restrict_inp removeBadNodes wellFormedTree)

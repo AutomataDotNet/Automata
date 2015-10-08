@@ -1,0 +1,8 @@
+Alphabet A[b:bool]{zero(0),one(1)}
+
+Public Lang l0 : A {
+        zero() 
+     | one(x) 
+} 
+
+Print (eq_lang l0 l0)

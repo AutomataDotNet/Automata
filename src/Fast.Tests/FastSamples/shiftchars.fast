@@ -1,0 +1,13 @@
+Fun shift1 (c:char) : char := (c + '\x01')
+Fun shift2 (c:char) : char := (c + '\x02')
+
+Alphabet STR[i : char]{nil(0),cons(1)}
+
+Public Trans caesar1 : STR -> STR {
+     cons(rest) where ((i >= 'a') && (i <= 'z')) to (cons [(shift1 i)] (caesar2 rest))	 
+   | nil() to (nil [i])
+}
+
+Trans caesar2 : STR -> STR {
+     cons(rest) where ((i >= 'A') && (i <= 'Z')) to (cons [(shift2 i)] (caesar1 rest)) 
+}

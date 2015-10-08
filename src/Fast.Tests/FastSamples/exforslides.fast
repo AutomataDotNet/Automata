@@ -1,0 +1,30 @@
+
+Fun even (i:int) : bool := ((% i 2) == 0)
+
+Alphabet BinTree [i:int] {Nil(0),Bin(2)}
+
+Public Lang evenNode : BinTree {
+     Nil()    where (even i)
+   | Bin(l,r) where (even i)
+} 
+
+Public Lang oddNode : BinTree {          
+     Nil()    where (not (even i))
+   | Bin(l,r) where (not (even i))
+} 
+
+Public Trans negateIfLeftOdd : BinTree -> BinTree {
+     Nil()    to    (Nil [i])
+   | Bin(l,r) given (evenNode l) to (Bin [i] (negateIfLeftOdd l) (negateIfLeftOdd r))
+   | Bin(l,r) given (oddNode l) to (Bin [(0 - i)] (negateIfLeftOdd l) (negateIfLeftOdd r))
+} 
+
+
+
+
+
+
+
+
+
+

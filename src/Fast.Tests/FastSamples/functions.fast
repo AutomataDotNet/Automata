@@ -1,0 +1,16 @@
+Const five : int := 5
+
+Fun f (i:int) : int := (i + 1)
+
+Const six : int := (f five)
+
+
+Fun f1 (i:int) (b:bool) : int := ((((f i) == 3) and b) ? 1 : 2)
+
+
+Alphabet A[i : int]{zero(0),one(1),two(2)}
+
+Public Trans t : A -> A {
+     two(x,y) where ((five mod (f i)) == 1) to (two [i] (t x) (t y))	 
+   | zero() where (six >= (f1 five true)) to (zero [(f i)])
+}

@@ -1,0 +1,12 @@
+Alphabet IList[i:int]{nil(0),cons(1)}
+
+Public Trans mapC : IList -> IList {
+	 nil() where true to (nil [0])
+   | cons(x1) where true to (cons [((5 + (i mod 26)) mod 26)] (mapC x1))
+}
+
+Public Trans mapC2 : IList -> IList {
+	 nil() where true to (nil [0])
+   | cons(x1) where true to (cons [((5 + ((5 + (i mod 26)) mod 26)) mod 26)] (mapC2 x1))
+}
+

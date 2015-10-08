@@ -1,0 +1,71 @@
+
+Alphabet A[s:string]{zero(0), two(2)}
+
+Alphabet B[j:bool]{nolla(0), kaksi(2)}
+
+Alphabet C[i:int]{zero(0), due(2)}
+
+Public Trans p : A -> B {
+     two(x,y) to (kaksi [true] (a x) (a y))	 
+   | two(x,y) to (kaksi [false] (b x) (a y))	 
+   | two(x,y) to (kaksi [false] (a x) (b y))	 
+   | two(x,y) to (kaksi [false] (b x) (b y))	 
+   | zero() to (nolla [false] )
+}
+
+Trans a : A -> B {
+     two(x,y) where (s == "a") to (kaksi [true] (a x) (a y))	 
+   | two(x,y) where (s == "a") to (kaksi [false] (b x) (a y))	 
+   | two(x,y) where (s == "a") to (kaksi [false] (a x) (b y))	 
+   | two(x,y) where (s == "a") to (kaksi [false] (b x) (b y))	 
+   | zero() where (s == "a") to (nolla [false] )
+}
+
+Public Trans id : B -> B {
+     kaksi(x,y) to (kaksi [true] x y) 
+   | nolla() to (nolla [true] )
+}
+
+Trans b : A -> B {
+     two(x,y) where (not (s == "a")) to (kaksi [true] (a x) (a y))	  
+   | two(x,y) where (not (s == "a")) to (kaksi [false] (b x) (a y))	 
+   | two(x,y) where (not (s == "a")) to (kaksi [false] (a x) (b y))	 
+   | two(x,y) where (not (s == "a")) to (kaksi [false] (b x) (b y))	 
+   | zero() where (not (s == "a")) to (nolla [false] )
+}
+
+Public Trans q : B -> C {
+       kaksi(x,y) where (not j) to (due [2] (q x) (q y))
+	 | kaksi(x,y) where j to (q y)
+	 | nolla() to (zero [0])
+}
+
+/*
+
+Alphabet A1[s:string]{zero(0), one(1)}
+
+Alphabet B1[s:string]{nolla(0), yksi(1)}
+
+Alphabet C1[s:string]{zero(0), uno(1), due(2)}
+
+Public Trans nd1 : A1 -> B1 {
+     one(x) to (yksi ["a"] (nd1 x))	 
+   | one(x) to (yksi ["b"] (nd1 x))	 	 
+   | zero() to (nolla ["a"])
+   | zero() to (nolla ["b"])
+}
+
+Public Trans nd21 : B1 -> C1 {
+     yksi(x) to (due [s] (nd22 x) (nd22 x))	    
+}
+
+Public Trans nd22 : B1 -> C1 {
+     yksi(x) to (uno [s] (nd22 x))
+   | yksi(x) to (uno [s] (nd22 x))	 
+   | nolla() to (zero [s] )
+}
+*/
+
+Def r1 : A -> C := (compose (compose p id) q)
+
+//Def rnd : A1 -> C1 := (compose nd1 nd21)

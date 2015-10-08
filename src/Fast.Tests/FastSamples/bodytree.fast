@@ -1,0 +1,174 @@
+Enum Side {C, L, R}
+
+Alphabet BodyPart[s:Side, x:real, y:real, color:string]{Spine(2), Shoulder(1), ShoulderCenter(3), Head, Elbow(1), 
+Wrist(1), Hand, HipCenter(2), Hip(1), Knee(1), Ankle(1), Foot}
+
+//LANGUAGES
+
+Public Lang body : BodyPart {
+     Spine(u,d) where (s == Side.C) given (upperBody u) (lowerBody d)
+}
+
+Lang upperBody : BodyPart {
+     ShoulderCenter(h,l,r) where 
+		 (s == Side.C) given (head h) (arm l) (arm r) (leftJ l) (rightJ r) 
+}
+Lang arm : BodyPart {
+     Shoulder(e) given (lowerArm e)
+}
+Lang lowerArm : BodyPart {
+     Elbow(w) given (wrist w)
+}
+Lang wrist : BodyPart{
+	Wrist(h) given (hand h)
+}
+Lang hand : BodyPart{
+	Hand() 
+}
+Lang head : BodyPart{
+	Head()
+}
+
+Lang lowerBody : BodyPart {
+     HipCenter(l,r) where (s == Side.C) given (leg l) (leg r) (leftJ l) (rightJ r)
+}
+Lang leg : BodyPart {
+     Hip(k) given (lowerLeg k)
+}
+Lang lowerLeg : BodyPart {
+     Knee(a) given (ankle a)
+}
+Lang ankle : BodyPart{
+	Ankle(h) given (foot h)
+}
+Lang foot : BodyPart{
+	Foot()
+}
+
+Lang leftJ : BodyPart{
+	  Hip(c) where (s == Side.L) given (leftJ c)
+	| Knee(c) where (s == Side.L) given (leftJ c) 
+	| Ankle(c) where (s == Side.L) given (leftJ c)
+	| Foot() where (s == Side.L)
+	| Shoulder(c) where (s == Side.L) given (leftJ c) 
+	| Elbow(c) where  (s == Side.L) given (leftJ c)
+	| Wrist(c) where (s == Side.L) given (leftJ c) 
+	| Hand() where (s == Side.L)
+}
+Lang rightJ : BodyPart{
+	  Hip(c) where (s == Side.R) given (rightJ c)
+	| Knee(c) where  (s == Side.R) given (rightJ c)
+	| Ankle(c) where (s == Side.R) given (rightJ c)
+	| Foot() where (s == Side.R)
+	| Shoulder(c) where (s == Side.R) given (rightJ c) 
+	| Elbow(c) where (s == Side.R) given (rightJ c)
+	| Wrist(c) where (s == Side.R) given (rightJ c)
+	| Hand() where (s == Side.R)
+}
+
+//TRANSDUCTIONS
+
+Trans Step : BodyPart -> BodyPart {
+	  HipCenter(c1,c2) where true to (HipCenter [s,x,y,color] (Step c1) (Step c2))
+    | Hip(c) where true to (Hip [s,x,y,color] (Step c))
+	| Knee(c) where (s == Side.R) to (Knee [s,((0.9848 * x) - ((0.0 - 0.1736) * y)),(((0.0 - 0.1736) * x) + (0.9848 * y)),color] (Step c))
+	| Knee(c) where (s == Side.L) to (Knee [s,((0.9848 * x) - (0.1736 * y)),((0.1736 * x) + (0.9848 * y)),color] (Step c))	
+	| Ankle(c) where (s == Side.R) to (Ankle [s,((0.9848 * x) - ((0.0 - 0.1736) * y)),(((0.0 - 0.1736) * x) + (0.9848 * y)),color] c)
+	| Ankle(c) where (s == Side.L) to (Ankle [s,((0.9848 * x) - (0.1736 * y)),((0.1736 * x) + (0.9848 * y)),color] c)	
+}
+
+Public Trans StepLeft : BodyPart -> BodyPart {
+	  Spine(c1,c2) where true to (Spine [s, (x - 34.0), (y + 7.0), color] c1 (Step c2))    
+}    
+Public Trans StepRight : BodyPart -> BodyPart {
+	  Spine(c1,c2) where true to (Spine [s, (x + 34.0), (y + 7.0), color] c1 (Step c2))    
+}    
+
+
+Trans Collect : BodyPart -> BodyPart {
+	  HipCenter(c1,c2) where true to (HipCenter [s,x,y,color] (Collect c1) (Collect c2))
+    | Hip(c) where true to (Hip [s,x,y,color] (Collect c))
+	| Knee(c) where (s == Side.L) to (Knee [s,((0.9848 * x) - ((0.0 - 0.1736) * y)),(((0.0 - 0.1736) * x) + (0.9848 * y)),color] (Collect c))
+	| Knee(c) where (s == Side.R) to (Knee [s,((0.9848 * x) - (0.1736 * y)),((0.1736 * x) + (0.9848 * y)),color] (Collect c))	
+	| Ankle(c) where (s == Side.L) to (Ankle [s,((0.9848 * x) - ((0.0 - 0.1736) * y)),(((0.0 - 0.1736) * x) + (0.9848 * y)),color] c)
+	| Ankle(c) where (s == Side.R) to (Ankle [s,((0.9848 * x) - (0.1736 * y)),((0.1736 * x) + (0.9848 * y)),color] c)	
+}
+
+Public Trans CollectLeft : BodyPart -> BodyPart {
+	  Spine(c1,c2) where true to (Spine [s, (x + 34.0), (y + 7.0), color] c1 (Collect c2))    
+} 
+Public Trans CollectRight : BodyPart -> BodyPart {
+	  Spine(c1,c2) where true to (Spine [s, (x - 34.0), (y + 7.0), color] c1 (Collect c2))    
+}    
+
+
+Trans LiftArm : BodyPart -> BodyPart {
+	  Shoulder(c) where true to (Shoulder [s,x,y,color] (LiftArm c))    
+	| Elbow(c) where (s == Side.R) to (Elbow [s,((0.7071 * x) - ((0.0 - 0.7071) * y)),(((0.0 - 0.7071) * x) + (0.7071 * y)),color] (LiftArm c))
+	| Elbow(c) where (s == Side.L) to (Elbow [s,((0.7071 * x) - (0.7071 * y)),((0.7071 * x) + (0.7071 * y)),color] (LiftArm c))	
+	| Wrist(c) where (s == Side.R) to (Wrist [s,((0.7071 * x) - ((0.0 - 0.7071) * y)),(((0.0 - 0.7071) * x) + (0.7071 * y)),color] c)
+	| Wrist(c) where (s == Side.L) to (Wrist [s,((0.7071 * x) - (0.7071 * y)),((0.7071 * x) + (0.7071 * y)),color]  c)	
+}
+Public Trans LiftLeftArm : BodyPart -> BodyPart {
+	    Spine(c1,c2) where true to (Spine [s, x,y,color] (LiftLeftArm c1) c2)    
+	  | ShoulderCenter(h,l,r) where true to (ShoulderCenter [s, x,y,color] h (LiftArm l) r)
+}    
+Public Trans LiftRightArm : BodyPart -> BodyPart {
+	    Spine(c1,c2) where true to (Spine [s, x,y,color] (LiftRightArm c1) c2)    
+	  | ShoulderCenter(h,l,r) where true to (ShoulderCenter [s, x,y,color] h l (LiftArm r))
+}    
+
+Public Trans LiftLeftLowerArm : BodyPart -> BodyPart {
+	    Spine(c1,c2) where true to (Spine [s, x,y,color] (LiftLeftLowerArm c1) c2)    
+	  | ShoulderCenter(h,l,r) where true to (ShoulderCenter [s, x,y,color] h (LiftLowerArm l) r)	    
+}    
+Public Trans LiftRightLowerArm : BodyPart -> BodyPart {
+	    Spine(c1,c2) where true to (Spine [s, x,y,color] (LiftRightLowerArm c1) c2)    
+	  | ShoulderCenter(h,l,r) where true to (ShoulderCenter [s, x,y,color] h l (LiftLowerArm r))	  
+} 
+
+Trans LiftLowerArm : BodyPart -> BodyPart {
+	  Shoulder(c) where true to (Shoulder [s,x,y,color] (LiftLowerArm c))    
+	| Elbow(c) where (s == Side.L) to (Elbow [s,x,y,color] (LiftArm c))
+	| Elbow(c) where (s == Side.R) to (Elbow [s,x,y,color] (LiftArm c))
+}   
+
+
+Trans DownArm : BodyPart -> BodyPart {
+	  Shoulder(c) where true to (Shoulder [s,x,y,color] (DownArm c))    
+	| Elbow(c) where (s == Side.L) to (Elbow [s,((0.7071 * x) - ((0.0 - 0.7071) * y)),(((0.0 - 0.7071) * x) + (0.7071 * y)),color] (DownArm c))
+	| Elbow(c) where (s == Side.R) to (Elbow [s,((0.7071 * x) - (0.7071 * y)),((0.7071 * x) + (0.7071 * y)),color] (DownArm c))	
+	| Wrist(c) where (s == Side.L) to (Wrist [s,((0.7071 * x) - ((0.0 - 0.7071) * y)),(((0.0 - 0.7071) * x) + (0.7071 * y)),color] c)
+	| Wrist(c) where (s == Side.R) to (Wrist [s,((0.7071 * x) - (0.7071 * y)),((0.7071 * x) + (0.7071 * y)),color]  c)	
+}
+Public Trans DownLeftArm : BodyPart -> BodyPart {
+	    Spine(c1,c2) where true to (Spine [s, x,y,color] (DownLeftArm c1) c2)    
+	  | ShoulderCenter(h,l,r) where true to (ShoulderCenter [s, x,y,color] h (DownArm l) r)
+}    
+Public Trans DownRightArm : BodyPart -> BodyPart {
+	    Spine(c1,c2) where true to (Spine [s, x,y,color] (DownRightArm c1) c2)    
+	  | ShoulderCenter(h,l,r) where true to (ShoulderCenter [s, x,y,color] h l (DownArm r))
+}    
+
+Public Trans DownLeftLowerArm : BodyPart -> BodyPart {
+	    Spine(c1,c2) where true to (Spine [s, x,y,color] (DownLeftLowerArm c1) c2)    
+	  | ShoulderCenter(h,l,r) where true to (ShoulderCenter [s, x,y,color] h (DownLowerArm l) r)	    
+}    
+Public Trans DownRightLowerArm : BodyPart -> BodyPart {
+	    Spine(c1,c2) where true to (Spine [s, x,y,color] (DownRightLowerArm c1) c2)    
+	  | ShoulderCenter(h,l,r) where true to (ShoulderCenter [s, x,y,color] h l (DownLowerArm r))	  
+} 
+
+Trans DownLowerArm : BodyPart -> BodyPart {
+	  Shoulder(c) where true to (Shoulder [s,x,y,color] (DownLowerArm c))    
+	| Elbow(c) where (s == Side.L) to (Elbow [s,x,y,color] (DownArm c))
+	| Elbow(c) where (s == Side.R) to (Elbow [s,x,y,color] (DownArm c))
+}
+
+Def MoveArmLeg : BodyPart -> BodyPart := (compose DownLeftArm DownRightArm)
+
+Def ResTest : BodyPart -> BodyPart := (restrict_inp DownLeftArm body)
+
+Def dom : BodyPart := (domain DownLeftArm)
+
+Def IntersTest : BodyPart := (intersect dom body)
