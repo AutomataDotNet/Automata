@@ -214,3 +214,9 @@ pip-log.txt
 
 #Mr Developer
 .mr.developer.cfg
+
+
+#Ingnore key files for signing
+#and the main build solution using the keys
+*.snk
+Build.sln
