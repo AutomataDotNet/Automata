@@ -1,0 +1,54 @@
+	   
+	   //CssEncode, register hs only stores the last two bits of the high surrogate needed for 
+	   //combining with a following low surrogate. Thus the generated SFT has minimal nr of states.
+        function IsLowSurrogate(c) = ((c >= 0xdc00) && (c <= 0xdfff)); 
+
+		function IsHighSurrogate(c) = ((c >= 0xd800) && (c <= 0xdbff));
+
+	   function hexDigit(x) = ite(x <= 9, x + 48, x + 55);
+       function hex0(x) = hexDigit(x&0xF);
+       function hex1(x) = hexDigit((x>>4)&0xF);
+       function hex2(x) = hexDigit((x>>8)&0xF);
+       function hex3(x) = hexDigit((x>>12)&0xF);
+
+	    program CssEncode5(input){
+		 return iter(c in input)[HS:=false; hs:=0;] 
+		  {
+			  case ((HS && !IsLowSurrogate(c)) || (!HS && IsLowSurrogate(c))) :
+				raise InvalidSurrogatePairException;
+
+			  case ((c == 0xFFFE) || (c == 0xFFFF)):
+				raise InvalidUnicodeValueException;
+
+			  case (!HS && IsHighSurrogate(c)):
+				yield ('\\', ite((((c >> 6) & 0xF)==0xF),'1','0'), hex0(((c >> 6) + 1)), hex0((c >> 2)));
+			    HS := true;    
+				hs := (c & 3);
+
+			  case (HS && IsLowSurrogate(c)):
+				yield (hex0(((hs << 2)|((c >> 8) & 3))));
+				yield (hex1(c));
+				yield (hex0(c));
+				HS:=false; hs:=0;
+
+			  case (c > 0xFF):
+				yield ('\\','0','0',hex3(c),hex2(c),hex1(c),hex0(c));
+				HS:=false; hs:=0;
+
+			  //case (!(c in "[0-9A-Za-z\x80-\x90\x93-\x9A\xA0-\xA5]")): //(!InCssSafeList(c)):
+              case (!(c in "[0-9A-Za-z]")):
+				yield ('\\','0','0','0','0',hex1(c),hex0(c));
+				HS:=false; hs:=0;
+
+			  case (true):
+				yield (c); 
+				HS:=false; hs:=0;
+		  } 
+		  end 
+		  {
+		      case (HS):
+			    raise InvalidSurrogatePairException;
+			  case (true):
+			    yield();
+		  };
+		}

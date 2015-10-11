@@ -1,0 +1,6 @@
+function E(x)=ite(x < 10, x + 48, x + 55);
+program base16encode(input){ 
+  replace {
+    @"[\0-\xFF]"  ==> [E(#0 >> 4),E(#0 & 0xF)];
+  }
+};

@@ -1,0 +1,7 @@
+program BitsBug(input){
+  return iter(c in input)
+  {
+    case (true): 
+	  yield ((1 + (c & 7)) & 3);
+  };
+}

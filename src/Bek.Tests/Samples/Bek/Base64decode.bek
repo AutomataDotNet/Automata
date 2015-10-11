@@ -1,0 +1,29 @@
+function D(x)=(ite(x=='/',63,ite(x=='+',62,ite(x<='9',x+4,ite(x<='Z',x-65,x-71)))));
+function InvalidChar(x)=(!((('A'<=x) && (x <= 'Z')) || (('a'<=x) && (x <= 'z')) || (('0'<=x) && (x <= '9')) || (x == '=') || (x=='/') || (x=='+')));
+
+program base64decode(input){ 
+  return iter(x in input)[q:=0;r:=0;]{
+    case ((InvalidChar(x))||              //x is an invalid character
+          ((x=='=')&&((q==0)||(q==1)))||  //in states 0 and 1 x must not be the end character '='
+          ((x=='=')&&(r!=0))||            //when x is the end character then r must be 0
+          ((x!='=')&&(q==4))||            //x must be the end character in state 4
+          (q==5)):                        //the input must end in state 5
+      raise InvalidInput;
+
+    case (q==0): r:=(D(x)<<2); q:=1;          //r := [x5,x4,x3,x2,x1,x0,0,0]
+    case (q==1): yield(r|(Bits(5,4,D(x))));
+                 r:=((D(x)&0xF)<<4); q:=2;    //r := [y3,y2,y1,y0,0,0,0,0]
+    case (q==2): if (x=='=') {r:=0;q:=4;}
+                 else {                       //D(x) == [z5,z4,z3,z2,z1,z0]
+                   yield(r|(Bits(5,2,D(x))));
+                   r:=((D(x)&3)<<6); q:=3;    //r := [z1,z0,0,0,0,0,0,0]
+                 }
+    case (q==3): if (x=='=') {r:=0; q:=5;} 
+                 else {                       //D(x) == [w5,w4,w3,w2,w1,w0]
+                   yield(r|D(x));
+                   r:=0;q:=0;
+                 }
+    case (q==4): r:=0; q:=5;                         
+    end case (!((q==0)||(q==5))): raise InvalidInput; //only 0 and 5 are accepting states
+  };
+}

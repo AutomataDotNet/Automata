@@ -1,0 +1,21 @@
+
+//replace all occurrences of "<" by "&lt;" and ">" by "&gt;"
+program escapeBrackets(input) {
+return iter(c in input)
+{
+   case (c == '<') :     
+     yield ('&');
+	 yield ('l');
+	 yield ('t');
+	 yield (';');     
+
+   case (c == '>') :     
+     yield ('&');
+	 yield ('g');
+	 yield ('t');
+	 yield (';');     
+
+  case(true):
+     yield(c); 
+
+};}

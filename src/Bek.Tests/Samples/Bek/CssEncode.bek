@@ -1,0 +1,34 @@
+	   
+       function hexDigit(x) = ite(x <= 9, x + 48, x + 55);
+       function hex0(x) = hexDigit(x&0xF);
+       function hex1(x) = hexDigit((x>>4)&0xF);
+       function hex2(x) = hexDigit((x>>8)&0xF);
+       function hex3(x) = hexDigit((x>>12)&0xF);
+     
+       //CssEncode, register hs only stores the last two bits of the high surrogate needed for 
+	   //uses if-then-else for more concise control flow
+	    program CssEncode(input){
+		 return iter(c in input)[HS:=false; hs:=0;] 
+		  {
+		  	  case ((c == 0xFFFE) || (c == 0xFFFF)):
+				raise InvalidUnicodeValueException;
+
+			  case (HS):    //the previous character was a high surrogate
+			    if (!((c >= 0xdc00) && (c <= 0xdfff))) { raise InvalidSurrogatePairException; } 
+				else {
+				  yield (hex0(((hs << 2)|((c >> 8) & 3))), hex1(c), hex0(c));
+				  HS:=false; hs:=0; }
+				  		  
+              case (true): //the previous character was a not a high surrogate
+			    if (((c >= 0xdc00) && (c <= 0xdfff))) { raise InvalidSurrogatePairException; } 
+				else if (((c >= 0xd800) && (c <= 0xdbff))) {
+				  yield ('\\', ite((((c >> 6) & 0xF)==0xF),'1','0'), hex0(((c >> 6) + 1)), hex0((c >> 2)));
+			      HS := true; hs := (c & 3); } 
+				else if (c > 0xFF) { yield ('\\','0','0',hex3(c),hex2(c),hex1(c),hex0(c));} 
+				else if ( (('0'<=c)&&(c<='9')) || (('A'<=c)&&(c<='Z')) || (('a'<=c)&&(c<='z')) ) { yield (c); } 
+				else { yield ('\\','0','0','0','0',hex1(c),hex0(c)); }
+		  } end {
+		      case (HS): raise InvalidSurrogatePairException;
+			  case (true): yield();
+		  };
+		}

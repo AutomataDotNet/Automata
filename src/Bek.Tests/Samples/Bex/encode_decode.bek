@@ -1,0 +1,21 @@
+program encode(input){ replace { "<"   ==> "&lt;"; ">"   ==> "&gt;"; else ==> [#0]; }}  //. matches any character
+
+program decode(input){ replace { "&lt;" ==> "<"; "&gt;" ==> ">"; else ==> []; }} 
+
+program id(input){ replace { "." ==> [#0]; }}
+
+/*
+
+==
+//Is encode idempotent ?
+eq(join(encode,encode),encode);
+//Is decode idempotent ?
+eq(join(decode,decode),decode);
+//Is it true that for all inputs decode(encode(input)) = input ?
+eq(join(encode,decode),id);
+//Is it true that for all inputs encode(decode(input)) = input ?
+eq(join(decode,encode),id);
+//generate JavaScript for decode
+js(decode);
+
+*/

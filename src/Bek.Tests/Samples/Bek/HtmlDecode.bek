@@ -1,0 +1,183 @@
+function F(x,y) = ((10 * x) + (y - '0'));
+function D1(x) = ((x % 10) + '0');
+function D2(x) = (((x / 10) % 10) + '0');
+function D3(x) = (((x / 100) % 10) + '0');
+function D4(x) = (((x / 1000) % 10) + '0');
+function D5(x) = (((x / 10000) % 10) + '0');
+function IsDecDig(x) = (('0' <= x) && (x <= '9'));
+function IsDec(x) = ((0 <= x) && (x <= 9));
+function IsHexDig(x) = ((('0' <= x) && (x <= '9')) || (('A' <= x) && (x <= 'F')));
+function H1(x) = (ite(IsDec(x & 0xF), (x & 0xF) + '0', (x & 0xF) + 55));
+function H2(x) = (ite(IsDec((x >> 4) & 0xF), ((x >> 4) & 0xF) + '0', ((x >> 4) & 0xF) + 55));
+function H3(x) = (ite(IsDec((x >> 8) & 0xF), ((x >> 8) & 0xF) + '0', ((x >> 8) & 0xF) + 55));
+function H4(x) = (ite(IsDec((x >> 12) & 0xF), ((x >> 12) & 0xF) + '0', ((x >> 12) & 0xF) + 55));
+function Fx(x,y) = ((x << 4) | ite(IsDecDig(y), y - '0', y - 55));
+
+program HtmlDecode(w) {
+   return iter(c in w) [q := 0; d := 0;] 
+      {
+          case ((q == 0) && (c == '&')): q := '&'; 
+          case (q == 0) :  yield(c);
+      
+          case ((q == '&') && (c == '#')) : q := '#';   // &#
+          case ((q == '&') && (c == 'a')) : q := 'a';   // &a
+          case ((q == '&') && (c == 'q')) : q := 'q';   // &q
+          case ((q == '&') && (c == 'l')) : q := 'l';   // &l
+          case ((q == '&') && (c == 'g')) : q := 'g';   // &g
+          case ((q == '&') && (c == '&')) : yield('&'); // &&
+          case (q == '&') : yield('&',c); q := 0;       // e.g. &3
+
+          case ((q == '#') && (c == 'X')) : q := 'X';                       //switch to hexadecimal decoding
+
+          //decimal decoding up to five decimal digits
+          case ((q == '#') && (c == '&')) :  yield('&','#'); q := '&';      // &#&        
+          case ((q == '#') && IsDecDig(c)) : q := 1; d := (c - '0');        //e.g. &#6
+          case (q == '#') :  yield('&','#', c); q := 0;                     //e.g. &#t
+      
+          case ((q == 1) && IsDecDig(c)) : q := 2; d := F(d,c);                  //e.g. &#65
+          case ((q == 1) && (c == ';')) :  yield(d); q := 0; d := 0;             //e.g. &#7;
+          case ((q == 1) && (c == '&')) :  yield('&','#',D1(d)); q := '&'; d := 0; //e.g. &#4&
+          case (q == 1) :  yield('&','#',D1(d), c); q := 0; d := 0;            //e.g. &#6e
+       
+          case ((q == 2) && IsDecDig(c)) : q := 3; d := F(d,c);                  //e.g. &#654
+          case ((q == 2) && (c == ';')) : yield(d); q := 0; d := 0;              //e.g. &#38; 
+          case ((q == 2) && (c == '&')) : yield('&','#', D2(d), D1(d)); q := '&'; d := 0; //e.g. &#38&
+          case (q == 2) : yield('&','#', D2(d), D1(d), c); q := 0; d := 0;    //e.g. &#38a
+
+          case ((q == 3) && IsDecDig(c)) : q := 4; d := F(d,c);                  //e.g. &#6543
+          case ((q == 3) && (c == ';')) : yield(d); q := 0; d := 0;              //e.g. &#654; 
+          case ((q == 3) && (c == '&')) : yield('&','#', D3(d), D2(d), D1(d)); q := '&'; d := 0; //e.g. &#654&
+          case (q == 3) : yield('&','#', D3(d), D2(d), D1(d), c); q := 0; d := 0;  //e.g. &#654a
+
+          case ((q == 4) && IsDecDig(c) && (F(d,c) <= 0xFFFF)) : q := 5; d := F(d,c);  //e.g. &#65532
+          case ((q == 4) && (c == ';')) : yield(d); q := 0; d := 0;              //e.g. &#6553; 
+          case ((q == 4) && (c == '&')) : yield('&','#', D4(d), D3(d), D2(d), D1(d)); q := '&'; d := 0; //e.g. &#6553&
+          case (q == 4) : yield('&','#', D4(d), D3(d), D2(d), D1(d), c); q := 0; d := 0;  //e.g. &#65536
+
+          case ((q == 5) && (c == ';')) : yield(d); q := 0; d := 0;              //e.g. &#65532; 
+          case ((q == 5) && (c == '&')) : yield('&','#', D5(d), D4(d), D3(d), D2(d), D1(d)); q := '&'; d := 0; //e.g. &#65532&
+          case (q == 5) : yield('&','#', D5(d), D4(d), D3(d), D2(d), D1(d), c); q := 0; d := 0;  //e.g. &#65536
+
+          //hexadecimal decoding up to 4 hex digits
+          case ((q == 'X') && (c == '&')) :  yield('&','#','X'); q := '&';      // &#x&    
+          case ((q == 'X') && IsHexDig(c)) : q := 6; d := Fx(0,c);              //e.g. &#xa
+          case (q == 'X') : q := 0; yield('&','#','X',c);  d:=0;                //e.g. &#xr
+
+          case ((q == 6) && IsHexDig(c)) : q := 7; d := Fx(d,c);                 //e.g. &#af
+          case ((q == 6) && (c == ';')) :  yield(d); q := 0; d := 0;             //e.g. &#a;
+          case ((q == 6) && (c == '&')) :  yield('&','#', 'X', H1(d)); q := '&'; d := 0; //e.g. &#a&
+          case (q == 6) :  yield('&','#', 'X', H1(d), c); q := 0; d := 0;              //e.g. &#ag
+
+          case ((q == 7) && IsHexDig(c)) : q := 8; d := Fx(d,c);                 //e.g. &#afe
+          case ((q == 7) && (c == ';')) :  yield(d); q := 0; d := 0;             //e.g. &#af;
+          case ((q == 7) && (c == '&')) :  yield('&','#', 'X', H2(d), H1(d)); q := '&'; d := 0; //e.g. &#af&
+          case (q == 7) :  yield('&','#', 'X', H2(d), H1(d), c); q := 0; d := 0;              //e.g. &#afg
+
+          case ((q == 8) && IsHexDig(c)) : q := 9; d := Fx(d,c);                 //e.g. &#afed
+          case ((q == 8) && (c == ';')) :  yield(d); q := 0; d := 0;             //e.g. &#afe;
+          case ((q == 8) && (c == '&')) :  yield('&','#', 'X', H3(d), H2(d), H1(d)); q := '&'; d := 0; //e.g. &#afe&
+          case (q == 8) :  yield('&','#', 'X', H3(d), H2(d), H1(d), c); q := 0; d := 0;  //e.g. &#afeg
+
+          case ((q == 9) && (c == ';')) :  yield(d); q := 0; d := 0;             //e.g. &#afed;
+          case ((q == 9) && (c == '&')) :  yield('&','#', 'X', H4(d), H3(d), H2(d), H1(d)); q := '&'; d := 0; //e.g. &#afed&
+          case (q == 9) :  yield('&','#', 'X', H4(d), H3(d), H2(d), H1(d), c); q := 0; d := 0;  //e.g. &#afeda
+
+          // ---- special fixed patterns ----
+
+          //case : &lt;
+          case ((q == 'l') && (c == 't')) : q := 'L';                  // &lt
+          case ((q == 'l') && (c == '&')) : yield('&','l'); q := '&';  // &l&
+          case (q == 'l') :  yield('&','l', c); q := 0;               //e.g. &la
+
+          case ((q == 'L') && (c == ';')) : yield('<'); q := 0;       // &lt;
+          case ((q == 'L') && (c == '&')) : yield('&','l','t'); q := '&';  // &lt&
+          case (q == 'L') :  yield('&','l', 't', c); q := 0;           //e.g. &lta
+
+          //case : &gt;
+          case ((q == 'g') && (c == 't')) : q := 'G';                 // &gt
+          case ((q == 'g') && (c == '&')) : yield('&','g'); q := '&';  // &g&
+          case (q == 'g') :  yield('&','g', c); q := 0;              //e.g. &ga
+
+          case ((q == 'G') && (c == ';')) : yield('>'); q := 0;       // &gt;
+          case ((q == 'G') && (c == '&')) : yield('&','g','t'); q := '&';  // &gt&
+          case (q == 'G') :  yield('&','g', 't', c); q := 0;           //e.g. &gta
+
+          //case : &quot;
+          case ((q == 'q') && (c == 'u')) : q := 'u';                 // &qu
+          case ((q == 'q') && (c == '&')) : yield('&','q'); q := '&';  // &q&
+          case (q == 'q') :  yield('&','q', c); q := 0;                //e.g. &qa
+
+          case ((q == 'u') && (c == 'o')) : q := 'o';                 // &quo
+          case ((q == 'u') && (c == '&')) : yield('&','q','u'); q := '&'; // &qu&
+          case (q == 'u') :  yield('&','q', 'u', c); q := 0;              //e.g. &qua
+
+          case ((q == 'o') && (c == 't')) : q := 't';               // &quot
+          case ((q == 'o') && (c == '&')) : yield('&','q','u','o'); q := '&';  // &quo&
+          case (q == 'o') :  yield('&','q', 'u', 'o', c); q := 0;             //e.g. &quoa
+
+          case ((q == 't') && (c == ';')) : yield(0x22); q := 0;          // &quot;
+          case ((q == 't') && (c == '&')) : yield('&','q','u','o','t'); q := '&';  // &quot&
+          case (q == 't') :  yield('&','q', 'u', 'o','t', c); q := 0;    //e.g. &quota
+
+          //case : &amp; or &apos;
+          case ((q == 'a') && (c == 'm')) : q := 'm';                 // &am
+          case ((q == 'a') && (c == 'p')) : q := 'P';                 // &ap
+          case ((q == 'a') && (c == '&')) : yield('&','a'); q := '&'; // &a&
+          case (q == 'a') :  yield('&','a', c); q := 0;              //e.g. &aa
+
+          case ((q == 'm') && (c == 'p')) : q := 'p';                     // &amp
+          case ((q == 'm') && (c == '&')) : yield('&','a','m'); q := '&'; // &am&
+          case (q == 'm') :  yield('&','a','m', c); q := 0;              //e.g. &ama
+
+          case ((q == 'p') && (c == ';')) : yield('&'); q := 0;                 // &amp;
+          case ((q == 'p') && (c == '&')) : yield('&','a','m','p'); q := '&'; // &amp&
+          case (q == 'p') :  yield('&','a','m','p', c); q := 0;                 //e.g. &ampa
+
+          case ((q == 'P') && (c == 'o')) : q := 'O';           // &apo
+          case ((q == 'P') && (c == '&')) : yield('&','a','p'); q := '&';// &ap&
+          case (q == 'P') :  yield('&','a','p', c); q := 0;           //e.g. &apa
+
+          case ((q == 'O') && (c == 's')) : q := 'S';         // &apos
+          case ((q == 'O') && (c == '&')) : yield('&','a','p','o'); q := '&'; // &apo&
+          case (q == 'O') :  yield('&','a','p','o', c); q := 0;           //e.g. &apoa
+
+          case ((q == 'S') && (c == ';')) : yield(0x27); q := 0;     // &apos;
+          case ((q == 'S') && (c == '&')) : yield('&','a','p','o','s'); q := '&'; // &apos&
+          case (q == 'S') :  yield('&','a','p','o','s', c); q := 0;    //e.g. &aposa
+
+          case (true): yield(); q:=0;d:=0;
+     
+       } end  
+       {  //unfinished patterns
+          case (q == 0)  : yield();
+          case (q == '&'): yield('&'); 
+          case (q == '#'): yield('&','#');
+          case (q == 'X'): yield('&','#','X');
+          case (q == 1) :  yield('&','#', D1(d));
+          case (q == 2) :  yield('&','#', D2(d), D1(d));
+          case (q == 3) :  yield('&','#', D3(d), D2(d), D1(d));
+          case (q == 4) :  yield('&','#', D4(d), D3(d), D2(d), D1(d));
+          case (q == 5) :  yield('&','#', D5(d), D4(d), D3(d), D2(d), D1(d)); 
+          case (q == 6) :  yield('&','#', 'X', H1(d)); 
+          case (q == 7) :  yield('&','#', 'X', H2(d), H1(d)); 
+          case (q == 8) :  yield('&','#', 'X', H3(d), H2(d), H1(d));
+          case (q == 9) :  yield('&','#', 'X', H4(d), H3(d), H2(d), H1(d));
+          case (q == 'l') : yield('&','l');
+          case (q == 'L') : yield('&','l','t');
+          case (q == 'g') : yield('&','g');
+          case (q == 'G') : yield('&','g','t');
+          case (q == 'q') : yield('&','q');
+          case (q == 'u') : yield('&','q','u');
+          case (q == 'o') : yield('&','q','u','o');
+          case (q == 't') : yield('&','q','u','o','t');
+          case (q == 'a') : yield('&','a');
+          case (q == 'm') : yield('&','a','m'); 
+          case (q == 'p') : yield('&','a','m','p');
+          case (q == 'P') : yield('&','a','p');
+          case (q == 'O') : yield('&','a','p','o'); 
+          case (q == 'S') : yield('&','a','p','o','s');
+
+          case (true): yield();
+      };
+}
+

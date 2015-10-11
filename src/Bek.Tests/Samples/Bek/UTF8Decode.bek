@@ -1,0 +1,170 @@
+
+//decodes a valid uft8 encoded string to the equivalent utf16 encoded string
+//uses Booleans for explicit control state encoding
+program utf8decode(input){
+  return iter(c in input)[q3 := false; q2 := false; q1 := false; q0 := false; r := 0;] 
+  {
+    case (!q3 && !q2 && !q1 && !q0):
+      if ((0<=c)&&(c<=0x7F))                   {q3:=false; q2:=false; q1:=false; q0:=false; yield (c); r:=0;}
+      else if ((0xC2<=c)&&(c<=0xDF))           {q3:=false; q2:=false; q1:=true; q0:=true; r := ((c & 0x3F) << 6);}
+      else if (c == 0xE0)                      {q3:=false; q2:=true; q1:=true; q0:=true; r:=0;}
+      else if (c == 0xED)                      {q3:=false; q2:=true; q1:=true; q0:=false; r:=0;}
+      else if (((0xE1<=c)&&(c<=0xEC))||(c==0xEE)||(c==0xEF)) {q3:=false; q2:=false; q1:=true; q0:=false; r := ((c & 0x1F) << 12);}
+      else if ((0xF1<=c)&&(c<=0xF3))           {q3:=false; q2:=false; q1:=false; q0:=true; r := ((c & 7) << 8);}
+      else if (c == 0xF0)                      {q3:=false; q2:=true; q1:=false; q0:=false; r:=0;}
+      else if (c == 0xF4)                      {q3:=false; q2:=true; q1:=false; q0:=true; r:=0;}
+      else {raise InvalidInput;}
+
+    case (!q3 && !q2 && !q1 && q0): //start-octet F1-F3
+      if ((0x80<=c)&&(c<=0xBF))                {q3:=true; q2:=false; q1:=false; q0:=false; r := (0xD800 | (((((r | ((c & 0x30) << 2))) - 0x40)) | ((c & 0x0F)<< 2)));}
+      else {raise InvalidInput;}
+
+    case (!q3 && q2 && !q1 && !q0): //start-octet F0
+      if ((0x90<=c)&&(c<=0xBF))                {q3:=true; q2:=false; q1:=false; q0:=false; r := (0xD800 | (((((((c & 0x30) << 2))) - 0x40)) | ((c & 0x0F)<< 2)));}
+      else {raise InvalidInput;}
+
+    case (!q3 && q2 && !q1 && q0): //start-octet F4
+      if ((0x80<=c)&&(c<=0x8F))                {q3:=true; q2:=false; q1:=false; q0:=false; r := (0xD800 | (((((0x400 | ((c & 0x30) << 2))) - 0x40)) | ((c & 0x0F)<< 2)));}
+      else {raise InvalidInput;}
+
+    case (!q3 && !q2 && q1 && !q0):
+      if ((0x80<=c)&&(c<=0xBF))                {q3:=false; q2:=false; q1:=true; q0:=true; r := (r | ((c & 0x3F) << 6));}
+      else {raise InvalidInput;}
+
+    case (!q3 && q2 && q1 && !q0):
+      if ((0x80<=c)&&(c<=0x9F))                {q3:=false; q2:=false; q1:=true; q0:=true; r := (0xD000 | ((c & 0x3F) << 6));}
+      else {raise InvalidInput;}
+
+    case (!q3 && q2 && q1 && q0):
+      if ((0xA0<=c)&&(c<=0xBF))                {q3:=false; q2:=false; q1:=true; q0:=true; r := ((c & 0x3F) << 6);}
+      else {raise InvalidInput;}
+
+    case (q3 && !q2 && !q1 && !q0):
+      if ((0x80<=c)&&(c<=0xBF))                {q3:=false; q2:=false; q1:=true; q0:=true; yield(r | ((c >> 4) & 3)); r := (0xDC00 | ((c & 0xF) << 6));}
+      else {raise InvalidInput;}
+
+    case (true): //q == 3
+      if ((0x80<=c)&&(c<=0xBF))                {q3:=false; q2:=false; q1:=false; q0:=false; yield(r | (c & 0x3F)); r := 0;}
+      else {raise InvalidInput;}
+
+    end case (!(!q3 && !q2 && !q1 && !q0)):
+      raise InvalidInput;
+  }; 
+}
+
+
+
+/*
+
+
+//decodes a valid uft8 encoded string to the equivalent utf16 encoded string
+program utf8decode(input){
+  return iter(c in input)[q := 0; r := 0;] 
+  {
+    case (q == 0):
+      if (c in "[\\0-\\x7F]")                  {yield (c);}
+      else if (c in "[\\xC2-\\xDF]")           {q := 3; r := ((c & 0x3F) << 6);}
+      else if (c == 0xE0)                      {q := 7;}
+      else if (c == 0xED)                      {q := 6;}
+      else if (c in "[\\xE1-\\xEC\\xEE\\xEF]") {q := 2; r := ((c & 0x1F) << 12);}
+      else if (c in "[\\xF1-\\xF3]")           {q := 1; r := ((c & 7) << 8);}
+      else if (c == 0xF0)                      {q := 4;}
+      else if (c == 0xF4)                      {q := 5; r := 0x400;}
+      else {raise InvalidInput;}
+
+    case (q == 1): //start-octet F1-F3
+      if (c in "[\\x80-\\xBF]")                {q := 8; r := (0xD800 | (((((r | ((c & 0x30) << 2))) - 0x40)) | ((c & 0x0F)<< 2)));}
+      else {raise InvalidInput;}
+
+    case (q == 4): //start-octet F0
+      if (c in "[\\x90-\\xBF]")                {q := 8; r := (0xD800 | (((((r | ((c & 0x30) << 2))) - 0x40)) | ((c & 0x0F)<< 2)));}
+      else {raise InvalidInput;}
+
+    case (q == 5): //start-octet F4
+      if (c in "[\\x80-\\x8F]")                {q := 8; r := (0xD800 | (((((r | ((c & 0x30) << 2))) - 0x40)) | ((c & 0x0F)<< 2)));}
+      else {raise InvalidInput;}
+
+    case (q == 2):
+      if (c in "[\\x80-\\xBF]")                {q := 3; r := (r | ((c & 0x3F) << 6));}
+      else {raise InvalidInput;}
+
+    case (q == 6):
+      if (c in "[\\x80-\\x9F]")                {q := 3; r := (0xD000 | ((c & 0x3F) << 6));}
+      else {raise InvalidInput;}
+
+    case (q == 7):
+      if (c in "[\\xA0-\\xBF]")                {q := 3; r := ((c & 0x3F) << 6);}
+      else {raise InvalidInput;}
+
+    case (q == 8):
+      if (c in "[\\x80-\\xBF]")                {q := 3; yield(r | ((c >> 4) & 3)); r := (0xDC00 | ((c & 0xF) << 6));}
+      else {raise InvalidInput;}
+
+    case (true): //q == 3
+      if (c in "[\\x80-\\xBF]")                {q := 0; yield(r | (c & 0x3F)); r := 0;}
+      else {raise InvalidInput;}
+
+    end case (!(q == 0)):
+      raise InvalidInput;
+  }; 
+}
+
+program id(input){return iter(c in input){case (true): yield(c);};}
+
+//UTF8 encoding from UTF16 strings, hs is the lower two bits of the previous high surrogate
+//this encoder raises an exception when an invalid surrogate is detected
+program utf8encode(input){
+  return iter(c in input)[HS:=false; hs:=0;] 
+  {
+    case (HS): //the previous character was a high surrogate
+      if (!((0xDC00 <= c) && (c <= 0xDFFF))) { 
+        raise InvalidSurrogatePairException; //expecting a low surrogate
+      }
+      else {  //yield the missing two bytes for the low surrogate using hs
+        yield ((0x80|(hs << 4))|((c>>6)&0xF), 
+               0x80|(c&0x3F));
+        HS:=false; hs:=0; 
+      }			  		  
+    case (!HS):   //the previous character was not a high surrogate
+      if (c <= 0x7F) { 
+        yield(c); //one byte: ASCII case
+      } 
+      else if (c <= 0x7FF) { // 2 bytes
+        yield(0xC0 | ((c>>6) & 0x1F), 
+              0x80 | (c & 0x3F));  
+      } 
+      else if (!((c >= 0xd800) && (c <= 0xdbff))) { 
+        if ((c >= 0xdc00) && (c <= 0xdfff)) { 
+          raise InvalidSurrogatePairException; //unexpected low surrogate
+        }
+        else { // 3 bytes
+          yield(0xE0| ((c>>12) & 0xF), 
+                0x80 | ((c>>6) & 0x3F), 
+                0x80 | (c&0x3F)); 
+        } 
+      }  
+      else { //two bytes for the high surrogate
+        yield (0xF0|(((1+((c>>6)&0xF))>>2)&7), 
+              (0x80|(((1+((c>>6)&0xF))&3)<<4))|((c>>2) & 0xF));
+        HS:=true; hs:=c&3; 
+      }
+  } end {
+    case (HS): raise InvalidSurrogatePairException;
+    case (true): yield();
+  };
+}
+
+
+==
+//generate JavaScript
+//js(utf8decode);
+//eliminate all registers and display the transducer
+e = explore(utf8encode); 
+d = explore(utf8decode); 
+de = join(utf8decode, utf8encode); 
+ed = join(utf8encode, utf8decode); 
+js(ed);
+
+eq1(id, ed);
+
+*/

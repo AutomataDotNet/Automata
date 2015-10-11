@@ -1,0 +1,53 @@
+	   
+	  
+//UTF8 encoding from UTF16 strings, hs is the lower two bits of the previous high surrogate
+//this encoder raises an exception when an invalid surrogate is detected
+program utf8encode(input){
+  return iter(c in input)[H:=false; r:=0;] 
+  {
+    case (!H&&(0<=c)&&(c<=0x7F)): yield(c);                         //one octet
+    case (!H&&(0x7F<c)&&(c<=0x7FF)):                                
+      yield(0xC0|((c>>6)&0x1F), 0x80|(c&0x3F));                     //two octets
+    case (!H&&(0x7FF<c)&&(c<=0xFFFF)&&((c<0xD800)||(c>0xDFFF))):    
+      yield(0xE0|((c>>12)&0xF), 0x80|((c>>6)&0x3F), 0x80|(c&0x3F)); //three octets
+    case (!H&&(0xD800<=c)&&(c<=0xDBFF)): H:=true; r:=c&3;           //high surrogate
+      yield (0xF0|(((1+((c>>6)&0xF))>>2)&7),(0x80|(((1+((c>>6)&0xF))&3)<<4))|((c>>2)&0xF));
+    case (H&&(0xDC00<=c)&&(c<=0xDFFF)):  H:=false; r:=0;            //low surrogate
+      yield((0x80|(r << 4))|((c>>6)&0xF), 0x80|(c&0x3F));           
+    case (true):  raise InvalidInput;
+    end case (H): raise InvalidInput;
+  };
+}
+		
+		/*
+		program UTF8Encode(input){
+		 return iter(c in input)[HS:=false; hs:=0;] 
+		  {
+			  case (HS):    //the previous character was a high surrogate
+			    //(!IsLowSurrogate(c)) 
+				if (!((c >= 0xdc00) && (c <= 0xdfff))) { raise InvalidSurrogatePairException; }
+				else {  
+				  yield ((0x80|(hs << 4))|((c>>6)&0xF), 0x80|(c&0x3F));
+				  HS:=false; hs:=0; 
+				}			  		  
+			  case (!HS): //the previous character was not a high surrogate
+			    if (c <= 0x7F) { yield(c); } //one byte: ASCII case
+				else if (c <= 0x7FF) { //two bytes
+				  yield(0xC0 | ((c>>6) & 0x1F), 0x80 | (c & 0x3F));   
+				} 
+				else if (!((c >= 0xd800) && (c <= 0xdbff))) {  //!IsHighSurrogate(c)
+				  //(IsLowSurrogate(c)) 
+				  if ((c >= 0xdc00) && (c <= 0xdfff)) { raise InvalidSurrogatePairException; }
+				  else { //three bytes
+					yield(0xE0| ((c>>12) & 0xF), 0x80 | ((c>>6) & 0x3F), 0x80 | (c&0x3F)); 
+				  } 
+				}  
+				else {
+				  yield (0xF0|(((1+((c>>6)&0xF))>>2)&7), (0x80|(((1+((c>>6)&0xF))&3)<<4))|((c>>2) & 0xF));
+				  HS:=true; hs:=c&3; }
+		  } end {
+		      case (HS): raise InvalidSurrogatePairException;
+			  case (true): yield();
+		  };
+		}
+		*/

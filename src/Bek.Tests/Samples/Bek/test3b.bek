@@ -1,0 +1,21 @@
+
+program test3b(t);
+string s; 
+s := iter(c in t){b := false;}
+     {
+       case (!(b) && ((c == '\'') || (c == '\"'))) :
+	     b := false;
+	     yield ('\\');
+	     yield (c); 
+       
+       case (c == '\\') :
+	     b := !(b);
+	     yield (c);
+		 yield (c);   // <-- bug
+       
+       case (true)  :
+	     b := false;
+	     yield (c);
+       
+     };
+return s;

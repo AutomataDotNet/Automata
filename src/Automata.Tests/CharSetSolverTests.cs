@@ -118,7 +118,6 @@ namespace Microsoft.Automata.Tests
 
         }
 
-
         [TestMethod]
         public void ChooseTest2()
         {
@@ -170,7 +169,6 @@ namespace Microsoft.Automata.Tests
             foreach (var kv in map)
                 Assert.IsTrue(kv.Value > 9700);
         }
-
 
         [TestMethod]
         public void MinMaxTest()

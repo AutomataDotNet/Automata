@@ -1049,7 +1049,7 @@ namespace Microsoft.Automata.Z3
 
         public Expr MkSetAdd(Expr set, Expr elem)
         {
-            return z3.MkSetAdd(set, elem);
+            return z3.MkSetAdd((ArrayExpr)set, elem);
         }
 
         /// <summary>
@@ -1057,7 +1057,7 @@ namespace Microsoft.Automata.Z3
         /// </summary>
         public Expr MkSetSubset(Expr set1, Expr set2)
         {
-            return z3.MkSetSubset(set2, set1);
+            return z3.MkSetSubset((ArrayExpr)set2, (ArrayExpr)set1);
         }
 
         public Z3_ast_kind GetZ3_ast_kind(Expr t)

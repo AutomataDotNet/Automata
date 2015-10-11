@@ -217,6 +217,14 @@ pip-log.txt
 
 
 #Ingnore key files for signing
-#and the main build solution using the keys
 *.snk
-Build.sln
+
+#Ignore binaries
+*.dll
+*.exe
+
+#ignore installed nuget packages
+packages/Antlr34.3.4.19004.1/
+
+
+

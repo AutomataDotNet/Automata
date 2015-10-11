@@ -1,0 +1,72 @@
+	   
+	   //CssEncode, register hs only stores the last two bits of the high surrogate needed for 
+	   //combining with a following low surrogate. Thus the generated SFT has minimal nr of states.
+       /*
+       function IsLowSurrogate(c) = ((c >= 0xdc00) && (c <= 0xdfff)); 
+	   function IsHighSurrogate(c) = ((c >= 0xd800) && (c <= 0xdbff));
+
+	   function hexDigit(x) = ite(x <= 9, x + 48, x + 55);
+       function hex0(x) = hexDigit(x&0xF);
+       function hex1(x) = hexDigit((x>>4)&0xF);
+       function hex2(x) = hexDigit((x>>8)&0xF);
+       function hex3(x) = hexDigit((x>>12)&0xF);
+	   */
+
+	    program CssEncode4(input){
+		return iter(c in input)[E1a:=false; E1b:=false; E2:=false; HS:=false; hs:=0;] 
+		  {
+			  case (!(E1a || E1b || E2) && HS && !IsLowSurrogate(c)) :
+				E1a := true;  // InvalidSurrogatePairException
+
+			  case (!(E1a || E1b || E2) && !HS && IsLowSurrogate(c)) :
+				E1b := true;  // InvalidSurrogatePairException
+
+			  case (!(E1a || E1b || E2) && ((c == 0xFFFE) || (c == 0xFFFF))):
+				E2 := true;   // InvalidUnicodeValueException
+
+			  case (!(E1a || E1b || E2) && !HS && IsHighSurrogate(c)):
+			    //yield the beginning of the encoding, assuming a low surrogate follows
+				yield ('\\');
+				yield (ite((((c >> 6) & 0xF)==0xF),'1','0'));
+				yield (hex0(((c >> 6) + 1)));
+				yield (hex0((c >> 2)));
+			    HS := true;    // high surrogate bits are stored
+				hs := (c & 3); // store the least two bits of the high surrogate needed for low surrogate combination
+
+			  case (!(E1a || E1b || E2) && HS && IsLowSurrogate(c)):
+				// the value in hs is the lowest two bits of the prior high surrogate 
+				// and the current character is a low surrogate
+				// yield the rest of the encoding of the combined codepoint
+				yield (hex0(((hs << 2)|((c >> 8) & 3))));
+				yield (hex1(c));
+				yield (hex0(c));
+				HS:=false; hs:=0;
+
+			  case (!(E1a || E1b || E2) && (c > 0xFF)):
+				yield ('\\','0','0',hex3(c),hex2(c),hex1(c),hex0(c));
+				HS:=false; hs:=0;
+
+			  case (!(E1a || E1b || E2) && !(c in "[0-9A-Za-z]")):
+				yield ('\\','0','0','0','0',hex1(c),hex0(c));
+				HS:=false; hs:=0;
+
+			  case (!(E1a || E1b || E2)):
+				yield (c); // c is in CssSafeList: [0-9A-Za-z]
+				HS:=false; hs:=0;
+		  } 
+		  end 
+		  {
+			  case (!E1a && !E1b && !E2 && !HS):
+				yield(); //succesful output
+
+			  //otherwise yield trailing error codes
+			  //this is just to mimic exception handling for now
+			  //it messes up the semantics of what is accepted and what is not accepted
+			  //case (E1a || E1b || HS):
+			  //  yield(0); //InvalidSurrogatePairException		  
+			  //case (E2):
+			  //  yield(1); //InvalidUnicodeValueException
+			  case (true):
+			    raise Exception;
+		  };
+		}

@@ -1,0 +1,35 @@
+program decode(input) {
+  return iter(c in input)[pc := 0;]{
+    case (pc == 0) :                   //initial state
+      if (c == '&') { pc := 1; }
+      else { yield (c); }
+    case (pc == 1) :                   //memorized &
+      if (c == '&') { yield ('&'); }  
+      else if (c == 'l') { pc := 2; }  
+      else if (c == 'g') { pc := 3; }
+      else { yield ('&',c); pc := 0; } 
+    case (pc == 2) :                   //memorized &l
+      if (c == 't') { pc := 4; }
+      else { yield ('&','l',c); pc := 0; }
+    case (pc == 3) :                   //memorized &g 
+      if (c == 't') { pc := 5; }
+      else { yield ('&','g',c); pc := 0; }
+    case (pc == 4) :                   //memorized &lt 
+      if (c == ';')
+        { yield ('<'); pc := 0; }      //finished &lt;
+      else 
+        { yield ('&','l','t',c); pc := 0; }
+    case (true) :                     //memorized &gt
+      if (c == ';')
+        { yield ('>'); pc := 0; }      //finished &gt;
+      else 
+        { yield ('&','g','t',c); pc := 0; }
+  } end {//final nonempty yields are unfinished patterns
+    case (pc == 0) : yield ();
+    case (pc == 1) : yield ('&');      
+    case (pc == 2) : yield ('&','l');
+    case (pc == 3) : yield ('&','g');
+    case (pc == 4) : yield ('&','l','t');
+    case (true)    : yield ('&','g','t');
+  };
+}

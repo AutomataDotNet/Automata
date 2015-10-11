@@ -32,6 +32,12 @@
   <PropertyGroup>
     <StartupObject />
   </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>false</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyOriginatorKeyFile>automata.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Z3">
       <HintPath>..\..\ext\Z3\release\x86\Microsoft.Z3.dll</HintPath>
@@ -68,6 +74,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <None Include="automata.snk" />
     <None Include="parser\fast.lex" />
     <None Include="parser\fast.y" />
     <None Include="parser\genparser.bat" />

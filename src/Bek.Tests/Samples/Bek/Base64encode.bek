@@ -1,0 +1,32 @@
+/*
+function base64 maps x to the following base64-digit
+  0..25  ==> 'A'..'Z'
+  26..51 ==> 'a'..'z'
+  52..61 ==> '0'..'9'
+  62     ==> '+'
+  63     ==> '/'
+*/
+function base64(x)=(ite(x<=25,x+65,ite(x<=51,x+71,ite(x<=61,x-4,ite(x==62,'+','/')))));
+
+/*
+base64 encoder of an input of bytes, any value in the sequence > 0xFF raises an exception
+for example base64encode("Man") = "TWFu"
+*/
+program base64encode(input){ 
+  return iter(x in input)[q:=0;r:=0;]{
+   case (x>0xFF): raise InvalidCharacter;
+   case (q==0): yield (base64(x>>2)); q:=1; r:=(x&3)<<4;
+   case (q==1): yield (base64(r|(x>>4))); q:=2; r:=(x&0xF)<<2;
+   case (q==2): yield (base64((r|(x>>6))), base64(x&0x3F)); q:=0; r:=0;
+   end case (q==1): yield (base64(r),'=','=');
+   end case (q==2): yield (base64(r),'=');
+   };
+}
+
+
+/*
+==
+eval(base64encode, "Man");
+js(base64encode);
+*/
+

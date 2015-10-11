@@ -1,0 +1,29 @@
+﻿<div class="splashnormal">
+    Enter any text into the textbox below to see what the bek JavaScript outputs.
+</div>
+<div>
+    <textarea class="source"
+              id="bekinput"
+              onkeyup="
+        try {
+            var input = document.getElementById('bekinput');
+            var A = input.value;
+            var B = BEKJSCODE(unescape(A));
+            var escapedB = escape(B);
+
+            var output = document.getElementById('bekoutput');
+            output.innerText = B + '\n\nescaped:\n' + escapedB;
+        }
+        catch (e) {
+            var output = document.getElementById('bekoutput');
+            output.innerText = 'error: ' + e.name;
+        }
+    "></textarea>
+</div>
+<div class="splashhint">
+    Input is assumed to be an <i>escaped</i> JavaScript string. <i>Example</i>: <tt>OŒE</tt> and <tt>OŒE</tt>
+    both represent <tt>O&#x0152;E</tt>
+</div>
+<pre class="output" id="bekoutput">
+type text in the textbox above...
+</pre>

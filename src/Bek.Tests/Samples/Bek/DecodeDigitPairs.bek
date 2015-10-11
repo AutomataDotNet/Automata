@@ -1,0 +1,13 @@
+//decode digits between '6' and '7' as the corresponding 
+//ascii character, e.g. DecodeDigitPairs("77")='M'
+function dec(x,y)=((10*(x-48))+(y-48));
+program DecodeDigitPairs(input) {
+  return iter(c in input) [d := 0;] {
+    case ((d == 0)&&(c>='6')&&(c<='7'))   : d:=c;                        
+    case ((d != 0)&&(c>='6')&&(c<='7'))   : yield(dec(d,c));d:=0; 
+    case ((d == 0)&&!((c>='6')&&(c<='7'))): yield(c);
+    case (true)                           : yield(d,c); d:=0; 
+    end case (d != 0)                     : yield (d); 
+    end case (true)                       : yield();                              
+  };
+}

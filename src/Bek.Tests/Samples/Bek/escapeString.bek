@@ -1,0 +1,64 @@
+program escapeString(t);
+string s1; 
+string s2;
+string s3;
+string s4;
+string s5;
+s1 := iter(c in t){b := false;}
+     { 
+       case (c == '&') :     
+         yield ('&');
+	 yield ('a');
+	 yield ('m');
+	 yield ('p');
+	 yield (';');
+       
+       case (true)  :     
+         yield (c);
+     };
+s2 := iter(c in s1){b := false;}
+     { 
+       case (c == '<') :     
+         yield ('&');
+	 yield ('l');
+	 yield ('t');
+	 yield (';');     
+       case (true)  :     
+         yield (c);
+     };
+s3 := iter(c in s2){b := false;}
+     { 
+       case (c == '>') :     
+         yield ('&');
+	 yield ('g');
+	 yield ('t');
+	 yield (';');     
+       case (true)  :     
+         yield (c);
+     };
+s4 := iter(c in s3){b := false;}
+     { 
+       case (c == '\"') :     
+         yield ('&');
+	 yield ('q');
+	 yield ('u');
+	 yield ('o');
+	 yield ('t');
+	 yield (';');     
+       case (true)  :     
+         yield (c);
+     };
+s5 := iter(c in s4){b := false;}
+     { 
+       case (c == '\'') :     
+         yield ('&');
+	 yield ('#');
+	 yield ('3');
+	 yield ('9');
+	 yield (';');     
+       case (true)  :     
+         yield (c);
+     };
+
+
+return s5;

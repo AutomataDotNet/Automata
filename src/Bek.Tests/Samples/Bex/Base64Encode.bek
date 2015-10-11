@@ -1,0 +1,21 @@
+/*
+function base64 maps x to the following base64-digit
+  0..25  ==> 'A'..'Z'
+  26..51 ==> 'a'..'z'
+  52..61 ==> '0'..'9'
+  62     ==> '+'
+  63     ==> '/'
+*/
+function E(x)=(ite(x<=25,x+65,ite(x<=51,x+71,ite(x<=61,x-4,ite(x==62,'+','/')))));
+
+/*
+Base64 encoder of an input of bytes. For example base64encode("Man") = "TWFu".
+Any value > 0xFF raises an exception.
+*/
+program base64encode(_){ 
+  replace {
+    "..."  ==> [E(Bits(7,2,#0)), E((Bits(1,0,#0)<<4)|Bits(7,4,#1)), E((Bits(3,0,#1)<<2)|Bits(7,6,#2)), E(Bits(5,0,#2))];
+    "..$"  ==> [E(Bits(7,2,#0)), E((Bits(1,0,#0)<<4)|Bits(7,4,#1)), E(Bits(3,0,#1)<<2), '='];
+    ".$"   ==> [E(Bits(7,2,#0)), E((Bits(1,0,#0)<<4), '=', '='];
+  }
+}

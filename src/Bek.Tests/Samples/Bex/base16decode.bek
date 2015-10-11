@@ -1,0 +1,40 @@
+function D(x)=ite(x < 58, x - 48, x - 55);
+program base16decode(input){ 
+  replace {
+    "[A-Z0-9]{2}" ==> [(D(#0) << 4) + D(#1)];
+  }
+}; 
+
+/*
+
+
+function E(x)=ite(x < 10, x + 48, x + 55);
+function D(x)=ite(x < 58, x - 48, x - 55);
+
+program base16encode(input){ 
+  replace {
+    @"[\0-\xFF]"  ==> [E(#0 >> 4),E(#0 & 0xF)];
+  }
+}
+
+program base16decode(input){ 
+  replace {
+    "[A-Z0-9]{2}" ==> [(D(#0) << 4) + D(#1)];
+  }
+}
+// Identity Encoder
+program ID(_){replace { "."   ==> [#0];}}
+==
+js(base16encode);
+BYTES = regex(@"^[\0-\xFF]*$");            //domain of sequences of bytes
+ID_BYTES = restrict(ID,BYTES);             //identity over sequences of bytes
+ed = join(base16encode, base16decode);     //composition, first encode then decode
+eq(ID_BYTES, ed);   
+
+
+
+
+
+
+
+*/
