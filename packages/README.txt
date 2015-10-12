@@ -1,1 +1,1 @@
-nuget packages are installed in this folder
+all nuget packages are installed in this folder

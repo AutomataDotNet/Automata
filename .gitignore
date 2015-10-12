@@ -224,7 +224,8 @@ pip-log.txt
 *.exe
 
 #ignore installed nuget packages
-packages/
+packages/*/
+
 
 
 
