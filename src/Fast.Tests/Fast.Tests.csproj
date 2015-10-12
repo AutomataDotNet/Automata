@@ -86,7 +86,9 @@
     <None Include="FastSamples\typechecking.fast" />
     <None Include="FastSamples\union.fast" />
     <None Include="FastSamples\witness.fast" />
-    <None Include="packages.config" />
+    <None Include="packages.config">
+      <SubType>Designer</SubType>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Automata.Z3\Automata.Z3.csproj">
