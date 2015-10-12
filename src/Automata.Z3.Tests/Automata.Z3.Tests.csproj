@@ -31,8 +31,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
-    <Reference Include="Microsoft.Z3">
-      <HintPath>..\..\ext\Z3\release\x86\Microsoft.Z3.dll</HintPath>
+    <Reference Include="Microsoft.Z3, Version=4.3.2.0, Culture=neutral, processorArchitecture=x86">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\z3x86win.4.3.2.1\lib\Microsoft.Z3.dll</HintPath>
     </Reference>
     <Reference Include="System" />
   </ItemGroup>
@@ -47,6 +48,9 @@
     <Compile Include="UnitTest2.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\Automata.Z3\Automata.Z3.csproj">
       <Project>{7fe1092a-83f9-4f34-a04c-815cab2bd35b}</Project>
       <Name>Automata.Z3</Name>
@@ -57,7 +61,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

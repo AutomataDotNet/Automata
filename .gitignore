@@ -224,7 +224,7 @@ pip-log.txt
 *.exe
 
 #ignore installed nuget packages
-packages/Antlr34.3.4.19004.1/
+packages/
 
 
 

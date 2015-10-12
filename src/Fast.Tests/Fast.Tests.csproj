@@ -36,7 +36,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Z3">
-      <HintPath>..\..\ext\Z3\release\x86\Microsoft.Z3.dll</HintPath>
+      <HintPath>..\..\packages\z3x86win.4.3.2.1\lib\Microsoft.Z3.dll</HintPath>
     </Reference>
     <Reference Include="System" />
   </ItemGroup>
@@ -55,20 +55,6 @@
   <ItemGroup>
     <Compile Include="FastTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Automata.Z3\Automata.Z3.csproj">
-      <Project>{7fe1092a-83f9-4f34-a04c-815cab2bd35b}</Project>
-      <Name>Automata.Z3</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Automata\Automata.csproj">
-      <Project>{bc861e29-027d-4ac6-ab24-a7b0cd0fb5e8}</Project>
-      <Name>Automata</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Fast\Fast.csproj">
-      <Project>{21e2408a-72b8-4c78-9d9e-1d65152ff655}</Project>
-      <Name>Fast</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="FastSamples\aaa.fast" />
@@ -100,6 +86,21 @@
     <None Include="FastSamples\typechecking.fast" />
     <None Include="FastSamples\union.fast" />
     <None Include="FastSamples\witness.fast" />
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Automata.Z3\Automata.Z3.csproj">
+      <Project>{7fe1092a-83f9-4f34-a04c-815cab2bd35b}</Project>
+      <Name>Automata.Z3</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Automata\Automata.csproj">
+      <Project>{bc861e29-027d-4ac6-ab24-a7b0cd0fb5e8}</Project>
+      <Name>Automata</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Fast\Fast.csproj">
+      <Project>{21e2408a-72b8-4c78-9d9e-1d65152ff655}</Project>
+      <Name>Fast</Name>
+    </ProjectReference>
   </ItemGroup>
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">

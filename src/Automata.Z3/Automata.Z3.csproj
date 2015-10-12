@@ -33,11 +33,12 @@
     <SignAssembly>false</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
-    <AssemblyOriginatorKeyFile>automata.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>
+    </AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Z3">
-      <HintPath>..\..\ext\Z3\release\x86\Microsoft.Z3.dll</HintPath>
+      <HintPath>..\..\packages\z3x86win.4.3.2.1\lib\Microsoft.Z3.dll</HintPath>
     </Reference>
     <Reference Include="System" />
   </ItemGroup>
@@ -63,7 +64,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="automata.snk" />
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

@@ -40,7 +40,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Z3">
-      <HintPath>..\..\ext\Z3\release\x86\Microsoft.Z3.dll</HintPath>
+      <HintPath>..\..\packages\z3x86win.4.3.2.1\lib\Microsoft.Z3.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="Microsoft.CSharp" />
@@ -75,6 +75,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="automata.snk" />
+    <None Include="packages.config">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="parser\fast.lex" />
     <None Include="parser\fast.y" />
     <None Include="parser\genparser.bat" />

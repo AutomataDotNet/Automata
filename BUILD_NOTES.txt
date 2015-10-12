@@ -1,4 +1,5 @@
-Automata.NET can most conveniently be built using Visual Studio 2013 from Main.sln.
+Automata.NET can be built using Visual Studio 2013 from Main.sln.
+Build.sln excludes the test projects.
 All compiled binaries, except for binaries for test projects, 
 are placed in the top level bin folder.
 
@@ -7,18 +8,17 @@ that are accompanied by corresponding unit test projects:
 Automata.Tests, Automata.Z3.Tests, Fast.Tests, and Bek.Tests
 
 All projects are configured to use .NET Framework Version 4.5.
-and require at least version 4.0 (due to dependency on System.Numerics.BigInteger
-that is not directly available in earlier versions of .NET)
+and require at least version 4.0 
+(due to dependency on System.Numerics.BigInteger)
 
 The core Automata project (/src/Automata/Automata.csproj) 
 can be built separately and has no dependencies. 
 
 The Automata.Z3 project depends on Automata and Z3. 
-The Z3 x86 binaries: Microsoft.Z3.dll and libz3.dll
-must be stored in the folder ext/Z3/release/x86.
-The version of Z3 with which the build has been tested
-is 4.3.2.0, and can be dowloaded from 
-https://github.com/Z3Prover/bin/blob/master/releases/z3-4.3.2-x86-win.zip
+Z3 version 4.3.2.0 x86 binary exists as the nuget project with id "z3x86win"
+Install nuget from: http://docs.nuget.org/consume/installing-nuget.
+When building the solution with Visual Studio 2013 or 2015 the 
+nuget packages should be installed automatically in the packages folder.
 
 The Fast (Functional Abstraction of Symbolic Transductions) project
 depends on Automata, Automata.Z3, and Z3. 
@@ -26,21 +26,15 @@ Fast language uses a custom parser that is generated with
 Gardens Point Parser Generator version 1.5.0. 
 The generated fast-parser is standalone, there is no runtime library dependency.
 The tool can be downloaded from http://gppg.codeplex.com/downloads/get/378045
-In order to regenerate the fast-parser if modifications are made 
-to the /src/Fast/parser/fast.lex or /src/Fast/parser/fast.y files
+in order to regenerate the fast-parser if modifications are made 
+to the /src/Fast/parser/fast.lex or /src/Fast/parser/fast.y files,
 see the file: /src/Fast/parser/genparser.bat for details.
 
 The Bek project depends on Automata, Automata.Z3, Z3, 
 and Antlr34 runtime for the bek-parser and query-parser for bek.
-Antlr34 can be installed as a nuget package from 
-https://www.nuget.org/packages/Antlr34
-Install nuget from: http://docs.nuget.org/consume/installing-nuget.
-
-The runtime library Antlr3.Runtime.dll of Antlr34 must be in
-the folder /packages/Antlr34.3.4.19004.1/lib/ that is created automatically 
-if the package is installed into the solution using VS 2013
-(e.g. rightclick the solution and select 'Manage NuGet Packages for Solution ...')
-
+Antlr34 is a nuget package that is installed automatically with VS.
+The runtime library Antlr3.Runtime.dll of Antlr34 will be istalled in
+the folder /packages/Antlr34.3.4.19004.1/lib/.
 In order to regenerate the bek-parser or the query-parser if changes are made 
 to the bek parser source file /src/Bek/Frontend/ParserImpl/bek.g or
 the query parser source file /src/Bek/Query/ParserImpl/query.g
