@@ -238,6 +238,11 @@ namespace Microsoft.Automata
         ExprIsNotIntSymbol,
         ExpectingConstIntSymbol,
         ExpectingVariable,
-        NotListSort
+        NotListSort,
+        IncompatibleAlgebras,
+        IncompatibleBounds,
+        NotSupported,
+        BooleanAlgebraIsNotAtomic,
+        OrdinalIsTooLarge
     }
 }

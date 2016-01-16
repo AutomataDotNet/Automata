@@ -371,6 +371,30 @@ namespace Microsoft.Automata
         }
 
         /// <summary>
+        /// Returns the position of the last occurrence of elem, or -1 if elem does not occur in the list.
+        /// Indexing starts with 0.
+        /// </summary>
+        /// <param name="elem"></param>
+        /// <returns></returns>
+        public int IndexOf(E elem)
+        {
+            if (k == 0)
+                return -1;
+            else if (object.Equals(last, elem))
+                return k - 1;
+            else
+                return butlast.IndexOf(elem);
+        }
+
+        /// <summary>
+        /// Returns true iff the list contains elem.
+        /// </summary>
+        public bool Contains(E elem)
+        {
+            return IndexOf(elem) >= 0;
+        }
+
+        /// <summary>
         /// Creates a new simple list by appending elem at the end of this list.
         /// </summary>
         /// <param name="elem">element to append</param>

@@ -430,7 +430,7 @@ namespace Microsoft.Automata.Tests
             BDDAlgebra solver = new BDDAlgebra();
             BDD cond = solver.MkSetFromElements(new ulong[] { 0UL, (ulong)0xFFFFFFFF }, 31);
             BDD bvs = solver.ShiftLeft(cond, 4);
-            var ranges = solver.ToRanges64(bvs, bvs.Bit);
+            var ranges = solver.ToRanges64(bvs, bvs.Ordinal);
             Assert.AreEqual<int>(2, ranges.Length);
             Assert.AreEqual<ulong>(0UL, ranges[0].First);
             Assert.AreEqual<ulong>(0xFUL, ranges[0].Second);

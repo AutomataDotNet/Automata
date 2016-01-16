@@ -19,6 +19,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bek", "src\Bek\Bek.csproj",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fast", "src\Fast\Fast.csproj", "{21E2408A-72B8-4C78-9D9E-1D65152FF655}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MSO", "src\MSO\MSO.csproj", "{6B1713D0-9960-471C-812C-3E1FC9918182}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MSO.Tests", "src\MSO.Tests\MSO.Tests.csproj", "{2E3ADC63-7A3B-4D6A-989F-09E71B5481B4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -57,6 +61,14 @@ Global
 		{21E2408A-72B8-4C78-9D9E-1D65152FF655}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{21E2408A-72B8-4C78-9D9E-1D65152FF655}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{21E2408A-72B8-4C78-9D9E-1D65152FF655}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6B1713D0-9960-471C-812C-3E1FC9918182}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6B1713D0-9960-471C-812C-3E1FC9918182}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6B1713D0-9960-471C-812C-3E1FC9918182}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6B1713D0-9960-471C-812C-3E1FC9918182}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2E3ADC63-7A3B-4D6A-989F-09E71B5481B4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2E3ADC63-7A3B-4D6A-989F-09E71B5481B4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2E3ADC63-7A3B-4D6A-989F-09E71B5481B4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2E3ADC63-7A3B-4D6A-989F-09E71B5481B4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

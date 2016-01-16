@@ -171,5 +171,42 @@ namespace Microsoft.Automata
         {
             return mintermgenerator.GenerateMinterms(constraints);
         }
+
+
+        public bool IsExtensional
+        {
+            get { return First.IsExtensional && Second.IsExtensional; }
+        }
+
+        public Pair<S, T> MkSymmetricDifference(Pair<S, T> p1, Pair<S, T> p2)
+        {
+            return MkOr(MkAnd(p1, MkNot(p2)), MkAnd(p2, MkNot(p1)));
+        }
+
+        public bool CheckImplication(Pair<S, T> lhs, Pair<S, T> rhs)
+        {
+            return first.CheckImplication(lhs.Item1, rhs.Item1) && second.CheckImplication(lhs.Item2, rhs.Item2);
+        }
+
+        public bool IsAtomic
+        {
+            get { return first.IsAtomic && second.IsAtomic; }
+        }
+
+        public Pair<S, T> GetAtom(Pair<S, T> psi)
+        {
+            if (!IsAtomic)
+                throw new AutomataException(AutomataExceptionKind.BooleanAlgebraIsNotAtomic);
+
+            var a1 = first.GetAtom(psi.Item1);
+            if (a1.Equals(first.False))
+                return False;
+
+            var a2 = second.GetAtom(psi.Item2);
+            if (a2.Equals(second.False))
+                return False;
+
+            return new Pair<S, T>(a1, a2);
+        }
     }
 }

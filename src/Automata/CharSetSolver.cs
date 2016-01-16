@@ -64,7 +64,6 @@ namespace Microsoft.Automata
 
         /// <summary>
         /// Make a character containing the given character c.
-        /// In this encoding MSB is considered as bit 0.
         /// If c is a lower case or upper case character and ignoreCase is true
         /// then add both the upper case and the lower case characters.
         /// </summary>
@@ -73,11 +72,11 @@ namespace Microsoft.Automata
             if (ignoreCase)
             {
                 if (char.IsUpper(c))
-                    return MkOr(MkSingleton((uint)c, _bw-1), MkSingleton((uint)char.ToLower(c), _bw-1));
+                    return MkOr(MkSetFrom((uint)c, _bw-1), MkSetFrom((uint)char.ToLower(c), _bw-1));
                 else if (char.IsLower(c))
-                    return MkOr(MkSingleton((uint)c, _bw-1), MkSingleton((uint)char.ToUpper(c), _bw-1));
+                    return MkOr(MkSetFrom((uint)c, _bw-1), MkSetFrom((uint)char.ToUpper(c), _bw-1));
             }
-            return MkSingleton((uint)c, _bw-1);
+            return MkSetFrom((uint)c, _bw-1);
         }
 
         /// <summary>
@@ -293,24 +292,24 @@ namespace Microsoft.Automata
             while (stack.Count > 0)
             {
                 BDD b = stack.Pop();
-                if (!done.ContainsKey(b.one))
+                if (!done.ContainsKey(b.One))
                 {
-                    done[b.one] = (doneCount++);
-                    stack.Push(b.one);
+                    done[b.One] = (doneCount++);
+                    stack.Push(b.One);
                 }
-                if (!done.ContainsKey(b.zero))
+                if (!done.ContainsKey(b.Zero))
                 {
-                    done[b.zero] = (doneCount++);
-                    stack.Push(b.zero);
+                    done[b.Zero] = (doneCount++);
+                    stack.Push(b.Zero);
                 }
                 int bId = done[b];
-                int fId = done[b.zero];
-                int tId = done[b.one];
+                int fId = done[b.Zero];
+                int tId = done[b.One];
 
-                if (b.bit > 15)
+                if (b.Ordinal > 15)
                     throw new AutomataException(AutomataExceptionKind.CompactSerializationBitLimitViolation);
 
-                res[bId] = (b.bit << 28) | (tId << 14) | fId;
+                res[bId] = (b.Ordinal << 28) | (tId << 14) | fId;
             }
             return res;
         }
@@ -417,7 +416,7 @@ namespace Microsoft.Automata
                         var zeroBranch = bddMap[zero];
                         var bdd = MkBvSet(x, oneBranch, zeroBranch);
                         bddMap[i] = bdd;
-                        if (bdd.bit <= bdd.one.bit || bdd.Bit <= bdd.zero.bit)
+                        if (bdd.Ordinal <= bdd.One.Ordinal || bdd.Ordinal <= bdd.Zero.Ordinal)
                             throw new AutomataException(AutomataExceptionKind.CompactDeserializationError);
                     }
                 }
@@ -1393,6 +1392,36 @@ namespace Microsoft.Automata
         public BDD LShiftRight(BDD set)
         {
             return ShiftRight0(set, this._bw - 1);
+        }
+
+        public bool TryGetMember(BDD predicate, out BDD member)
+        {
+            if (predicate.IsEmpty)
+            {
+                member = null;
+                return false;
+            }
+            else
+            {
+                var memberVal = GetMin(predicate);
+                member = MkSetFrom(memberVal, _bw - 1);
+                return true;
+            }
+        }
+
+        new public bool IsAtomic
+        {
+            get { return true; }
+        }
+
+        new public BDD GetAtom(BDD bdd)
+        {
+            if (bdd.IsEmpty)
+                return bdd;
+
+            var m = GetMin(bdd);
+            var res = MkSet(m);
+            return res;
         }
     }
 }

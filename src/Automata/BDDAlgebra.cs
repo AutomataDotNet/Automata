@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using BvSetPair = System.Tuple<Microsoft.Automata.BDD, Microsoft.Automata.BDD>;
+using BvSet_Int = System.Tuple<Microsoft.Automata.BDD, int>;
+using BvSetKey = System.Tuple<int, Microsoft.Automata.BDD, Microsoft.Automata.BDD>;
 
 namespace Microsoft.Automata
 {
@@ -8,13 +11,16 @@ namespace Microsoft.Automata
     /// </summary>
     public class BDDAlgebra : IBoolAlgMinterm<BDD>
     {
-        Dictionary<BvSet_Int, BDD> restrictCache = new Dictionary<BvSet_Int, BDD>();
+        //Dictionary<BvSet_Int, BDD> restrictCache = new Dictionary<BvSet_Int, BDD>();
         Dictionary<BvSetPair, BDD> orCache = new Dictionary<BvSetPair, BDD>();
         Dictionary<BvSetPair, BDD> andCache = new Dictionary<BvSetPair, BDD>();
         Dictionary<BDD, BDD> notCache = new Dictionary<BDD, BDD>();
         Dictionary<BDD, BDD> srCache = new Dictionary<BDD, BDD>();
         Dictionary<BvSet_Int, BDD> slCache = new Dictionary<BvSet_Int, BDD>();
         //Chooser _chooser_ = new Chooser();
+
+        BDD _True;
+        BDD _False;
 
         MintermGenerator<BDD> mintermGen;
 
@@ -24,25 +30,26 @@ namespace Microsoft.Automata
         public BDDAlgebra()
         {
             mintermGen = new MintermGenerator<BDD>(this);
-            mintermGen.HashCodesRespectEquivalence = true;
+            _True = new BDD(this, -1, null, null);
+            _False = new BDD(this, -2, null, null);
         }
 
         //internalize the creation of all charsets so that any two charsets with same bit and children are the same pointers
         Dictionary<BvSetKey, BDD> bvsetCache = new Dictionary<BvSetKey, BDD>();
 
-        internal BDD MkBvSet(int bit, BDD one, BDD zero)
+        internal BDD MkBvSet(int nr, BDD one, BDD zero)
         {
-            var key = new BvSetKey(bit, one, zero);
+            var key = new BvSetKey(nr, one, zero);
             BDD set;
             if (!bvsetCache.TryGetValue(key, out set))
             {
-                set = new BDD(bit, one, zero);
+                set = new BDD(this, nr, one, zero);
                 bvsetCache[key] = set;
             }
             return set;
         }
 
-        #region IBoolAlg members
+        #region IBooleanAlgebra members
 
         /// <summary>
         /// Make the union of a and b
@@ -58,28 +65,28 @@ namespace Microsoft.Automata
             if (a == b)
                 return a;
 
-            var key = MkApplyKey(a, b);
+            var key = new BvSetPair(a, b); 
             BDD res;
             if (orCache.TryGetValue(key, out res))
                 return res;
 
-            if (b.bit > a.bit)
+            if (b.Ordinal > a.Ordinal)
             {
-                BDD t = MkOr(a, Restrict(b.bit, true, b));
-                BDD f = MkOr(a, Restrict(b.bit, false, b));
-                res = (t == f ? t : MkBvSet(b.bit, t, f));
+                BDD t = MkOr(a, b.One);
+                BDD f = MkOr(a, b.Zero);
+                res = (t == f ? t : MkBvSet(b.Ordinal, t, f));
             }
-            else if (a.bit > b.bit)
+            else if (a.Ordinal > b.Ordinal)
             {
-                BDD t = MkOr(Restrict(a.bit, true, a), b);
-                BDD f = MkOr(Restrict(a.bit, false, a), b);
-                res = (t == f ? t : MkBvSet(a.bit, t, f));
+                BDD t = MkOr(a.One, b);
+                BDD f = MkOr(a.Zero, b);
+                res = (t == f ? t : MkBvSet(a.Ordinal, t, f));
             }
             else //a.bit == b.bit
             {
-                BDD t = MkOr(Restrict(a.bit, true, a), Restrict(a.bit, true, b));
-                BDD f = MkOr(Restrict(a.bit, false, a), Restrict(a.bit, false, b));
-                res = (t == f ? t : MkBvSet(a.bit, t, f));
+                BDD t = MkOr(a.One, b.One);
+                BDD f = MkOr(a.Zero, b.Zero);
+                res = (t == f ? t : MkBvSet(a.Ordinal, t, f));
             }
 
             orCache[key] = res;
@@ -100,28 +107,28 @@ namespace Microsoft.Automata
             if (a == b)
                 return a;
 
-            var key = MkApplyKey(a, b);
+            var key = new BvSetPair(a, b);
             BDD res;
             if (andCache.TryGetValue(key, out res))
                 return res;
 
-            if (b.bit > a.bit)
+            if (b.Ordinal > a.Ordinal)
             {
-                BDD t = MkAnd(a, Restrict(b.bit, true, b));
-                BDD f = MkAnd(a, Restrict(b.bit, false, b));
-                res = (t == f ? t : MkBvSet(b.bit, t, f));
+                BDD t = MkAnd(a, b.One);
+                BDD f = MkAnd(a, b.Zero);
+                res = (t == f ? t : MkBvSet(b.Ordinal, t, f));
             }
-            else if (a.bit > b.bit)
+            else if (a.Ordinal > b.Ordinal)
             {
-                BDD t = MkAnd(Restrict(a.bit, true, a), b);
-                BDD f = MkAnd(Restrict(a.bit, false, a), b);
-                res = (t == f ? t : MkBvSet(a.bit, t, f));
+                BDD t = MkAnd(a.One, b);
+                BDD f = MkAnd(a.Zero, b);
+                res = (t == f ? t : MkBvSet(a.Ordinal, t, f));
             }
-            else //a.x == b.x
+            else //a.bit == b.bit
             {
-                BDD t = MkAnd(Restrict(a.bit, true, a), Restrict(a.bit, true, b));
-                BDD f = MkAnd(Restrict(a.bit, false, a), Restrict(a.bit, false, b));
-                res = (t == f ? t : MkBvSet(a.bit, t, f));
+                BDD t = MkAnd(a.One, b.One);
+                BDD f = MkAnd(a.Zero, b.Zero);
+                res = (t == f ? t : MkBvSet(a.Ordinal, t, f));
             }
 
             andCache[key] = res;
@@ -150,7 +157,7 @@ namespace Microsoft.Automata
             if (notCache.TryGetValue(a, out neg))
                 return neg;
 
-            neg = MkBvSet(a.bit, MkNot(a.one), MkNot(a.zero));
+            neg = MkBvSet(a.Ordinal, MkNot(a.One), MkNot(a.Zero));
             notCache[a] = neg;
             return neg;
         }
@@ -186,19 +193,19 @@ namespace Microsoft.Automata
         }
 
         /// <summary>
-        /// Gets the full character set.
+        /// Gets the full set.
         /// </summary>
         public BDD True
         {
-            get { return BDD.Full; }
+            get { return _True; }
         }
 
         /// <summary>
-        /// Gets the empty character set.
+        /// Gets the empty set.
         /// </summary>
         public BDD False
         {
-            get { return BDD.Empty; }
+            get { return _False; }
         }
 
         /// <summary>
@@ -211,7 +218,7 @@ namespace Microsoft.Automata
 
         /// <summary>
         /// Returns true if a and b represent mathematically equal sets of characters.
-        /// Two Charsets are by construction equivalent iff they are identical.
+        /// Two BDDs are by construction equivalent iff they are identical.
         /// </summary>
         public bool AreEquivalent(BDD a, BDD b)
         {
@@ -229,23 +236,23 @@ namespace Microsoft.Automata
         /// </summary>
         public BDD ShiftRight(BDD set)
         {
-            if (set.IsTrivial)
+            if (set.IsLeaf)
                 return set;
 
-            if (set.bit == 0)
+            if (set.Ordinal == 0)
                 return True;
 
             BDD res;
             if (srCache.TryGetValue(set, out res))
                 return res;
 
-            BDD zero = ShiftRight(set.zero);
-            BDD one = ShiftRight(set.one);
+            BDD zero = ShiftRight(set.Zero);
+            BDD one = ShiftRight(set.One);
 
             if (zero == one)
                 res = zero;
             else
-                res = MkBvSet(set.bit - 1, one, zero);
+                res = MkBvSet(set.Ordinal - 1, one, zero);
 
             srCache[set] = res;
             return res;
@@ -269,25 +276,14 @@ namespace Microsoft.Automata
         /// </summary>
         public BDD ShiftLeft(BDD set, int k = 1)
         {
-            if (set.IsTrivial || k == 0)
+            if (set.IsLeaf || k == 0)
                 return set;
-            //if (set.bit + k <= MSB)
             return ShiftLeft_(set, k);
-            //else
-            //{
-            //    var set1 = ShiftLeft(set, k - 1);
-            //    return ShiftLeft1(set1);
-            //}
-        }
-
-        private BDD Collapse(BDD set, int k)
-        {
-            throw new NotImplementedException();
         }
 
         BDD ShiftLeft_(BDD set, int k)
         {
-            if (set.IsTrivial || k == 0)
+            if (set.IsLeaf || k == 0)
                 return set;
 
             var key = new BvSet_Int(set, k);
@@ -296,97 +292,15 @@ namespace Microsoft.Automata
             if (slCache.TryGetValue(key, out res))
                 return res;
 
-            BDD zero = ShiftLeft_(set.zero, k);
-            BDD one = ShiftLeft_(set.one, k);
+            BDD zero = ShiftLeft_(set.Zero, k);
+            BDD one = ShiftLeft_(set.One, k);
 
             if (zero == one)
                 res = zero;
             else
-                res = MkBvSet(set.bit + k, one, zero);
+                res = MkBvSet(set.Ordinal + k, one, zero);
 
             slCache[key] = res;
-            return res;
-        }
-
-        BDD ShiftLeft1(BDD set)
-        {
-            if (set.IsTrivial)
-                return set;
-
-            var key = new BvSet_Int(set, 1);
-
-            BDD res;
-            if (slCache.TryGetValue(key, out res))
-                return res;
-
-            BDD zero = ShiftLeft1(set.zero);
-            BDD one = ShiftLeft1(set.one);
-
-            if (zero == one)
-                res = zero;
-            //else if (set.bit == MSB)
-            //    res = MkOr(zero, one);
-            else
-                res = MkBvSet(set.bit + 1, one, zero);
-
-            slCache[key] = res;
-            return res;
-        }
-
-        #endregion
-
-        #region internal helpers
-
-        static BvSet_Int MkRestrictKey(int v, bool makeTrue, BDD bdd)
-        {
-            var res = new BvSet_Int(bdd, (v << 1) + (makeTrue ? 1 : 0));
-            return res;
-        }
-
-        static BvSetPair MkApplyKey(BDD bdd1, BDD bdd2)
-        {
-            BvSetPair res = new BvSetPair(bdd1, bdd2);
-            return res;
-        }
-
-        private class BvSetPair
-        {
-            BDD a;
-            BDD b;
-            internal BvSetPair(BDD a, BDD b)
-            {
-                this.a = a;
-                this.b = b;
-            }
-            public override int GetHashCode()
-            {
-                return a.GetHashCode() + (b.GetHashCode() << 1);
-            }
-            public override bool Equals(object obj)
-            {
-                BvSetPair key = (BvSetPair)obj;
-                return key.a == a && key.b == b;
-            }
-        }
-
-        BDD Restrict(int bit, bool makeTrue, BDD bdd)
-        {
-            var key = MkRestrictKey(bit, makeTrue, bdd);
-            BDD res;
-            if (restrictCache.TryGetValue(key, out res))
-                return res;
-
-            if (bit > bdd.bit)
-                res = bdd;
-            else if (bdd.bit > bit)
-            {
-                BDD t = Restrict(bit, makeTrue, bdd.one);
-                BDD f = Restrict(bit, makeTrue, bdd.zero);
-                res = (f == t ? t : (f == bdd.zero && t == bdd.one ? bdd : MkBvSet(bdd.bit, t, f)));
-            }
-            else
-                res = (makeTrue ? bdd.one : bdd.zero);
-            restrictCache[key] = res;
             return res;
         }
 
@@ -417,13 +331,12 @@ namespace Microsoft.Automata
             return MkBvSet(k, False, True);
         }
 
-
         public BDD MkSetFromElements(IEnumerable<uint> elems, int maxBit)
         {
             var s = False;
             foreach (var elem in elems)
             {
-                s = MkOr(s, MkSingleton(elem, maxBit));
+                s = MkOr(s, MkSetFrom(elem, maxBit));
             }
             return s;
         }
@@ -433,7 +346,7 @@ namespace Microsoft.Automata
             var s = False;
             foreach (var elem in elems)
             {
-                s = MkOr(s, MkSingleton((uint)elem, maxBit));
+                s = MkOr(s, MkSetFrom((uint)elem, maxBit));
             }
             return s;
         }
@@ -443,38 +356,38 @@ namespace Microsoft.Automata
             var s = False;
             foreach (var elem in elems)
             {
-                s = MkOr(s, MkSingleton(elem, maxBit));
+                s = MkOr(s, MkSetFrom(elem, maxBit));
             }
             return s;
         }
 
 
         /// <summary>
-        /// Make a singleton set.
+        /// Make a set containing all integers whose bits up to maxBit equal n.
         /// </summary>
-        /// <param name="n">the single element in the set</param>
+        /// <param name="n">the given integer</param>
         /// <param name="maxBit">bits above maxBit are unspecified</param>
         /// <returns></returns>
-        public BDD MkSingleton(uint n, int maxBit)
+        public BDD MkSetFrom(uint n, int maxBit)
+        {
+            var cs = MkSetFromRange(n, n, maxBit);
+            return cs;
+        } 
+
+        /// <summary>
+        /// Make a set containing all integers whose bits up to maxBit equal n.
+        /// </summary>
+        /// <param name="n">the given integer</param>
+        /// <param name="maxBit">bits above maxBit are unspecified</param>
+        /// <returns></returns>
+        public BDD MkSetFrom(ulong n, int maxBit)
         {
             var cs = MkSetFromRange(n, n, maxBit);
             return cs;
         }
 
         /// <summary>
-        /// Make a singleton set.
-        /// </summary>
-        /// <param name="n">the single element in the set</param>
-        /// <param name="maxBit">bits above maxBit are unspecified</param>
-        /// <returns></returns>
-        public BDD MkSingleton(ulong n, int maxBit)
-        {
-            var cs = MkSetFromRange(n, n, maxBit);
-            return cs;
-        }
-
-        /// <summary>
-        /// Make the set containing all values greater than or equal to m and less than or equal to n.
+        /// Make the set containing all values greater than or equal to m and less than or equal to n when considering bits between 0 and maxBit.
         /// </summary>
         /// <param name="m">lower bound</param>
         /// <param name="n">upper bound</param>
@@ -611,6 +524,7 @@ namespace Microsoft.Automata
 
         /// <summary>
         /// Convert the set into an equivalent array of ranges and return the number of such ranges.
+        /// Bits above maxBit are ignored.
         /// </summary>
         public int GetRangeCount(BDD set, int maxBit)
         {
@@ -619,6 +533,7 @@ namespace Microsoft.Automata
 
         /// <summary>
         /// Convert the set into an equivalent array of uint ranges. 
+        /// Bits above maxBit are ignored.
         /// The ranges are nonoverlapping and ordered. 
         /// </summary>
         public Pair<uint, uint>[] ToRanges(BDD set, int maxBit)
@@ -629,6 +544,7 @@ namespace Microsoft.Automata
 
         /// <summary>
         /// Convert the set into an equivalent array of ulong ranges. 
+        /// Bits above maxBit are ignored.
         /// The ranges are nonoverlapping and ordered. 
         /// </summary>
         public Pair<ulong, ulong>[] ToRanges64(BDD set, int maxBit)
@@ -643,43 +559,43 @@ namespace Microsoft.Automata
         /// </summary>
         /// <param name="chooser">element chooser</param>
         /// <param name="set">given set</param>
-        /// <param name="maxBit">bits above maxBit are ignored, maxBit must be at least set.Bit</param>
+        /// <param name="maxBit">bits above maxBit are ignored, maxBit must be at least set.Ordinal</param>
         /// <returns></returns>
         public uint ChooseUniformly(Chooser chooser, BDD set, int maxBit)
         {
             if (set == False)
                 throw new AutomataException(AutomataExceptionKind.CharSetMustBeNonempty);
-            if (maxBit < set.bit)
+            if (maxBit < set.Ordinal)
                 throw new AutomataException(AutomataExceptionKind.InvalidArguments);
 
             uint res = (chooser.ChooseBV32() & ~(((0xFFFFFFFF) << maxBit) << 1));
 
             while (set != True)
             {
-                if (set.one == False) //the bit must be set to 0
+                if (set.One == False) //the bit must be set to 0
                 {
-                    res = res & ~((uint)1 << set.bit);
-                    set = set.zero;
+                    res = res & ~((uint)1 << set.Ordinal);
+                    set = set.Zero;
                 }
-                else if (set.zero == False) //the bit must be set to 1
+                else if (set.Zero == False) //the bit must be set to 1
                 {
-                    res = res | ((uint)1 << set.bit);
-                    set = set.one;
+                    res = res | ((uint)1 << set.Ordinal);
+                    set = set.One;
                 }
                 else //choose the branch proportional to cardinalities of left and right sides
                 {
-                    int leftSize = (int)ComputeDomainSize(set.zero, set.bit - 1);
-                    int rightSize = (int)ComputeDomainSize(set.one, set.bit - 1);
+                    int leftSize = (int)ComputeDomainSize(set.Zero, set.Ordinal - 1);
+                    int rightSize = (int)ComputeDomainSize(set.One, set.Ordinal - 1);
                     int choice = chooser.Choose(leftSize + rightSize);
                     if (choice < leftSize)
                     {
-                        res = res & ~((uint)1 << set.bit); //set the bit to 0
-                        set = set.zero;
+                        res = res & ~((uint)1 << set.Ordinal); //set the bit to 0
+                        set = set.Zero;
                     }
                     else
                     {
-                        res = res | ((uint)1 << set.bit); //set the bit to 1
-                        set = set.one;
+                        res = res | ((uint)1 << set.Ordinal); //set the bit to 1
+                        set = set.One;
                     }
                 }
             }
@@ -693,33 +609,33 @@ namespace Microsoft.Automata
         /// </summary>
         /// <param name="chooser">element chooser</param>
         /// <param name="set">given set</param>
-        /// <param name="maxBit">bits above maxBit are ignored, maxBit must be at least set.Bit</param>
+        /// <param name="maxBit">bits above maxBit are ignored, maxBit must be at least set.Ordinal</param>
         /// <returns></returns>
         public ulong ChooseUniformly64(Chooser chooser, BDD set, int maxBit)
         {
             if (set == False)
                 throw new AutomataException(AutomataExceptionKind.CharSetMustBeNonempty);
-            if (maxBit < set.bit)
+            if (maxBit < set.Ordinal)
                 throw new AutomataException(AutomataExceptionKind.InvalidArguments);
 
             ulong res = (chooser.ChooseBV64() & ~(((0xFFFFFFFFFFFFFFFF) << maxBit) << 1));
 
             while (set != True)
             {
-                if (set.one == False) //the bit must be set to 0
+                if (set.One == False) //the bit must be set to 0
                 {
-                    res = res & ~(1UL << set.bit);
-                    set = set.zero;
+                    res = res & ~(1UL << set.Ordinal);
+                    set = set.Zero;
                 }
-                else if (set.zero == False) //the bit must be set to 1
+                else if (set.Zero == False) //the bit must be set to 1
                 {
-                    res = res | (1UL << set.bit);
-                    set = set.one;
+                    res = res | (1UL << set.Ordinal);
+                    set = set.One;
                 }
                 else //choose the branch proportional to cardinalities of left and right sides
                 {
-                    ulong leftSize = ComputeDomainSize(set.zero, set.bit - 1);
-                    ulong rightSize = ComputeDomainSize(set.one, set.bit - 1);
+                    ulong leftSize = ComputeDomainSize(set.Zero, set.Ordinal - 1);
+                    ulong rightSize = ComputeDomainSize(set.One, set.Ordinal - 1);
                     //convert both sizes proportioanally to integers
                     while (leftSize >= 0xFFFFFFFF || rightSize >= 0xFFFFFFFF)
                     {
@@ -729,13 +645,13 @@ namespace Microsoft.Automata
                     int choice = chooser.Choose((int)(leftSize + rightSize));
                     if (choice < (int)leftSize)
                     {
-                        res = res & ~((uint)1 << set.bit); //set the bit to 0
-                        set = set.zero;
+                        res = res & ~((uint)1 << set.Ordinal); //set the bit to 0
+                        set = set.Zero;
                     }
                     else
                     {
-                        res = res | ((uint)1 << set.bit); //set the bit to 1
-                        set = set.one;
+                        res = res | ((uint)1 << set.Ordinal); //set the bit to 1
+                        set = set.One;
                     }
                 }
             }
@@ -754,29 +670,29 @@ namespace Microsoft.Automata
         {
             if (set.IsEmpty)
                 throw new AutomataException(AutomataExceptionKind.CharSetMustBeNonempty);
-            if (maxBit < set.bit)
+            if (maxBit < set.Ordinal)
                 throw new AutomataException(AutomataExceptionKind.InvalidArguments);
 
             ulong res = (chooser.ChooseBV64() & ~(((0xFFFFFFFFFFFFFFFF) << maxBit) << 1));
 
             while (set != True)
             {
-                if (set.one == False) //the bit must be set to 0
+                if (set.One == False) //the bit must be set to 0
                 {
-                    res = res & ~((ulong)1 << set.bit);
-                    set = set.zero;
+                    res = res & ~((ulong)1 << set.Ordinal);
+                    set = set.Zero;
                 }
-                else if (set.zero == False) //the bit must be set to 1
+                else if (set.Zero == False) //the bit must be set to 1
                 {
-                    res = res | ((ulong)1 << set.bit);
-                    set = set.one;
+                    res = res | ((ulong)1 << set.Ordinal);
+                    set = set.One;
                 }
                 else //choose the branch according to the bit in res
                 {
-                    if ((res & ((ulong)1 << set.bit)) == 0)
-                        set = set.zero;
+                    if ((res & ((ulong)1 << set.Ordinal)) == 0)
+                        set = set.Zero;
                     else
-                        set = set.one;
+                        set = set.One;
                 }
             }
 
@@ -793,20 +709,20 @@ namespace Microsoft.Automata
         {
             if (set == False)
                 throw new AutomataException(AutomataExceptionKind.CharSetMustBeNonempty);
-            if (maxBit < set.bit)
+            if (maxBit < set.Ordinal)
                 throw new AutomataException(AutomataExceptionKind.InvalidArguments);
 
             ulong res = ~(0xFFFFFFFFFFFFFFFF << (maxBit + 1));
 
             while (!set.IsFull)
             {
-                if (set.one == False) //the bit must be set to 0
+                if (set.One == False) //the bit must be set to 0
                 {
-                    res = res & ~(1UL << set.bit);
-                    set = set.zero;
+                    res = res & ~(1UL << set.Ordinal);
+                    set = set.Zero;
                 }
                 else
-                    set = set.one;
+                    set = set.One;
             }
             return res;
         }
@@ -819,7 +735,7 @@ namespace Microsoft.Automata
         /// <returns>the cardinality of the set</returns>
         public ulong ComputeDomainSize(BDD set, int maxBit)
         {
-            if (maxBit < set.bit)
+            if (maxBit < set.Ordinal)
                 throw new AutomataException(AutomataExceptionKind.InvalidArguments);
 
             if (set == False)
@@ -832,9 +748,9 @@ namespace Microsoft.Automata
             {
                 var res = CalculateCardinality1(set);
                 //sizeCache.Clear();
-                if (maxBit > set.bit)
+                if (maxBit > set.Ordinal)
                 {
-                    res = (1UL << (maxBit - set.bit)) * res;
+                    res = (1UL << (maxBit - set.Ordinal)) * res;
                 }
                 return res;
             }
@@ -854,39 +770,39 @@ namespace Microsoft.Automata
                 sizeL = 0;
                 if (set.One.IsFull)
                 {
-                    sizeR = ((uint)1 << set.Bit);
+                    sizeR = ((uint)1 << set.Ordinal);
                 }
                 else
                 {
-                    sizeR = ((uint)1 << (((set.Bit - 1) - set.One.Bit))) * CalculateCardinality1(set.One);
+                    sizeR = ((uint)1 << (((set.Ordinal - 1) - set.One.Ordinal))) * CalculateCardinality1(set.One);
                 }
             }
             else if (set.Zero.IsFull)
             {
-                sizeL = (1UL << set.Bit);
+                sizeL = (1UL << set.Ordinal);
                 if (set.One.IsEmpty)
                 {
                     sizeR = 0UL;
                 }
                 else
                 {
-                    sizeR = (1UL << (((set.Bit - 1) - set.One.Bit))) * CalculateCardinality1(set.One);
+                    sizeR = (1UL << (((set.Ordinal - 1) - set.One.Ordinal))) * CalculateCardinality1(set.One);
                 }
             }
             else
             {
-                sizeL = (1UL << (((set.Bit - 1) - set.Zero.Bit))) * CalculateCardinality1(set.Zero);
+                sizeL = (1UL << (((set.Ordinal - 1) - set.Zero.Ordinal))) * CalculateCardinality1(set.Zero);
                 if (set.One == False)
                 {
                     sizeR = 0UL;
                 }
                 else if (set.One == True)
                 {
-                    sizeR = (1UL << set.Bit);
+                    sizeR = (1UL << set.Ordinal);
                 }
                 else
                 {
-                    sizeR = (1UL << (((set.Bit - 1) - set.One.Bit))) * CalculateCardinality1(set.One);
+                    sizeR = (1UL << (((set.Ordinal - 1) - set.One.Ordinal))) * CalculateCardinality1(set.One);
                 }
             }
             size = sizeL + sizeR;
@@ -895,97 +811,34 @@ namespace Microsoft.Automata
         }
 
         /// <summary>
-        /// Get the lexicographically minimum bitvector in the set.
-        /// Assumes that the set is nonempty.
+        /// Get the lexicographically minimum bitvector in the set as a ulong.
+        /// Assumes that the set is nonempty and that the ordinal of the BDD is at most 63.
         /// </summary>
         /// <param name="set">the given nonempty set</param>
         /// <returns>the lexicographically smallest bitvector in the set</returns>
         public ulong GetMin(BDD set)
         {
-            if (set.IsEmpty)
-                throw new AutomataException(AutomataExceptionKind.CharSetMustBeNonempty);
-
-            if (set.IsFull)
-                return (ulong)0;
-
-            ulong res = 0;
-
-            while (!set.IsFull)
-            {
-                if (set.zero.IsEmpty) //the bit must be set to 1
-                {
-                    res = res | ((ulong)1 << set.bit);
-                    set = set.one;
-                }
-                else
-                    set = set.zero;
-            }
-
-            return res;
+            return set.GetMin();
         }
 
         #endregion
 
-        private class BvSetKey
+        /// <summary>
+        /// Make a BDD for the concrete value i with ordinal 31
+        /// </summary>
+        public BDD MkSet(uint i)
         {
-            int bit;
-            BDD left;
-            BDD right;
-            public BvSetKey(int bit, BDD left, BDD right)
-            {
-                this.bit = bit;
-                this.left = left;
-                this.right = right;
-            }
-
-            public override bool Equals(object obj)
-            {
-                BvSetKey csk = (BvSetKey)obj;
-                return (bit == csk.bit && left == csk.left && right == csk.right);
-            }
-
-            public override int GetHashCode()
-            {
-                return bit + (left == null ? 0 : (left.GetHashCode() << 1) + right.GetHashCode());
-            }
-        }
-
-        private class BvSet_Int
-        {
-            BDD a;
-            int n;
-            internal BvSet_Int(BDD a, int n)
-            {
-                this.a = a;
-                this.n = n;
-            }
-            public override int GetHashCode()
-            {
-                return a.GetHashCode() + n;
-            }
-            public override bool Equals(object obj)
-            {
-                BvSet_Int key = (BvSet_Int)obj;
-                return key.a == a && key.n == n;
-            }
-        }
-
-        public BDD MkSet(uint e)
-        {
-            var set = this.MkSingleton(e, 31);
+            var set = this.MkSetFrom(i, 31);
             return set;
         }
 
-        public BDD MkSet(ulong e)
+        /// <summary>
+        /// Make a BDD for the concrete value i with ordinal 63
+        /// </summary>
+        public BDD MkSet(ulong i)
         {
-            var set = this.MkSingleton(e, 63);
+            var set = this.MkSetFrom(i, 63);
             return set;
-        }
-
-        public ulong Choose(BDD s)
-        {
-            var e = this.GetMin(s);
-            return e;
         }
 
         /// <summary>
@@ -996,10 +849,631 @@ namespace Microsoft.Automata
             return set;
         }
 
+        /// <summary>
+        /// Project away the i'th bit. Assumes that bit is nonnegative.
+        /// </summary>
+        public BDD ProjectBit(BDD bdd, int bit)
+        {
+            if (bdd.Ordinal < bit)
+                return bdd;
+            else if (bdd.Ordinal == bit)
+                return MkOr(bdd.One, bdd.Zero);
+            else
+                return ProjectBit_(bdd, bit, new Dictionary<BDD, BDD>());
+        }
+
+        private BDD ProjectBit_(BDD bdd, int bit, Dictionary<BDD, BDD> cache)
+        {
+            BDD res;
+            if (!cache.TryGetValue(bdd, out res))
+            {
+                if (bdd.Ordinal < bit)
+                    res = bdd;
+                else if (bdd.Ordinal == bit)
+                    res = MkOr(bdd.One, bdd.Zero);
+                else
+                {
+                    var bdd1 = ProjectBit_(bdd.One, bit, cache);
+                    var bdd0 = ProjectBit_(bdd.Zero, bit, cache);
+                    res = MkBvSet(bdd.Ordinal, bdd1, bdd0);
+                }
+                cache[bdd] = res;
+            }
+            return res;
+        }
+
 
         public void Dispose()
         {
             ;
+        }
+
+        public bool IsExtensional
+        {
+            get { return true; }
+        }
+
+
+        public BDD MkSymmetricDifference(BDD p1, BDD p2)
+        {
+            return MkOr(MkAnd(p1, MkNot(p2)), MkAnd(p2, MkNot(p1)));
+        }
+
+        public bool CheckImplication(BDD lhs, BDD rhs)
+        {
+            return MkAnd(lhs, MkNot(rhs)).IsEmpty;
+        }
+
+        public bool IsAtomic
+        {
+            get { return false; }
+        }
+
+        public BDD GetAtom(BDD psi)
+        {
+            throw new AutomataException(AutomataExceptionKind.BooleanAlgebraIsNotAtomic);
+        }
+    }
+
+    /// <summary>
+    /// Solver for BDDs with leaf labels that map to predicates from a Boolean algebra over T
+    /// </summary>
+    public class BDDAlgebra<T> : IBoolAlgMinterm<BDD<T>>
+    {
+        BDD<T> _True;
+        BDD<T> _False;
+        MintermGenerator<BDD<T>> mintermGen;
+        public readonly IBooleanAlgebra<T> LeafAlgebra;
+        Func<T,T> GetId;
+
+        public BDD<T> True
+        {
+            get { return _True; }
+        }
+
+        public BDD<T> False
+        {
+            get { return _False; }
+        }
+
+        public BDDAlgebra(IBooleanAlgebra<T> leafAlgebra)
+        {
+            this.LeafAlgebra = leafAlgebra;
+            if (leafAlgebra.IsExtensional)
+                this.GetId = (psi => psi);
+            else if (leafAlgebra.IsAtomic)
+                this.GetId = new PredicateTrie<T>(leafAlgebra).GetId;
+            else 
+                this.GetId = new PredicateIdMapper<T>(leafAlgebra).GetId;
+            mintermGen = new MintermGenerator<BDD<T>>(this);
+            _True = MkLeaf(leafAlgebra.True);
+            _False = MkLeaf(leafAlgebra.False);
+        }
+
+        Dictionary<Tuple<BDD<T>, BDD<T>>, BDD<T>> andCache = new Dictionary<Tuple<BDD<T>, BDD<T>>, BDD<T>>();
+        Dictionary<Tuple<BDD<T>, BDD<T>>, BDD<T>> orCache = new Dictionary<Tuple<BDD<T>, BDD<T>>, BDD<T>>();
+        Dictionary<BDD<T>, BDD<T>> notCache = new Dictionary<BDD<T>, BDD<T>>();
+        Dictionary<Tuple<int, BDD<T>, BDD<T>>, BDD<T>> nodeCache = new Dictionary<Tuple<int, BDD<T>, BDD<T>>, BDD<T>>();
+        Dictionary<T, BDD<T>> leafCache = new Dictionary<T, BDD<T>>();
+
+        internal BDD<T> MkNode(int bit, BDD<T> one, BDD<T> zero)
+        {
+            var key = new Tuple<int, BDD<T>, BDD<T>>(bit, one, zero);
+            BDD<T> bdd;
+            if (!nodeCache.TryGetValue(key, out bdd))
+            {
+                bdd = new BDD<T>(this, bit, one, zero);
+                nodeCache[key] = bdd;
+            }
+            return bdd;
+        }
+
+        public BDD<T> MkLeaf(T pred)
+        {
+            var repr = GetId(pred);
+            BDD<T> leaf;
+            if (!leafCache.TryGetValue(repr, out leaf))
+            {
+                leaf = new BDD<T>(this, 0, pred);
+                leafCache[pred] = leaf;
+            }
+            return leaf;
+        }
+
+        #region IBoolAlg members
+
+        /// <summary>
+        /// Make the union of a and b
+        /// </summary>
+        public BDD<T> MkOr(BDD<T> a, BDD<T> b)
+        {
+            if (a == _False)
+                return b;
+            if (b == _False)
+                return a;
+            if (a == _True || b == _True)
+                return _True;
+            if (a == b)
+                return a;
+
+            var key = new Tuple<BDD<T>, BDD<T>>(a, b);
+            BDD<T> res;
+            if (orCache.TryGetValue(key, out res))
+                return res;
+
+            if (a.IsLeaf && b.IsLeaf)
+                res = MkLeaf(LeafAlgebra.MkOr(a.Leaf, b.Leaf));
+
+            else if (a.IsLeaf || b.Ordinal > a.Ordinal)
+            {
+                BDD<T> t = MkOr(a, b.One);
+                BDD<T> f = MkOr(a, b.Zero);
+                res = (t == f ? t : MkNode(b.Ordinal, t, f));
+            }
+            else if (b.IsLeaf || a.Ordinal > b.Ordinal)
+            {
+                BDD<T> t = MkOr(a.One, b);
+                BDD<T> f = MkOr(a.Zero, b);
+                res = (t == f ? t : MkNode(a.Ordinal, t, f));
+            }
+            else //a.Ordinal == b.Ordinal and neither is leaf
+            {
+                BDD<T> t = MkOr(a.One, b.One);
+                BDD<T> f = MkOr(a.Zero, b.Zero);
+                res = (t == f ? t : MkNode(a.Ordinal, t, f));
+            }
+
+            orCache[key] = res;
+            return res;
+        }
+
+        /// <summary>
+        /// Make the intersection of a and b
+        /// </summary>
+        public BDD<T> MkAnd(BDD<T> a, BDD<T> b)
+        {
+            if (a == _True)
+                return b;
+            if (b == _True)
+                return a;
+            if (a == _False || b == _False)
+                return _False;
+            if (a == b)
+                return a;
+
+            var key = new Tuple<BDD<T>,BDD<T>>(a, b);
+            BDD<T> res;
+            if (andCache.TryGetValue(key, out res))
+                return res;
+
+            if (a.IsLeaf && b.IsLeaf)
+                res = MkLeaf(LeafAlgebra.MkAnd(a.Leaf, b.Leaf));
+
+            else if (a.IsLeaf || b.Ordinal > a.Ordinal)
+            {
+                BDD<T> t = MkAnd(a, b.One);
+                BDD<T> f = MkAnd(a, b.Zero);
+                res = (t == f ? t : MkNode(b.Ordinal, t, f));
+            }
+            else if (b.IsLeaf || a.Ordinal > b.Ordinal)
+            {
+                BDD<T> t = MkAnd(a.One, b);
+                BDD<T> f = MkAnd(a.Zero, b);
+                res = (t == f ? t : MkNode(a.Ordinal, t, f));
+            }
+            else //a.Ordinal == b.Ordinal and neither is leaf
+            {
+                BDD<T> t = MkAnd(a.One, b.One);
+                BDD<T> f = MkAnd(a.Zero, b.Zero);
+                res = (t == f ? t : MkNode(a.Ordinal, t, f));
+            }
+
+            andCache[key] = res;
+            return res;
+        }
+
+        /// <summary>
+        /// Make the difference a - b
+        /// </summary>
+        public BDD<T> MkDiff(BDD<T> a, BDD<T> b)
+        {
+            return MkAnd(a, MkNot(b));
+        }
+
+        /// <summary>
+        /// Complement a
+        /// </summary>
+        public BDD<T> MkNot(BDD<T> a)
+        {
+            if (a == _False)
+                return True;
+            if (a == _True)
+                return False;
+
+            BDD<T> neg;
+            if (notCache.TryGetValue(a, out neg))
+                return neg;
+
+            if (a.IsLeaf)
+                neg = MkLeaf(LeafAlgebra.MkNot(a.Leaf));
+            else
+                neg = MkNode(a.Ordinal, MkNot(a.One), MkNot(a.Zero));
+            notCache[a] = neg;
+            return neg;
+        }
+
+        /// <summary>
+        /// Intersect all sets in the enumeration
+        /// </summary>
+        public BDD<T> MkAnd(IEnumerable<BDD<T>> sets)
+        {
+            BDD<T> res = _True;
+            foreach (BDD<T> bdd in sets)
+                res = MkAnd(res, bdd);
+            return res;
+        }
+
+        /// <summary>
+        /// Intersect all the sets.
+        /// </summary>
+        public BDD<T> MkAnd(params BDD<T>[] sets)
+        {
+            BDD<T> res = _True;
+            for (int i = 0; i < sets.Length; i++ )
+                res = MkAnd(res, sets[i]);
+            return res;
+        }
+
+        /// <summary>
+        /// Take the union of all sets in the enumeration
+        /// </summary>
+        public BDD<T> MkOr(IEnumerable<BDD<T>> sets)
+        {
+            BDD<T> res = _False;
+            foreach (BDD<T> bdd in sets)
+                res = MkOr(res, bdd);
+            return res;
+        }
+
+        /// <summary>
+        /// Returns true if bdd is nonempty.
+        /// </summary>
+        public bool IsSatisfiable(BDD<T> bdd)
+        {
+            return bdd != _False;
+        }
+
+        /// <summary>
+        /// Two BDDs are by construction equivalent iff they are identical.
+        /// </summary>
+        public bool AreEquivalent(BDD<T> a, BDD<T> b)
+        {
+            return a == b;
+        }
+
+        #endregion
+
+        #region Minterm generation
+
+        public IEnumerable<Pair<bool[], BDD<T>>> GenerateMinterms(params BDD<T>[] sets)
+        {
+            return mintermGen.GenerateMinterms(sets);
+        }
+
+        #endregion
+
+        /// <summary>
+        /// Creates the bdd that contains all elements whose k'th bit is true.
+        /// </summary>
+        public BDD<T> MkSetWithBitTrue(int k)
+        {
+            return MkNode(k, _True, _False);
+        }
+
+        /// <summary>
+        /// Creates the set that contains all elements whose k'th bit is false.
+        /// </summary>
+        public BDD<T> MkSetWithBitFalse(int k)
+        {
+            return MkNode(k, _False, _True);
+        }
+
+        /// <summary>
+        /// Identity function
+        /// </summary>
+        public BDD<T> Simplify(BDD<T> set)
+        {
+            return set;
+        }
+
+        /// <summary>
+        /// Project away the i'th bit. Assumes that bit is nonnegative.
+        /// </summary>
+        public BDD<T> ProjectBit(BDD<T> bdd, int bit)
+        {
+            if (bdd.IsLeaf | bdd.Ordinal < bit)
+                return bdd;
+            else if (bdd.Ordinal == bit)
+                return MkOr(bdd.One, bdd.Zero);
+            else
+                return ProjectBit_(bdd, bit, new Dictionary<BDD<T>, BDD<T>>());
+        }
+
+        private BDD<T> ProjectBit_(BDD<T> bdd, int bit, Dictionary<BDD<T>, BDD<T>> cache)
+        {
+            BDD<T> res;
+            if (!cache.TryGetValue(bdd, out res))
+            {
+                if (bdd.IsLeaf | bdd.Ordinal < bit)
+                    res = bdd;
+                else if (bdd.Ordinal == bit)
+                    res = MkOr(bdd.One, bdd.Zero);
+                else
+                {
+                    var bdd1 = ProjectBit_(bdd.One, bit, cache);
+                    var bdd0 = ProjectBit_(bdd.Zero, bit, cache);
+                    res = MkNode(bdd.Ordinal, bdd1, bdd0);
+                }
+                cache[bdd] = res;
+            }
+            return res;
+        }
+
+
+        public void Dispose()
+        {
+            ;
+        }
+
+        public bool IsExtensional
+        {
+            get { return true; }
+        }
+
+        /// <summary>
+        /// Returns p-q.
+        /// </summary>
+        public BDD<T> MkDifference(BDD<T> p, BDD<T> q)
+        {
+            return MkAnd(p, MkNot(q));
+        }
+
+        /// <summary>
+        /// Returns (p-q)|(q-p).
+        /// </summary>
+        public BDD<T> MkSymmetricDifference(BDD<T> p, BDD<T> q)
+        {
+            return MkOr(MkAnd(p, MkNot(q)), MkAnd(q, MkNot(p))); 
+        }
+
+        public bool CheckImplication(BDD<T> lhs, BDD<T> rhs)
+        {
+            return MkAnd(lhs, MkNot(rhs)).IsEmpty;
+        }
+
+        public bool IsAtomic
+        {
+            get { return false; }
+        }
+
+        public BDD<T> GetAtom(BDD<T> psi)
+        {
+            throw new AutomataException(AutomataExceptionKind.BooleanAlgebraIsNotAtomic);
+        }
+    }
+
+    /// <summary>
+    /// For a given Boolean algebra maps all predicates to unique representatives.
+    /// </summary>
+    internal class PredicateIdMapper<T>
+    {
+        Dictionary<T, T> predMap = new Dictionary<T, T>();
+        List<T> preds = new List<T>();
+        IBooleanAlgebra<T> algebra;
+
+        internal PredicateIdMapper(IBooleanAlgebra<T> algebra)
+        {
+            this.algebra = algebra;
+        }
+
+        /// <summary>
+        /// For all p: p is equivalent to GetId(p).
+        /// For all p and q: if p is equivalent to q then GetId(p)==GetId(q).
+        /// </summary>
+        /// <param name="p">given predicate</param>
+        public T GetId(T pred)
+        {
+            T rep;
+            if (predMap.TryGetValue(pred, out rep))
+                return rep;
+            else
+            {
+                foreach (var p in preds)
+                {
+                    if (algebra.AreEquivalent(pred, p))
+                    {
+                        predMap[pred] = p;
+                        return p;
+                    }
+                }
+                predMap[pred] = pred;
+                preds.Add(pred);
+                return pred;
+            }
+        }
+    }
+
+    /// <summary>
+    /// For a given atomic Boolean algebra uses a trie of atoms to map all predicates to unique equivalent representatives.
+    /// </summary>
+    public class PredicateTrie<T>
+    {
+        Dictionary<T, T> idCache = new Dictionary<T, T>();
+        IBooleanAlgebra<T> algebra;
+        List<T> atoms = new List<T>();
+        TrieTree tree;
+
+        /// <summary>
+        /// Creates internally a trie of atoms to distinguish predicates. Throws AutomataException if algebra.IsAtomic is false.
+        /// </summary>
+        /// <param name="algebra">given atomic Boolean algebra</param>
+        public PredicateTrie(IBooleanAlgebra<T> algebra)
+        {
+            if (!algebra.IsAtomic)
+                throw new AutomataException(AutomataExceptionKind.BooleanAlgebraIsNotAtomic);
+
+            this.algebra = algebra;
+            idCache[algebra.True] = algebra.True;
+            idCache[algebra.False] = algebra.False;
+            tree = TrieTree.MkInitialTree(algebra);
+            atoms.Add(algebra.GetAtom(algebra.True)); //any element distinguishes True from False
+        }
+
+        /// <summary>
+        /// For all p: p is equivalent to GetId(p).
+        /// For all p and q: if p is equivalent to q then GetId(p)==GetId(q).
+        /// </summary>
+        /// <param name="p">given predicate</param>
+        public T GetId(T p)
+        {
+            T id;
+            if (!idCache.TryGetValue(p, out id))
+            {
+                id = Insert(tree, p);
+                idCache[p] = id;
+            }
+            return id;
+        }
+
+        T Insert(TrieTree tr, T pred) 
+        {
+            if (tr.IsLeaf)
+            {
+                var leaf = tr.leaf;
+                if (tr.k < atoms.Count) 
+                {
+                    #region extend the trie using atoms[tr.k]
+                    var vk = atoms[tr.k];
+                    tr.leaf = default(T);
+                    if (algebra.CheckImplication(vk, leaf))
+                    {
+                        tr.t1 = new TrieTree(tr.k + 1, leaf, null, null);
+                        if (algebra.CheckImplication(vk, pred))
+                            return Insert(tr.t1, pred);
+                        else
+                        {
+                            //k is smallest such that vk distinguishes leaf and pred
+                            tr.t0 = new TrieTree(tr.k + 1, pred, null, null);
+                            return pred; //pred is new
+                        }
+                    }
+                    else
+                    {
+                        tr.t0 = new TrieTree(tr.k + 1, leaf, null, null);
+                        if (algebra.CheckImplication(vk, pred))
+                        {
+                            //k is smallest such that vk distinguishes leaf and pred
+                            tr.t1 = new TrieTree(tr.k + 1, pred, null, null);
+                            return pred; //pred is new
+                        }
+                        else
+                            return Insert(tr.t0, pred);
+                    }
+                    #endregion
+                }
+                else
+                {
+                    #region the existing atoms did not distinguish pred from leaf
+                    var symdiff = algebra.MkSymmetricDifference(leaf, pred);
+                    var atom = algebra.GetAtom(symdiff);
+                    if (atom.Equals(algebra.False))
+                        return leaf;  //pred is equivalent to leaf
+                    else
+                    {
+                        //split the leaf based on the new atom
+                        atoms.Add(atom);
+                        if (algebra.CheckImplication(atom, leaf))
+                        {
+                            tr.t0 = new TrieTree(tr.k + 1, pred, null, null);
+                            tr.t1 = new TrieTree(tr.k + 1, leaf, null, null);
+                        }
+                        else
+                        {
+                            tr.t0 = new TrieTree(tr.k + 1, leaf, null, null);
+                            tr.t1 = new TrieTree(tr.k + 1, pred, null, null);     
+                        }
+                        tr.leaf = default(T);
+                        return pred; //pred is new
+                    }
+                    #endregion
+                }
+            }
+            else
+            {   
+                #region in a nonleaf the invariant holds: tr.k < atoms.Count
+                if (algebra.CheckImplication(atoms[tr.k], pred))
+                {
+                    if (tr.t1 == null)
+                    {
+                        tr.t1 = new TrieTree(tr.k + 1, pred, null, null);
+                        return pred;
+                    }
+                    else
+                        return Insert(tr.t1, pred);
+                }
+                else
+                {
+                    if (tr.t0 == null)
+                    {
+                        tr.t0 = new TrieTree(tr.k + 1, pred, null, null);
+                        return pred;
+                    }
+                    else
+                        return Insert(tr.t0, pred);
+                }
+                #endregion
+            }
+        }
+
+        private class TrieTree
+        {
+            /// <summary>
+            /// the case when the kth atom does not imply the predicate
+            /// </summary>
+            internal TrieTree t0;
+            /// <summary>
+            /// the case when the kth atom implies the predicate
+            /// </summary>
+            internal TrieTree t1;
+            /// <summary>
+            /// distance from the root, or atom identifier
+            /// </summary>
+            internal readonly int k;
+            /// <summary>
+            /// leaf predicate
+            /// </summary>
+            internal T leaf;
+
+            internal bool IsLeaf
+            {
+                get { return t0 == null && t1 == null; }
+            }
+
+            internal TrieTree(int k, T leaf, TrieTree t0, TrieTree t1) 
+            {
+                this.k = k;
+                this.leaf = leaf;
+                this.t0 = t0;
+                this.t1 = t1;
+            }
+
+            internal static TrieTree MkInitialTree(IBooleanAlgebra<T> algebra)
+            {
+                var t0 = new TrieTree(1, algebra.False, null, null); 
+                var t1 = new TrieTree(1, algebra.True, null, null); 
+                var tree = new TrieTree(0, default(T), t0, t1);    // any element implies True and does not imply False
+                return tree;
+            }
         }
     }
 
@@ -1062,7 +1536,7 @@ namespace Microsoft.Automata
             Pair<uint, uint>[] ranges;
             if (!rangeCache.TryGetValue(set, out ranges))
             {
-                int b = set.bit;
+                int b = set.Ordinal;
                 uint mask = (uint)1 << b;
                 if (set.Zero.IsEmpty)
                 {
@@ -1074,7 +1548,7 @@ namespace Microsoft.Automata
                     }
                     else //1-case is neither full nor empty
                     {
-                        var ranges1 = LiftRanges(b, (b - set.one.bit) - 1, ToRanges1(set.One));
+                        var ranges1 = LiftRanges(b, (b - set.One.Ordinal) - 1, ToRanges1(set.One));
                         ranges = new Pair<uint, uint>[ranges1.Length];
                         for (int i = 0; i < ranges1.Length; i++)
                         {
@@ -1093,7 +1567,7 @@ namespace Microsoft.Automata
                     }
                     else
                     {
-                        var rangesR = LiftRanges(b, (b - set.one.bit) - 1, ToRanges1(set.One));
+                        var rangesR = LiftRanges(b, (b - set.One.Ordinal) - 1, ToRanges1(set.One));
                         var range = rangesR[0];
                         if (range.First == 0)
                         {
@@ -1119,7 +1593,7 @@ namespace Microsoft.Automata
                 else
                 {
                     #region 0-case is neither full nor empty
-                    var rangesL = LiftRanges(b, (b - set.zero.bit) - 1, ToRanges1(set.Zero));
+                    var rangesL = LiftRanges(b, (b - set.Zero.Ordinal) - 1, ToRanges1(set.Zero));
                     var last = rangesL[rangesL.Length - 1];
 
                     if (set.One.IsEmpty)
@@ -1147,7 +1621,7 @@ namespace Microsoft.Automata
                     {
                         var rangesR0 = ToRanges1(set.One);
 
-                        var rangesR = LiftRanges(b, (b - set.one.bit) - 1, rangesR0);
+                        var rangesR = LiftRanges(b, (b - set.One.Ordinal) - 1, rangesR0);
 
                         var first = rangesR[0];
 
@@ -1188,7 +1662,7 @@ namespace Microsoft.Automata
             else if (set.IsFull)
                 return new Pair<uint, uint>[] { new Pair<uint, uint>(0, ((((uint)1 << maxBit) << 1) - 1)) }; //note: maxBit could be 31
             else
-                return LiftRanges(maxBit + 1, maxBit - set.Bit, ToRanges1(set));
+                return LiftRanges(maxBit + 1, maxBit - set.Ordinal, ToRanges1(set));
         }
     }
 
@@ -1249,7 +1723,7 @@ namespace Microsoft.Automata
             Pair<ulong, ulong>[] ranges;
             if (!rangeCache.TryGetValue(set, out ranges))
             {
-                int b = set.bit;
+                int b = set.Ordinal;
                 ulong mask = (ulong)1 << b;
                 if (set.Zero.IsEmpty)
                 {
@@ -1261,7 +1735,7 @@ namespace Microsoft.Automata
                     }
                     else //1-case is neither full nor empty
                     {
-                        var ranges1 = LiftRanges(b, (b - set.one.bit) - 1, ToRanges1(set.One));
+                        var ranges1 = LiftRanges(b, (b - set.One.Ordinal) - 1, ToRanges1(set.One));
                         ranges = new Pair<ulong, ulong>[ranges1.Length];
                         for (int i = 0; i < ranges1.Length; i++)
                         {
@@ -1280,7 +1754,7 @@ namespace Microsoft.Automata
                     }
                     else
                     {
-                        var rangesR = LiftRanges(b, (b - set.one.bit) - 1, ToRanges1(set.One));
+                        var rangesR = LiftRanges(b, (b - set.One.Ordinal) - 1, ToRanges1(set.One));
                         var range = rangesR[0];
                         if (range.First == 0)
                         {
@@ -1306,7 +1780,7 @@ namespace Microsoft.Automata
                 else
                 {
                     #region 0-case is neither full nor empty
-                    var rangesL = LiftRanges(b, (b - set.zero.bit) - 1, ToRanges1(set.Zero));
+                    var rangesL = LiftRanges(b, (b - set.Zero.Ordinal) - 1, ToRanges1(set.Zero));
                     var last = rangesL[rangesL.Length - 1];
 
                     if (set.One.IsEmpty)
@@ -1334,7 +1808,7 @@ namespace Microsoft.Automata
                     {
                         var rangesR0 = ToRanges1(set.One);
 
-                        var rangesR = LiftRanges(b, (b - set.one.bit) - 1, rangesR0);
+                        var rangesR = LiftRanges(b, (b - set.One.Ordinal) - 1, rangesR0);
 
                         var first = rangesR[0];
 
@@ -1375,7 +1849,112 @@ namespace Microsoft.Automata
             else if (set.IsFull)
                 return new Pair<ulong, ulong>[] { new Pair<ulong, ulong>(0, ((((ulong)1 << maxBit) << 1) - 1)) }; //note: maxBit could be 31
             else
-                return LiftRanges(maxBit + 1, maxBit - set.Bit, ToRanges1(set));
+                return LiftRanges(maxBit + 1, maxBit - set.Ordinal, ToRanges1(set));
+        }
+    }
+
+    /// <summary>
+    /// Boolean algebra over an atomic universe.
+    /// </summary>
+    public class TrivialBooleanAlgebra : IBoolAlgMinterm<bool>
+    {
+        public TrivialBooleanAlgebra()
+        {
+        }
+
+        public IEnumerable<Pair<bool[], bool>> GenerateMinterms(params bool[] constraints)
+        {
+            yield return new Pair<bool[], bool>(constraints, true);
+        }
+
+        public bool True
+        {
+            get { return true; }
+        }
+
+        public bool False
+        {
+            get { return false; }
+        }
+
+        public bool MkOr(IEnumerable<bool> predicates)
+        {
+            foreach (var v in predicates)
+                if (v) 
+                    return true;
+            return false;
+        }
+
+        public bool MkAnd(IEnumerable<bool> predicates)
+        {
+            foreach (var v in predicates)
+                if (!v)
+                    return false;
+            return true;
+        }
+
+        public bool MkAnd(params bool[] predicates)
+        {
+            for (int i = 0; i < predicates.Length; i++ )
+                if (!predicates[i])
+                    return false;
+            return true;
+        }
+
+        public bool MkNot(bool predicate)
+        {
+            return !predicate;
+        }
+
+        public bool AreEquivalent(bool predicate1, bool predicate2)
+        {
+            return predicate1 == predicate2;
+        }
+
+        public bool IsExtensional
+        {
+            get { return true; }
+        }
+
+        public bool Simplify(bool predicate)
+        {
+            return predicate;
+        }
+
+        public bool IsSatisfiable(bool predicate)
+        {
+            return predicate;
+        }
+
+        public bool MkAnd(bool predicate1, bool predicate2)
+        {
+            return predicate1 && predicate2;
+        }
+
+        public bool MkOr(bool predicate1, bool predicate2)
+        {
+            return predicate1 || predicate2;
+        }
+
+
+        public bool MkSymmetricDifference(bool p1, bool p2)
+        {
+            return p1 != p2;
+        }
+
+        public bool CheckImplication(bool lhs, bool rhs)
+        {
+            return !lhs || rhs;
+        }
+
+        public bool IsAtomic
+        {
+            get { return true; }
+        }
+
+        public bool GetAtom(bool psi)
+        {
+            return psi;
         }
     }
 }

@@ -347,5 +347,51 @@ namespace Microsoft.Automata.Internal
         {
             throw new NotImplementedException();
         }
+
+
+        public bool IsExtensional
+        {
+            get { return false; }
+        }
+
+
+        public bool CheckMembership(object element, HashSet<char> predicate)
+        {
+            char c = (char)element;
+            return predicate.Contains(c);
+        }
+
+        public HashSet<char> MkSymmetricDifference(HashSet<char> p1, HashSet<char> p2)
+        {
+            return MkOr(MkAnd(p1, MkNot(p2)), MkAnd(p2, MkNot(p1)));
+        }
+
+        char ChooseElement(HashSet<char> set)
+        {
+            var enumerator = set.GetEnumerator();
+            enumerator.MoveNext();
+            return enumerator.Current;
+        }
+
+        public bool CheckImplication(HashSet<char> lhs, HashSet<char> rhs)
+        {
+            return rhs.IsSupersetOf(lhs);
+        }
+
+        public bool IsAtomic
+        {
+            get { return true; }
+        }
+
+        public HashSet<char> GetAtom(HashSet<char> psi)
+        {
+            if (psi.Count == 0)
+                return psi;
+
+            if (psi.Count == 1)
+                return psi;
+
+            return new HashSet<char>(new char[] { ChooseElement(psi) });
+        }
     }
 }

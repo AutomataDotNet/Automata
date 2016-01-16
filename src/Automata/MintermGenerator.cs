@@ -15,17 +15,7 @@ namespace Microsoft.Automata
     {
         IBooleanAlgebra<PRED> ba;
 
-        bool hashCodesRespectEquivalence = false;
-
-        /// <summary>
-        /// Set this optimization flag to true, if equivalent predicates are guaranteed to have equal hashcodes.
-        /// Default value is false.
-        /// </summary>
-        public bool HashCodesRespectEquivalence
-        {
-            get { return hashCodesRespectEquivalence; }
-            set { hashCodesRespectEquivalence = value; }
-        }
+        bool hashCodesRespectEquivalence;
 
         /// <summary>
         /// Constructs a minterm generator for a given Boolean Algebra.
@@ -34,6 +24,7 @@ namespace Microsoft.Automata
         public MintermGenerator(IBooleanAlgebra<PRED> ba)
         {
             this.ba = ba;
+            hashCodesRespectEquivalence = ba.IsExtensional;
         }
 
         /// <summary>
@@ -48,7 +39,7 @@ namespace Microsoft.Automata
         /// Given an array of predidates {p_1, p_2, ..., p_n} where n>=0.
         /// Enumerate all satisfiable Boolean combinations Pair({b_1, b_2, ..., b_n}, p)
         /// where p is satisfiable and equivalent to p'_1 & p'_2 & ... & p'_n, 
-        /// where p'_i = c_i if b_i = true and p'_i is Not(p_i) otherwise.
+        /// where p'_i = p_i if b_i = true and p'_i is Not(p_i) otherwise.
         /// If n=0 return Pair({},True).
         /// </summary>
         /// <param name="preds">array of predicates</param>

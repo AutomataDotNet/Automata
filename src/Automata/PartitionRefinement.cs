@@ -274,7 +274,7 @@ namespace Microsoft.Automata
         {
             this.solver = solver;
             this.maxbit = maxbit;
-            elems = solver.MkSingleton((uint)element, maxbit);
+            elems = solver.MkSetFrom((uint)element, maxbit);
         }
 
         //Part(BvSet set, BvSetSolver solver, int maxbit)
@@ -290,7 +290,7 @@ namespace Microsoft.Automata
         /// <param name="elem">element to be added</param>
         public void Add(int elem)
         {
-            elems = solver.MkOr(elems, solver.MkSingleton((uint)elem, maxbit));
+            elems = solver.MkOr(elems, solver.MkSetFrom((uint)elem, maxbit));
         }
 
         /// <summary>
@@ -299,7 +299,7 @@ namespace Microsoft.Automata
         /// <param name="elem">element to be removed</param>
         public void Remove(int elem)
         {
-            elems =  solver.MkAnd(elems, solver.MkNot(solver.MkSingleton((uint)elem, maxbit)));
+            elems =  solver.MkAnd(elems, solver.MkNot(solver.MkSetFrom((uint)elem, maxbit)));
         }
 
         /// <summary>

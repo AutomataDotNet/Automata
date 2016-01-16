@@ -86,6 +86,42 @@ namespace Microsoft.Automata
             return aut.Determinize(solver).Minimize(solver);
         }
 
+        public bool IsExtensional
+        {
+            get { return false; }
+        }
+
+        public Automaton<S> MkSymmetricDifference(Automaton<S> p1, Automaton<S> p2)
+        {
+            return MkOr(MkAnd(p1, MkNot(p2)), MkAnd(p2, MkNot(p1)));
+        }
+
+        public bool CheckImplication(Automaton<S> lhs, Automaton<S> rhs)
+        {
+            return MkAnd(lhs, MkNot(rhs)).IsEmpty;
+        }
+
+        public bool IsAtomic
+        {
+            get { return solver.IsAtomic; }
+        }
+
+        public Automaton<S> GetAtom(Automaton<S> psi)
+        {
+            if (!IsAtomic)
+                throw new AutomataException(AutomataExceptionKind.BooleanAlgebraIsNotAtomic);
+
+            if (psi.IsEmpty)
+                return psi;
+
+            var path = new List<S>(psi.ChoosePathToSomeFinalState(new Chooser()));
+            var moves = new List<Move<S>>();
+            for (int i = 0; i < path.Count; i++)
+                moves.Add(Move<S>.Create(i, i + 1, solver.GetAtom(path[i])));
+
+            var atom = Automaton<S>.Create(0, new int[] { path.Count }, moves);
+            return atom;
+        }
     }
 
     public class RegexAlgebra : AutomataAlgebra<BDD>

@@ -85,7 +85,7 @@ namespace Microsoft.Automata.Internal.DirectedGraphs
 
         static public void CharSetToDot(BDD bdd, string setName, StreamWriter tw, RANKDIR rankdir, int fontsize)
         {
-            if (bdd.IsTrivial)
+            if (bdd.IsLeaf)
                 throw new AutomataException(AutomataExceptionKind.CharSetMustBeNontrivial);
 
             Dictionary<BDD, int> nodeIds = new Dictionary<BDD, int>();
@@ -97,7 +97,7 @@ namespace Microsoft.Automata.Internal.DirectedGraphs
             //nodeIds.Add(bdd.Solver.False, 0);
             //nodeIds.Add(bdd.Solver.True, 1);
             nodeIds.Add(bdd, 2);
-            nodeLevel[2] = bdd.Bit;
+            nodeLevel[2] = bdd.Ordinal;
             int id = 3;
             int maxLevel = 0;
             while (stack.Count > 0)
@@ -105,17 +105,17 @@ namespace Microsoft.Automata.Internal.DirectedGraphs
                 BDD node = stack.Pop();
                 int nodeId = nodeIds[node];
                 List<int> rankGroup;
-                if (!sameRanks.TryGetValue(node.Bit, out rankGroup))
+                if (!sameRanks.TryGetValue(node.Ordinal, out rankGroup))
                 {
                     rankGroup = new List<int>();
-                    sameRanks[node.Bit] = rankGroup;
+                    sameRanks[node.Ordinal] = rankGroup;
                 }
                 rankGroup.Add(nodeId);
 
-                maxLevel = Math.Max(node.Bit, maxLevel);
+                maxLevel = Math.Max(node.Ordinal, maxLevel);
                 if (!nodeIds.ContainsKey(node.Zero))
                 {
-                    if (node.Zero.IsTrivial)
+                    if (node.Zero.IsLeaf)
                     {
                         if (node.Zero.IsEmpty)
                             nodeIds[node.Zero] = 0;
@@ -130,7 +130,7 @@ namespace Microsoft.Automata.Internal.DirectedGraphs
                 }
                 if (!nodeIds.ContainsKey(node.One))
                 {
-                    if (node.One.IsTrivial)
+                    if (node.One.IsLeaf)
                     {
                         if (node.One.IsEmpty)
                             nodeIds[node.One] = 0;
@@ -165,8 +165,8 @@ namespace Microsoft.Automata.Internal.DirectedGraphs
             }
 
             foreach (var n in nodeIds.Keys)
-                if (!n.IsTrivial)
-                    tw.WriteLine("{0} [label = {1}]", nodeIds[n], n.Bit);
+                if (!n.IsLeaf)
+                    tw.WriteLine("{0} [label = {1}]", nodeIds[n], n.Ordinal);
 
             tw.WriteLine("//True and False");
             tw.WriteLine(string.Format("node [style = filled, shape = plaintext, fillcolor = white, fontsize = {0}]", fontsize));

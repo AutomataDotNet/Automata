@@ -73,9 +73,39 @@ namespace Microsoft.Automata
         bool AreEquivalent(S predicate1, S predicate2);
 
         /// <summary>
+        /// Returns a predicate that is equivalent to (p1&amp;!p2)|(p2&amp;!p1).
+        /// </summary>
+        S MkSymmetricDifference(S p1, S p2);
+
+        /// <summary>
+        /// Returns true iff lhs implies rhs.
+        /// </summary>
+        bool CheckImplication(S lhs, S rhs); 
+
+        /// <summary>
+        /// True iff any two equivalent predicates are identical.
+        /// </summary>
+        bool IsExtensional { get; }
+
+        /// <summary>
         /// Simplifies the predicate. 
         /// </summary>
         S Simplify(S predicate);
+
+        /// <summary>
+        /// Returns true iff the algebra is atomic:
+        /// each satisfiable predicate is implied by an atomic predicate. 
+        /// A predicate p is atomic means: p is satisfiable and if q =&gt; p then q &lt;=&gt; p.
+        /// </summary>
+        bool IsAtomic { get; }
+
+        /// <summary>
+        /// If the algebra is atomic and psi is satisfiable 
+        /// then returns an atomic predicate that implies psi.
+        /// Returns False if psi is unsatisfiable.
+        /// Throws AutomataException if the algebra is not atomic.
+        /// </summary>
+        S GetAtom(S psi);
     }
 
     /// <summary>

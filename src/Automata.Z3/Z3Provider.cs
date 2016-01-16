@@ -3231,7 +3231,7 @@ namespace Microsoft.Automata.Z3
             if (bddToExprCache.TryGetValue(bdd, out res))
                 return res;
 
-            res = MkIte(MkBitIsZero(bdd.Bit), MkIteExprFromBdd(bdd.Zero), MkIteExprFromBdd(bdd.One));
+            res = MkIte(MkBitIsZero(bdd.Ordinal), MkIteExprFromBdd(bdd.Zero), MkIteExprFromBdd(bdd.One));
             bddToExprCache[bdd] = res;
             return res;
         }
@@ -3565,6 +3565,37 @@ namespace Microsoft.Automata.Z3
         public ISolver<Expr> MainSolver
         {
             get { return solver; }
+        }
+
+
+        public bool IsExtensional
+        {
+            get { return false; }
+        }
+
+        public Expr MkSymmetricDifference(Expr p1, Expr p2)
+        {
+            return MkNeq(p1, p2);
+        }
+
+        public bool CheckImplication(Expr lhs, Expr rhs)
+        {
+            return !IsSatisfiable(MkAnd(lhs,MkNot(rhs)));
+        }
+
+        public bool IsAtomic
+        {
+            get { return true; }
+        }
+
+        public Expr GetAtom(Expr psi)
+        {
+            var v = this.solver.FindOneMember(psi);
+            if (v == null)
+                return False;
+
+            Expr atom = MkEq(MkVar(0, GetSort(v.Value)), v.Value);
+            return atom;
         }
     }
 }

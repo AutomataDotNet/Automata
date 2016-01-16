@@ -404,12 +404,53 @@ namespace Microsoft.Automata.Internal
 
         public HashSet<Pair<char, char>> MkSet(uint e)
         {
-            throw new NotImplementedException();
+            return new HashSet<Pair<char, char>>(new Pair<char, char>[] { new Pair<char, char>((char)e, (char)e) });
         }
+
 
         public uint Choose(HashSet<Pair<char, char>> s)
         {
-            throw new NotImplementedException();
+            if (s.Count == 0)
+                throw new AutomataException(AutomataExceptionKind.SetIsEmpty);
+
+            var e = s.GetEnumerator();
+            e.MoveNext();
+            var res = (uint)e.Current.Item1;
+            return res;
+        }
+
+
+        public bool IsExtensional
+        {
+            get { return false; }
+        }
+
+        public HashSet<Pair<char, char>> MkSymmetricDifference(HashSet<Pair<char, char>> p1, HashSet<Pair<char, char>> p2)
+        {
+            return MkOr(MkAnd(p1, MkNot(p2)), MkAnd(p2, MkNot(p1)));
+        }
+
+        public bool CheckImplication(HashSet<Pair<char, char>> lhs, HashSet<Pair<char, char>> rhs)
+        {
+            return !IsSatisfiable(MkAnd(lhs, MkNot(rhs)));
+        }
+
+
+        public bool IsAtomic
+        {
+            get { return true; }
+        }
+
+        public HashSet<Pair<char, char>> GetAtom(HashSet<Pair<char, char>> psi)
+        {
+            if (psi.Count == 0)
+                return psi;
+
+            var e = psi.GetEnumerator();
+            e.MoveNext();
+            var elem = e.Current.Item1;
+            var atom = new HashSet<Pair<char, char>>(new Pair<char, char>[] { new Pair<char, char>(elem, elem) });
+            return atom;
         }
     }
 }

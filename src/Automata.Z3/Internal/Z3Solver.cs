@@ -140,6 +140,8 @@ namespace Microsoft.Automata.Z3
             return v;
         }
 
+        Dictionary<Expr, bool> IsSatisfiableCache = new Dictionary<Expr, bool>();
+
         /// <summary>
         /// Check satisfiability of the constraint in the solver without changing the assertions.
         /// </summary>
@@ -151,10 +153,15 @@ namespace Microsoft.Automata.Z3
                 return true;
             else
             {
-                Push();
-                Assert(constraint);
-                var res = Check();
-                Pop();
+                bool res;
+                if (!IsSatisfiableCache.TryGetValue(constraint, out res))
+                {
+                    Push();
+                    Assert(constraint);
+                    res = Check();
+                    Pop();
+                    IsSatisfiableCache[constraint] = res;
+                }
                 return res;
             }
         }
