@@ -3585,17 +3585,23 @@ namespace Microsoft.Automata.Z3
 
         public bool IsAtomic
         {
-            get { return true; }
+            get { return false; }
         }
 
         public Expr GetAtom(Expr psi)
         {
-            var v = this.solver.FindOneMember(psi);
-            if (v == null)
-                return False;
+            throw new AutomataException(AutomataExceptionKind.BooleanAlgebraIsNotAtomic);
+            //var v = this.solver.FindOneMember(psi);
+            //if (v == null)
+            //    return False;
 
-            Expr atom = MkEq(MkVar(0, GetSort(v.Value)), v.Value);
-            return atom;
+            //Expr atom = MkEq(MkVar(0, GetSort(v.Value)), v.Value);
+            //return atom;
+        }
+
+        public bool EvaluateAtom(Expr atom, Expr psi)
+        {
+            throw new AutomataException(AutomataExceptionKind.BooleanAlgebraIsNotAtomic);
         }
     }
 }

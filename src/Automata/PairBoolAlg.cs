@@ -208,5 +208,11 @@ namespace Microsoft.Automata
 
             return new Pair<S, T>(a1, a2);
         }
+
+
+        public bool EvaluateAtom(Pair<S, T> atom, Pair<S, T> psi)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

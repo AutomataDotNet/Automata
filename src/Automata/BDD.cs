@@ -22,7 +22,7 @@ namespace Microsoft.Automata
         public readonly BDD Zero;
 
 
-        BDDAlgebra Algebra;
+        protected IBDDAlgebra algebra;
 
         /// <summary>
         /// Ordinal of this bit if nonleaf
@@ -31,12 +31,20 @@ namespace Microsoft.Automata
 
         private BDD() { }
 
-        internal BDD(BDDAlgebra algebra, int ordinal, BDD one, BDD zero)
+        internal BDD(IBDDAlgebra algebra, int ordinal, BDD one, BDD zero)
         {
             this.One = one;
             this.Zero = zero;
             this.Ordinal = ordinal;
-            this.Algebra = algebra;
+            this.algebra = algebra;
+        }
+
+        internal BDD(IBDDAlgebra algebra, int ordinal)
+        {
+            this.One = null;
+            this.Zero = null;
+            this.Ordinal = ordinal;
+            this.algebra = algebra;
         }
 
         /// <summary>
@@ -52,7 +60,7 @@ namespace Microsoft.Automata
         /// </summary>
         public bool IsFull
         {
-            get { return this == Algebra.True; }
+            get { return this == algebra.True; }
         }
 
         /// <summary>
@@ -60,7 +68,7 @@ namespace Microsoft.Automata
         /// </summary>
         public bool IsEmpty
         {
-            get { return this == Algebra.False; }
+            get { return this == algebra.False; }
         }
 
         /// <summary>
@@ -102,29 +110,27 @@ namespace Microsoft.Automata
         {
             if (IsLeaf)
             {
-                if (IsFull)
-                    return "true";
-                else if (IsEmpty)
-                    return "false";
-                else
-                    return Ordinal.ToString();
+                return algebra.PrettyPrintTerminal(Ordinal);
             }
-
-            var sb = new System.Text.StringBuilder();
-            sb.Append("{");
-            foreach (var s in EnumCases())
+            else
             {
-                if (sb.Length > 1)
-                    sb.AppendLine("|");
-                if (sb.Length > 1000)
+
+                var sb = new System.Text.StringBuilder();
+                sb.Append("{");
+                foreach (var s in EnumCases())
                 {
-                    sb.Append("...");
-                    break;
+                    if (sb.Length > 1)
+                        sb.AppendLine("|");
+                    if (sb.Length > 1000)
+                    {
+                        sb.Append("...");
+                        break;
+                    }
+                    sb.Append(s);
                 }
-                sb.Append(s);
+                sb.Append("}");
+                return sb.ToString();
             }
-            sb.Append("}");
-            return sb.ToString();
         }
 
         IEnumerable<string> EnumCases()
@@ -133,6 +139,8 @@ namespace Microsoft.Automata
                 yield return "";
             else if (IsEmpty)
                 yield break;
+            else if (IsLeaf)
+                yield return "(" + algebra.PrettyPrintTerminal(Ordinal) + ")";
             else
             {
                 foreach (var s in One.EnumCases())
@@ -167,18 +175,19 @@ namespace Microsoft.Automata
         public ulong GetMin()
         {
             var set = this;
+
+            if (set.IsFull)
+                return (ulong)0;
+
             if (set.IsEmpty)
                 throw new AutomataException(AutomataExceptionKind.SetIsEmpty);
 
             if (set.Ordinal > 63)
                 throw new AutomataException(AutomataExceptionKind.OrdinalIsTooLarge);
 
-            if (set.IsFull)
-                return (ulong)0;
-
             ulong res = 0;
 
-            while (!set.IsFull)
+            while (!set.IsLeaf)
             {
                 if (set.Zero.IsEmpty) //the bit must be set to 1
                 {
@@ -193,183 +202,42 @@ namespace Microsoft.Automata
         }
     }
 
-    /// <summary>
-    /// Represents a set of bit-vectors with T-leafs in form of a generic multi-terminal Binary Decision Diagram.
-    /// </summary>
-    public class BDD<T>
+    public class BDD<T> : BDD, ISumOfProducts<BDD,T>
     {
-        /// <summary>
-        /// case 1 if nonleaf, else null
-        /// </summary>
-        public readonly BDD<T> One;
-        /// <summary>
-        /// case 0 if nonleaf, else null
-        /// </summary>
-        public readonly BDD<T> Zero;
-
-        /// <summary>
-        /// ordinal of this bit if nonleaf
-        /// </summary>
-        public readonly int Ordinal;
-
-        /// <summary>
-        /// the value if leaf, else default(T)
-        /// </summary>
         public readonly T Leaf;
-
-        /// <summary>
-        /// Boolean Algebra for the BDDs
-        /// </summary>
-        public readonly BDDAlgebra<T> Algebra;
-
-        private BDD() { }
-
-        internal BDD(BDDAlgebra<T> alg, int nr, BDD<T> one, BDD<T> zero)
+        internal BDD(BDDAlgebra<T> algebra, int ordinal, T leaf)
+            : base(algebra, ordinal)
         {
-            this.One = one;
-            this.Zero = zero;
-            this.Ordinal = nr;
-            this.Leaf = default(T);
-            this.Algebra = alg;
-        }
-
-        internal BDD(BDDAlgebra<T> alg, int nr, T leaf)
-        {
-            this.One = null;
-            this.Zero = null;
-            this.Ordinal = nr;
             this.Leaf = leaf;
-            this.Algebra = alg;
         }
 
-        /// <summary>
-        /// True iff the branches One and Zero are null.
-        /// </summary>
-        public bool IsLeaf
+        internal BDD(BDDAlgebra<T> algebra, int ordinal, BDD one, BDD zero)
+            : base(algebra, ordinal, one, zero)
         {
-            get { return One == null; }
+            this.Leaf = default(T);
         }
 
-        /// <summary>
-        /// Counts the number of nodes in the BDD.
-        /// </summary>
-        /// <param name="excludeLeaves">if true does not count leaves</param>
-        public int CountNodes(bool excludeLeaves = false)
+        public IEnumerable<Tuple<BDD, T>> EnumerateProducts()
         {
-            HashSet<BDD<T>> visited = new HashSet<BDD<T>>();
-            SimpleStack<BDD<T>> stack = new SimpleStack<BDD<T>>();
-            if (!excludeLeaves || !this.IsLeaf)
-            {
-                stack.Push(this);
-                visited.Add(this);
-            }
-            while (stack.IsNonempty)
-            {
-                BDD<T> a = stack.Pop();
-                if (!a.IsLeaf)
-                {
-                    if (!excludeLeaves || !a.One.IsLeaf)
-                        if (visited.Add(a.One))
-                            stack.Push(a.One);
-
-                    if (!excludeLeaves || !a.Zero.IsLeaf)
-                        if (visited.Add(a.Zero))
-                            stack.Push(a.Zero);
-                }
-            }
-            return visited.Count;
+            throw new NotImplementedException();
         }
 
-        public override string ToString()
+        public ISumOfProducts<BDD, T> TransformFirst(Func<BDD, BDD> f)
         {
-            if (IsLeaf)
-            {
-                IPrettyPrinter<T> pp = Algebra.LeafAlgebra as IPrettyPrinter<T>;
-                if (pp != null)
-                    return pp.PrettyPrint(Leaf);
-                else
-                    return Leaf.ToString();
-            }
-
-            var sb = new System.Text.StringBuilder();
-            sb.Append("{");
-            foreach (var s in EnumCases())
-            {
-                if (sb.Length > 1)
-                    sb.AppendLine("|");
-                if (sb.Length > 1000)
-                {
-                    sb.Append("...");
-                    break;
-                }
-                sb.Append(s);
-            }
-            sb.Append("}");
-            return sb.ToString();
+            return (BDD<T>)f(this);
         }
 
-        IEnumerable<string> EnumCases()
+        public T ProjectSecond()
         {
-            if (IsLeaf)
-                if (Leaf.Equals(Algebra.LeafAlgebra.False))
-                    yield break;
-                else
-                {
-                    IPrettyPrinter<T> pp = Algebra.LeafAlgebra as IPrettyPrinter<T>;
-                    if (pp != null)
-                        yield return pp.PrettyPrint(Leaf);
-                    else
-                        yield return Leaf.ToString();
-                }
-            else
-            {
-                foreach (var s in One.EnumCases())
-                    yield return "1" + MkStars(Ordinal - One.Ordinal - 1) + s;
-                foreach (var s in Zero.EnumCases())
-                    yield return "0" + MkStars(Ordinal - Zero.Ordinal - 1) + s;
-            }
+            BDDAlgebra<T> alg = (BDDAlgebra<T>)algebra;
+            return alg.ProjectLeaves(this);
         }
 
-        static string MkStars(int k)
+        public ICartesianAlgebra<BDD, T> Algebra
         {
-            if (k <= 0)
-                return "";
-            switch (k)
-            {
-                case 1:
-                    return "*";
-                case 2:
-                    return "**";
-                default:
-                    var stars = new char[k];
-                    for (int i = 0; i < k; i++)
-                        stars[i] = '*';
-                    return new String(stars);
-            }
-        }
-
-        public bool IsEmpty
-        {
-            get
-            {
-                if (IsLeaf)
-                    return Algebra.LeafAlgebra.False.Equals(Leaf);
-                return false;
-            }
+            get { return (BDDAlgebra<T>)this.algebra; }
         }
     }
-
-
-    //public class EquivalenceChecker<T>
-    //{
-    //    IEnumerable<int> foo;
-
-    //    void foo()
-    //    {
-    //        foo.SelectMany(
-    //    }
-    //}
-
 
     /*
     /// <summary>

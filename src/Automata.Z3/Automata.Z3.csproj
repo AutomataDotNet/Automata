@@ -44,6 +44,7 @@
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BooleanAlgebraZ3.cs" />
     <Compile Include="Internal\DeclaredFuncDecls.cs" />
     <Compile Include="Internal\Escape.cs" />
     <Compile Include="Internal\LibraryProvider.cs" />

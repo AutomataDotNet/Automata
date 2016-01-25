@@ -243,6 +243,8 @@ namespace Microsoft.Automata
         IncompatibleBounds,
         NotSupported,
         BooleanAlgebraIsNotAtomic,
-        OrdinalIsTooLarge
+        OrdinalIsTooLarge,
+        PredicateIsNotSingleton,
+        UnknownBDDTerminal
     }
 }

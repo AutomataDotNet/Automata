@@ -452,5 +452,11 @@ namespace Microsoft.Automata.Internal
             var atom = new HashSet<Pair<char, char>>(new Pair<char, char>[] { new Pair<char, char>(elem, elem) });
             return atom;
         }
+
+
+        public bool EvaluateAtom(HashSet<Pair<char, char>> atom, HashSet<Pair<char, char>> psi)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

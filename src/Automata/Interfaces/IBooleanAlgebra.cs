@@ -106,6 +106,15 @@ namespace Microsoft.Automata
         /// Throws AutomataException if the algebra is not atomic.
         /// </summary>
         S GetAtom(S psi);
+
+        /// <summary>
+        /// The predicate atom must represent a singleton set {v} for some value v.
+        /// Returns true iff v is accepted by psi.
+        /// </summary>
+        /// <param name="atom">predicate denoting a singleton set</param>
+        /// <param name="psi">some predicate</param>
+        /// <returns></returns>
+        bool EvaluateAtom(S atom, S psi);
     }
 
     /// <summary>

@@ -119,6 +119,12 @@ namespace Microsoft.Automata.MSO
 
             throw new NotImplementedException();
         }
+
+
+        public bool EvaluateAtom(MSOFormula<S> atom, MSOFormula<S> psi)
+        {
+            throw new NotImplementedException();
+        }
     }
     
 }

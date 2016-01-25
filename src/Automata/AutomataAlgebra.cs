@@ -122,6 +122,12 @@ namespace Microsoft.Automata
             var atom = Automaton<S>.Create(0, new int[] { path.Count }, moves);
             return atom;
         }
+
+
+        public bool EvaluateAtom(Automaton<S> atom, Automaton<S> psi)
+        {
+            throw new NotImplementedException();
+        }
     }
 
     public class RegexAlgebra : AutomataAlgebra<BDD>

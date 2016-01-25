@@ -6,10 +6,18 @@ using BvSetKey = System.Tuple<int, Microsoft.Automata.BDD, Microsoft.Automata.BD
 
 namespace Microsoft.Automata
 {
+
+    public interface IBDDAlgebra : IBoolAlgMinterm<BDD>
+    {
+        string PrettyPrintTerminal(int leafId);
+        BDD MkSetWithBitTrue(int bit);
+        BDD MkSetWithBitFalse(int bit);
+        BDD ProjectBit(BDD bdd, int bit);
+    }
     /// <summary>
     /// Solver for BDDs.
     /// </summary>
-    public class BDDAlgebra : IBoolAlgMinterm<BDD>
+    public class BDDAlgebra : IBDDAlgebra
     {
         //Dictionary<BvSet_Int, BDD> restrictCache = new Dictionary<BvSet_Int, BDD>();
         Dictionary<BvSetPair, BDD> orCache = new Dictionary<BvSetPair, BDD>();
@@ -913,25 +921,41 @@ namespace Microsoft.Automata
         {
             throw new AutomataException(AutomataExceptionKind.BooleanAlgebraIsNotAtomic);
         }
+
+
+        public bool EvaluateAtom(BDD atom, BDD psi)
+        {
+            throw new AutomataException(AutomataExceptionKind.BooleanAlgebraIsNotAtomic);
+        }
+
+        public string PrettyPrintTerminal(int id)
+        {
+            if (_True.Ordinal == id)
+                return "true";
+            else if (_False.Ordinal == id)
+                return "false";
+            else
+                throw new AutomataException(AutomataExceptionKind.UnknownBDDTerminal);
+        }
     }
 
     /// <summary>
-    /// Solver for BDDs with leaf labels that map to predicates from a Boolean algebra over T
+    /// Solver for multi-terminal BDDs with leaf ordinals that map to predicates from a Boolean algebra over T
     /// </summary>
-    public class BDDAlgebra<T> : IBoolAlgMinterm<BDD<T>>
+    public class BDDAlgebra<T> : IBDDAlgebra, ICartesianAlgebraBDD<T>
     {
-        BDD<T> _True;
-        BDD<T> _False;
-        MintermGenerator<BDD<T>> mintermGen;
+        BDD _True;
+        BDD _False;
+        MintermGenerator<BDD> mintermGen;
         public readonly IBooleanAlgebra<T> LeafAlgebra;
         Func<T,T> GetId;
 
-        public BDD<T> True
+        public BDD True
         {
             get { return _True; }
         }
 
-        public BDD<T> False
+        public BDD False
         {
             get { return _False; }
         }
@@ -945,21 +969,32 @@ namespace Microsoft.Automata
                 this.GetId = new PredicateTrie<T>(leafAlgebra).GetId;
             else 
                 this.GetId = new PredicateIdMapper<T>(leafAlgebra).GetId;
-            mintermGen = new MintermGenerator<BDD<T>>(this);
+            mintermGen = new MintermGenerator<BDD>(this);
             _True = MkLeaf(leafAlgebra.True);
             _False = MkLeaf(leafAlgebra.False);
+            terminal2id[leafAlgebra.True] = -1;
+            terminal2id[leafAlgebra.False] = -2;
+            id2leaf[-1] = _True;
+            id2leaf[-2] = _False;
+            id2terminal[-1] = leafAlgebra.True;
+            id2terminal[-2] = leafAlgebra.False;
         }
 
-        Dictionary<Tuple<BDD<T>, BDD<T>>, BDD<T>> andCache = new Dictionary<Tuple<BDD<T>, BDD<T>>, BDD<T>>();
-        Dictionary<Tuple<BDD<T>, BDD<T>>, BDD<T>> orCache = new Dictionary<Tuple<BDD<T>, BDD<T>>, BDD<T>>();
-        Dictionary<BDD<T>, BDD<T>> notCache = new Dictionary<BDD<T>, BDD<T>>();
-        Dictionary<Tuple<int, BDD<T>, BDD<T>>, BDD<T>> nodeCache = new Dictionary<Tuple<int, BDD<T>, BDD<T>>, BDD<T>>();
-        Dictionary<T, BDD<T>> leafCache = new Dictionary<T, BDD<T>>();
+        Dictionary<Tuple<BDD, BDD>, BDD> andCache = new Dictionary<Tuple<BDD, BDD>, BDD>();
+        Dictionary<Tuple<BDD, BDD>, BDD> orCache = new Dictionary<Tuple<BDD, BDD>, BDD>();
+        Dictionary<BDD, BDD> notCache = new Dictionary<BDD, BDD>();
+        Dictionary<Tuple<int, BDD, BDD>, BDD> nodeCache = new Dictionary<Tuple<int, BDD, BDD>, BDD>();
+        //Dictionary<T, BDD> leafCache = new Dictionary<T, BDD>();
 
-        internal BDD<T> MkNode(int bit, BDD<T> one, BDD<T> zero)
+        Dictionary<T, int> terminal2id = new Dictionary<T, int>();
+        Dictionary<int, BDD> id2leaf = new Dictionary<int, BDD>();
+        Dictionary<int, T> id2terminal = new Dictionary<int, T>();
+        int nextId = -3;
+
+        internal BDD MkNode(int bit, BDD one, BDD zero)
         {
-            var key = new Tuple<int, BDD<T>, BDD<T>>(bit, one, zero);
-            BDD<T> bdd;
+            var key = new Tuple<int, BDD, BDD>(bit, one, zero);
+            BDD bdd;
             if (!nodeCache.TryGetValue(key, out bdd))
             {
                 bdd = new BDD<T>(this, bit, one, zero);
@@ -968,14 +1003,22 @@ namespace Microsoft.Automata
             return bdd;
         }
 
-        public BDD<T> MkLeaf(T pred)
+        public BDD MkLeaf(T pred)
         {
             var repr = GetId(pred);
-            BDD<T> leaf;
-            if (!leafCache.TryGetValue(repr, out leaf))
+            int leaf_id;
+            BDD leaf;
+            if (!terminal2id.TryGetValue(repr, out leaf_id))
             {
-                leaf = new BDD<T>(this, 0, pred);
-                leafCache[pred] = leaf;
+                leaf_id = this.nextId--;
+                leaf = new BDD<T>(this, leaf_id, repr);
+                terminal2id[repr] = leaf_id;
+                id2leaf[leaf_id] = leaf;
+                id2terminal[leaf_id] = repr;
+            }
+            else
+            {
+                leaf = id2leaf[leaf_id];
             }
             return leaf;
         }
@@ -985,7 +1028,7 @@ namespace Microsoft.Automata
         /// <summary>
         /// Make the union of a and b
         /// </summary>
-        public BDD<T> MkOr(BDD<T> a, BDD<T> b)
+        public BDD MkOr(BDD a, BDD b)
         {
             if (a == _False)
                 return b;
@@ -996,30 +1039,30 @@ namespace Microsoft.Automata
             if (a == b)
                 return a;
 
-            var key = new Tuple<BDD<T>, BDD<T>>(a, b);
-            BDD<T> res;
+            var key = new Tuple<BDD, BDD>(a, b);
+            BDD res;
             if (orCache.TryGetValue(key, out res))
                 return res;
 
             if (a.IsLeaf && b.IsLeaf)
-                res = MkLeaf(LeafAlgebra.MkOr(a.Leaf, b.Leaf));
+                res = MkLeaf(LeafAlgebra.MkOr(id2terminal[a.Ordinal], id2terminal[b.Ordinal]));
 
             else if (a.IsLeaf || b.Ordinal > a.Ordinal)
             {
-                BDD<T> t = MkOr(a, b.One);
-                BDD<T> f = MkOr(a, b.Zero);
+                BDD t = MkOr(a, b.One);
+                BDD f = MkOr(a, b.Zero);
                 res = (t == f ? t : MkNode(b.Ordinal, t, f));
             }
             else if (b.IsLeaf || a.Ordinal > b.Ordinal)
             {
-                BDD<T> t = MkOr(a.One, b);
-                BDD<T> f = MkOr(a.Zero, b);
+                BDD t = MkOr(a.One, b);
+                BDD f = MkOr(a.Zero, b);
                 res = (t == f ? t : MkNode(a.Ordinal, t, f));
             }
             else //a.Ordinal == b.Ordinal and neither is leaf
             {
-                BDD<T> t = MkOr(a.One, b.One);
-                BDD<T> f = MkOr(a.Zero, b.Zero);
+                BDD t = MkOr(a.One, b.One);
+                BDD f = MkOr(a.Zero, b.Zero);
                 res = (t == f ? t : MkNode(a.Ordinal, t, f));
             }
 
@@ -1030,7 +1073,7 @@ namespace Microsoft.Automata
         /// <summary>
         /// Make the intersection of a and b
         /// </summary>
-        public BDD<T> MkAnd(BDD<T> a, BDD<T> b)
+        public BDD MkAnd(BDD a, BDD b)
         {
             if (a == _True)
                 return b;
@@ -1041,30 +1084,30 @@ namespace Microsoft.Automata
             if (a == b)
                 return a;
 
-            var key = new Tuple<BDD<T>,BDD<T>>(a, b);
-            BDD<T> res;
+            var key = new Tuple<BDD,BDD>(a, b);
+            BDD res;
             if (andCache.TryGetValue(key, out res))
                 return res;
 
             if (a.IsLeaf && b.IsLeaf)
-                res = MkLeaf(LeafAlgebra.MkAnd(a.Leaf, b.Leaf));
+                res = MkLeaf(LeafAlgebra.MkAnd(id2terminal[a.Ordinal], id2terminal[b.Ordinal]));
 
             else if (a.IsLeaf || b.Ordinal > a.Ordinal)
             {
-                BDD<T> t = MkAnd(a, b.One);
-                BDD<T> f = MkAnd(a, b.Zero);
+                BDD t = MkAnd(a, b.One);
+                BDD f = MkAnd(a, b.Zero);
                 res = (t == f ? t : MkNode(b.Ordinal, t, f));
             }
             else if (b.IsLeaf || a.Ordinal > b.Ordinal)
             {
-                BDD<T> t = MkAnd(a.One, b);
-                BDD<T> f = MkAnd(a.Zero, b);
+                BDD t = MkAnd(a.One, b);
+                BDD f = MkAnd(a.Zero, b);
                 res = (t == f ? t : MkNode(a.Ordinal, t, f));
             }
             else //a.Ordinal == b.Ordinal and neither is leaf
             {
-                BDD<T> t = MkAnd(a.One, b.One);
-                BDD<T> f = MkAnd(a.Zero, b.Zero);
+                BDD t = MkAnd(a.One, b.One);
+                BDD f = MkAnd(a.Zero, b.Zero);
                 res = (t == f ? t : MkNode(a.Ordinal, t, f));
             }
 
@@ -1075,7 +1118,7 @@ namespace Microsoft.Automata
         /// <summary>
         /// Make the difference a - b
         /// </summary>
-        public BDD<T> MkDiff(BDD<T> a, BDD<T> b)
+        public BDD MkDiff(BDD a, BDD b)
         {
             return MkAnd(a, MkNot(b));
         }
@@ -1083,19 +1126,19 @@ namespace Microsoft.Automata
         /// <summary>
         /// Complement a
         /// </summary>
-        public BDD<T> MkNot(BDD<T> a)
+        public BDD MkNot(BDD a)
         {
             if (a == _False)
                 return True;
             if (a == _True)
                 return False;
 
-            BDD<T> neg;
+            BDD neg;
             if (notCache.TryGetValue(a, out neg))
                 return neg;
 
             if (a.IsLeaf)
-                neg = MkLeaf(LeafAlgebra.MkNot(a.Leaf));
+                neg = MkLeaf(LeafAlgebra.MkNot(id2terminal[a.Ordinal]));
             else
                 neg = MkNode(a.Ordinal, MkNot(a.One), MkNot(a.Zero));
             notCache[a] = neg;
@@ -1105,10 +1148,10 @@ namespace Microsoft.Automata
         /// <summary>
         /// Intersect all sets in the enumeration
         /// </summary>
-        public BDD<T> MkAnd(IEnumerable<BDD<T>> sets)
+        public BDD MkAnd(IEnumerable<BDD> sets)
         {
-            BDD<T> res = _True;
-            foreach (BDD<T> bdd in sets)
+            BDD res = _True;
+            foreach (BDD bdd in sets)
                 res = MkAnd(res, bdd);
             return res;
         }
@@ -1116,9 +1159,9 @@ namespace Microsoft.Automata
         /// <summary>
         /// Intersect all the sets.
         /// </summary>
-        public BDD<T> MkAnd(params BDD<T>[] sets)
+        public BDD MkAnd(params BDD[] sets)
         {
-            BDD<T> res = _True;
+            BDD res = _True;
             for (int i = 0; i < sets.Length; i++ )
                 res = MkAnd(res, sets[i]);
             return res;
@@ -1127,10 +1170,10 @@ namespace Microsoft.Automata
         /// <summary>
         /// Take the union of all sets in the enumeration
         /// </summary>
-        public BDD<T> MkOr(IEnumerable<BDD<T>> sets)
+        public BDD MkOr(IEnumerable<BDD> sets)
         {
-            BDD<T> res = _False;
-            foreach (BDD<T> bdd in sets)
+            BDD res = _False;
+            foreach (BDD bdd in sets)
                 res = MkOr(res, bdd);
             return res;
         }
@@ -1138,7 +1181,7 @@ namespace Microsoft.Automata
         /// <summary>
         /// Returns true if bdd is nonempty.
         /// </summary>
-        public bool IsSatisfiable(BDD<T> bdd)
+        public bool IsSatisfiable(BDD bdd)
         {
             return bdd != _False;
         }
@@ -1146,7 +1189,7 @@ namespace Microsoft.Automata
         /// <summary>
         /// Two BDDs are by construction equivalent iff they are identical.
         /// </summary>
-        public bool AreEquivalent(BDD<T> a, BDD<T> b)
+        public bool AreEquivalent(BDD a, BDD b)
         {
             return a == b;
         }
@@ -1155,7 +1198,7 @@ namespace Microsoft.Automata
 
         #region Minterm generation
 
-        public IEnumerable<Pair<bool[], BDD<T>>> GenerateMinterms(params BDD<T>[] sets)
+        public IEnumerable<Pair<bool[], BDD>> GenerateMinterms(params BDD[] sets)
         {
             return mintermGen.GenerateMinterms(sets);
         }
@@ -1165,7 +1208,7 @@ namespace Microsoft.Automata
         /// <summary>
         /// Creates the bdd that contains all elements whose k'th bit is true.
         /// </summary>
-        public BDD<T> MkSetWithBitTrue(int k)
+        public BDD MkSetWithBitTrue(int k)
         {
             return MkNode(k, _True, _False);
         }
@@ -1173,7 +1216,7 @@ namespace Microsoft.Automata
         /// <summary>
         /// Creates the set that contains all elements whose k'th bit is false.
         /// </summary>
-        public BDD<T> MkSetWithBitFalse(int k)
+        public BDD MkSetWithBitFalse(int k)
         {
             return MkNode(k, _False, _True);
         }
@@ -1181,7 +1224,7 @@ namespace Microsoft.Automata
         /// <summary>
         /// Identity function
         /// </summary>
-        public BDD<T> Simplify(BDD<T> set)
+        public BDD Simplify(BDD set)
         {
             return set;
         }
@@ -1189,19 +1232,27 @@ namespace Microsoft.Automata
         /// <summary>
         /// Project away the i'th bit. Assumes that bit is nonnegative.
         /// </summary>
-        public BDD<T> ProjectBit(BDD<T> bdd, int bit)
+        public BDD ProjectBit(BDD bdd, int bit)
         {
             if (bdd.IsLeaf | bdd.Ordinal < bit)
                 return bdd;
             else if (bdd.Ordinal == bit)
                 return MkOr(bdd.One, bdd.Zero);
             else
-                return ProjectBit_(bdd, bit, new Dictionary<BDD<T>, BDD<T>>());
+                return ProjectBit_(bdd, bit, new Dictionary<BDD, BDD>());
         }
 
-        private BDD<T> ProjectBit_(BDD<T> bdd, int bit, Dictionary<BDD<T>, BDD<T>> cache)
+        public T ProjectLeaves(BDD<T> bdd)
         {
-            BDD<T> res;
+            if (bdd.IsLeaf)
+                return bdd.Leaf;
+            else
+                return ProjectLeaves((BDD<T>)MkOr(bdd.One, bdd.Zero));
+        }
+
+        private BDD ProjectBit_(BDD bdd, int bit, Dictionary<BDD, BDD> cache)
+        {
+            BDD res;
             if (!cache.TryGetValue(bdd, out res))
             {
                 if (bdd.IsLeaf | bdd.Ordinal < bit)
@@ -1233,7 +1284,7 @@ namespace Microsoft.Automata
         /// <summary>
         /// Returns p-q.
         /// </summary>
-        public BDD<T> MkDifference(BDD<T> p, BDD<T> q)
+        public BDD MkDifference(BDD p, BDD q)
         {
             return MkAnd(p, MkNot(q));
         }
@@ -1241,14 +1292,14 @@ namespace Microsoft.Automata
         /// <summary>
         /// Returns (p-q)|(q-p).
         /// </summary>
-        public BDD<T> MkSymmetricDifference(BDD<T> p, BDD<T> q)
+        public BDD MkSymmetricDifference(BDD p, BDD q)
         {
             return MkOr(MkAnd(p, MkNot(q)), MkAnd(q, MkNot(p))); 
         }
 
-        public bool CheckImplication(BDD<T> lhs, BDD<T> rhs)
+        public bool CheckImplication(BDD lhs, BDD rhs)
         {
-            return MkAnd(lhs, MkNot(rhs)).IsEmpty;
+            return MkAnd(lhs, MkNot(rhs)) == _False;
         }
 
         public bool IsAtomic
@@ -1256,9 +1307,137 @@ namespace Microsoft.Automata
             get { return false; }
         }
 
-        public BDD<T> GetAtom(BDD<T> psi)
+        public BDD GetAtom(BDD psi)
         {
             throw new AutomataException(AutomataExceptionKind.BooleanAlgebraIsNotAtomic);
+        }
+
+
+        public bool EvaluateAtom(BDD atom, BDD psi)
+        {
+            throw new AutomataException(AutomataExceptionKind.BooleanAlgebraIsNotAtomic);
+        }
+
+        public string PrettyPrintTerminal(int leafId)
+        {
+            T leafPred = id2terminal[leafId];
+            var pp = LeafAlgebra as IPrettyPrinter<T>;
+            if (pp != null)
+                return pp.PrettyPrint(leafPred);
+            else
+                return leafPred.ToString();
+        }
+
+        IBDDAlgebra ICartesianAlgebraBDD<T>.BDDAlgebra
+        {
+            get { return this; }
+        }
+
+        public ISumOfProducts<BDD, T> MkProduct(BDD first, T second)
+        {
+            return (BDD<T>)MkAnd(first, MkLeaf(second));
+        }
+
+        public IBooleanAlgebra<T> Second
+        {
+            get { return LeafAlgebra; }
+        }
+
+        public IEnumerable<Pair<bool[], ISumOfProducts<BDD, T>>> GenerateMinterms(params ISumOfProducts<BDD, T>[] constraints)
+        {
+            BDD[] bdds = Array.ConvertAll(constraints, c => (BDD)c);
+            foreach (var mt in GenerateMinterms(bdds))
+                yield return new Pair<bool[], ISumOfProducts<BDD, T>>(mt.First, (BDD<T>)mt.Second);
+        }
+
+        ISumOfProducts<BDD, T> IBooleanAlgebra<ISumOfProducts<BDD, T>>.True
+        {
+            get { return (BDD<T>)_True; }
+        }
+
+        ISumOfProducts<BDD, T> IBooleanAlgebra<ISumOfProducts<BDD, T>>.False
+        {
+            get { return (BDD<T>)_False; }
+        }
+
+        public ISumOfProducts<BDD, T> MkOr(IEnumerable<ISumOfProducts<BDD, T>> predicates)
+        {
+            BDD res = False;
+            foreach (var p in predicates)
+            {
+                res = MkOr(res, (BDD)p);
+            }
+            return (BDD<T>)res;
+        }
+
+        public ISumOfProducts<BDD, T> MkAnd(IEnumerable<ISumOfProducts<BDD, T>> predicates)
+        {
+            BDD res = True;
+            foreach (var p in predicates)
+            {
+                res = MkAnd(res, (BDD)p);
+            }
+            return (BDD<T>)res;
+        }
+
+        public ISumOfProducts<BDD, T> MkAnd(params ISumOfProducts<BDD, T>[] predicates)
+        {
+            BDD res = True;
+            foreach (var p in predicates)
+            {
+                res = MkAnd(res, (BDD)p);
+            }
+            return (BDD<T>)res;
+        }
+
+        public ISumOfProducts<BDD, T> MkNot(ISumOfProducts<BDD, T> predicate)
+        {
+            return (BDD<T>)MkNot((BDD)predicate);
+        }
+
+        public bool AreEquivalent(ISumOfProducts<BDD, T> predicate1, ISumOfProducts<BDD, T> predicate2)
+        {
+            return AreEquivalent((BDD)predicate1, (BDD)predicate2);
+        }
+
+        public ISumOfProducts<BDD, T> MkSymmetricDifference(ISumOfProducts<BDD, T> p1, ISumOfProducts<BDD, T> p2)
+        {
+            return (BDD<T>)MkSymmetricDifference((BDD)p1, (BDD)p2);
+        }
+
+        public bool CheckImplication(ISumOfProducts<BDD, T> lhs, ISumOfProducts<BDD, T> rhs)
+        {
+            return CheckImplication((BDD)lhs, (BDD)rhs);
+        }
+
+        public ISumOfProducts<BDD, T> Simplify(ISumOfProducts<BDD, T> predicate)
+        {
+            return predicate;
+        }
+
+        public ISumOfProducts<BDD, T> GetAtom(ISumOfProducts<BDD, T> psi)
+        {
+            throw new AutomataException(AutomataExceptionKind.BooleanAlgebraIsNotAtomic);
+        }
+
+        public bool EvaluateAtom(ISumOfProducts<BDD, T> atom, ISumOfProducts<BDD, T> psi)
+        {
+            throw new AutomataException(AutomataExceptionKind.BooleanAlgebraIsNotAtomic);
+        }
+
+        public ISumOfProducts<BDD, T> MkAnd(ISumOfProducts<BDD, T> p1, ISumOfProducts<BDD, T> p2)
+        {
+            return (BDD<T>)MkAnd((BDD)p1, (BDD)p2);
+        }
+
+        public ISumOfProducts<BDD, T> MkOr(ISumOfProducts<BDD, T> p1, ISumOfProducts<BDD, T> p2)
+        {
+            return (BDD<T>)MkOr((BDD)p1, (BDD)p2); 
+        }
+
+        public bool IsSatisfiable(ISumOfProducts<BDD, T> predicate)
+        {
+            return IsSatisfiable((BDD)predicate);
         }
     }
 
@@ -1355,10 +1534,10 @@ namespace Microsoft.Automata
                     #region extend the trie using atoms[tr.k]
                     var vk = atoms[tr.k];
                     tr.leaf = default(T);
-                    if (algebra.CheckImplication(vk, leaf))
+                    if (algebra.EvaluateAtom(vk, leaf))
                     {
                         tr.t1 = new TrieTree(tr.k + 1, leaf, null, null);
-                        if (algebra.CheckImplication(vk, pred))
+                        if (algebra.EvaluateAtom(vk, pred))
                             return Insert(tr.t1, pred);
                         else
                         {
@@ -1370,7 +1549,7 @@ namespace Microsoft.Automata
                     else
                     {
                         tr.t0 = new TrieTree(tr.k + 1, leaf, null, null);
-                        if (algebra.CheckImplication(vk, pred))
+                        if (algebra.EvaluateAtom(vk, pred))
                         {
                             //k is smallest such that vk distinguishes leaf and pred
                             tr.t1 = new TrieTree(tr.k + 1, pred, null, null);
@@ -1392,7 +1571,7 @@ namespace Microsoft.Automata
                     {
                         //split the leaf based on the new atom
                         atoms.Add(atom);
-                        if (algebra.CheckImplication(atom, leaf))
+                        if (algebra.EvaluateAtom(atom, leaf))
                         {
                             tr.t0 = new TrieTree(tr.k + 1, pred, null, null);
                             tr.t1 = new TrieTree(tr.k + 1, leaf, null, null);
@@ -1411,7 +1590,7 @@ namespace Microsoft.Automata
             else
             {   
                 #region in a nonleaf the invariant holds: tr.k < atoms.Count
-                if (algebra.CheckImplication(atoms[tr.k], pred))
+                if (algebra.EvaluateAtom(atoms[tr.k], pred))
                 {
                     if (tr.t1 == null)
                     {
@@ -1955,6 +2134,11 @@ namespace Microsoft.Automata
         public bool GetAtom(bool psi)
         {
             return psi;
+        }
+
+        public bool EvaluateAtom(bool atom, bool psi)
+        {
+            return atom && psi;
         }
     }
 }

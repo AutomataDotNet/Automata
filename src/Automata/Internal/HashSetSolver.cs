@@ -393,5 +393,11 @@ namespace Microsoft.Automata.Internal
 
             return new HashSet<char>(new char[] { ChooseElement(psi) });
         }
+
+
+        public bool EvaluateAtom(HashSet<char> atom, HashSet<char> psi)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

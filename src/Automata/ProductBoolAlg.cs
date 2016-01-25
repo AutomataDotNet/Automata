@@ -263,22 +263,22 @@ namespace Microsoft.Automata
     {
         IEnumerable<Tuple<T1, T2>> EnumerateProducts();
         ISumOfProducts<T1, T2> TransformFirst(Func<T1, T1> f);
-        T1 ProjectFirst();
+        //T1 ProjectFirst();
         T2 ProjectSecond();
         ICartesianAlgebra<T1, T2> Algebra { get; }
     }
 
     public interface ICartesianAlgebra<T1, T2> : IBoolAlgMinterm<ISumOfProducts<T1, T2>>
     {
-        ISumOfProducts<T1, T2> MkSumOfProducts(IEnumerable<Tuple<T1, T2>> products);
+        //ISumOfProducts<T1, T2> MkSumOfProducts(IEnumerable<Tuple<T1, T2>> products);
         ISumOfProducts<T1, T2> MkProduct(T1 first, T2 second);
-        IBooleanAlgebra<T1> First { get; }
-        IBooleanAlgebra<T2> Second { get; }
+        //IBooleanAlgebra<T1> First { get; } 
+        IBooleanAlgebra<T2> Second { get; }   
     }
 
     public interface ICartesianAlgebraBDD<T> : ICartesianAlgebra<BDD, T>
     {
-        BDDAlgebra BDDAlgebra { get; }
+        IBDDAlgebra BDDAlgebra { get; }
     }
 
     /// <summary>
@@ -286,8 +286,24 @@ namespace Microsoft.Automata
     /// </summary>
     public class CartesianAlgebra<T, S> : ICartesianAlgebra<T, S>
     {
-        public readonly IBooleanAlgebra<S> NodeAlgebra;
-        public readonly IBooleanAlgebra<T> LeafAlgebra;
+        internal readonly IBooleanAlgebra<S> nodeAlgebra;
+        internal readonly IBooleanAlgebra<T> leafAlgebra;
+
+        public IBooleanAlgebra<S> Second
+        {
+            get
+            {
+                return nodeAlgebra;
+            }
+        }
+
+        public IBooleanAlgebra<T> First
+        {
+            get
+            {
+                return leafAlgebra;
+            }
+        }
 
         internal Dictionary<Tuple<S, T, BDG<T, S>>, BDG<T, S>> restrictCache =
             new Dictionary<Tuple<S, T, BDG<T, S>>, BDG<T, S>>();
@@ -313,8 +329,8 @@ namespace Microsoft.Automata
 
         public CartesianAlgebra(IBooleanAlgebra<T> leafAlg, IBooleanAlgebra<S> nodeAlg)
         {
-            this.LeafAlgebra = leafAlg;
-            this.NodeAlgebra = nodeAlg;
+            this.leafAlgebra = leafAlg;
+            this.nodeAlgebra = nodeAlg;
             this._True = new BDG<T, S>(this, default(S), leafAlg.True, null, null);
             this._False = new BDG<T, S>(this, default(S), leafAlg.False, null, null);
             MkLeafCache1[leafAlg.True] = _True;
@@ -356,9 +372,9 @@ namespace Microsoft.Automata
             {
                 if (!MkLeafCache1.TryGetValue(pred, out val))
                 {
-                    if (!LeafAlgebra.IsSatisfiable(pred))
+                    if (!leafAlgebra.IsSatisfiable(pred))
                         val = _False;
-                    else if (!LeafAlgebra.IsSatisfiable(LeafAlgebra.MkNot(pred)))
+                    else if (!leafAlgebra.IsSatisfiable(leafAlgebra.MkNot(pred)))
                         val = _True;
                     else
                         val = new BDG<T, S>(this, default(S), pred, null, null);
@@ -467,10 +483,6 @@ namespace Microsoft.Automata
         #endregion
 
         #region ICartesianAlgebra members
-        public IBooleanAlgebra<T> First { get { return LeafAlgebra; } }
-        public IBooleanAlgebra<S> Second { get { return NodeAlgebra; } }
-
-
         public ISumOfProducts<T, S> MkSumOfProducts(IEnumerable<Tuple<T, S>> products)
         {
             var conj = _True;
@@ -495,7 +507,7 @@ namespace Microsoft.Automata
         /// </summary>
         public BDG<T, S> MkNode(T t, S s)
         {
-            if (s.Equals(NodeAlgebra.True))
+            if (s.Equals(nodeAlgebra.True))
                 return MkLeaf(t);
             return MkNode(s, MkLeaf(t), _False);
         }
@@ -519,7 +531,7 @@ namespace Microsoft.Automata
 
         public bool IsAtomic
         {
-            get { return NodeAlgebra.IsAtomic && LeafAlgebra.IsAtomic; }
+            get { return nodeAlgebra.IsAtomic && leafAlgebra.IsAtomic; }
         }
 
         public ISumOfProducts<T, S> GetAtom(ISumOfProducts<T, S> psi)
@@ -530,31 +542,38 @@ namespace Microsoft.Automata
 
             foreach (var tuple in psi.EnumerateProducts())
             {
-                var a2 = NodeAlgebra.GetAtom(tuple.Item2);
-                var a1 = LeafAlgebra.GetAtom(tuple.Item1);
+                var a2 = nodeAlgebra.GetAtom(tuple.Item2);
+                var a1 = leafAlgebra.GetAtom(tuple.Item1);
                 var a = MkNode(a1, a2);
                 return a;
             }
 
             return _False;
         }
+
+
+        public bool EvaluateAtom(ISumOfProducts<T, S> atom, ISumOfProducts<T, S> psi)
+        {
+            throw new NotImplementedException();
+        }
+
     }
 
-    public class CartesianAlgebraBDD<S> : CartesianAlgebra<BDD, S>, ICartesianAlgebraBDD<S>
+    public class CartesianAlgebraBDD<T> : CartesianAlgebra<BDD, T>, ICartesianAlgebraBDD<T>
     {
-        public CartesianAlgebraBDD(BDDAlgebra bddAlg, IBooleanAlgebra<S> nodeAlg) :
+        public CartesianAlgebraBDD(BDDAlgebra bddAlg, IBooleanAlgebra<T> nodeAlg) :
             base(bddAlg, nodeAlg)
         {
         }
 
-        public CartesianAlgebraBDD(IBooleanAlgebra<S> nodeAlg) :
+        public CartesianAlgebraBDD(IBooleanAlgebra<T> nodeAlg) :
             base(new BDDAlgebra(), nodeAlg)
         {
         }
 
-        public BDDAlgebra BDDAlgebra
+        public IBDDAlgebra BDDAlgebra
         {
-            get { return (BDDAlgebra)LeafAlgebra; }
+            get { return (BDDAlgebra)leafAlgebra; }
         }
     }
 
@@ -637,7 +656,7 @@ namespace Microsoft.Automata
         /// </summary>
         public BDG<T, S> MkAnd(BDG<T, S> that)
         {
-            return MkAnd(algebra.NodeAlgebra.True, that);
+            return MkAnd(algebra.nodeAlgebra.True, that);
         }
 
         /// <summary>
@@ -650,7 +669,7 @@ namespace Microsoft.Automata
             if (!algebra.MkAndCache.TryGetValue(key, out val))
             {
                 if (this.IsLeaf)
-                    if (path.Equals(algebra.NodeAlgebra.True))
+                    if (path.Equals(algebra.nodeAlgebra.True))
                         val = that.RestrictLeaves(this.LeafCondition);
                     else
                         val = that.Restrict(path, this.LeafCondition);
@@ -658,12 +677,12 @@ namespace Microsoft.Automata
                     val = this.RestrictLeaves(that.LeafCondition); //path is not relevant
                 else
                 {  
-                    var path_and_thatCond = algebra.NodeAlgebra.MkAnd(path, that.BranchCondition);
-                    if (!algebra.NodeAlgebra.IsSatisfiable(path_and_thatCond))
+                    var path_and_thatCond = algebra.nodeAlgebra.MkAnd(path, that.BranchCondition);
+                    if (!algebra.nodeAlgebra.IsSatisfiable(path_and_thatCond))
                     {
                         //path implies ~that.BranchCondition
-                        var t = this.TrueCase.MkAnd(algebra.NodeAlgebra.MkAnd(path, this.BranchCondition), that.FalseCase);
-                        var f = this.FalseCase.MkAnd(algebra.NodeAlgebra.MkAnd(path, algebra.NodeAlgebra.MkNot(this.BranchCondition)), that.FalseCase);
+                        var t = this.TrueCase.MkAnd(algebra.nodeAlgebra.MkAnd(path, this.BranchCondition), that.FalseCase);
+                        var f = this.FalseCase.MkAnd(algebra.nodeAlgebra.MkAnd(path, algebra.nodeAlgebra.MkNot(this.BranchCondition)), that.FalseCase);
                         if (t == this.TrueCase && f == this.FalseCase)
                             val = this;
                         else
@@ -671,12 +690,12 @@ namespace Microsoft.Automata
                     }
                     else
                     {
-                        var path_and_not_thatCond = algebra.NodeAlgebra.MkAnd(path, algebra.NodeAlgebra.MkNot(that.BranchCondition));
-                        if (!algebra.NodeAlgebra.IsSatisfiable(path_and_not_thatCond))
+                        var path_and_not_thatCond = algebra.nodeAlgebra.MkAnd(path, algebra.nodeAlgebra.MkNot(that.BranchCondition));
+                        if (!algebra.nodeAlgebra.IsSatisfiable(path_and_not_thatCond))
                         {
                             //path implies that.BranchCondition
-                            var t = this.TrueCase.MkAnd(algebra.NodeAlgebra.MkAnd(path, this.BranchCondition), that.TrueCase);
-                            var f = this.FalseCase.MkAnd(algebra.NodeAlgebra.MkAnd(path, algebra.NodeAlgebra.MkNot(this.BranchCondition)), that.TrueCase);
+                            var t = this.TrueCase.MkAnd(algebra.nodeAlgebra.MkAnd(path, this.BranchCondition), that.TrueCase);
+                            var f = this.FalseCase.MkAnd(algebra.nodeAlgebra.MkAnd(path, algebra.nodeAlgebra.MkNot(this.BranchCondition)), that.TrueCase);
                             if (t == this.TrueCase && f == this.FalseCase)
                                 val = this;
                             else
@@ -684,8 +703,8 @@ namespace Microsoft.Automata
                         }
                         else
                         {  //both cases are possible
-                            var t = this.TrueCase.MkAnd(algebra.NodeAlgebra.MkAnd(path, this.BranchCondition), that);
-                            var f = this.FalseCase.MkAnd(algebra.NodeAlgebra.MkAnd(path, algebra.NodeAlgebra.MkNot(this.BranchCondition)), that);
+                            var t = this.TrueCase.MkAnd(algebra.nodeAlgebra.MkAnd(path, this.BranchCondition), that);
+                            var f = this.FalseCase.MkAnd(algebra.nodeAlgebra.MkAnd(path, algebra.nodeAlgebra.MkNot(this.BranchCondition)), that);
                             if (t == this.TrueCase && f == this.FalseCase)
                                 val = this;
                             else
@@ -714,7 +733,7 @@ namespace Microsoft.Automata
                     //else if (this == Algebra.True)
                     //    val = Algebra._False;
                     //else
-                        val = algebra.MkLeaf(algebra.LeafAlgebra.MkNot(this.LeafCondition));
+                        val = algebra.MkLeaf(algebra.leafAlgebra.MkNot(this.LeafCondition));
                 }
                 else
                 {
@@ -737,7 +756,7 @@ namespace Microsoft.Automata
             if (!algebra.restrictLeafCache.TryGetValue(key, out val))
             {
                 if (this.IsLeaf)
-                    val = this.algebra.MkLeaf(this.algebra.LeafAlgebra.MkAnd(this.LeafCondition, psi), true);
+                    val = this.algebra.MkLeaf(this.algebra.leafAlgebra.MkAnd(this.LeafCondition, psi), true);
                 else
                 {
                     var t = TrueCase.RestrictLeaves(psi);
@@ -762,16 +781,16 @@ namespace Microsoft.Automata
             if (!algebra.restrictCache.TryGetValue(key, out val))
             {
                 if (this.IsLeaf)
-                    val = this.algebra.MkLeaf(this.algebra.LeafAlgebra.MkAnd(this.LeafCondition, psi), true);
+                    val = this.algebra.MkLeaf(this.algebra.leafAlgebra.MkAnd(this.LeafCondition, psi), true);
                 else
                 {
                     #region restrict the children
-                    var path_and_not_nodePred = algebra.NodeAlgebra.MkAnd(path, algebra.NodeAlgebra.MkNot(BranchCondition));
-                    if (algebra.NodeAlgebra.IsSatisfiable(path_and_not_nodePred))
+                    var path_and_not_nodePred = algebra.nodeAlgebra.MkAnd(path, algebra.nodeAlgebra.MkNot(BranchCondition));
+                    if (algebra.nodeAlgebra.IsSatisfiable(path_and_not_nodePred))
                     {
                         var f = this.FalseCase.Restrict(path_and_not_nodePred, psi);
-                        var path_and_nodePred = algebra.NodeAlgebra.MkAnd(path, BranchCondition);
-                        if (algebra.NodeAlgebra.IsSatisfiable(path_and_nodePred))
+                        var path_and_nodePred = algebra.nodeAlgebra.MkAnd(path, BranchCondition);
+                        if (algebra.nodeAlgebra.IsSatisfiable(path_and_nodePred))
                         {
                             var t = this.TrueCase.Restrict(path_and_nodePred, psi);
                             if (f == this.FalseCase && t == this.TrueCase)
@@ -798,7 +817,7 @@ namespace Microsoft.Automata
         public IEnumerable<Tuple<T, S>> EnumerateProducts()
         {
             foreach (var kv in GetRowsDictionary())
-                if (!(this.Algebra.First.False.Equals(kv.Key)))
+                if (!(this.algebra.First.False.Equals(kv.Key)))
                     yield return new Tuple<T, S>(kv.Key, kv.Value);
         }
         public Dictionary<T,S> GetRowsDictionary()
@@ -814,7 +833,7 @@ namespace Microsoft.Automata
                 if (this.IsLeaf)
                 {
                     d = new Dictionary<T, S>();
-                    d[this.LeafCondition] = algebra.NodeAlgebra.True;
+                    d[this.LeafCondition] = algebra.nodeAlgebra.True;
                 }
                 else
                 {
@@ -823,15 +842,15 @@ namespace Microsoft.Automata
                     d = new Dictionary<T, S>();
                     foreach (var kv in t)
                     {
-                        d[kv.Key] = (kv.Value.Equals(algebra.NodeAlgebra.True) ? this.BranchCondition : algebra.NodeAlgebra.MkAnd(kv.Value, this.BranchCondition));
+                        d[kv.Key] = (kv.Value.Equals(algebra.nodeAlgebra.True) ? this.BranchCondition : algebra.nodeAlgebra.MkAnd(kv.Value, this.BranchCondition));
                     }
                     foreach (var kv in f)
                     {
-                        S psi2 = (kv.Value.Equals(algebra.NodeAlgebra.True) ? algebra.NodeAlgebra.MkNot(this.BranchCondition) : 
-                            algebra.NodeAlgebra.MkAnd(kv.Value, algebra.NodeAlgebra.MkNot(this.BranchCondition)));
+                        S psi2 = (kv.Value.Equals(algebra.nodeAlgebra.True) ? algebra.nodeAlgebra.MkNot(this.BranchCondition) : 
+                            algebra.nodeAlgebra.MkAnd(kv.Value, algebra.nodeAlgebra.MkNot(this.BranchCondition)));
                         S psi;
                         if (d.TryGetValue(kv.Key, out psi))
-                            d[kv.Key] = algebra.NodeAlgebra.MkOr(psi, psi2);
+                            d[kv.Key] = algebra.nodeAlgebra.MkOr(psi, psi2);
                         else
                             d[kv.Key] = psi2;
                     }
@@ -873,7 +892,7 @@ namespace Microsoft.Automata
         {
             if (this.IsLeaf)
             {
-                IPrettyPrinter<T> printer = this.algebra.LeafAlgebra as IPrettyPrinter<T>;
+                IPrettyPrinter<T> printer = this.algebra.leafAlgebra as IPrettyPrinter<T>;
                 if (printer != null)
                     return printer.PrettyPrint(this.LeafCondition);
                 else
@@ -881,7 +900,7 @@ namespace Microsoft.Automata
             }
             else
             {
-                IPrettyPrinter<S> printer = this.algebra.NodeAlgebra as IPrettyPrinter<S>;
+                IPrettyPrinter<S> printer = this.algebra.nodeAlgebra as IPrettyPrinter<S>;
                 if (printer != null)
                     return "ITE(" + printer.PrettyPrint(this.BranchCondition) + "," + TrueCase.ToString() + "," + FalseCase.ToString() + ")";
                 else
@@ -931,14 +950,14 @@ namespace Microsoft.Automata
 
         public S ProjectSecond()
         {
-            S res = algebra.Second.False;
+            S res = algebra.nodeAlgebra.False;
             foreach (var p in EnumerateProducts())
                 if (!p.Item1.Equals(algebra.First.False))
                 {
-                    if (res.Equals(algebra.Second.False))
+                    if (res.Equals(algebra.leafAlgebra.False))
                         res = p.Item2;
                     else
-                        res = algebra.Second.MkOr(res, p.Item2);
+                        res = algebra.nodeAlgebra.MkOr(res, p.Item2);
                 }
             return res;
         }

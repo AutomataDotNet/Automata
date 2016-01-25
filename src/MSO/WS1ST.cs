@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 
 using Microsoft.Automata;
@@ -858,6 +857,14 @@ namespace Microsoft.Automata.MSO
         {
             var aut = phi.getAutomaton(variables, alg);
             var res = aut.Determinize(alg).Complement(alg).Minimize(alg);
+            foreach (var x in phi.EnumerateFreeVariables())
+            {
+                if (char.IsLower(x[0])) //TBD: x is f.o.
+                {
+                    var sing = new WS1SSingleton<T>("x").getAutomaton(variables, alg);
+                    res = res.Intersect(sing, alg);
+                }
+            }
             return res;
         }
 
@@ -865,6 +872,14 @@ namespace Microsoft.Automata.MSO
         {
             var aut = phi.getAutomatonBDD(variables, alg);
             var res = aut.Determinize(alg).Complement(alg).Minimize(alg);
+            foreach (var x in phi.EnumerateFreeVariables())
+            {
+                if (char.IsLower(x[0])) //TBD: x is f.o.
+                {
+                    var sing = new WS1SSingleton<T>(x).getAutomatonBDD(variables, alg);
+                    res = res.Intersect(sing, alg);
+                }
+            }
             return res;
         }
 
