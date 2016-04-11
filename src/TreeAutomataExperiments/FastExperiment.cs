@@ -120,7 +120,7 @@ namespace RunExperiments
                 if (compFileNames.Contains(fileNum))
                     compAut = detAut.Complete();
 
-                var min1 =detAut.Minimize(true);
+                var min1 =detAut.Minimize();
                 var min2 =detAut.MinimizeViaSFA();
 
                 Console.WriteLine("StatesMin:");

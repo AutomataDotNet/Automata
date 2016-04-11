@@ -37,7 +37,7 @@ namespace RunExperiments
         private static void RunTestForGivenSize(int K)
         {
             Console.WriteLine(K);
-            Z3Context Z = new Z3Context();
+            Z3Provider Z = new Z3Provider();
             var A = (Z.TT.MkRankedAlphabet("A", Z.IntSort, new string[] { "zero", "two" }, new int[] { 0, 2 }));
 
             Func<int, Expr> beta = (i => Z.MkEq(Z.MkInt(1), Z.MkMod(Z.MkDiv(A.AttrVar, Z.MkInt(1 << (i%32))), Z.MkInt(2))));

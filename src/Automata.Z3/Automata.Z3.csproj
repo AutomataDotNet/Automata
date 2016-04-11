@@ -51,6 +51,7 @@
     <Compile Include="Internal\TermPrettyPrinter.cs" />
     <Compile Include="Internal\TreeInfo.cs" />
     <Compile Include="Internal\Z3Solver.cs" />
+    <Compile Include="Partition.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RankedAlphabet.cs" />
     <Compile Include="TreeRule.cs" />
