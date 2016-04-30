@@ -155,7 +155,7 @@ namespace Microsoft.Automata.Internal
             return res;
         }
 
-        public HashSet<char> MkCharConstraint(bool caseInsensitive, char c)
+        public HashSet<char> MkCharConstraint(char c, bool caseInsensitive =false)
         {
             var res = new HashSet<char>();
             if (caseInsensitive)
@@ -180,7 +180,7 @@ namespace Microsoft.Automata.Internal
             {
                 char lower = range[0];
                 char upper = range[1];
-                res.UnionWith(this.MkRangeConstraint(caseInsensitive, lower, upper));
+                res.UnionWith(this.MkRangeConstraint(lower, upper, caseInsensitive));
             }
             return res;
         }
@@ -398,6 +398,18 @@ namespace Microsoft.Automata.Internal
         public bool EvaluateAtom(HashSet<char> atom, HashSet<char> psi)
         {
             throw new NotImplementedException();
+        }
+
+
+        public HashSet<char> MkRangeConstraint(char lower, char upper, bool caseInsensitive = false)
+        {
+            throw new NotImplementedException();
+        }
+
+
+        public HashSet<char> MkDiff(HashSet<char> predicate1, HashSet<char> predicate2)
+        {
+            return MkAnd(predicate1, MkNot(predicate2));
         }
     }
 }

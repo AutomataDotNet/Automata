@@ -188,30 +188,33 @@ public static class " + classname + @"
                 sw.WriteLine("{0},", arc);
             sw.WriteLine("};");
         }
+    }
 
-        public class Ranges
+    /// <summary>
+    /// Used internally for creating a collection of ranges for serialization.
+    /// </summary>
+    internal class Ranges
+    {
+        public List<int[]> ranges = new List<int[]>();
+        public Ranges()
         {
-            public List<int[]> ranges = new List<int[]>();
-            public Ranges()
+        }
+        public void Add(int n)
+        {
+            for (int i = 0; i < ranges.Count; i++)
             {
-            }
-            public void Add(int n)
-            {
-                for (int i = 0; i < ranges.Count; i++)
+                if (ranges[i][1] == (n - 1))
                 {
-                    if (ranges[i][1] == (n - 1))
-                    {
-                        ranges[i][1] = n;
-                        return;
-                    }
+                    ranges[i][1] = n;
+                    return;
                 }
-                ranges.Add(new int[] { n, n });
             }
+            ranges.Add(new int[] { n, n });
+        }
 
-            public int Count
-            {
-                get { return ranges.Count; }
-            }
+        public int Count
+        {
+            get { return ranges.Count; }
         }
     }
 }

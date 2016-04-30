@@ -17,7 +17,7 @@ namespace Microsoft.Automata
         /// Make a constraint describing the set of all characters between a (inclusive) and b (inclusive). 
         /// Add both uppercase and lowercase elelements if caseInsensitive is true.
         /// </summary>
-        PRED MkRangeConstraint(bool caseInsensitive, char lower, char upper);
+        PRED MkRangeConstraint(char lower, char upper, bool caseInsensitive = false);
 
         /// <summary>
         /// Make a constraint describing a singleton set containing the character c, or
@@ -25,7 +25,7 @@ namespace Microsoft.Automata
         /// </summary>
         /// <param name="caseInsensitive">if true include both the uppercase and the lowercase versions of the given character</param>
         /// <param name="c">the given character</param>
-        PRED MkCharConstraint(bool caseInsensitive, char c);
+        PRED MkCharConstraint(char c, bool caseInsensitive = false);
 
         /// <summary>
         /// Make the disjunction of MkRangeConstraint(caseInsensitive, a, b) for all [a,b] in ranges.

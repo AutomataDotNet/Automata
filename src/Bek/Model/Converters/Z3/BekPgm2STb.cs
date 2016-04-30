@@ -93,7 +93,7 @@ namespace Microsoft.Bek.Model.Converters.Z3
                 var liftedMoves = new List<Move<BV2>>();
                 var st = M.InitialState;
                 var newFinalState = M.MaxState + 1;
-                var endAnchor = css.MkCharConstraint(false, (char)i);
+                var endAnchor = css.MkCharConstraint( (char)i);
 
                 //lift the moves to BV2 moves, adding end-markers
                 while (!M.IsFinalState(st))
@@ -610,28 +610,28 @@ namespace Microsoft.Bek.Model.Converters.Z3
             {
                 var ch = (char)css.Choose(moveCond);
                 chExpr = stb.Solver.MkCharExpr(ch);
-                chPred = stb.Solver.MkCharConstraint(false, ch);
+                chPred = stb.Solver.MkCharConstraint( ch);
             }
             else if (css.ComputeDomainSize(css.MkNot(moveCond)) == 1)
             {
                 var ch = (char)css.Choose(css.MkNot(moveCond));
                 chExpr = stb.MkInputVariable(stb.Solver.CharSort);
-                chPred = stb.Solver.MkNot(stb.Solver.MkCharConstraint(false, ch));
+                chPred = stb.Solver.MkNot(stb.Solver.MkCharConstraint( ch));
             }
             else if (css.ComputeDomainSize(moveCond) == 2)
             {
                 var ch1 = (char)css.GetMin(moveCond);
                 var ch2 = css.GetMax(moveCond);
                 chExpr = stb.MkInputVariable(stb.Solver.CharSort);
-                chPred = stb.Solver.MkOr(stb.Solver.MkCharConstraint(false, ch1), stb.Solver.MkCharConstraint(false, ch2));
+                chPred = stb.Solver.MkOr(stb.Solver.MkCharConstraint( ch1), stb.Solver.MkCharConstraint( ch2));
             }
             else if (css.ComputeDomainSize(css.MkNot(moveCond)) == 2)
             {
                 var ch1 = (char)css.GetMin(css.MkNot(moveCond));
                 var ch2 = css.GetMax(css.MkNot(moveCond));
                 chExpr = stb.MkInputVariable(stb.Solver.CharSort);
-                chPred = stb.Solver.MkAnd(stb.Solver.MkNot(stb.Solver.MkCharConstraint(false, ch1)), 
-                                          stb.Solver.MkNot(stb.Solver.MkCharConstraint(false, ch2)));
+                chPred = stb.Solver.MkAnd(stb.Solver.MkNot(stb.Solver.MkCharConstraint( ch1)), 
+                                          stb.Solver.MkNot(stb.Solver.MkCharConstraint( ch2)));
             }
             else
             {

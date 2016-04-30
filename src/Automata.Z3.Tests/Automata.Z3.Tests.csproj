@@ -38,6 +38,7 @@
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CodeGenTests.cs" />
     <Compile Include="FiniteAutomataTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RankedAlphabetTests.cs" />

@@ -130,7 +130,7 @@ namespace Microsoft.Automata
                                         found = true;
                                         Pnew[S, T] = Pold[K, T] + 1;
                                         foreach (var c in chars)
-                                            Lnew[c][S, T] = Lold[c][K, T] || solver.IsSatisfiable(solver.MkAnd(move.Label,solver.MkCharConstraint(false,c)));
+                                            Lnew[c][S, T] = Lold[c][K, T] || solver.IsSatisfiable(solver.MkAnd(move.Label,solver.MkCharConstraint(c)));
                                     }
                             }
                             if (!found)
@@ -247,7 +247,7 @@ namespace Microsoft.Automata
 
         //check if delta(S,T,c) exists
         static bool MoveFromStoTContainsC(char c, int S, int T, Automaton<BDD> aut, CharSetSolver solver){
-            var ccond = solver.MkCharConstraint(false,c);
+            var ccond = solver.MkCharConstraint(c);
             foreach(var move in aut.GetMovesFrom(S))
                 if (move.TargetState == T)
                     if (solver.IsSatisfiable(solver.MkAnd(move.Label, ccond)))
@@ -258,7 +258,7 @@ namespace Microsoft.Automata
         //check if delta(S,T,c) exists
         static bool MoveFromStoTContainsC(char c, int S, int T, Automaton<BDD> aut, CharSetSolver solver, out char witness)
         {
-            var ccond = solver.MkCharConstraint(false, c);
+            var ccond = solver.MkCharConstraint(c);
             foreach (var move in aut.GetMovesFrom(S))
                 if (move.TargetState == T)
                 {

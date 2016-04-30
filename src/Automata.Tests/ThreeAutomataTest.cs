@@ -50,7 +50,7 @@ namespace Microsoft.Automata.Tests
             moves.Add(new Move<BDD>(1, 2, solver.True));
             var sfa1 = ThreeAutomaton<BDD>.Create(0, new int[] { 0 }, new int[] { 2 }, moves);
 
-            var c = solver.MkCharConstraint(false,'c');
+            var c = solver.MkCharConstraint('c');
             moves = new List<Move<BDD>>();
             moves.Add(new Move<BDD>(0, 1, c));
             moves.Add(new Move<BDD>(1, 2, solver.True));
@@ -80,7 +80,7 @@ namespace Microsoft.Automata.Tests
         {
             CharSetSolver solver = new CharSetSolver();
             var moves = new List<Move<BDD>>();
-            var c = solver.MkCharConstraint(false, 'a');
+            var c = solver.MkCharConstraint('a');
 
             moves.Add(new Move<BDD>(0, 1, c));
             moves.Add(new Move<BDD>(1, 2, solver.True));

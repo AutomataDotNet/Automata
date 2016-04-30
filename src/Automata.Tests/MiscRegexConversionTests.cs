@@ -190,5 +190,15 @@ namespace Microsoft.Automata.Tests
                 }
             }
         }
+
+        //[TestMethod]
+        public void TestMatchTermination() 
+        {
+            //does not terminate
+            var s = ".I.....bj.HU....Z-4@";
+            var regex = "^((\\.)?([a-zA-Z0-9_-]?)(\\.)?([a-zA-Z0-9_-]?)(\\.)?)+$";
+            bool res = Regex.IsMatch(s, regex, RegexOptions.None);
+            Assert.IsTrue(res);
+        }
     }
 }

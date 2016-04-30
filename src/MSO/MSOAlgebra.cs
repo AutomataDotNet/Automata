@@ -125,6 +125,12 @@ namespace Microsoft.Automata.MSO
         {
             throw new NotImplementedException();
         }
+
+
+        public MSOFormula<S> MkDiff(MSOFormula<S> predicate1, MSOFormula<S> predicate2)
+        {
+            return MkAnd(predicate1, MkNot(predicate2));
+        }
     }
     
 }

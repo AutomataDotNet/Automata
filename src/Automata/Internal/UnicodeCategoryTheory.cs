@@ -26,6 +26,8 @@ namespace Microsoft.Automata.Internal
         /// Gets the word letter (\w) condition
         /// </summary>
         PRED WordLetterCondition { get; }
+
+        string[] UnicodeCategoryStandardAbbreviations { get; }
     }
 
     internal class UnicodeCategoryTheory<PRED> : IUnicodeCategoryTheory<PRED>
@@ -35,8 +37,16 @@ namespace Microsoft.Automata.Internal
         PRED whiteSpaceCondition = default(PRED);
         PRED wordLetterCondition = default(PRED);
 
+        public string[] UnicodeCategoryStandardAbbreviations
+        {
+            get
+            {
+                return unicodeCategoryStandardAbbreviations;
+            }
+        }
+
         #region unicode category abbreviations
-        static string[] unicodeCategoryStandardAbbreviations = new string[30]{
+        public static string[] unicodeCategoryStandardAbbreviations = new string[30]{
             "Lu", //0: UppercaseLetter
             "Ll", //1: LowercaseLetter
             "Lt", //2: TitlecaseLetter
@@ -86,7 +96,7 @@ namespace Microsoft.Automata.Internal
         {
             PRED res = solver.False;
             foreach (var range in ranges)
-                res = solver.MkOr(res, solver.MkRangeConstraint(false, (char)range[0], (char)range[1]));
+                res = solver.MkOr(res, solver.MkRangeConstraint((char)range[0], (char)range[1]));
             return res;
         }
 

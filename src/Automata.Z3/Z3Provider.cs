@@ -3076,16 +3076,16 @@ namespace Microsoft.Automata.Z3
             }
         }
 
-        public Expr MkRangeConstraint(bool caseInsensitive, char lower, char upper)
+        public Expr MkRangeConstraint(char lower, char upper, bool caseInsensitive = false)
         {
             //ignoring case for now
             if (lower == upper)
-                return MkCharConstraint(caseInsensitive, lower);
+                return MkCharConstraint( lower, caseInsensitive);
             return MkAnd(MkCharLe(MkNumeral((int)lower, CharacterSort), MkVar(0, CharacterSort)),
                 MkCharLe(MkVar(0, CharacterSort), MkNumeral((int)upper, CharacterSort)));
         }
 
-        public Expr MkCharConstraint(bool caseInsensitive, char c)
+        public Expr MkCharConstraint( char c, bool caseInsensitive = false)
         {
             return MkEq(MkVar(0, CharacterSort), MkNumeral((int)c, CharacterSort));
         }
@@ -3094,7 +3094,7 @@ namespace Microsoft.Automata.Z3
         {
             List<Expr> terms = new List<Expr>();
             foreach (var r in ranges)
-                terms.Add(MkRangeConstraint(caseInsensitive, r[0], r[1]));
+                terms.Add(MkRangeConstraint(r[0], r[1], caseInsensitive));
             Expr constr = MkOr(terms);
             return constr;
         }
@@ -3206,7 +3206,7 @@ namespace Microsoft.Automata.Z3
             var range_but_cond = MkAnd(range, MkNot(cond));
             var range_and_cond = MkAnd(range, cond);
             if (!IsSatisfiable(range_but_cond))
-                return this.CharSetProvider.MkRangeConstraint(false, (char)l, (char)u);
+                return this.CharSetProvider.MkRangeConstraint( (char)l, (char)u);
             else if (!IsSatisfiable(range_and_cond))
                 return this.CharSetProvider.False;
             else
@@ -3412,10 +3412,17 @@ namespace Microsoft.Automata.Z3
 
         }
 
-
-        public Automaton<BDD> Convert(Automaton<Expr> aut)
+        public Automaton<BDD> ConvertAutomatonGuardsFromExpr(Automaton<Expr> aut)
         {
             var aut1 = Automaton<BDD>.Create(aut.InitialState, aut.GetFinalStates(), ConvertMoves(aut.GetMoves()));
+            aut1.isDeterministic = aut.isDeterministic;
+            aut1.isEpsilonFree = aut.isEpsilonFree;
+            return aut1;
+        }
+
+        public Automaton<Expr> ConvertAutomatonGuardsToExpr(Automaton<BDD> aut) 
+        {
+            var aut1 = Automaton<Expr>.Create(aut.InitialState, aut.GetFinalStates(), ConvertMoves2(aut.GetMoves()));
             aut1.isDeterministic = aut.isDeterministic;
             aut1.isEpsilonFree = aut.isEpsilonFree;
             return aut1;
@@ -3437,6 +3444,20 @@ namespace Microsoft.Automata.Z3
                     {
                         throw new AutomataException(AutomataExceptionKind.LabelIsNotConvertableToBvSet);
                     }
+                }
+            }
+        }
+
+        private IEnumerable<Move<Expr>> ConvertMoves2(IEnumerable<Move<BDD>> moves)
+        {
+            foreach (var move in moves)
+            {
+                if (move.IsEpsilon)
+                    yield return Move<Expr>.Epsilon(move.SourceState, move.TargetState);
+                else
+                {
+                    Expr cond = ConvertFromCharSet(move.Label);
+                    yield return Move<Expr>.Create(move.SourceState, move.TargetState, cond);
                 }
             }
         }
@@ -3602,6 +3623,12 @@ namespace Microsoft.Automata.Z3
         public bool EvaluateAtom(Expr atom, Expr psi)
         {
             throw new AutomataException(AutomataExceptionKind.BooleanAlgebraIsNotAtomic);
+        }
+
+
+        public Expr MkDiff(Expr predicate1, Expr predicate2)
+        {
+            return MkAnd(predicate1, MkNot(predicate2));
         }
     }
 }

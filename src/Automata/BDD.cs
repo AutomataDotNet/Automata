@@ -106,11 +106,21 @@ namespace Microsoft.Automata
             Microsoft.Automata.Internal.DirectedGraphs.DotWriter.CharSetToDot(this, file, fname, Internal.DirectedGraphs.DotWriter.RANKDIR.TB, 12);
         }
 
+        protected virtual string PrintLeaf()
+        {
+            if (this.IsEmpty)
+                return "false";
+            else if (this.IsFull)
+                return "true";
+            else
+                throw new AutomataException(AutomataExceptionKind.UnexpectedMTBDDTerminal);
+        }
+
         public override string ToString()
         {
             if (IsLeaf)
             {
-                return algebra.PrettyPrintTerminal(Ordinal);
+                return PrintLeaf();
             }
             else
             {
@@ -120,7 +130,7 @@ namespace Microsoft.Automata
                 foreach (var s in EnumCases())
                 {
                     if (sb.Length > 1)
-                        sb.AppendLine("|");
+                        sb.Append("|");
                     if (sb.Length > 1000)
                     {
                         sb.Append("...");
@@ -140,30 +150,32 @@ namespace Microsoft.Automata
             else if (IsEmpty)
                 yield break;
             else if (IsLeaf)
-                yield return "(" + algebra.PrettyPrintTerminal(Ordinal) + ")";
+                yield return "(" + PrintLeaf() + ")";
             else
             {
+                int m1 = (One.IsLeaf ? Ordinal : (Ordinal - One.Ordinal) - 1);
+                int m0 = (Zero.IsLeaf ? Ordinal : (Ordinal - Zero.Ordinal) - 1);
                 foreach (var s in One.EnumCases())
-                    yield return "1" + MkStars(Ordinal - One.Ordinal - 1) + s;
+                    yield return s + MkAny(m1) + "1";
                 foreach (var s in Zero.EnumCases())
-                    yield return "0" + MkStars(Ordinal - Zero.Ordinal - 1) + s;
+                    yield return s + MkAny(m0) + "0";
             }
         }
 
-        static string MkStars(int k)
+        static string MkAny(int k)
         {
             if (k <= 0)
                 return "";
             switch (k)
             {
                 case 1:
-                    return "*";
+                    return "-";
                 case 2:
-                    return "**";
+                    return "--";
                 default:
                     var stars = new char[k];
                     for (int i = 0; i < k; i++)
-                        stars[i] = '*';
+                        stars[i] = '-';
                     return new String(stars);
             }
         }
@@ -200,11 +212,58 @@ namespace Microsoft.Automata
 
             return res;
         }
+
+        public BDD Or(BDD other)
+        {
+            return algebra.MkOr(this,other);
+        }
+
+        public BDD And(BDD other)
+        {
+            return algebra.MkAnd(this, other);
+        }
+
+        public BDD Not()
+        {
+            return algebra.MkNot(this);
+        }
+
+        public BDD Diff(BDD other)
+        {
+            return algebra.MkDiff(this, other);
+        }
+
+        public Pair<uint,uint>[] ToRanges(int bound = 0)
+        {
+            CharSetSolver solver = algebra as CharSetSolver;
+            if (solver == null)
+                throw new AutomataException(AutomataExceptionKind.AlgebraMustBeCharSetSolver);
+            return solver.ToRanges(this, bound);
+        }
+
+        /// <summary>
+        /// Decrement the ordinals of all nodes by k, k must be nonnegative.
+        /// </summary>
+        /// <param name="k">offset</param>
+        public BDD ShiftRight(int k = 1)
+        {
+            return algebra.ShiftRight(this, k);
+        }
+
+        /// <summary>
+        /// Increment the ordinals of all nodes by k, k must be nonnegative.
+        /// </summary>
+        /// <param name="k">offset</param>
+        public BDD ShiftLeft(int k = 1)
+        {
+            return algebra.ShiftLeft(this, k);
+        }
     }
 
-    public class BDD<T> : BDD, ISumOfProducts<BDD,T>
+    public class BDD<T> : BDD, IMonadicPredicate<BDD,T>
     {
         public readonly T Leaf;
+
         internal BDD(BDDAlgebra<T> algebra, int ordinal, T leaf)
             : base(algebra, ordinal)
         {
@@ -217,14 +276,9 @@ namespace Microsoft.Automata
             this.Leaf = default(T);
         }
 
-        public IEnumerable<Tuple<BDD, T>> EnumerateProducts()
+        public IEnumerable<Tuple<BDD, T>> GetSumOfProducts()
         {
             throw new NotImplementedException();
-        }
-
-        public ISumOfProducts<BDD, T> TransformFirst(Func<BDD, BDD> f)
-        {
-            return (BDD<T>)f(this);
         }
 
         public T ProjectSecond()
@@ -237,243 +291,16 @@ namespace Microsoft.Automata
         {
             get { return (BDDAlgebra<T>)this.algebra; }
         }
-    }
 
-    /*
-    /// <summary>
-    /// Represents a bounded set of bit-vectors in form of a Binary Decision Diagram and a fixed depth bound.
-    /// </summary>
-    public class BBDD
-    {
-        internal BBDDAlgebra algebra;
-        internal Tuple<int, BDD> pair;
-
-        internal BBDD(BBDDAlgebra alg, int depth, BDD bdd)
+        protected override string PrintLeaf()
         {
-            this.algebra = alg;
-            this.pair = new Tuple<int, BDD>(depth, bdd);
-        }
-
-        public override bool Equals(object obj)
-        {
-            var that = obj as BBDD;
-            if (that == null)
-                return false;
+            var alg = (BDDAlgebra<T>)Algebra;
+            var pp = alg.LeafAlgebra as IPrettyPrinter<T>;
+            if (pp != null)
+                return pp.PrettyPrint(Leaf);
             else
-                return this.pair.Equals(that.pair);
-        }
-
-        public override int GetHashCode()
-        {
-            return pair.GetHashCode();
-        }
-
-        /// <summary>
-        /// The number of variables in the BDD.
-        /// </summary>
-        public int Depth
-        {
-            get { return pair.Item1; }
-        }
-
-        /// <summary>
-        /// Number of nodes in the underlying BDD
-        /// </summary>
-        public int Size
-        {
-            get { return pair.Item2.CountNodes(); }
+                return Leaf.ToString();
         }
     }
-
-    public class BBDDAlgebra : IBoolAlgMinterm<BBDD>
-    {
-        BDDAlgebra bdda;
-        MintermGenerator<BBDD> mtg;
-        BBDD _True;
-        BBDD _False;
-
-        public BBDDAlgebra()
-        {
-            bdda = new BDDAlgebra();
-            mtg = new MintermGenerator<BBDD>(this);
-            _True = new BBDD(this, 0, bdda.True);
-            _False = new BBDD(this, 0, bdda.False);
-        }
-
-        public IEnumerable<Pair<bool[], BBDD>> GenerateMinterms(params BBDD[] constraints)
-        {
-            return mtg.GenerateMinterms(constraints);
-        }
-
-        /// <summary>
-        /// True BDD with no variables. Has depth 0. Denotes a singleton set containing an empty tuple.
-        /// </summary>
-        public BBDD True
-        {
-            get { return _True; }
-        }
-
-        /// <summary>
-        /// False BDD with no variables. Has depth 0. Denotes an empty set.
-        /// </summary>
-        public BBDD False
-        {
-            get { return _False; }
-        }
-
-        public BBDD MkOr(IEnumerable<BBDD> predicates)
-        {
-            bool isempty = true;
-            BBDD res = _False;
-            foreach (var pred in predicates)
-            {
-                if (isempty)
-                {
-                    res = pred;
-                    isempty = false;
-                }
-                else
-                {
-                    res = MkOr(res, pred);
-                }
-            }
-            return res;
-        }
-
-        public BBDD MkAnd(IEnumerable<BBDD> predicates)
-        {
-            bool isempty = true;
-            BBDD res = _True;
-            foreach (var pred in predicates)
-            {
-                if (isempty)
-                {
-                    res = pred;
-                    isempty = false;
-                }
-                else
-                {
-                    res = MkAnd(res, pred);
-                }
-            }
-            return res;
-        }
-
-        public BBDD MkAnd(params BBDD[] predicates)
-        {
-            if (predicates.Length == 0)
-                return _True;
-
-            var res = predicates[0];
-            for (int i = 1; i < predicates.Length; i++)
-                res = MkAnd(res, predicates[i]);
-
-            return res;
-        }
-
-        public BBDD MkNot(BBDD predicate)
-        {
-            if (predicate.algebra != this)
-                throw new AutomataException(AutomataExceptionKind.IncompatibleAlgebras);
-
-            var bdd = predicate.algebra.bdda.MkNot(predicate.pair.Item2);
-            var res = new BBDD(this, predicate.pair.Item1, bdd);
-            return res;
-        }
-
-        public bool AreEquivalent(BBDD predicate1, BBDD predicate2)
-        {
-            if (predicate1.algebra != this || predicate2.algebra != this)
-                throw new AutomataException(AutomataExceptionKind.IncompatibleAlgebras);
-
-            if (predicate1.pair.Item1 != predicate2.pair.Item1)
-                throw new AutomataException(AutomataExceptionKind.IncompatibleBounds);
-
-            var res = predicate1.algebra.bdda.AreEquivalent(predicate1.pair.Item2, predicate2.pair.Item2);
-            return res;
-        }
-
-        public BBDD Simplify(BBDD predicate)
-        {
-            return predicate;
-        }
-
-        public BBDD MkAnd(BBDD predicate1, BBDD predicate2)
-        {
-            if (predicate1.algebra != this || predicate2.algebra != this)
-                throw new AutomataException(AutomataExceptionKind.IncompatibleAlgebras);
-
-            if (predicate1.pair.Item1 != predicate2.pair.Item1)
-                throw new AutomataException(AutomataExceptionKind.IncompatibleBounds);
-
-
-            var bdd = predicate1.algebra.bdda.MkAnd(predicate1.pair.Item2, predicate2.pair.Item2);
-            var res = new BBDD(this, predicate1.pair.Item1, bdd);
-            return res;
-        }
-
-        public BBDD MkOr(BBDD predicate1, BBDD predicate2)
-        {
-            if (predicate1.algebra != this || predicate2.algebra != this)
-                throw new AutomataException(AutomataExceptionKind.IncompatibleAlgebras);
-
-            if (predicate1.pair.Item1 != predicate2.pair.Item1)
-                throw new AutomataException(AutomataExceptionKind.IncompatibleBounds);
-
-
-            var bdd = predicate1.algebra.bdda.MkOr(predicate1.pair.Item2, predicate2.pair.Item2);
-            var res = new BBDD(this, predicate1.pair.Item1, bdd);
-            return res;
-        }
-
-        public bool IsSatisfiable(BBDD predicate)
-        {
-            return !predicate.pair.Item2.IsEmpty;
-        }
-
-        public BBDD MkSetWithBitTrue(int k, int depth)
-        {
-            if (k < 0 || k >= depth)
-                throw new AutomataException(AutomataExceptionKind.InvalidArguments);
-            var bdd = bdda.MkSetWithBitTrue(k);
-            var res = new BBDD(this, depth, bdd);
-            return res;
-        }
-
-        public BBDD MkSetWithBitFalse(int k, int depth)
-        {
-            if (k < 0 || k >= depth)
-                throw new AutomataException(AutomataExceptionKind.InvalidArguments);
-            var bdd = bdda.MkSetWithBitFalse(k);
-            var res = new BBDD(this, depth, bdd);
-            return res;
-        }
-
-        public BBDD MkTrue(int depth)
-        {
-            if (depth < 0)
-                throw new AutomataException(AutomataExceptionKind.InvalidArguments);
-            if (depth == 0)
-                return _True;
-            else
-                return new BBDD(this, depth, bdda.True);
-        }
-
-        public BBDD RemoveMaxBit(BBDD predicate)
-        {
-            if (predicate.pair.Item1 == 0)
-                throw new AutomataException(AutomataExceptionKind.InvalidArgument);
-
-            if (predicate.pair.Item2.IsTrivial)
-                return new BBDD(this, predicate.pair.Item1 - 1, predicate.pair.Item2);
-            else
-            {
-                var bdd0 = predicate.pair.Item2.Zero;
-                var bdd1 = predicate.pair.Item2.One; 
-                var bdd = bdda.MkOr(bdd0, bdd1);
-                return new BBDD(this, predicate.pair.Item1 - 1, bdd);
-            }
-        }
-    }*/
 }
 

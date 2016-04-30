@@ -769,7 +769,7 @@ namespace Microsoft.Automata.Rex
                 new Move<S>[]{Move<S>.Epsilon(minStateId, minStateId + 2),
                            Move<S>.Epsilon(minStateId, minStateId + 1),
                            Move<S>.T(minStateId+1,minStateId+1, solver.True),
-                           Move<S>.T(minStateId+1,minStateId+2, solver.MkCharConstraint(false,'\n'))});
+                           Move<S>.T(minStateId+1,minStateId+2, solver.MkCharConstraint('\n'))});
 
             if (isEnd) //allow any trailing characters
                 fa.AddMove(Move<S>.T(fa.FinalState, fa.FinalState, solver.True));
@@ -787,7 +787,7 @@ namespace Microsoft.Automata.Rex
                     new Move<S>[]{Move<S>.Epsilon(minStateId, minStateId + 2),
                            Move<S>.Epsilon(minStateId+1, minStateId + 2),
                            Move<S>.T(minStateId+1,minStateId+1, solver.True),
-                           Move<S>.T(minStateId,minStateId+1, solver.MkCharConstraint(false,'\n'))});
+                           Move<S>.T(minStateId,minStateId+1, solver.MkCharConstraint('\n'))});
 
             if (isStart) //allow any characters at the beginning
                 fa.AddMove(Move<S>.T(fa.InitialState, fa.InitialState, solver.True));

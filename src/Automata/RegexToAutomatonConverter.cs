@@ -73,7 +73,7 @@ namespace Microsoft.Automata
         {
             List<Move<S>> moves = new List<Move<S>>();
             for (int i = 0; i < symbol.Length; i++)
-                moves.Add(Move<S>.Create(i, i + 1, solver.MkCharConstraint(false, symbol[i])));
+                moves.Add(Move<S>.Create(i, i + 1, solver.MkCharConstraint(symbol[i])));
             Automaton<S> autom = Automaton<S>.Create(0, new int[] { symbol.Length }, moves);
             return autom;
         }
@@ -83,7 +83,7 @@ namespace Microsoft.Automata
         /// </summary>
         /// <param name="regex">the given .NET regex pattern</param>
         /// <param name="options">regular expression options for the pattern</param>
-        public Automaton<S> Convert(string regex, RegexOptions options)
+        public Automaton<S> Convert(string regex, RegexOptions options = RegexOptions.None)
         {
             return Convert(regex, options, false);
         }
@@ -109,6 +109,7 @@ namespace Microsoft.Automata
                 aut.EliminateWordBoundaries(solver, getWordLetterCondition);
             return aut;
         }
+
 
 
         internal Tuple<string,Automaton<S>>[] ConvertCaptures(string regex, out bool isLoop)
@@ -265,7 +266,7 @@ namespace Microsoft.Automata
                 case RegexNode.Beginning: 
                     return this.automBuilder.MkBeginning();
                 case RegexNode.Bol:
-                    return this.automBuilder.MkBol(solver.MkCharConstraint(false, '\n'));
+                    return this.automBuilder.MkBol(solver.MkCharConstraint('\n'));
                 case RegexNode.Capture:  //paranthesis (...)
                     return ConvertNode(node.Child(0));
                 case RegexNode.Concatenate:
@@ -276,19 +277,23 @@ namespace Microsoft.Automata
                 case RegexNode.EndZ: 
                     return this.automBuilder.MkEnd();
                 case RegexNode.Eol: 
-                    return this.automBuilder.MkEol(solver.MkCharConstraint(false,'\n'));
+                    return this.automBuilder.MkEol(solver.MkCharConstraint('\n'));
+                case RegexNode.Lazyloop:
                 case RegexNode.Loop: 
                     return automBuilder.MkLoop(node._children[0], node._m, node._n); 
                 case RegexNode.Multi: 
                     return ConvertNodeMulti(node);
+                case RegexNode.Notonelazy:
                 case RegexNode.Notone: 
                     return ConvertNodeNotone(node);
                 case RegexNode.Notoneloop: 
                     return ConvertNodeNotoneloop(node);
+                case RegexNode.Onelazy:
                 case RegexNode.One: 
                     return ConvertNodeOne(node);
                 case RegexNode.Oneloop: 
                     return ConvertNodeOneloop(node);
+                case RegexNode.Setlazy:
                 case RegexNode.Set:
                     return ConvertNodeSet(node);
                 case RegexNode.Setloop: 
@@ -299,6 +304,14 @@ namespace Microsoft.Automata
                 case RegexNode.Nothing:
                     return automBuilder.MkEmptyAutomaton();
                 //currently not supported cases
+                //case RegexNode.Lazyloop:
+                    //throw new AutomataException("Regex construct not supported: lazy constructs *? +? ?? {,}?");
+                //case RegexNode.Notonelazy:
+                //    throw new AutomataException("Regex construct not supported: lazy construct .*?");
+                //case RegexNode.Onelazy:
+                //    throw new AutomataException("Regex construct not supported: lazy construct a*?");
+                //case RegexNode.Setlazy:
+                //    throw new AutomataException(@"Regex construct not supported: lazy construct \d*?");
                 case RegexNode.Nonboundary:
                 case RegexNode.NonECMABoundary:
                     throw new AutomataException(@"Regex construct not supported: \B");
@@ -306,8 +319,6 @@ namespace Microsoft.Automata
                     throw new AutomataException("Regex construct not supported: greedy constructs (?>) (?<)");
                 case RegexNode.Group:
                     throw new AutomataException("Regex construct not supported: grouping (?:)");
-                case RegexNode.Lazyloop:
-                    throw new AutomataException("Regex construct not supported: lazy constructs *? +? ?? {,}?");
                 case RegexNode.Prevent:
                     throw new AutomataException("Regex construct not supported: prevent constructs (?!) (?<!)");
                 case RegexNode.Require:
@@ -316,12 +327,6 @@ namespace Microsoft.Automata
                     throw new AutomataException("Regex construct not supported: test construct (?(...) | )");
                 case RegexNode.Testref:
                     throw new AutomataException("Regex construct not supported: test cosntruct (?(n) | )");
-                case RegexNode.Notonelazy:
-                    throw new AutomataException("Regex construct not supported: lazy construct .*?");
-                case RegexNode.Onelazy:
-                    throw new AutomataException("Regex construct not supported: lazy construct a*?");
-                case RegexNode.Setlazy:
-                    throw new AutomataException(@"Regex construct not supported: lazy construct \d*?");
                 case RegexNode.Ref:
                     throw new AutomataException(@"Regex construct not supported: references \1");
                 case RegexNode.Start:
@@ -366,7 +371,7 @@ namespace Microsoft.Automata
         {
             bool ignoreCase = ((node._options & RegexOptions.IgnoreCase) != 0);
 
-            S cond = solver.MkNot(solver.MkCharConstraint(ignoreCase, node._ch));
+            S cond = solver.MkNot(solver.MkCharConstraint(node._ch, ignoreCase));
 
             if (!description.ContainsKey(cond))
                 description[cond] = string.Format("[^{0}]", Rex.RexEngine.Escape(node._ch));
@@ -381,7 +386,7 @@ namespace Microsoft.Automata
         {
             bool ignoreCase = ((node._options & RegexOptions.IgnoreCase) != 0);
 
-            S cond = solver.MkCharConstraint(ignoreCase, node._ch);
+            S cond = solver.MkCharConstraint(node._ch,ignoreCase);
             if (!description.ContainsKey(cond))
                 description[cond] = Rex.RexEngine.Escape(node._ch);
 
@@ -430,7 +435,7 @@ namespace Microsoft.Automata
 
             foreach (var range in ranges)
             {
-                S cond = solver.MkRangeConstraint(ignoreCase, range.First, range.Second);
+                S cond = solver.MkRangeConstraint(range.First, range.Second, ignoreCase);
                 conditions.Add(negate ? solver.MkNot(cond) : cond);
             }
             #endregion
@@ -590,7 +595,7 @@ namespace Microsoft.Automata
         private Automaton<S> ConvertNodeNotoneloop(RegexNode node)
         {
             bool ignoreCase = ((node._options & RegexOptions.IgnoreCase) != 0);
-            S cond = solver.MkNot(solver.MkCharConstraint(ignoreCase, node._ch));
+            S cond = solver.MkNot(solver.MkCharConstraint(node._ch, ignoreCase));
             if (!description.ContainsKey(cond))
                 description[cond] = string.Format("[^{0}]", Rex.RexEngine.Escape(node._ch));
 
@@ -601,7 +606,7 @@ namespace Microsoft.Automata
         private Automaton<S> ConvertNodeOneloop(RegexNode node)
         {
             bool ignoreCase = ((node._options & RegexOptions.IgnoreCase) != 0);
-            S cond = solver.MkCharConstraint(ignoreCase, node._ch);
+            S cond = solver.MkCharConstraint(node._ch, ignoreCase);
             if (!description.ContainsKey(cond))
                 description[cond] = string.Format("{0}", Rex.RexEngine.Escape(node._ch));
 
@@ -681,11 +686,11 @@ namespace Microsoft.Automata
         {
 
             string res;
-            if (description.TryGetValue(label, out res))
-            {
-                string res1 = res.Replace(@"\p{Nd}", @"\d").Replace(@"\P{Nd}", @"\D");
-                return res1;
-            }
+            //if (description.TryGetValue(label, out res))
+            //{
+            //    string res1 = res.Replace(@"\p{Nd}", @"\d").Replace(@"\P{Nd}", @"\D");
+            //    return res1;
+            //}
 
             if (this.categorizer.WordLetterCondition == label)
                 return @"\w";
@@ -695,6 +700,9 @@ namespace Microsoft.Automata
                 return @"\s";
             if (this.Solver.MkNot(this.categorizer.WhiteSpaceCondition) == label)
                 return @"\S";
+            for (int i = 0; i < this.categorizer.UnicodeCategoryStandardAbbreviations.Length; i++)
+                if (this.categorizer.CategoryCondition(i) == label)
+                    return @"\P{" + this.categorizer.UnicodeCategoryStandardAbbreviations[i] + "}";
 
             var ranges = bddBuilder.ToRanges(label);
             if (ranges.Length == 1 && ranges[0].First == ranges[0].Second)
@@ -850,7 +858,7 @@ namespace Microsoft.Automata
         /// </summary>
         new public string Describe(HashSet<char> label)
         {
-            var ranges = new Internal.Utilities.UnicodeCategoryRangesGenerator.Ranges();
+            var ranges = new Internal.Utilities.Ranges();
             foreach (char c in label)
                 ranges.Add((int)c);
 

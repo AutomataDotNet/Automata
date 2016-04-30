@@ -71,6 +71,7 @@
     <Compile Include="Interfaces\ICharAlgebra.cs" />
     <Compile Include="Interfaces\IContext.cs" />
     <Compile Include="Interfaces\IDeterministicFiniteTransducer.cs" />
+    <Compile Include="Interfaces\ICompiledStringMatcher.cs" />
     <Compile Include="Interfaces\ILibrary.cs" />
     <Compile Include="Interfaces\INameProvider.cs" />
     <Compile Include="Interfaces\IPrettyPrinter.cs" />
@@ -81,13 +82,19 @@
     <Compile Include="Internal\CharRangeSolver.cs" />
     <Compile Include="Internal\DirectedGraphs\DgmlWriter.cs" />
     <Compile Include="Internal\DirectedGraphs\DotWriter.cs" />
+    <Compile Include="Internal\Generated\IgnoreCaseRelation.cs" />
     <Compile Include="Internal\Generated\UnicodeCategoryRanges.cs" />
     <Compile Include="Internal\HashSetSolver.cs" />
     <Compile Include="Internal\IntSet.cs" />
     <Compile Include="Internal\UnicodeCategoryTheory.cs" />
     <Compile Include="Internal\UnicodeCategoryTheoryProviders.cs" />
+    <Compile Include="Internal\Utilities\CppCodeGenerator.cs" />
+    <Compile Include="Internal\Utilities\CSharpStringMatcher.cs" />
     <Compile Include="Internal\Utilities\CommandLineParser.cs" />
+    <Compile Include="Internal\Utilities\HelperPredicates.cs" />
     <Compile Include="Internal\Utilities\HighTimer.cs" />
+    <Compile Include="Internal\Utilities\IgnoreCaseRelationGenerator.cs" />
+    <Compile Include="Internal\Utilities\IgnoreCaseTransformer.cs" />
     <Compile Include="Internal\Utilities\RegexToRangeAutomatonSerializer.cs" />
     <Compile Include="Internal\Utilities\UnicodeCategoryRangesGenerator.cs" />
     <Compile Include="MintermGenerator.cs" />

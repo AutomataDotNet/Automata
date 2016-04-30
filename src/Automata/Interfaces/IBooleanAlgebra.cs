@@ -5,6 +5,7 @@ namespace Microsoft.Automata
 {
     /// <summary>
     /// Boolean Algebra Positive operations.
+    /// Provides elements for true and false.
     /// Provides operations for conjunction, disjunction, and satisfiability checking of predicates.
     /// </summary>
     public interface IBooleanAlgebraPositive<S>
@@ -23,17 +24,7 @@ namespace Microsoft.Automata
         /// Returns true iff the predicate is satisfiable.
         /// </summary>
         bool IsSatisfiable(S predicate);
-    }
 
-    /// <summary>
-    /// Generic Boolean Algebra solver.
-    /// Provides elements for true and false.
-    /// Provides operations for conjunction, disjunction, and negation.
-    /// Allows to decide if a predicate is satisfiable and if two predicates are equivalent.
-    /// </summary>
-    /// <typeparam name="S">predicates</typeparam>
-    public interface IBooleanAlgebra<S> : IBooleanAlgebraPositive<S>
-    {
         /// <summary>
         /// Top element of the Boolean algebra, corresponds to the value true.
         /// </summary>
@@ -43,7 +34,16 @@ namespace Microsoft.Automata
         /// Bottom element of the Boolean algebra, corresponds to the value false.
         /// </summary>
         S False { get; }
+    }
 
+    /// <summary>
+    /// Generic Boolean Algebra solver.
+    /// Provides operations for conjunction, disjunction, and negation.
+    /// Allows to decide if a predicate is satisfiable and if two predicates are equivalent.
+    /// </summary>
+    /// <typeparam name="S">predicates</typeparam>
+    public interface IBooleanAlgebra<S> : IBooleanAlgebraPositive<S>
+    {
         /// <summary>
         /// Make a disjunction of all the predicates in the enumeration. 
         /// Must return False if the enumeration is empty.
@@ -66,6 +66,12 @@ namespace Microsoft.Automata
         /// Negate the predicate.
         /// </summary>
         S MkNot(S predicate);
+
+
+        /// <summary>
+        /// Compute the predicate and(predicate1,not(predicate2))
+        /// </summary>
+        S MkDiff(S predicate1, S predicate2);
 
         /// <summary>
         /// Returns true iff predicate1 is equivalent to predicate2.

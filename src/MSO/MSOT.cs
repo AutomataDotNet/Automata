@@ -30,20 +30,30 @@ namespace Microsoft.Automata.MSO
         /// <summary>
         /// Constructs the automaton. The formula must be closed.
         /// </summary>
-        public Automaton<T> GetAutomaton(IBooleanAlgebra<T> alg)
+        public Automaton<T> GetAutomaton(IBooleanAlgebra<T> elementAlgebra)
         {
-            if (alg is CharSetSolver)
-                return ToWS1S().GetAutomatonBDD(alg as CharSetSolver) as Automaton<T>;
+            var css = elementAlgebra as CharSetSolver;
+            if (css != null)
+            {
+                var ws1s = this.ToWS1S();
+                var aut = ws1s.GetAutomatonBDD(css, (int)css.Encoding) as Automaton<T>;
+                return aut;
+            }
             else
-                return ToWS1S().GetAutomaton(alg);
+            {
+                var ws1s = this.ToWS1S();
+                var aut = ws1s.GetAutomaton(new BDDAlgebra<T>(elementAlgebra));
+                return BasicAutomata.Restrict(aut);
+            }
         }
 
         /// <summary>
         /// Gets the automaton over the product algebra. All the free variables in the formula must occur among fv.
         /// </summary>
-        public Automaton<ISumOfProducts<BDD, T>> GetAutomaton(ICartesianAlgebraBDD<T> alg, params string[] fv)
+        public Automaton<IMonadicPredicate<BDD, T>> GetAutomaton(ICartesianAlgebraBDD<T> alg, params string[] fv) 
         {
-            return ToWS1S().GetAutomaton(alg, fv);
+            var fvs = Array.ConvertAll(fv, v => new WS1SVariable<T>(v));
+            return ToWS1S().GetAutomaton(alg, fvs);
         }
 
         /// <summary>
@@ -52,7 +62,8 @@ namespace Microsoft.Automata.MSO
         /// </summary>
         public Automaton<BDD> GetAutomaton(CharSetSolver alg, params string[] fv)
         {
-            return ToWS1S().GetAutomatonBDD(alg, fv);
+            var fvs = Array.ConvertAll(fv, v => new WS1SVariable<T>(v));
+            return ToWS1S().GetAutomatonBDD(alg, (int)alg.Encoding, fvs);
         }
 
         public abstract void ToString(StringBuilder sb);
@@ -114,13 +125,23 @@ namespace Microsoft.Automata.MSO
     /// </summary>
     public abstract class MSOBinaryFormula<T> : MSOFormula<T>
     {
-        public readonly string var1;
-        public readonly string var2;
+        protected readonly string var1;
+        protected readonly string var2;
 
         public MSOBinaryFormula(string var1, string var2)
         {
             this.var1 = var1;
             this.var2 = var2;
+        }
+
+        public WS1SVariable<T> Var1(bool asFirstOrderVariable = false)
+        {
+            return new WS1SVariable<T>(var1, asFirstOrderVariable); 
+        }
+
+        public WS1SVariable<T> Var2(bool asFirstOrderVariable = false)
+        {
+            return new WS1SVariable<T>(var2, asFirstOrderVariable);
         }
     }
 
@@ -133,42 +154,17 @@ namespace Microsoft.Automata.MSO
 
         public override WS1SFormula<T> ToWS1S()
         {
-            return new WS1SEq<T>(var1, var2);
+            return new WS1SEq<T>(Var1(), Var2());
         }
 
         public override void ToString(StringBuilder sb)
         {
-            sb.AppendFormat("({0}={1})", var1, var2);
+            sb.AppendFormat("({0}={1})", Var1(), Var2());
         }
 
         internal override bool IsWellFormedFormula(List<string> fovars, List<string> sovars)
         {
             return (fovars.Contains(var1) && fovars.Contains(var2)) || (sovars.Contains(var1) && sovars.Contains(var2));
-        }
-    }
-
-    /// <summary>
-    /// Position var1 belongs to set var2
-    /// </summary>
-    public class MSOBelong<T> : MSOBinaryFormula<T>
-    {
-        public MSOBelong(string pos, string set)
-            : base(pos, set)
-        {
-        }
-
-        public override WS1SFormula<T> ToWS1S()
-        {
-            return new WS1SAnd<T>(new WS1SSingleton<T>(var1), new WS1SSubset<T>(var1, var2));
-        }
-
-        internal override bool IsWellFormedFormula(List<string> fovars, List<string> sovars)
-        {
-            return fovars.Contains(var1) && sovars.Contains(var2);
-        }
-        public override void ToString(StringBuilder sb)
-        {
-            sb.AppendFormat("In({0},{1})", var1, var2);
         }
     }
 
@@ -327,6 +323,11 @@ namespace Microsoft.Automata.MSO
             this.var = var;
             this.phi = phi;
         }
+
+        public WS1SVariable<T> Var(bool asFirstOrderVariable = false)
+        {
+            return new WS1SVariable<T>(var, asFirstOrderVariable);
+        }
     }
 
     /// <summary>
@@ -356,8 +357,10 @@ namespace Microsoft.Automata.MSO
 
         public override WS1SFormula<T> ToWS1S()
         {
-            return new WS1SExists<T>(var, new WS1SAnd<T>(new WS1SSingleton<T>(var), phi.ToWS1S()));
+            var X = new WS1SVariable<T>(var);
+            return new WS1SExists<T>(X, new WS1SAnd<T>(new WS1SSingleton<T>(X), phi.ToWS1S()));
         }
+
         public override void ToString(StringBuilder sb)
         {
             sb.AppendFormat("Exists({0},",var);
@@ -375,7 +378,8 @@ namespace Microsoft.Automata.MSO
 
         public override WS1SFormula<T> ToWS1S()
         {
-            return new WS1SNot<T>(new WS1SExists<T>(var, new WS1SAnd<T>(new WS1SSingleton<T>(var), new WS1SNot<T>(phi.ToWS1S()))));
+            var X = new WS1SVariable<T>(var);
+            return new WS1SNot<T>(new WS1SExists<T>(X, new WS1SAnd<T>(new WS1SSingleton<T>(X), new WS1SNot<T>(phi.ToWS1S()))));
         }
         public override void ToString(StringBuilder sb)
         {
@@ -412,7 +416,8 @@ namespace Microsoft.Automata.MSO
 
         public override WS1SFormula<T> ToWS1S()
         {
-            return new WS1SExists<T>(var, phi.ToWS1S());
+            var X = new WS1SVariable<T>(var);
+            return new WS1SExists<T>(X, phi.ToWS1S());
         }
         public override void ToString(StringBuilder sb)
         {
@@ -431,7 +436,7 @@ namespace Microsoft.Automata.MSO
 
         public override WS1SFormula<T> ToWS1S()
         {
-            return new WS1SNot<T>(new WS1SExists<T>(var, new WS1SNot<T>(phi.ToWS1S())));
+            return new WS1SNot<T>(new WS1SExists<T>(Var(), new WS1SNot<T>(phi.ToWS1S())));
         }
         public override void ToString(StringBuilder sb)
         {
@@ -460,6 +465,11 @@ namespace Microsoft.Automata.MSO
         {
             return fovars.Contains(var);
         }
+
+        public WS1SVariable<T> Var(bool asFirstOrderVariable = false)
+        {
+            return new WS1SVariable<T>(var, asFirstOrderVariable);
+        }
     }
 
     /// <summary>
@@ -476,7 +486,7 @@ namespace Microsoft.Automata.MSO
 
         public override WS1SFormula<T> ToWS1S()
         {
-            return new WS1SPred<T>(pred, var);
+            return new WS1SPred<T>(pred, Var());  
         }
 
         public override void ToString(StringBuilder sb)
@@ -494,7 +504,8 @@ namespace Microsoft.Automata.MSO
 
         public override WS1SFormula<T> ToWS1S()
         {
-            return new WS1SNot<T>(new WS1SExists<T>(var + "_", new WS1SLt<T>(var + "_", var)));
+            var Y = new WS1SVariable<T>(var + "_");
+            return new WS1SNot<T>(new WS1SExists<T>(Y, Y < Var()));
         }
 
         public override void ToString(StringBuilder sb)
@@ -512,7 +523,8 @@ namespace Microsoft.Automata.MSO
 
         public override WS1SFormula<T> ToWS1S()
         {
-            return new WS1SNot<T>(new WS1SExists<T>(var + "_", new WS1SLt<T>(var, var + "_")));
+            var Y = new WS1SVariable<T>(var + "_");
+            return new WS1SNot<T>(new WS1SExists<T>(Y, Var() < Y));
         }
         public override void ToString(StringBuilder sb)
         {
@@ -547,7 +559,7 @@ namespace Microsoft.Automata.MSO
 
         public override WS1SFormula<T> ToWS1S()
         {
-            return new WS1SSuccN<T>(var1, var2, 1);
+            return new WS1SSuccN<T>(Var1(), Var2(), 1);
         }
         public override void ToString(StringBuilder sb)
         {
@@ -570,7 +582,7 @@ namespace Microsoft.Automata.MSO
 
         public override WS1SFormula<T> ToWS1S()
         {
-            return new WS1SSuccN<T>(var1, var2, n);
+            return new WS1SSuccN<T>(Var1(), Var2(), n);
         }
         public override void ToString(StringBuilder sb)
         {
@@ -587,28 +599,11 @@ namespace Microsoft.Automata.MSO
 
         public override WS1SFormula<T> ToWS1S()
         {
-            return new WS1SLt<T>(var1, var2);
+            return new WS1SLt<T>(Var1(), Var2());
         }
         public override void ToString(StringBuilder sb)
         {
             sb.AppendFormat("({0}<{1})", var1, var2);
-        }
-    }
-
-    /// <summary>
-    /// The position variable var1 is less than or equal to the position variable var2
-    /// </summary>
-    public class MSOLe<T> : MSOBinaryPosFormula<T>
-    {
-        public MSOLe(string var1, string var2) : base(var1, var2) { }
-
-        public override WS1SFormula<T> ToWS1S()
-        {
-            return new WS1SNot<T>(new WS1SLt<T>(var2, var1));
-        }
-        public override void ToString(StringBuilder sb)
-        {
-            sb.AppendFormat("({0}<={1})", var1, var2);
         }
     }
     #endregion
@@ -639,7 +634,7 @@ namespace Microsoft.Automata.MSO
 
         public override WS1SFormula<T> ToWS1S()
         {
-            return new WS1SSubset<T>(var1, var2);
+            return new WS1SSubset<T>(new WS1SVariable<T>(var1), new WS1SVariable<T>(var2));
         }
         public override void ToString(StringBuilder sb)
         {
@@ -647,22 +642,22 @@ namespace Microsoft.Automata.MSO
         }
     }
 
-    /// <summary>
-    /// Set var1 is a strict subset of set var2.
-    /// </summary
-    public class MSOSubsetStrict<T> : MSOBinarySetFormula<T>
-    {
-        public MSOSubsetStrict(string var1, string var2) : base(var1, var2) { }
+    ///// <summary>
+    ///// Set var1 is a strict subset of set var2.
+    ///// </summary
+    //public class MSOSubsetStrict<T> : MSOBinarySetFormula<T>
+    //{
+    //    public MSOSubsetStrict(string var1, string var2) : base(var1, var2) { }
 
-        public override WS1SFormula<T> ToWS1S()
-        {
-            return new WS1SAnd<T>(new WS1SSubset<T>(var1, var2), new WS1SNot<T>(new WS1SSubset<T>(var2, var1)));
-        }
-        public override void ToString(StringBuilder sb)
-        {
-            sb.AppendFormat("StrictSubset({0},{1})", var1, var2);
-        }
-    }
+    //    public override WS1SFormula<T> ToWS1S()
+    //    {
+    //        return new WS1SAnd<T>(new WS1SSubset<T>(var1, var2), new WS1SNot<T>(new WS1SSubset<T>(var2, var1)));
+    //    }
+    //    public override void ToString(StringBuilder sb)
+    //    {
+    //        sb.AppendFormat("StrictSubset({0},{1})", var1, var2);
+    //    }
+    //}
     #endregion
 }
 

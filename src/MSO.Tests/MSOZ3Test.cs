@@ -119,18 +119,19 @@ namespace MSOZ3Test
         {
             var solver = new CharSetSolver(BitWidth.BV7);
             var ca = new CartesianAlgebraBDD<BDD>(solver);
-            var fo = new WS1SAnd<BDD>(new WS1SSingleton<BDD>("x"), new WS1SSingleton<BDD>("y"));
-            var aut_fo = fo.GetAutomaton(ca, "x", "y");
-            WS1SFormula<BDD> xLTy = new WS1SLt<BDD>("x", "y");
-            WS1SFormula<BDD> not_xLTy = new WS1SNot<BDD>(xLTy);
+            var x = new WS1SVariable<BDD>("x", true);
+            var y = new WS1SVariable<BDD>("y", true);
+            var fo = !x & !y;
+            var aut_fo = fo.GetAutomaton(ca, x, y);
+            WS1SFormula<BDD> not_xLTy = new WS1SNot<BDD>(x < y);
             not_xLTy = new WS1SAnd<BDD>(not_xLTy, fo); //*
-            WS1SFormula<BDD> xEQy = new WS1SEq<BDD>("x", "y");
+            WS1SFormula<BDD> xEQy = new WS1SEq<BDD>(x, y);
             xEQy = new WS1SAnd<BDD>(xEQy, fo); //*
-            var yGTx = new WS1SLt<BDD>("y", "x");
+            var yGTx = new WS1SLt<BDD>(y, x);
             var xEQy_or_yGTx = new WS1SAnd<BDD>(new WS1SOr<BDD>(xEQy, yGTx), fo);
-            var aut_not_xLTy = not_xLTy.GetAutomaton(ca, "x", "y");
-            var B = xEQy_or_yGTx.GetAutomaton(ca, "x", "y");
-            var c_aut_xLTy = xLTy.GetAutomaton(ca, "x", "y").Complement(ca).Determinize(ca).Minimize(ca);
+            var aut_not_xLTy = not_xLTy.GetAutomaton(ca, x, y);
+            var B = xEQy_or_yGTx.GetAutomaton(ca, x, y);
+            var c_aut_xLTy = (x<y).GetAutomaton(ca, x, y).Complement(ca).Determinize(ca).Minimize(ca);
             //c_aut_xLTy = c_aut_xLTy.Intersect(aut_fo, ca).Determinize(ca).Minimize(ca); //*
             //aut_not_xLTy.ShowGraph("aut_not_xLTy");
             //B.ShowGraph("x_geq_y");
@@ -147,14 +148,16 @@ namespace MSOZ3Test
         {
             var solver = new CharSetSolver(BitWidth.BV7);
             var ca = new CartesianAlgebraBDD<BDD>(solver);
-            var fo_x = new WS1SSingleton<BDD>("x");
-            var fo_y = new WS1SSingleton<BDD>("y");
-            WS1SFormula<BDD> fo = new WS1SAnd<BDD>(fo_x, fo_y);
-            WS1SFormula<BDD> xSy = new WS1SSubset<BDD>("x", "y");
-            WS1SFormula<BDD> ySx = new WS1SSubset<BDD>("y", "x");
-            WS1SFormula<BDD> yEQx = new WS1SAnd<BDD>(xSy, ySx);
-            yEQx = new WS1SAnd<BDD>(yEQx, fo);
-            var aut_yEQx = yEQx.GetAutomaton(ca, "x", "y");
+            var x = new WS1SVariable<BDD>("x");
+            var y = new WS1SVariable<BDD>("y");
+            var fo_x = !x;
+            var fo_y = !y;
+            WS1SFormula<BDD> fo = !x & !y;
+            WS1SFormula<BDD> xSy = new WS1SSubset<BDD>(x, y);
+            WS1SFormula<BDD> ySx = new WS1SSubset<BDD>(y, x);
+            WS1SFormula<BDD> yEQx = xSy & ySx;
+            yEQx = yEQx & fo;
+            var aut_yEQx = yEQx.GetAutomaton(ca, x, y);
             //aut_yEQx.ShowGraph("aut_yEQx");
         }
 
@@ -163,10 +166,12 @@ namespace MSOZ3Test
         {
             var solver = new CharSetSolver(BitWidth.BV7);
             var ca = new CartesianAlgebraBDD<BDD>(solver);
-            var fo_x = new WS1SSingleton<BDD>("x");
-            WS1SFormula<BDD> xSy = new WS1SSubset<BDD>("x", "y");
+            var x = new WS1SVariable<BDD>("x");
+            var y = new WS1SVariable<BDD>("y");
+            var fo_x = !x;
+            WS1SFormula<BDD> xSy = new WS1SSubset<BDD>(x, y);
             var mem = new WS1SAnd<BDD>(xSy, fo_x);
-            var aut_mem = mem.GetAutomaton(ca, "x", "y");
+            var aut_mem = mem.GetAutomaton(ca, x, y);
             //aut_mem.ShowGraph("aut_mem");
         }
 
@@ -174,12 +179,27 @@ namespace MSOZ3Test
         public void TestWS1S_Label()
         {
             var solver = new CharSetSolver(BitWidth.BV7);
-            var pred = new WS1SPred<BDD>(solver.MkCharConstraint(false, 'c'), "x");
-            var fo_x = new WS1SSingleton<BDD>("x");
+            var x = new WS1SVariable<BDD>("x");
+            var pred = new WS1SPred<BDD>(solver.MkCharConstraint( 'c'), x);
             var ca = new CartesianAlgebraBDD<BDD>(solver);
-            var lab = new WS1SAnd<BDD>(pred, fo_x);
-            var lab_aut = lab.GetAutomaton(ca, "x");
+            var lab = pred & !x;
+            var lab_aut = lab.GetAutomaton(ca, x);
             //lab_aut.ShowGraph("lab_aut");
+        }
+
+        [TestMethod]
+        public void TestWS1S_Forall_x_Exists_y_x_lt_y() 
+        {
+            var triv = new TrivialBooleanAlgebra();
+            var ca = new BDDAlgebra<bool>(triv); 
+            var x = new WS1SVariable<bool>("x");
+            var y = new WS1SVariable<bool>("y");
+            // Forall x.Exists y.x < y
+            var psi4 = ~(x ^ !x & ~(y ^ (x < y)));
+            var aut = psi4.GetAutomaton(ca, x, y);
+            //aut.ShowGraph("aut");
+            //accepts only the empty word
+            Assert.IsTrue(aut.StateCount == 1 && aut.IsFinalState(aut.InitialState) && aut.MoveCount == 0);
         }
 
 
@@ -187,15 +207,17 @@ namespace MSOZ3Test
         public void TestWS1S_NotLabel()  
         {
             var solver = new CharSetSolver(BitWidth.BV7);
-            var pred = new WS1SPred<BDD>(solver.MkCharConstraint(false, 'c'), "x");
-            var fo_x = new WS1SSingleton<BDD>("x");
+            //var x1 = new WS1SVariable<BDD>("x1", false);
+            var x = new WS1SVariable<BDD>("x");
+            var pred = new WS1SPred<BDD>(solver.MkCharConstraint( 'c'), x);
+            var fo_x = !x;
             var ca = new CartesianAlgebraBDD<BDD>(solver);
             var lab = new WS1SAnd<BDD>(pred, fo_x);
             WS1SFormula<BDD> not_lab = new WS1SNot<BDD>(lab);
             var not_lab_actual = new WS1SAnd<BDD>(not_lab, fo_x);
-            var aut_not_lab = not_lab_actual.GetAutomaton(ca, "x");
-            var aut_not_lab_prelim = not_lab.GetAutomaton(ca, "x");
-            var c_aut_lab = lab.GetAutomaton(ca, "x").Complement(ca).Minimize(ca);
+            var aut_not_lab = not_lab_actual.GetAutomaton(ca, x);
+            var aut_not_lab_prelim = not_lab.GetAutomaton(ca, x);
+            var c_aut_lab = lab.GetAutomaton(ca, x).Complement(ca).Minimize(ca);
             //c_aut_lab.ShowGraph("c_aut_lab");
             //aut_not_lab.ShowGraph("aut_not_lab");
             //aut_not_lab_prelim.ShowGraph("aut_not_lab_prelim");
@@ -206,25 +228,28 @@ namespace MSOZ3Test
         public void TestWS1S_SuccDef_GetAutomaton()
         {
             var solver = new CharSetSolver(BitWidth.BV7);
-            var xLTy = new WS1SLt<BDD>("x", "y");
-            var xLTzLTy = new WS1SAnd<BDD>(new WS1SLt<BDD>("x", "z"), new WS1SLt<BDD>("z", "y"));
-            var Ez = new WS1SExists<BDD>("z", xLTzLTy);
+            var x = new WS1SVariable<BDD>("x");
+            var y = new WS1SVariable<BDD>("y");
+            var z = new WS1SVariable<BDD>("z");
+            var xLTy = new WS1SLt<BDD>(x, y);
+            var xLTzLTy = (x < z) & (z < y);
+            var Ez = new WS1SExists<BDD>(z, xLTzLTy);
             var notEz = new WS1SNot<BDD>(Ez);
             var xSyDef = new WS1SAnd<BDD>(xLTy, notEz);
             var ca = new CartesianAlgebraBDD<BDD>(solver);
-            var aut_xSyDef = xSyDef.GetAutomaton(ca,"x","y");
-            var aut_xLTzLTy = xLTzLTy.GetAutomaton(ca, "x", "y", "z");
-            var aut_Ez = Ez.GetAutomaton(ca, "x", "y");
-            var aut_notEz = notEz.GetAutomaton(ca, "x", "y");
-            var aut_xLTy = xLTy.GetAutomaton(ca, "x", "y");
+            var aut_xSyDef = xSyDef.GetAutomaton(ca,x,y);
+            var aut_xLTzLTy = xLTzLTy.GetAutomaton(ca, x,y,z);
+            var aut_Ez = Ez.GetAutomaton(ca, x,y);
+            var aut_notEz = notEz.GetAutomaton(ca, x,y);
+            var aut_xLTy = xLTy.GetAutomaton(ca, x,y);
 
             //aut_xSyDef.ShowGraph("aut_xSyDEf");
             //aut_xLTzLTy.ShowGraph("aut_xLTzLTy");
             //aut_Ez.ShowGraph("aut_Ez");
             //aut_notEz.ShowGraph("aut_notEz");
 
-            var xSyPrim = new WS1SSuccN<BDD>("x", "y", 1);
-            var aut_xSyPrim = xSyPrim.GetAutomaton(ca, "x", "y");
+            var xSyPrim = new WS1SSuccN<BDD>(x,y, 1);
+            var aut_xSyPrim = xSyPrim.GetAutomaton(ca, x,y);
             var equiv = aut_xSyPrim.IsEquivalentWith(aut_xSyDef, ca);
             Assert.IsTrue(equiv);
         }
@@ -233,25 +258,29 @@ namespace MSOZ3Test
         public void TestWS1S_SuccDef_GetAutomatonBDD()
         {
             var solver = new CharSetSolver(BitWidth.BV7);
-            var xLTy = new WS1SLt<BDD>("x", "y");
-            var xLTzLTy = new WS1SAnd<BDD>(new WS1SLt<BDD>("x", "z"), new WS1SLt<BDD>("z", "y"));
-            var Ez = new WS1SExists<BDD>("z", xLTzLTy);
+            var nrOfLabelBits = (int)BitWidth.BV7;
+            var x = new WS1SVariable<BDD>("x");
+            var y = new WS1SVariable<BDD>("y");
+            var z = new WS1SVariable<BDD>("z");
+            var xLTy = new WS1SLt<BDD>(x, y);
+            var xLTzLTy =  (x < z) & (z < y);
+            var Ez = new WS1SExists<BDD>(z, xLTzLTy);
             var notEz = new WS1SNot<BDD>(Ez);
             var xSyDef = new WS1SAnd<BDD>(xLTy, notEz);
 
-            var aut_xSyDef = xSyDef.GetAutomatonBDD(solver, "x", "y");
-            var aut_xLTzLTy = xLTzLTy.GetAutomatonBDD(solver, "x", "y", "z");
-            var aut_Ez = Ez.GetAutomatonBDD(solver, "x", "y").Determinize(solver).Minimize(solver);
-            var aut_notEz = notEz.GetAutomatonBDD(solver, "x", "y");
-            var aut_xLTy = xLTy.GetAutomatonBDD(solver, "x", "y");
+            var aut_xSyDef = xSyDef.GetAutomatonBDD(solver, nrOfLabelBits, x,y);
+            var aut_xLTzLTy = xLTzLTy.GetAutomatonBDD(solver, nrOfLabelBits, x, y, z);
+            var aut_Ez = Ez.GetAutomatonBDD(solver, nrOfLabelBits, x, y).Determinize(solver).Minimize(solver);
+            var aut_notEz = notEz.GetAutomatonBDD(solver, nrOfLabelBits, x, y);
+            var aut_xLTy = xLTy.GetAutomatonBDD(solver, nrOfLabelBits, x, y);
 
             //aut_xSyDef.ShowGraph("aut_xSyDEf");
             //aut_xLTzLTy.ShowGraph("aut_xLTzLTy");
             //aut_Ez.ShowGraph("aut_Ez");
             //aut_notEz.ShowGraph("aut_notEz");
 
-            var xSyPrim = new WS1SSuccN<BDD>("x", "y", 1);
-            var aut_xSyPrim = xSyPrim.GetAutomatonBDD(solver, "x", "y");
+            var xSyPrim = new WS1SSuccN<BDD>(x,y, 1);
+            var aut_xSyPrim = xSyPrim.GetAutomatonBDD(solver, nrOfLabelBits, x, y);
             var equiv = aut_xSyPrim.IsEquivalentWith(aut_xSyDef, solver);
             Assert.IsTrue(equiv);
         }
@@ -274,27 +303,40 @@ namespace MSOZ3Test
             TestWS1S_UseOfCharRangePreds<Expr>(solver, isDigit, isWordLetter, solver.RegexConverter);
         }
 
+
+        //Automaton<T> Restrict<T>(Automaton<IMonadicPredicate<BDD, T>> autom)
+        //{
+        //    List<Move<T>> moves = new List<Move<T>>();
+        //    foreach (var move in autom.GetMoves())
+        //        moves.Add(new Move<T>(move.SourceState, move.TargetState, move.Label.ProjectSecond()));
+        //    var res = Automaton<T>.Create(autom.InitialState, autom.GetFinalStates(), moves);
+        //    return res;
+        //}
+
         public void TestWS1S_UseOfCharRangePreds<T>(IBoolAlgMinterm<T> solver, T isDigit, T isWordLetter, IRegexConverter<T> regexConverter)
         {
             var ca = new CartesianAlgebraBDD<T>(solver);
+            var x = new WS1SVariable<T>("x");
+            var y = new WS1SVariable<T>("y");
+            var z = new WS1SVariable<T>("z");
+            var X = new WS1SVariable<T>("X");
             //there are at least two distinct positions x and y
-            var xy = new WS1SAnd<T>(new WS1SAnd<T>(new WS1SNot<T>(new WS1SEq<T>("x", "y")),
-                new WS1SSingleton<T>("x")), new WS1SSingleton<T>("y"));
+            var xy = new WS1SAnd<T>(new WS1SAnd<T>(new WS1SNot<T>(new WS1SEq<T>(x, y)),!x), !y);
             //there is a set X containing x and y and all positions z in X have characters that satisfy isWordLetter
-            var X = new WS1SExists<T>("X", new WS1SAnd<T>(
-                new WS1SAnd<T>(new WS1SSubset<T>("x", "X"), new WS1SSubset<T>("y", "X")),
-                new WS1SNot<T>(new WS1SExists<T>("z", new WS1SNot<T>(
-                    new WS1SOr<T>(new WS1SNot<T>(new WS1SAnd<T>(new WS1SSingleton<T>("z"), new WS1SSubset<T>("z", "X"))),
-                                    new WS1SPred<T>(isWordLetter, "z")))))));
+            var phi = new WS1SExists<T>(X, new WS1SAnd<T>(
+                new WS1SAnd<T>(new WS1SSubset<T>(x, X), new WS1SSubset<T>(y, X)),
+                new WS1SNot<T>(new WS1SExists<T>(z, new WS1SNot<T>(
+                    new WS1SOr<T>(new WS1SNot<T>(new WS1SAnd<T>(!z, new WS1SSubset<T>(z, X))),
+                                    new WS1SPred<T>(isWordLetter, z)))))));
 
-            var psi2 = new WS1SAnd<T>(xy, X);
-            var atLeast2wEE = new WS1SExists<T>("x", new WS1SExists<T>("y", psi2));
-            var psi1 = new WS1SAnd<T>(new WS1SSingleton<T>("x"), new WS1SPred<T>(isDigit, "x"));
-            var aut_psi1 = psi1.GetAutomaton(ca, "x");
+            var psi2 = new WS1SAnd<T>(xy, phi);
+            var atLeast2wEE = new WS1SExists<T>(x, new WS1SExists<T>(y, psi2));
+            var psi1 = new WS1SAnd<T>(!x, new WS1SPred<T>(isDigit, x));
+            var aut_psi1 = psi1.GetAutomaton(ca, x);
             //aut_psi1.ShowGraph("SFA(psi1)");
-            var atLeast1d = new WS1SExists<T>("x", psi1);
+            var atLeast1d = new WS1SExists<T>(x, psi1);
             var psi = new WS1SAnd<T>(atLeast2wEE, atLeast1d);
-            var aut1 = psi.GetAutomaton(solver);
+            var aut1 = psi.GetAutomaton(ca);
             //var aut_atLeast1d = atLeast1d.GetAutomaton(solver); 
 
             var aut2 = regexConverter.Convert(@"\w.*\w", System.Text.RegularExpressions.RegexOptions.Singleline).Intersect(regexConverter.Convert(@"\d"), solver);
@@ -302,13 +344,12 @@ namespace MSOZ3Test
             //aut1.ShowGraph("aut1");
             //aut2.ShowGraph("aut2");
 
-            bool equiv = aut2.IsEquivalentWith(aut1, solver);
+            bool equiv = aut2.IsEquivalentWith(BasicAutomata.Restrict(aut1), solver);
             Assert.IsTrue(equiv);
-
 
             //solver.ShowGraph(aut_atLeast1d, "aut_atLeast1d");
 
-            var aut_psi2 = psi2.GetAutomaton(ca, "x", "y");
+            var aut_psi2 = psi2.GetAutomaton(ca, x, y);
             // var aut_atLeast2wEE = atLeast2wEE.GetAutomaton(ca, "x", "y");
             // var aut_atLeast2wEE2 = atLeast2wEE.GetAutomaton(solver);
             //aut_psi2.ShowGraph("SFA(psi2)");
@@ -321,27 +362,27 @@ namespace MSOZ3Test
         public void TestWS1S_GetAutomatonBDD_eq_GetAutomaton()
         {
             var solver = new CharSetSolver(BitWidth.BV7);
+            var nrOfLabelBits = (int)BitWidth.BV7;
             var isDigit = solver.MkCharSetFromRegexCharClass(@"\d");
             var isLetter = solver.MkCharSetFromRegexCharClass(@"(c|C)");
+            var x = new WS1SVariable<BDD>("x");
+            var y = new WS1SVariable<BDD>("y");
+            var z = new WS1SVariable<BDD>("z");
+            var X = new WS1SVariable<BDD>("X");
             //there are at least two distinct positions x and y
-            var xy = new WS1SAnd<BDD>(new WS1SAnd<BDD>(new WS1SNot<BDD>(new WS1SEq<BDD>("x", "y")),
-                new WS1SSingleton<BDD>("x")), new WS1SSingleton<BDD>("y"));
+            var xy = (x != y) & !x & !y;
             //there is a set X containing x and y and all positions z in X have characters that satisfy isWordLetter
-            var X = new WS1SExists<BDD>("X", new WS1SAnd<BDD>(
-                new WS1SAnd<BDD>(new WS1SSubset<BDD>("x", "X"), new WS1SSubset<BDD>("y", "X")),
-                new WS1SNot<BDD>(new WS1SExists<BDD>("z", new WS1SNot<BDD>(
-                    new WS1SOr<BDD>(new WS1SNot<BDD>(new WS1SAnd<BDD>(new WS1SSingleton<BDD>("z"), new WS1SSubset<BDD>("z", "X"))),
-                                    new WS1SPred<BDD>(isLetter, "z")))))));
+            var psi = X^((x <= X)&(y <= X)&~(z^~(~(!z & z <= X)|isLetter%z)));
 
-            var atLeast2w = new WS1SAnd<BDD>(xy, X);
-            var atLeast2wEE = new WS1SExists<BDD>("x", new WS1SExists<BDD>("y", atLeast2w));
-            var autBDD = atLeast2w.GetAutomatonBDD(solver, "x", "y");
+            var atLeast2w = xy&psi;
+            var atLeast2wEE = x^(y^atLeast2w);
+            var autBDD = atLeast2w.GetAutomatonBDD(solver,nrOfLabelBits, x, y);
             var ca = new CartesianAlgebraBDD<BDD>(solver);
-            var autPROD = atLeast2w.GetAutomaton(ca, "x", "y");
+            var autPROD = atLeast2w.GetAutomaton(ca, x, y);
             //autBDD.ShowGraph("autBDD");
             //autPROD.ShowGraph("autPROD");
-            var aut_atLeast2wEE1 = atLeast2wEE.GetAutomaton(solver);
-            var aut_atLeast2wEE2 = atLeast2wEE.GetAutomatonBDD(solver);
+            var aut_atLeast2wEE1 = BasicAutomata.Restrict(atLeast2wEE.GetAutomaton(ca));
+            var aut_atLeast2wEE2 = atLeast2wEE.GetAutomatonBDD(solver, nrOfLabelBits);
             //aut_atLeast2wEE1.ShowGraph("aut_atLeast2wEE1");
             //aut_atLeast2wEE2.ShowGraph("aut_atLeast2wEE2");
             Assert.IsTrue(aut_atLeast2wEE1.IsEquivalentWith(aut_atLeast2wEE2, solver));
@@ -416,8 +457,8 @@ namespace MSOZ3Test
         [TestMethod]
         public void TestMSO_Forall()
         {
-            var solver = new CharSetSolver(BitWidth.BV7);
-            MSOFormula<BDD> phi = new MSOForallFo<BDD>("x", new MSOPredicate<BDD>(solver.MkCharConstraint(true, 'c'), "x"));
+            var solver = new CharSetSolver(BitWidth.BV7);  
+            MSOFormula<BDD> phi = new MSOForallFo<BDD>("x", new MSOPredicate<BDD>(solver.MkCharConstraint('c',true), "x"));
 
             var aut = phi.GetAutomaton(solver);
             //aut.ShowGraph("aut");
@@ -434,7 +475,7 @@ namespace MSOZ3Test
         public void TestMSO_Pred()
         {
             var solver = new CharSetSolver(BitWidth.BV16);
-            var pred = new MSOPredicate<BDD>(solver.MkCharConstraint(false, 'c'), "x");
+            var pred = new MSOPredicate<BDD>(solver.MkCharConstraint( 'c'), "x");
             MSOFormula<BDD> phi = new MSOExistsFo<BDD>("x", pred);
 
             var ca = new CartesianAlgebraBDD<BDD>(solver);
@@ -458,7 +499,7 @@ namespace MSOZ3Test
         {
             var solver = new CharSetSolver(BitWidth.BV32);
             //var phi = new MSOTrue();
-            MSOFormula<BDD> phi = new MSOExistsFo<BDD>("x", new MSOAnd<BDD>(new MSOPredicate<BDD>(solver.MkCharConstraint(false, 'C'), "x"), new MSOFirst<BDD>("x")));
+            MSOFormula<BDD> phi = new MSOExistsFo<BDD>("x", new MSOAnd<BDD>(new MSOPredicate<BDD>(solver.MkCharConstraint( 'C'), "x"), new MSOFirst<BDD>("x")));
 
             var aut = phi.GetAutomaton(solver);
             var aut2 = solver.RegexConverter.Convert("^C");
@@ -470,7 +511,7 @@ namespace MSOZ3Test
         {
             var solver = new CharSetSolver(BitWidth.BV7);
             //var phi = new MSOTrue();
-            MSOFormula<BDD> phi = new MSONot<BDD>(new MSOExistsFo<BDD>("x", new MSOPredicate<BDD>(solver.MkCharConstraint(false, 'c'), "x")));
+            MSOFormula<BDD> phi = new MSONot<BDD>(new MSOExistsFo<BDD>("x", new MSOPredicate<BDD>(solver.MkCharConstraint( 'c'), "x")));
 
             var aut = phi.GetAutomaton(solver);
             for (int i = 0; i < 10; i++)
@@ -488,8 +529,8 @@ namespace MSOZ3Test
             var solver = new CharSetSolver(BitWidth.BV32);
             MSOFormula<BDD> phi = new MSOForallFo<BDD>("x",
                     new MSOOr<BDD>(
-                        new MSOPredicate<BDD>(solver.MkCharConstraint(false, 'c'), "x"),
-                        new MSOPredicate<BDD>(solver.MkCharConstraint(false, 'a'), "x")
+                        new MSOPredicate<BDD>(solver.MkCharConstraint( 'c'), "x"),
+                        new MSOPredicate<BDD>(solver.MkCharConstraint( 'a'), "x")
                     )
                 );
 
@@ -509,11 +550,11 @@ namespace MSOZ3Test
             var solver = new CharSetSolver(BitWidth.BV32);
             MSOFormula<BDD> phi = new MSOForallFo<BDD>("x",
                     new MSOIf<BDD>(
-                        new MSOPredicate<BDD>(solver.MkCharConstraint(false, 'c'), "x"),
+                        new MSOPredicate<BDD>(solver.MkCharConstraint( 'c'), "x"),
                         new MSOExistsFo<BDD>("y",
                             new MSOAnd<BDD>(
                                 new MSOSucc<BDD>("x", "y"),
-                                new MSOPredicate<BDD>(solver.MkCharConstraint(false, 'a'), "y")
+                                new MSOPredicate<BDD>(solver.MkCharConstraint( 'a'), "y")
                             )
                         )
                     )
@@ -529,44 +570,111 @@ namespace MSOZ3Test
             Assert.IsTrue(aut2.IsEquivalentWith(aut, solver));
         }
 
-        [TestMethod]
-        public void TestMSO_Succ_Z3()
+
+        static MSOForallFo<BoolExpr> Forall(string x, MSOFormula<BoolExpr> psi)
         {
-            var solver = new Z3Provider(BitWidth.BV7);
-            //var phi = new MSOTrue();
-            MSOFormula<Expr> phi =
-                new MSOForallFo<Expr>("x", new MSOForallFo<Expr>("x", new MSOForallFo<Expr>("x", new MSOForallFo<Expr>("x", new MSOForallFo<Expr>("x",
-                    new MSOForallFo<Expr>("x", new MSOForallFo<Expr>("x",
-                new MSOForallFo<Expr>("x",
-                    new MSOIf<Expr>(
-                        new MSOPredicate<Expr>(solver.MkCharConstraint(false, 'c'), "x"),
-                        new MSOExistsFo<Expr>("y",
-                            new MSOAnd<Expr>(
-                                new MSOSucc<Expr>("x", "y"),
-                                new MSOPredicate<Expr>(solver.MkCharConstraint(false, 'a'), "y")
-                            )
-                        )
-                    )
-                )
-                )))))));
+            return new MSOForallFo<BoolExpr>(x, psi);
+        }
+
+        static MSOExistsFo<BoolExpr> Exists(string x, MSOFormula<BoolExpr> psi)
+        {
+            return new MSOExistsFo<BoolExpr>(x, psi);
+        }
+
+        static MSOIf<BoolExpr> Implies(MSOFormula<BoolExpr> lhs, MSOFormula<BoolExpr> rhs)
+        {
+            return new MSOIf<BoolExpr>(lhs, rhs);
+        }
+
+        static MSOAnd<BoolExpr> And(MSOFormula<BoolExpr> psi, MSOFormula<BoolExpr> phi)
+        {
+            return new MSOAnd<BoolExpr>(psi, phi);
+        }
+
+        static MSOOr<BoolExpr> Or(MSOFormula<BoolExpr> psi, MSOFormula<BoolExpr> phi)
+        {
+            return new MSOOr<BoolExpr>(psi, phi);
+        }
+
+        static MSOSucc<BoolExpr> Succ(string x, string y)
+        {
+            return new MSOSucc<BoolExpr>(x, y);
+        }
+
+        [TestMethod]
+        public void MSO_Succ_Z3A()
+        {
+            var z3Context = new Context();
+            var S = z3Context.IntSort;
+            var solver = new Z3BoolAlg(z3Context, S);
+            Func<int, BoolExpr> IsInt = (i => z3Context.MkEq(solver.x, z3Context.MkInt(i)));
+            var x_is_0 = new MSOPredicate<BoolExpr>(IsInt(0), "x");
+            var y_is_1 = new MSOPredicate<BoolExpr>(IsInt(1), "y");
+            //every 0 is immediately followed by a 1
+            MSOFormula<BoolExpr> phi = Forall("x", Implies(x_is_0, Exists("y", And(Succ("x", "y"), y_is_1))));
 
             var aut = phi.GetAutomaton(solver);
-            var moves = new List<Move<BDD>>();
-            foreach (var m in aut.GetMoves())
-            {
-                BDD bdd;
-                solver.TryConvertToCharSet(m.Label, out bdd);
-                moves.Add(new Move<BDD>(m.SourceState, m.TargetState, bdd));
-            }
-            var aut1 = Automaton<BDD>.Create(aut.InitialState, aut.GetFinalStates(), moves);
-            //aut1.ShowGraph();
-            for (int i = 0; i < 10; i++)
-            {
-                var s = solver.CharSetProvider.GenerateMember(aut1);
-                Assert.IsTrue(System.Text.RegularExpressions.Regex.IsMatch(s, "^(ca|[^c])*$"));
-            }
-            var aut2 = solver.RegexConverter.Convert("^(ca|[^c])*$");
-            Assert.IsTrue(aut2.IsEquivalentWith(aut, solver));
+
+            var expected_automaton = Automaton<BoolExpr>.Create(0, new int[] { 0 },
+                new Move<BoolExpr>[]{
+                Move<BoolExpr>.Create(0,0, z3Context.MkNot(IsInt(0))),
+                Move<BoolExpr>.Create(0,1, IsInt(0)),
+                 Move<BoolExpr>.Create(1,0, IsInt(1))});
+
+            bool equiv = aut.IsEquivalentWith(expected_automaton, solver);
+            Assert.IsTrue(equiv, "the automata must be equivalent");
+        }
+
+        [TestMethod]
+        public void Minimize_NFA_Z3A()
+        {
+            var z3Context = new Context();
+            var S = z3Context.IntSort;
+            var solver = new Z3BoolAlg(z3Context, S);
+            var a = z3Context.MkEq(solver.x, z3Context.MkNumeral(0, S));
+            var b = z3Context.MkNot(a);
+
+            var sfa = Automaton<BoolExpr>.Create(0, new int[] { 3, 4, 5 },
+                new Move<BoolExpr>[]{
+                Move<BoolExpr>.Create(0, 1, a),
+                Move<BoolExpr>.Create(0, 2, b),
+                Move<BoolExpr>.Create(1, 4, a),
+                Move<BoolExpr>.Create(1, 5, a), //<-- nondeterminism
+                Move<BoolExpr>.Create(1, 3, b),
+                Move<BoolExpr>.Create(2, 4, b),
+                Move<BoolExpr>.Create(2, 5, a),
+                //Move<BoolExpr>.Create(3, 6, a),
+                Move<BoolExpr>.Create(3, 4, b),
+                //Move<BoolExpr>.Create(4, 6, a),
+                Move<BoolExpr>.Create(4, 3, b),
+                Move<BoolExpr>.Create(5, 5, a),
+                //Move<BoolExpr>.Create(5, 6, b),
+                //Move<BoolExpr>.Create(6, 6, solver.True)
+                });
+
+            var sfa_min = sfa.Minimize(solver);
+
+            var sfa_det = sfa_min.Determinize(solver);
+
+            var sfa_det_min = sfa_det.Minimize(solver);
+
+            bool equiv1 = sfa.IsEquivalentWith(sfa_min, solver);
+            bool equiv2 = sfa.IsEquivalentWith(sfa_det, solver);
+
+
+            Assert.IsTrue(equiv1);
+            Assert.IsTrue(equiv2);
+
+            //pretend that sfa is deterministic
+            sfa.isDeterministic = true;
+
+            //only the smaller half of a split set is pushed 
+            var sfa_min2 = sfa.Minimize(solver);
+
+            //the result is incorrect
+            bool equiv3 = sfa_min.IsEquivalentWith(sfa_min2, solver);
+
+            Assert.IsFalse(equiv3);
         }
 
         [TestMethod]
@@ -585,12 +693,12 @@ namespace MSOZ3Test
                     for (int i = 1; i < vars; i++)
                     {
                         phi = new MSOAnd<BDD>(phi, new MSOLt<BDD>("x" + i, "x" + (i + 1)));
-                        phi = new MSOAnd<BDD>(phi, new MSOPredicate<BDD>(solver.MkCharConstraint(false, 'a'), "x" + i));
+                        phi = new MSOAnd<BDD>(phi, new MSOPredicate<BDD>(solver.MkCharConstraint( 'a'), "x" + i));
                     }
-                    phi = new MSOAnd<BDD>(phi, new MSOPredicate<BDD>(solver.MkCharConstraint(false, 'a'), "x" + vars));
+                    phi = new MSOAnd<BDD>(phi, new MSOPredicate<BDD>(solver.MkCharConstraint( 'a'), "x" + vars));
                     phi = new MSOOr<BDD>(phi,
                         new MSOExistsFo<BDD>("y",
-                        new MSOPredicate<BDD>(solver.MkCharConstraint(false, 'c'), "y")));
+                        new MSOPredicate<BDD>(solver.MkCharConstraint( 'c'), "y")));
                     for (int i = vars; i >= 1; i--)
                     {
                         phi = new MSOExistsFo<BDD>("x" + i, phi);
@@ -627,13 +735,13 @@ namespace MSOZ3Test
                     for (int i = 1; i < vars; i++)
                     {
                         phi = new MSOAnd(phi, new MSOLt("x" + i, "x" + (i + 1)));
-                        phi = new MSOAnd(phi, new MSOPredicate(solver.MkCharConstraint(false, 'a'), "x" + i));
-                        phi = new MSOOr(phi, new MSOPredicate(solver.MkCharConstraint(false, 'k'), "x" + i));
+                        phi = new MSOAnd(phi, new MSOPredicate(solver.MkCharConstraint( 'a'), "x" + i));
+                        phi = new MSOOr(phi, new MSOPredicate(solver.MkCharConstraint( 'k'), "x" + i));
                     }
-                    phi = new MSOAnd(phi, new MSOPredicate(solver.MkCharConstraint(false, 'a'), "x" + vars));
+                    phi = new MSOAnd(phi, new MSOPredicate(solver.MkCharConstraint( 'a'), "x" + vars));
                     phi = new MSOOr(phi,
                         new MSOExistsFo("y",
-                        new MSOPredicate(solver.MkCharConstraint(false, 'c'), "y")));
+                        new MSOPredicate(solver.MkCharConstraint( 'c'), "y")));
                     for (int i = vars; i >= 1; i--)
                     {
                         phi = new MSOExistsFo("x" + i, phi);
@@ -670,13 +778,13 @@ namespace MSOZ3Test
                     for (int i = 1; i < vars; i++)
                     {
                         phi = new MSOAnd<BDD>(phi, new MSOLt<BDD>("x" + i, "x" + (i + 1)));
-                        phi = new MSOAnd<BDD>(phi, new MSOPredicate<BDD>(solver.MkCharConstraint(false, 'a'), "x" + i));
-                        phi = new MSOOr<BDD>(phi, new MSOPredicate<BDD>(solver.MkCharConstraint(false, 'k'), "x" + i));
+                        phi = new MSOAnd<BDD>(phi, new MSOPredicate<BDD>(solver.MkCharConstraint( 'a'), "x" + i));
+                        phi = new MSOOr<BDD>(phi, new MSOPredicate<BDD>(solver.MkCharConstraint( 'k'), "x" + i));
                     }
-                    phi = new MSOAnd<BDD>(phi, new MSOPredicate<BDD>(solver.MkCharConstraint(false, 'a'), "x" + vars));
+                    phi = new MSOAnd<BDD>(phi, new MSOPredicate<BDD>(solver.MkCharConstraint( 'a'), "x" + vars));
                     phi = new MSOOr<BDD>(phi,
                         new MSOExistsFo<BDD>("y",
-                        new MSOPredicate<BDD>(solver.MkCharConstraint(false, 'c'), "y")));
+                        new MSOPredicate<BDD>(solver.MkCharConstraint( 'c'), "y")));
                     for (int i = vars; i >= 1; i--)
                     {
                         phi = new MSOExistsFo<BDD>("x" + i, phi);
@@ -739,6 +847,15 @@ namespace MSOZ3Test
             var aut = phi.GetAutomaton(solver);
         }
 
+
+        [TestMethod]
+        public void TestLarge()
+        {
+            var max = 15;
+            for (int i = 4; i < max; i++)
+                TestMintermExplosion(i, true);
+        }
+
         #region TestLarge helpers
 
         void TestMintermExplosion(int bitWidth, bool useBDD = false)
@@ -748,13 +865,14 @@ namespace MSOZ3Test
 
             if (useBDD)
             {
-                var S = new CharSetSolver(BitWidth.BV7);
+                //var S = new CharSetSolver(BitWidth.BV32);
+                var S = new BDDAlgebra();
 
                 TestContext.WriteLine("BDD");
                 int t = System.Environment.TickCount;
-                var aut1 = CreateAutomaton1<BDD>(S.MkSetWithBitTrue, bitWidth, S);
-                var aut2 = CreateAutomaton2<BDD>(S.MkSetWithBitTrue, bitWidth, S);
-                var aut3 = CreateAutomaton3<BDD>(S.MkSetWithBitTrue, bitWidth, S);
+                var aut1 = CreateAutomaton1<BDD>(S.MkBitTrue, bitWidth, S);
+                var aut2 = CreateAutomaton2<BDD>(S.MkBitTrue, bitWidth, S);
+                var aut3 = CreateAutomaton3<BDD>(S.MkBitTrue, bitWidth, S);
                 t = System.Environment.TickCount - t;
                 TestContext.WriteLine(t + "ms");
                 //aut.ShowGraph("aut" + bitWidth);
@@ -790,6 +908,8 @@ namespace MSOZ3Test
             phi = new MSOExistsFo<T>("var", phi);
 
             var aut = phi.GetAutomaton(Z);
+
+            //aut.ShowGraph("aut");
 
             return aut;
         }
@@ -851,14 +971,6 @@ namespace MSOZ3Test
         }
 
         #endregion
-
-        [TestMethod]
-        public void TestLarge()
-        {
-            var max = 10;
-            for (int i = 1; i < max; i++)
-                TestMintermExplosion(i, true);
-        }
     }
 
     [TestClass]
@@ -869,12 +981,13 @@ namespace MSOZ3Test
         {
             var ctx = new Context();
             var sort = ctx.IntSort;
-            var solver = new BooleanAlgebraZ3(ctx, sort);
+            var solver = new Z3BoolAlg(ctx, sort);
             var alg = new BDDAlgebra<BoolExpr>(solver);
+            var x = new WS1SVariable<BDD>("x");
             var pred = new MSOPredicate<BoolExpr>(ctx.MkEq(solver.x, ctx.MkNumeral(42, sort)), "x");
             MSOFormula<BoolExpr> phi = new MSOExistsFo<BoolExpr>("x", pred);
             var pred_aut = pred.GetAutomaton(alg, "x");
-            pred_aut.ShowGraph("pred_aut");
+            //pred_aut.ShowGraph("pred_aut");
         }
 
         [TestMethod]
@@ -882,26 +995,29 @@ namespace MSOZ3Test
         {
             var ctx = new Context();
             var sort = ctx.IntSort;
-            var solver = new BooleanAlgebraZ3(ctx, sort);
+            var solver = new Z3BoolAlg(ctx, sort);
             var alg = new BDDAlgebra<BoolExpr>(solver);
-            var xLTy = new WS1SLt<BoolExpr>("x", "y");
-            var xLTzLTy = new WS1SAnd<BoolExpr>(new WS1SLt<BoolExpr>("x", "z"), new WS1SLt<BoolExpr>("z", "y"));
-            var Ez = new WS1SExists<BoolExpr>("z", xLTzLTy);
+            var x = new WS1SVariable<BoolExpr>("x");
+            var y = new WS1SVariable<BoolExpr>("y");
+            var z = new WS1SVariable<BoolExpr>("z");
+            var xLTy = x < y;
+            var xLTzLTy = (x<z)&(z<y);
+            var Ez = new WS1SExists<BoolExpr>(z, xLTzLTy);
             var notEz = new WS1SNot<BoolExpr>(Ez);
             var xSyDef = new WS1SAnd<BoolExpr>(xLTy, notEz);
-            var aut_xSyDef = xSyDef.GetAutomaton(alg, "x", "y");
-            var aut_xLTzLTy = xLTzLTy.GetAutomaton(alg, "x", "y", "z");
-            var aut_Ez = Ez.GetAutomaton(alg, "x", "y");
-            var aut_notEz = notEz.GetAutomaton(alg, "x", "y");
-            var aut_xLTy = xLTy.GetAutomaton(alg, "x", "y");
+            var aut_xSyDef = xSyDef.GetAutomaton(alg, x,y);
+            var aut_xLTzLTy = xLTzLTy.GetAutomaton(alg, x,y,z);
+            var aut_Ez = Ez.GetAutomaton(alg, x,y);
+            var aut_notEz = notEz.GetAutomaton(alg, x,y);
+            var aut_xLTy = xLTy.GetAutomaton(alg, x,y);
 
-            aut_xSyDef.ShowGraph("aut_xSyDEf");
-            aut_xLTzLTy.ShowGraph("aut_xLTzLTy");
-            aut_Ez.ShowGraph("aut_Ez");
-            aut_notEz.ShowGraph("aut_notEz");
+            //aut_xSyDef.ShowGraph("aut_xSyDEf");
+            //aut_xLTzLTy.ShowGraph("aut_xLTzLTy");
+            //aut_Ez.ShowGraph("aut_Ez");
+            //aut_notEz.ShowGraph("aut_notEz");
 
-            var xSyPrim = new WS1SSuccN<BoolExpr>("x", "y", 1);
-            var aut_xSyPrim = xSyPrim.GetAutomaton(alg, "x", "y");
+            var xSyPrim = new WS1SSuccN<BoolExpr>(x,y, 1);
+            var aut_xSyPrim = xSyPrim.GetAutomaton(alg, x,y);
             var equiv = aut_xSyPrim.IsEquivalentWith(aut_xSyDef, alg);
             Assert.IsTrue(equiv);
         }

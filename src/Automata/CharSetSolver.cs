@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 //using RestrictKeyType = System.Int64;
 using System.IO;
+using System.Text.RegularExpressions;
 
 using Microsoft.Automata.Internal;
 
@@ -62,21 +63,32 @@ namespace Microsoft.Automata
 
         #region Creating ranges
 
+        Microsoft.Automata.Internal.Utilities.IgnoreCaseTransformer _IgnoreCase = null;
+        Microsoft.Automata.Internal.Utilities.IgnoreCaseTransformer IgnoreCase
+        {
+            get
+            {
+                if (_IgnoreCase == null)
+                    _IgnoreCase = new Microsoft.Automata.Internal.Utilities.IgnoreCaseTransformer(this);
+                return _IgnoreCase;
+            }
+        }
+
+        BDD[] charPredTable = new BDD[1 << 16];
+
         /// <summary>
         /// Make a character containing the given character c.
         /// If c is a lower case or upper case character and ignoreCase is true
         /// then add both the upper case and the lower case characters.
         /// </summary>
-        public BDD MkCharConstraint(bool ignoreCase, char c)
+        public BDD MkCharConstraint(char c, bool ignoreCase = false)
         {
+            int i = (int)c;
+            if (charPredTable[i] == null)
+                charPredTable[i] = MkSetFrom((uint)c, _bw - 1);
             if (ignoreCase)
-            {
-                if (char.IsUpper(c))
-                    return MkOr(MkSetFrom((uint)c, _bw-1), MkSetFrom((uint)char.ToLower(c), _bw-1));
-                else if (char.IsLower(c))
-                    return MkOr(MkSetFrom((uint)c, _bw-1), MkSetFrom((uint)char.ToUpper(c), _bw-1));
-            }
-            return MkSetFrom((uint)c, _bw-1);
+                return IgnoreCase.Apply(charPredTable[i]);
+            return charPredTable[i];
         }
 
         /// <summary>
@@ -144,42 +156,29 @@ namespace Microsoft.Automata
         /// Make a character set of all the characters in the interval from c to d.
         /// If ignoreCase is true ignore cases for upper and lower case characters by including both versions.
         /// </summary>
-        public BDD MkRangeConstraint(bool ignoreCase, char c, char d)
+        public BDD MkRangeConstraint(char c, char d, bool ignoreCase = false)
         {
-            if (_bw == 7)
-            {
-                return MkRangeConstraint1(ignoreCase, ((int)c < 127 ? c : (char)127), ((int)d < 127 ? d : (char)127));
-            }
-            else if (_bw == 8)
-            {
-                return MkRangeConstraint1(ignoreCase, ((int)c < 255 ? c : (char)255), ((int)d < 255 ? d : (char)255));
-            }
-
-            int lower = (int)c;
-            int upper = (int)d;
-            if (upper - lower < (maxChar - upper) + lower || ignoreCase)
-                return MkRangeConstraint1(ignoreCase, c, d);
-            else
-                return MkNot(MkOr(
-                    (c > '\0' ? MkRangeConstraint1(ignoreCase, '\0', (char)(c - 1)) : False),
-                    (d < '\uFFFF' ? MkRangeConstraint1(ignoreCase, (char)(d + 1), '\uFFFF') : False)));
-        }
-
-        BDD MkRangeConstraint1(bool ignoreCase, char c, char d)
-        {
+            var res = MkSetFromRange((uint)c, (uint)d, _bw - 1);
             if (ignoreCase)
-            {
-                BDD bdd = False;
-                for (char i = c; i <= d; i++)
-                    bdd = MkOr(bdd, MkCharConstraint(ignoreCase, i));
-                return bdd;
-            }
-            else
-            {
-                return MkCharSetFromRange(c, d);
-            }
-
+                res = IgnoreCase.Apply(res);
+            return res;
         }
+
+        //BDD MkRangeConstraint1(bool ignoreCase, char c, char d)
+        //{
+        //    if (ignoreCase)
+        //    {
+        //        BDD bdd = False;
+        //        for (char i = c; i <= d; i++) //???
+        //            bdd = MkOr(bdd, MkCharConstraint(ignoreCase, i));
+        //        return bdd;
+        //    }
+        //    else
+        //    {
+        //        return MkCharSetFromRange(c, d);
+        //    }
+
+        //}
 
         /// <summary>
         /// Make a BDD encoding of k least significant bits of all the integers in the ranges
@@ -201,41 +200,14 @@ namespace Microsoft.Automata
         {
             BDD bdd = False;
             foreach (var range in ranges)
-                bdd = MkOr(bdd, MkRangeConstraint(ignoreCase, range[0], range[1]));
+                bdd = MkOr(bdd, MkRangeConstraint(range[0], range[1], ignoreCase));
             return bdd;
         }
         #endregion
 
         #endregion
 
-        #region Serialializing and deserializing BDDs from dags encoded by integers
-        ///// <summary>
-        ///// Enumerate the bdd arcs as integer tuple [x, sourceNode, trueNode, falseNode]
-        ///// The root node of the BDD is the sourceNode of the first triplet.
-        ///// False node has id 0 and True node has id 1.
-        ///// </summary>
-        //internal IEnumerable<int[]> Serialize(CharSet bdd)
-        //{
-        //    HashSet<BvSet> done = new HashSet<BvSet>();
-        //    Stack<BvSet> stack = new Stack<BvSet>();
-        //    if (bdd.Id > 1)
-        //        stack.Push(bdd);
-        //    while (stack.Count > 0)
-        //    {
-        //        CharSet b = stack.Pop();
-        //        yield return new int[] { b.Ordinal, b.Id, b.trueBranch.Id, b.falseBranch.Id };
-        //        if (b.trueBranch.Id > 1 && !done.Contains(b.trueBranch))
-        //        {
-        //            done.Add(b.trueBranch);
-        //            stack.Push(b.trueBranch);
-        //        }
-        //        if (b.falseBranch.Id > 1 && !done.Contains(b.falseBranch))
-        //        {
-        //            done.Add(b.falseBranch);
-        //            stack.Push(b.falseBranch);
-        //        }
-        //    }
-        //}
+        #region Serialializing and deserializing BDDs
 
         /// <summary>
         /// Represent the set as an integer array.
@@ -325,45 +297,6 @@ namespace Microsoft.Automata
 
             return res;
         }
-
-        ///// <summary>
-        ///// Assumes that labels in the arcs are less than k and that the arcs indeed represent a BDD.
-        ///// Each arc must have the form [x, sourceNode, trueNode, falseNode] with x as the bit nr.
-        ///// If the enumeration is empty then Bdd.True is returned.
-        ///// The source of the first arc is assumed to be the root node.
-        ///// </summary>
-        //internal CharSet Deserialize(IEnumerable<int[]> arcs)
-        //{
-        //    CharSet res = null;
-        //    //the ids of the enumeration must be ignored, new corresponding node ids are created
-        //    var trueMap = new Dictionary<int, int>();
-        //    var falseMap = new Dictionary<int, int>();
-        //    var bddMap = new Dictionary<int, CharSet>();
-
-        //    foreach (int[] arc in arcs)
-        //    {
-        //        CharSet bdd = new CharSet(MkId(), arc[0]);
-        //        bddMap[arc[1]] = bdd;
-        //        trueMap[arc[1]] = arc[2];
-        //        falseMap[arc[1]] = arc[3];
-
-        //        if (res == null)
-        //            res = bdd;
-        //    }
-        //    foreach (int origId in bddMap.Keys)
-        //    {
-        //        int tId = trueMap[origId];
-        //        int fId = falseMap[origId];
-        //        bddMap[origId].trueBranch = (tId == 0 ? CharSet.False : (tId == 1 ? CharSet.True : bddMap[tId]));
-        //        bddMap[origId].falseBranch = (fId == 0 ? CharSet.False : (fId == 1 ? CharSet.True : bddMap[fId]));
-        //    }
-
-        //    if (res == null)
-        //        return CharSet.True; //the empty enumeration of arcs corresponds to True
-        //    else
-        //        return res;
-        //}
-
 
         /// <summary>
         /// Recreates a BDD from an int array that has been created using SerializeCompact
@@ -510,16 +443,6 @@ namespace Microsoft.Automata
                 chars.Add((char)Choose(cs));
             string s = new String(chars.ToArray());
             return s;
-        }
-
-        /// <summary>
-        /// Convert a .NET regex into an equivalent automaton whose moves are labeled by character sets.
-        /// Uses System.Text.RegularExpressions.RegexOptions.None for interpreting the regex.
-        /// </summary>
-        /// <param name="regex">.NET regex pattern</param>
-        public Automaton<BDD> Convert(string regex)
-        {
-            return regexConverter.Convert(regex, System.Text.RegularExpressions.RegexOptions.None);
         }
 
         /// <summary>
@@ -752,6 +675,16 @@ namespace Microsoft.Automata
                 "(" + r1 + "|" + r2 + ")";
         }
 
+        /// <summary>
+        /// Convert a .NET regex into an equivalent automaton whose moves are labeled by character sets.
+        /// Uses System.Text.RegularExpressions.RegexOptions.None for interpreting the regex.
+        /// </summary>
+        /// <param name="regex">.NET regex pattern</param>
+        public Automaton<BDD> Convert(string regex)
+        {
+            var res = regexConverter.Convert(regex, System.Text.RegularExpressions.RegexOptions.None);
+            return res;
+        }
 
         /// <summary>
         /// Convert a .NET regex into an equivalent automaton whose moves are labeled by character sets.
@@ -759,9 +692,10 @@ namespace Microsoft.Automata
         /// <param name="regex">.NET regex pattern</param>
         /// <param name="options">regex options for interpreting the regex, default is System.Text.RegularExpressions.RegexOptions.Singleline</param>
         /// <param name="keepBoundaryStates">used for testing purposes, when true boundary states are not removed, default is false</param>
-        public Automaton<BDD> Convert(string regex, System.Text.RegularExpressions.RegexOptions options = System.Text.RegularExpressions.RegexOptions.Singleline, bool keepBoundaryStates = false)
+        public Automaton<BDD> Convert(string regex, System.Text.RegularExpressions.RegexOptions options, bool keepBoundaryStates = false)
         {
-            return regexConverter.Convert(regex, options, keepBoundaryStates);
+            var res = regexConverter.Convert(regex, options, keepBoundaryStates);
+            return res;
         }
 
         public Tuple<string, Automaton<BDD>>[] ConvertCaptures(string regex, out bool isLoop)
@@ -833,7 +767,7 @@ namespace Microsoft.Automata
         /// <returns></returns>
         public string GenerateMemberUniformly(Automaton<BDD> aut)
         {
-            if (!aut.IsLoopFree || !aut.IsDeterministic)
+            if (!aut.IsLoopFree || !aut.IsDeterministic || aut.IsEmpty)
                 throw new AutomataException(AutomataExceptionKind.AutomatonMustBeLoopFreeAndDeterministic);
 
             aut.ComputeProbabilities(ComputeDomainSize);
@@ -894,7 +828,7 @@ namespace Microsoft.Automata
         /// <param name="name">a name for the dgml file</param>
         public void ShowDAG(Automaton<BDD> aut, string name)
         {
-            if (!aut.IsDeterministic || !aut.IsLoopFree)
+            if (!aut.IsDeterministic || !aut.IsLoopFree || aut.IsEmpty)
                 throw new AutomataException(AutomataExceptionKind.AutomatonMustBeLoopFreeAndDeterministic);
 
             aut.ComputeProbabilities(ComputeDomainSize);
@@ -937,7 +871,7 @@ namespace Microsoft.Automata
         {
             System.Text.StringBuilder sb = new System.Text.StringBuilder();
 
-            if (!aut.IsDeterministic || !aut.IsLoopFree)
+            if (!aut.IsDeterministic || !aut.IsLoopFree || aut.IsEmpty)
                 throw new AutomataException(AutomataExceptionKind.AutomatonMustBeLoopFreeAndDeterministic);
 
             aut.ComputeProbabilities(ComputeDomainSize);
@@ -1174,9 +1108,9 @@ namespace Microsoft.Automata
 
         #endregion
 
-        public IEnumerable<char> GenerateAllCharacters(BDD bvSet, bool p)
+        public IEnumerable<char> GenerateAllCharacters(BDD bvSet, bool inRevereseOrder = false)
         {
-            foreach (var c in GenerateAllElements(bvSet, p))
+            foreach (var c in GenerateAllElements(bvSet, inRevereseOrder))
                 yield return (char)c;
         }
 
@@ -1204,10 +1138,11 @@ namespace Microsoft.Automata
 
         /// <summary>
         /// Convert the set into an equivalent array of ranges. The ranges are nonoverlapping and ordered.
+        /// If limit > 0 then returns null if the total number of ranges exceeds limit.
         /// </summary>
-        public Pair<uint, uint>[] ToRanges(BDD set)
+        public Pair<uint, uint>[] ToRanges(BDD set, int limit = 0)
         {
-            return ToRanges(set, _bw - 1);
+            return ToRanges(set, _bw - 1, limit);
         }
 
         /// <summary>
@@ -1328,7 +1263,7 @@ namespace Microsoft.Automata
             {
                 foreach (var move in aut.GetMovesFrom(state))
 
-                    if (IsSatisfiable(MkAnd(move.Label, MkCharConstraint(false, c))))
+                    if (IsSatisfiable(MkAnd(move.Label, MkCharConstraint(c))))
                     {
                         states.Add(move.TargetState);
                         state = move.TargetState;
@@ -1355,7 +1290,7 @@ namespace Microsoft.Automata
             {
                 foreach (var move in aut.GetMovesFrom(state))
 
-                    if (IsSatisfiable(MkAnd(move.Label, MkCharConstraint(false, c))))
+                    if (IsSatisfiable(MkAnd(move.Label, MkCharConstraint(c))))
                     {
                         moves.Add(move);
                         state = move.TargetState;
@@ -1423,5 +1358,37 @@ namespace Microsoft.Automata
             var res = MkSet(m);
             return res;
         }
+
+        #region code generation 
+
+        public ICompiledStringMatcher ToCS(Automaton<BDD> automaton, bool OptimzeForAsciiInput = true, string classname = null, string namespacename = null)
+        {
+            var c = (classname == null ? "RegexMatcher" :  classname);
+            var n = (namespacename == null ? "GeneratedRegexMatchers" :  namespacename);
+            return new Microsoft.Automata.Internal.Utilities.CSharpStringMatcher(automaton, this, c, n, OptimzeForAsciiInput);
+        }
+
+        public string ToCpp(Automaton<BDD>[] automata, bool exportIsMatch, bool OptimzeForAsciiInput = true, string classname = null, string namespacename = null)
+        {
+            var c = (classname == null ? "RegexMatcher" : classname);
+            var n = (namespacename == null ? "GeneratedRegexMatchers" : namespacename);
+            return new Microsoft.Automata.Internal.Utilities.CppCodeGenerator(this, c, n, exportIsMatch, OptimzeForAsciiInput, automata).GenerateMatcher();
+        }
+
+        public void ToCppFile(Automaton<BDD>[] automata, string path, bool exportIsMatch, bool OptimzeForAsciiInput = true, string classname = null, string namespacename = null)
+        {
+            var c = (classname == null ? "RegexMatcher" : classname);
+            var n = (namespacename == null ? "GeneratedRegexMatchers" : namespacename);
+            new Microsoft.Automata.Internal.Utilities.CppCodeGenerator(this, c, n, exportIsMatch, OptimzeForAsciiInput, automata).GenerateMatcherToFile(path);
+        }
+
+        public void ToCppFile(Regex[] regexes, string path, bool exportIsMatch, bool OptimzeForAsciiInput = true, string classname = null, string namespacename = null)
+        {
+            var c = (classname == null ? "RegexMatcher" : classname);
+            var n = (namespacename == null ? "GeneratedRegexMatchers" : namespacename);
+            new Microsoft.Automata.Internal.Utilities.CppCodeGenerator(this, c, n, exportIsMatch, OptimzeForAsciiInput, regexes).GenerateMatcherToFile(path);
+        }
+
+        #endregion
     }
 }

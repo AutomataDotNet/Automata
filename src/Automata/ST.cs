@@ -1041,6 +1041,17 @@ namespace Microsoft.Automata
             {
                 return solver.IsSatisfiable(rule.Guard);
             }
+
+
+            public Rule<TERM> True
+            {
+                get { throw new NotImplementedException(); }
+            }
+
+            public Rule<TERM> False
+            {
+                get { throw new NotImplementedException(); }
+            }
         }
         #endregion
 
@@ -3430,6 +3441,17 @@ namespace Microsoft.Automata
             }
 
             #endregion
+
+
+            public Rule<TERM> True
+            {
+                get { throw new NotImplementedException(); }
+            }
+
+            public Rule<TERM> False
+            {
+                get { throw new NotImplementedException(); }
+            }
         }
         #endregion
 

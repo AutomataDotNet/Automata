@@ -125,8 +125,8 @@ namespace Microsoft.Automata.MSO
             //  is equivalent to
             //pos1is0 or pos2is1
             //var trueBv = MkTrue(variables, solver);
-            var pos2is1 = solver.MkSetWithBitTrue(pos2);
-            var pos1is0 = solver.MkSetWithBitFalse(pos1);
+            var pos2is1 = solver.MkBitTrue(pos2);
+            var pos1is0 = solver.MkBitFalse(pos1);
             var subsetCond = solver.MkOr(pos1is0, pos2is1);
 
 
@@ -153,8 +153,8 @@ namespace Microsoft.Automata.MSO
             var pos = variables.IndexOf(var) + ((int)solver.Encoding);
 
             //var trueBv = MkTrue(variables, solver);
-            var posIs1 = solver.MkSetWithBitTrue(pos);
-            var posIs0 = solver.MkSetWithBitFalse(pos);
+            var posIs1 = solver.MkBitTrue(pos);
+            var posIs0 = solver.MkBitFalse(pos);
 
             //Create automaton for condition
             var moves = new Move<BDD>[] { 
@@ -188,8 +188,8 @@ namespace Microsoft.Automata.MSO
             //Compute predicates for k-th bit is 0 or 1
             //var posIs1 = solver.MkAnd(new BDD[] { trueBv, solver.MkSetWithBitTrue(k), solver.ShiftLeft(pred, variables.Count) });
             //var posIs0 = solver.MkAnd(trueBv, solver.MkSetWithBitFalse(k));
-            var posIs1 = solver.MkAnd(solver.MkSetWithBitTrue(k), pred);
-            var posIs0 = solver.MkSetWithBitFalse(k);
+            var posIs1 = solver.MkAnd(solver.MkBitTrue(k), pred);
+            var posIs0 = solver.MkBitFalse(k);
             var psi = solver.MkOr(posIs0, posIs1);
 
             //Create automaton for condition
@@ -218,10 +218,10 @@ namespace Microsoft.Automata.MSO
             var pos2 = variables.IndexOf(var2) + ((int)solver.Encoding);
 
             //var trueBv = MkTrue(variables, solver);
-            var pos1is0 = solver.MkSetWithBitFalse(pos1);
-            var pos1is1 = solver.MkSetWithBitTrue(pos1);
-            var pos2is0 = solver.MkSetWithBitFalse(pos2);
-            var pos2is1 = solver.MkSetWithBitTrue(pos2);
+            var pos1is0 = solver.MkBitFalse(pos1);
+            var pos1is1 = solver.MkBitTrue(pos1);
+            var pos2is0 = solver.MkBitFalse(pos2);
+            var pos2is1 = solver.MkBitTrue(pos2);
 
             var both0 = solver.MkAnd(new BDD[] { pos1is0, pos2is0 });
             var pos11pos20 = solver.MkAnd(new BDD[] { pos1is1, pos2is0 });
@@ -258,10 +258,10 @@ namespace Microsoft.Automata.MSO
             var pos2 = variables.IndexOf(var2) + ((int)solver.Encoding);
 
             //var trueBv = MkTrue(variables, solver);
-            var pos1is0 = solver.MkSetWithBitFalse(pos1);
-            var pos1is1 = solver.MkSetWithBitTrue(pos1);
-            var pos2is0 = solver.MkSetWithBitFalse(pos2);
-            var pos2is1 = solver.MkSetWithBitTrue(pos2);
+            var pos1is0 = solver.MkBitFalse(pos1);
+            var pos1is1 = solver.MkBitTrue(pos1);
+            var pos2is0 = solver.MkBitFalse(pos2);
+            var pos2is1 = solver.MkBitTrue(pos2);
 
             var both0 = solver.MkAnd(pos1is0, pos2is0);
             var pos11pos20 = solver.MkAnd(pos1is1, pos2is0);
@@ -298,8 +298,8 @@ namespace Microsoft.Automata.MSO
             var pos1 = variables.IndexOf(var1) + ((int)solver.Encoding);
             var pos2 = variables.IndexOf(var2) + ((int)solver.Encoding);
 
-            var both1 = solver.MkAnd(solver.MkSetWithBitTrue(pos1), solver.MkSetWithBitTrue(pos2));
-            var both0 = solver.MkAnd(solver.MkSetWithBitFalse(pos1), solver.MkSetWithBitFalse(pos2));
+            var both1 = solver.MkAnd(solver.MkBitTrue(pos1), solver.MkBitTrue(pos2));
+            var both0 = solver.MkAnd(solver.MkBitFalse(pos1), solver.MkBitFalse(pos2));
             var eqCond = solver.MkOr(both0, both1);
 
             //Create automaton for condition
@@ -346,7 +346,7 @@ namespace Microsoft.Automata.MSO
             var k = variables.Count +((int)solver.Encoding);
             foreach (var move in autPhi.GetMoves())
             {
-                var newCond = solver.ProjectBit(move.Label, k);
+                var newCond = solver.OmitBit(move.Label, k);
                 newMoves.Add(new Move<BDD>(move.SourceState, move.TargetState, newCond));
             }
 

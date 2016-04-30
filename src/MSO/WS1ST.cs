@@ -4,763 +4,199 @@ using System.Text;
 
 using Microsoft.Automata;
 
-//namespace Microsoft.Automata.MSO    
-//{
-//    public abstract class WS1SFormula<T>
-//    {
-//        public Automaton<T> getAutomaton(IBooleanAlgebra<T> solver)
-//        {
-//            //var css = (solver is IContextCore<T> ? ((IContextCore<T>)solver).CharSetProvider : solver as CharSetSolver);
-//            var css = new CharSetSolver(BitWidth.BV32);
-//            var ca = new CartesianAlgebra<BDD, T>(css, solver);
-//            var aut = getAutomaton(new List<string>(), ca);
-//            var newMoves = new List<Move<T>>();
-//            foreach (var move in aut.GetMoves())
-//                newMoves.Add(new Move<T>(move.SourceState, move.TargetState, move.Label.ProjectSecond()));
-//            return Automaton<T>.Create(aut.InitialState,aut.GetFinalStates(),newMoves);
-//        }
-
-//        internal abstract Automaton<ISumOfProducts<BDD, T>> getAutomaton(List<string> variables, ICartesianAlgebra<BDD, T> solver);
-//    }
-
-//    public class WS1SAnd<T> : WS1SFormula<T>
-//    {
-//        public WS1SFormula<T> phi1;
-//        public WS1SFormula<T> phi2;
-
-//        public WS1SAnd(WS1SFormula<T> phi1, WS1SFormula<T> phi2)
-//        {
-//            this.phi1 = phi1;
-//            this.phi2 = phi2;
-//        }
-
-//        internal override Automaton<ISumOfProducts<BDD, T>> getAutomaton(List<string> variables, ICartesianAlgebra<BDD, T> solver)
-//        {
-//            var aut1 = phi1.getAutomaton(variables, solver);
-//            var aut2 = phi2.getAutomaton(variables, solver);
-//            return aut1.Intersect(aut2, solver);//.Determinize(solver).Minimize(solver);
-//        }
-//    }
-
-//    public class WS1SOr<T> : WS1SFormula<T>
-//    {
-//        public WS1SFormula<T> phi1;
-//        public WS1SFormula<T> phi2;
-
-//        public WS1SOr(WS1SFormula<T> phi1, WS1SFormula<T> phi2)
-//        {
-//            this.phi1 = phi1;
-//            this.phi2 = phi2;
-//        }
-
-//        internal override Automaton<ISumOfProducts<BDD, T>> getAutomaton(List<string> variables, ICartesianAlgebra<BDD,T> solver)
-//        {
-//            var aut1 = phi1.getAutomaton(variables, solver);
-//            var aut2 = phi2.getAutomaton(variables, solver);
-//            return aut1.Union(aut2, solver);//.Determinize(solver).Minimize(solver);
-//        }
-//    }
-
-//    public class WS1SNot<T> : WS1SFormula<T>
-//    {
-//        public WS1SFormula<T> phi;
-
-//        public WS1SNot(WS1SFormula<T> phi)
-//        {
-//            this.phi = phi;
-//        }
-
-//        internal override Automaton<ISumOfProducts<BDD, T>> getAutomaton(List<string> variables, ICartesianAlgebra<BDD,T> solver)
-//        {
-//            //Create condition that only considers bvs of size |variables|
-//            var bddAlg = (BDDAlgebra)solver.First;
-//            var trueBv = bddAlg.MkSetFromRange(0, (uint)(Math.Pow(2, variables.Count) - 1), 31);
-
-//            var pairCond = solver.MkProduct(trueBv,solver.Second.True);
-//            var moves = new Move<ISumOfProducts<BDD, T>>[] { new Move<ISumOfProducts<BDD, T>>(0, 0, pairCond) };
-
-//            //True automaton and then difference
-//            var trueAut = Automaton<ISumOfProducts<BDD,T>>.Create(0, new int[] { 0 }, moves);
-//            var aut = phi.getAutomaton(variables, solver);
-
-//            var a = trueAut.Minus(aut, solver).Determinize(solver).Minimize(solver);
-//            return a;
-//        }
-//    }
-
-//    public class WS1SSubset<T> : WS1SFormula<T>
-//    {
-//        public string var1;
-//        public string var2;
-
-//        public WS1SSubset(string var1, string var2)
-//        {
-//            this.var1 = var1;
-//            this.var2 = var2;
-//        }
-
-//        internal override Automaton<ISumOfProducts<BDD, T>> getAutomaton(List<string> variables, ICartesianAlgebra<BDD,T> solver)
-//        {
-//            var pos1 = variables.IndexOf(var1);
-//            var pos2 = variables.IndexOf(var2);
-
-//            //Create conditions that bit in pos1 is smaller than pos2
-//            var charSolver = (CharSetSolver)solver.First;
-//            var trueBv = charSolver.MkSetFromRange(0,(uint)(Math.Pow(2, variables.Count) - 1), 31);
-//            var pos2is1 = charSolver.MkAnd(trueBv, charSolver.MkSetWithBitTrue(pos2));
-//            var pos1is0 = charSolver.MkAnd(trueBv, charSolver.MkSetWithBitFalse(pos1));
-//            var subsetCond = charSolver.MkOr(pos2is1, pos1is0);
-
-
-//            //Create automaton for condition
-//            var pairCond = solver.MkProduct(subsetCond, solver.Second.True);
-//            var moves = new Move<ISumOfProducts<BDD, T>>[] { new Move<ISumOfProducts<BDD, T>>(0, 0, pairCond) };
-//            return Automaton<ISumOfProducts<BDD,T>>.Create(0, new int[] { 0 }, moves);
-//        }
-//    }
-
-//    public class WS1SSingleton<T> : WS1SFormula<T>
-//    {
-//        public string var;
-
-//        public WS1SSingleton(string var)
-//        {
-//            this.var = var;
-//        }
-
-//        internal override Automaton<ISumOfProducts<BDD, T>> getAutomaton(List<string> variables, ICartesianAlgebra<BDD, T> solver)
-//        {
-//            var pos = variables.IndexOf(var);
-
-//            //Create conditions that bit in pos1 is smaller than pos2
-//            var charSolver = (CharSetSolver)solver.First;
-//            var trueBv = charSolver.MkSetFromRange(0, (uint)(Math.Pow(2, variables.Count) - 1), 31);
-//            var posIs1 = charSolver.MkAnd(trueBv, charSolver.MkSetWithBitTrue(pos));
-//            var posIs0 = charSolver.MkAnd(trueBv, charSolver.MkSetWithBitFalse(pos));
-
-//            //Create automaton for condition
-//            var moves = new Move<ISumOfProducts<BDD, T>>[] { 
-//                new Move<ISumOfProducts<BDD,T>>(0, 0, solver.MkProduct(posIs0, solver.Second.True)),
-//                new Move<ISumOfProducts<BDD,T>>(0, 1, solver.MkProduct(posIs1, solver.Second.True)), 
-//                new Move<ISumOfProducts<BDD,T>>(1, 1, solver.MkProduct(posIs0, solver.Second.True))
-//            };
-//            return Automaton<ISumOfProducts<BDD, T>>.Create(0, new int[] { 1 }, moves);
-//        }
-//    }
-
-//    public class WS1SPred<T> : WS1SFormula<T>
-//    {
-//        public T pred;
-//        public string var;
-
-//        public WS1SPred(T pred, string var)
-//        {
-//            this.pred = pred;
-//            this.var = var;
-//        }
-
-//        internal override Automaton<ISumOfProducts<BDD, T>> getAutomaton(List<string> variables, ICartesianAlgebra<BDD,T> solver)
-//        {
-//            var k = variables.IndexOf(var);
-
-//            //Compute predicates for k'th bit is 0 or 1
-//            var charSolver = (CharSetSolver)solver.First;
-//            var trueBv = charSolver.MkSetFromRange(0,(uint)(Math.Pow(2, variables.Count) - 1), 31);
-//            var posIs1 = charSolver.MkAnd(trueBv, charSolver.MkSetWithBitTrue(k));
-//            var posIs0 = charSolver.MkAnd(trueBv, charSolver.MkSetWithBitFalse(k));
-
-//            var psi1 = solver.MkProduct(posIs0, solver.Second.True);
-//            var psi2 = solver.MkProduct(posIs1, pred);
-//            var psi = solver.MkOr(psi1, psi2);
-
-//            //Create automaton for condition
-//            var moves = new Move<ISumOfProducts<BDD,T>>[] { 
-//                new Move<ISumOfProducts<BDD,T>>(0, 0, psi),
-//            };
-//            return Automaton<ISumOfProducts<BDD,T>>.Create(0, new int[] { 0 }, moves);
-//        }
-//    }
-
-//    public class WS1SSuccN<T> : WS1SFormula<T>
-//    {
-//        string var1;
-//        string var2;
-//        int gap;
-
-//        public WS1SSuccN(string var1, string var2, int gap)
-//        {
-//            if (gap < 1)
-//                throw new Exception("gap should be at least 1");
-//            this.var1 = var1;
-//            this.var2 = var2;
-//            this.gap = gap;
-//        }
-
-//        internal override Automaton<ISumOfProducts<BDD, T>> getAutomaton(List<string> variables, ICartesianAlgebra<BDD, T> solver)
-//        {
-//            var ind1 = variables.IndexOf(var1);
-//            var ind2 = variables.IndexOf(var2);
-
-//            var charSolver = (CharSetSolver)solver.First;
-//            var trueP = charSolver.MkSetFromRange(0, (uint)(Math.Pow(2, variables.Count - 1) - 1), 31);
-//            var ind10 = charSolver.MkSetWithBitFalse(ind1);
-//            var ind11 = charSolver.MkSetWithBitTrue(ind1);
-//            var ind20 = charSolver.MkSetWithBitFalse(ind2);
-//            var ind21 = charSolver.MkSetWithBitTrue(ind2);
-//            var both0 = charSolver.MkAnd(ind10, ind20);
-//            var ind11ind20 = charSolver.MkAnd(ind11, ind20);
-//            var ind10ind21 = charSolver.MkAnd(ind10, ind21);
-
-//            var both0t = solver.MkProduct(both0, solver.Second.True);
-//            var ind11ind20t = solver.MkProduct(ind11ind20, solver.Second.True);
-//            var ind10ind21t = solver.MkProduct(ind10ind21, solver.Second.True);
-
-//            //Create moves
-//            var moves = new List<Move<ISumOfProducts<BDD, T>>>();
-//            moves.Add(new Move<ISumOfProducts<BDD, T>>(0, 0, both0t));
-//            moves.Add(new Move<ISumOfProducts<BDD, T>>(0, 1, ind11ind20t));
-//            moves.Add(new Move<ISumOfProducts<BDD, T>>(gap, gap + 1, ind10ind21t));
-//            moves.Add(new Move<ISumOfProducts<BDD, T>>(gap + 1, gap + 1, both0t));
-
-//            for (int i = 1; i < gap; i++)
-//                moves.Add(new Move<ISumOfProducts<BDD, T>>(i, i + 1, both0t));
-
-//            return Automaton<ISumOfProducts<BDD, T>>.Create(0, new int[] { gap + 1 }, moves);
-//        }
-//    }
-
-//    public class WS1SLt<T> : WS1SFormula<T>
-//    {
-//        public string var1;
-//        public string var2;
-
-//        public WS1SLt(string var1, string var2)
-//        {
-//            this.var1 = var1;
-//            this.var2 = var2;
-//        }
-
-//        internal override Automaton<ISumOfProducts<BDD, T>> getAutomaton(List<string> variables, ICartesianAlgebra<BDD,T> solver)
-//        {
-//            var pos1 = variables.IndexOf(var1);
-//            var pos2 = variables.IndexOf(var2);
-
-//            var charSolver = (CharSetSolver)solver.First;
-//            var trueBv = charSolver.MkSetFromRange(0,(uint)(Math.Pow(2, variables.Count) - 1), 31);
-//            var pos1is0 = charSolver.MkAnd(trueBv, charSolver.MkSetWithBitFalse(pos1));
-//            var pos1is1 = charSolver.MkAnd(trueBv, charSolver.MkSetWithBitTrue(pos1));
-//            var pos2is0 = charSolver.MkAnd(trueBv, charSolver.MkSetWithBitFalse(pos2));
-//            var pos2is1 = charSolver.MkAnd(trueBv, charSolver.MkSetWithBitTrue(pos2));
-
-//            var both0 = charSolver.MkAnd(pos1is0, pos2is0);
-//            var pos11pos20 = charSolver.MkAnd(pos1is1, pos2is0);
-//            var pos10pos21 = charSolver.MkAnd(pos1is0, pos2is1);
-
-//            //Create automaton for condition
-//            var moves = new Move<ISumOfProducts<BDD,T>>[] { 
-//                new Move<ISumOfProducts<BDD,T>>(0, 0, solver.MkProduct(both0,solver.Second.True)),
-//                new Move<ISumOfProducts<BDD,T>>(0, 1, solver.MkProduct(pos11pos20,solver.Second.True)), 
-//                new Move<ISumOfProducts<BDD,T>>(1, 1, solver.MkProduct(both0,solver.Second.True)),
-//                new Move<ISumOfProducts<BDD,T>>(1, 2, solver.MkProduct(pos10pos21,solver.Second.True)), 
-//                new Move<ISumOfProducts<BDD,T>>(2, 2, solver.MkProduct(both0,solver.Second.True))
-//            };
-//            return Automaton<ISumOfProducts<BDD, T>>.Create(0, new int[] { 2 }, moves);
-//        }
-//    }
-
-//    public class WS1SEq<T> : WS1SFormula<T>
-//    {
-//        public string var1;
-//        public string var2;
-
-//        public WS1SEq(string var1, string var2)
-//        {
-//            this.var1 = var1;
-//            this.var2 = var2;
-//        }
-
-//        internal override Automaton<ISumOfProducts<BDD, T>> getAutomaton(List<string> variables, ICartesianAlgebra<BDD,T> solver)
-//        {
-//            var pos1 = variables.IndexOf(var1);
-//            var pos2 = variables.IndexOf(var2);
-
-//            //Create conditions that bit in pos1 is smaller than pos2
-//            var charSolver = (CharSetSolver)solver.First;
-//            var trueBv = charSolver.MkSetFromRange(0,(uint)(Math.Pow(2, variables.Count) - 1), 31);
-//            var both1 = charSolver.MkAnd(new BDD[] { trueBv, charSolver.MkSetWithBitTrue(pos1), charSolver.MkSetWithBitTrue(pos2) });
-//            var both0 = charSolver.MkAnd(new BDD[] { trueBv, charSolver.MkSetWithBitFalse(pos1), charSolver.MkSetWithBitFalse(pos2) });
-//            var eqCond = charSolver.MkOr(new BDD[] { both0, both1 });
-
-//            //Create automaton for condition
-//            var moves = new Move<ISumOfProducts<BDD,T>>[] { 
-//                new Move<ISumOfProducts<BDD,T>>(0, 0, solver.MkProduct(eqCond,solver.Second.True)) 
-//            };
-//            return Automaton<ISumOfProducts<BDD,T>>.Create(0, new int[] { 0 }, moves);
-//        }
-//    }
-
-//    public class WS1STrue<T> : WS1SFormula<T>
-//    {
-//        public WS1STrue() { }
-
-//        internal override Automaton<ISumOfProducts<BDD, T>> getAutomaton(List<string> variables, ICartesianAlgebra<BDD,T> solver)
-//        {
-//            //Create condition that only considerst bv of size |variables|
-//            var charSolver = (CharSetSolver)solver.First;
-//            var trueBv = charSolver.MkSetFromRange(0,(uint)(Math.Pow(2, variables.Count) - 1), 31);
-//            var moves = new Move<ISumOfProducts<BDD, T>>[] { 
-//                new Move<ISumOfProducts<BDD, T>>(0, 0, solver.MkProduct(trueBv, solver.Second.True)) 
-//            };
-//            //True automaton 
-//            return Automaton<ISumOfProducts<BDD,T>>.Create(0, new int[] { 0 }, moves);
-//        }
-//    }
-
-//    public class WS1SExists<T> : WS1SFormula<T>
-//    {
-//        public string var;
-//        public WS1SFormula<T> phi;
-
-//        public WS1SExists(string var, WS1SFormula<T> phi)
-//        {
-//            this.var = var;
-//            this.phi = phi;
-//        }
-
-//        internal override Automaton<ISumOfProducts<BDD, T>> getAutomaton(List<string> variables, ICartesianAlgebra<BDD,T> solver)
-//        {
-//            if (variables.Count > 32)
-//                throw new AutomataException("More than 32 nested variables.");
-
-//            //Automaton<T> for formula
-//            var varCopy = new List<string>(variables);
-//            varCopy.Insert(0, var);
-//            var autPhi = phi.getAutomaton(varCopy, solver);
-
-//            //autPhi.ShowGraph();
-
-//            //Remove first bit from each move
-//            var newMoves = new List<Move<ISumOfProducts<BDD,T>>>();
-//            var charSolver = (CharSetSolver)solver.First;
-//            foreach (var move in autPhi.GetMoves())
-//            {
-//                //var newRows = new List<Pair<BDD, T>>();
-//                //foreach(var r in move.Label.GetRows())
-//                //    newRows.Add(new Pair<BDD,T>(charSolver.LShiftRight(r.First),r.Second));
-
-//                //var newTable = solver.MkTable(newRows);
-
-//                var newTable = move.Label.TransformFirst(charSolver.LShiftRight);
-//                newMoves.Add(new Move<ISumOfProducts<BDD, T>>(move.SourceState, move.TargetState, newTable));
-//            }
-
-//            var aut1 = Automaton<ISumOfProducts<BDD,T>>.Create(autPhi.InitialState, autPhi.GetFinalStates(), newMoves);
-//            //var aut2 = aut1.Determinize(solver);
-//            //var aut3 = aut2.Minimize(solver);
-
-//            return aut1;
-//        }
-//    }
-//}
-
-
-//namespace Microsoft.Automata.MSO
-//{
-//    public abstract class WS1SFormula<T>
-//    {
-//        public Automaton<T> getAutomaton(IBooleanAlgebra<T> solver)
-//        {
-//            var alg = new BBDDAlgebra();
-//            var ca = new CartesianAlgebra<BBDD, T>(alg, solver);
-//            var aut = getAutomaton(new List<string>(), ca);
-//            var newMoves = new List<Move<T>>();
-//            foreach (var move in aut.GetMoves())
-//                newMoves.Add(new Move<T>(move.SourceState, move.TargetState, move.Label.ProjectSecond()));
-//            return Automaton<T>.Create(aut.InitialState, aut.GetFinalStates(), newMoves);
-//        }
-
-//        internal abstract Automaton<ISumOfProducts<BBDD, T>> getAutomaton(List<string> variables, ICartesianAlgebra<BBDD, T> solver);
-//    }
-
-//    public class WS1SAnd<T> : WS1SFormula<T>
-//    {
-//        public WS1SFormula<T> phi1;
-//        public WS1SFormula<T> phi2;
-
-//        public WS1SAnd(WS1SFormula<T> phi1, WS1SFormula<T> phi2)
-//        {
-//            this.phi1 = phi1;
-//            this.phi2 = phi2;
-//        }
-
-//        internal override Automaton<ISumOfProducts<BBDD, T>> getAutomaton(List<string> variables, ICartesianAlgebra<BBDD, T> solver)
-//        {
-//            var aut1 = phi1.getAutomaton(variables, solver);
-//            var aut2 = phi2.getAutomaton(variables, solver);
-//            return aut1.Intersect(aut2, solver);//.Determinize(solver).Minimize(solver);
-//        }
-//    }
-
-//    public class WS1SOr<T> : WS1SFormula<T>
-//    {
-//        public WS1SFormula<T> phi1;
-//        public WS1SFormula<T> phi2;
-
-//        public WS1SOr(WS1SFormula<T> phi1, WS1SFormula<T> phi2)
-//        {
-//            this.phi1 = phi1;
-//            this.phi2 = phi2;
-//        }
-
-//        internal override Automaton<ISumOfProducts<BBDD, T>> getAutomaton(List<string> variables, ICartesianAlgebra<BBDD, T> solver)
-//        {
-//            var aut1 = phi1.getAutomaton(variables, solver);
-//            var aut2 = phi2.getAutomaton(variables, solver);
-//            return aut1.Union(aut2, solver);//.Determinize(solver).Minimize(solver);
-//        }
-//    }
-
-//    public class WS1SNot<T> : WS1SFormula<T>
-//    {
-//        public WS1SFormula<T> phi;
-
-//        public WS1SNot(WS1SFormula<T> phi)
-//        {
-//            this.phi = phi;
-//        }
-
-//        internal override Automaton<ISumOfProducts<BBDD, T>> getAutomaton(List<string> variables, ICartesianAlgebra<BBDD, T> solver)
-//        {
-//            //Create condition that only considers bvs of size |variables|
-//            var bddAlg = (BBDDAlgebra)solver.First;
-//            var trueBv = bddAlg.MkTrue(variables.Count);
-
-//            var pairCond = solver.MkProduct(trueBv, solver.Second.True);
-//            var moves = new Move<ISumOfProducts<BBDD, T>>[] { new Move<ISumOfProducts<BBDD, T>>(0, 0, pairCond) };
-
-//            //True automaton and then difference
-//            var trueAut = Automaton<ISumOfProducts<BBDD, T>>.Create(0, new int[] { 0 }, moves);
-//            var aut = phi.getAutomaton(variables, solver);
-
-//            var a = trueAut.Minus(aut, solver).Determinize(solver).Minimize(solver);
-//            return a;
-//        }
-//    }
-
-//    public class WS1SSubset<T> : WS1SFormula<T>
-//    {
-//        public string var1;
-//        public string var2;
-
-//        public WS1SSubset(string var1, string var2)
-//        {
-//            this.var1 = var1;
-//            this.var2 = var2;
-//        }
-
-//        internal override Automaton<ISumOfProducts<BBDD, T>> getAutomaton(List<string> variables, ICartesianAlgebra<BBDD, T> solver)
-//        {
-//            var pos1 = variables.IndexOf(var1);
-//            var pos2 = variables.IndexOf(var2);
-
-//            //Create conditions that bit in pos1 is smaller than pos2
-//            var bbddAlg = (BBDDAlgebra)solver.First;
-//            var pos2is1 = bbddAlg.MkSetWithBitTrue(pos2, variables.Count);
-//            var pos1is0 = bbddAlg.MkSetWithBitFalse(pos1, variables.Count);
-//            var subsetCond = bbddAlg.MkOr(pos2is1, pos1is0);
-
-//            //Create automaton for condition
-//            var pairCond = solver.MkProduct(subsetCond, solver.Second.True);
-//            var moves = new Move<ISumOfProducts<BBDD, T>>[] { new Move<ISumOfProducts<BBDD, T>>(0, 0, pairCond) };
-//            return Automaton<ISumOfProducts<BBDD, T>>.Create(0, new int[] { 0 }, moves);
-//        }
-//    }
-
-//    public class WS1SSingleton<T> : WS1SFormula<T>
-//    {
-//        public string var;
-
-//        public WS1SSingleton(string var)
-//        {
-//            this.var = var;
-//        }
-
-//        internal override Automaton<ISumOfProducts<BBDD, T>> getAutomaton(List<string> variables, ICartesianAlgebra<BBDD, T> solver)
-//        {
-//            var pos = variables.IndexOf(var);
-
-//            //Create conditions that bit in pos1 is smaller than pos2
-//            var bbddAlg = (BBDDAlgebra)solver.First;
-//            var posIs1 = bbddAlg.MkSetWithBitTrue(pos, variables.Count);
-//            var posIs0 = bbddAlg.MkSetWithBitFalse(pos, variables.Count);
-
-//            //Create automaton for condition
-//            var moves = new Move<ISumOfProducts<BBDD, T>>[] { 
-//                new Move<ISumOfProducts<BBDD,T>>(0, 0, solver.MkProduct(posIs0, solver.Second.True)),
-//                new Move<ISumOfProducts<BBDD,T>>(0, 1, solver.MkProduct(posIs1, solver.Second.True)), 
-//                new Move<ISumOfProducts<BBDD,T>>(1, 1, solver.MkProduct(posIs0, solver.Second.True))
-//            };
-//            return Automaton<ISumOfProducts<BBDD, T>>.Create(0, new int[] { 1 }, moves);
-//        }
-//    }
-
-//    public class WS1SPred<T> : WS1SFormula<T>
-//    {
-//        public T pred;
-//        public string var;
-
-//        public WS1SPred(T pred, string var)
-//        {
-//            this.pred = pred;
-//            this.var = var;
-//        }
-
-//        internal override Automaton<ISumOfProducts<BBDD, T>> getAutomaton(List<string> variables, ICartesianAlgebra<BBDD, T> solver)
-//        {
-//            var k = variables.IndexOf(var);
-
-//            //Compute predicates for k'th bit is 0 or 1
-//            var charSolver = (BBDDAlgebra)solver.First;
-//            var posIs1 = charSolver.MkSetWithBitTrue(k, variables.Count);
-//            var posIs0 = charSolver.MkSetWithBitFalse(k, variables.Count);
-
-//            var psi1 = solver.MkProduct(posIs0, solver.Second.True);
-//            var psi2 = solver.MkProduct(posIs1, pred);
-//            var psi = solver.MkOr(psi1, psi2);
-
-//            //Create automaton for condition
-//            var moves = new Move<ISumOfProducts<BBDD, T>>[] { 
-//                new Move<ISumOfProducts<BBDD,T>>(0, 0, psi),
-//            };
-//            return Automaton<ISumOfProducts<BBDD, T>>.Create(0, new int[] { 0 }, moves);
-//        }
-//    }
-
-//    public class WS1SSuccN<T> : WS1SFormula<T>
-//    {
-//        string var1;
-//        string var2;
-//        int gap;
-
-//        public WS1SSuccN(string var1, string var2, int gap)
-//        {
-//            if (gap < 1)
-//                throw new Exception("gap should be at least 1");
-//            this.var1 = var1;
-//            this.var2 = var2;
-//            this.gap = gap;
-//        }
-
-//        internal override Automaton<ISumOfProducts<BBDD, T>> getAutomaton(List<string> variables, ICartesianAlgebra<BBDD, T> solver)
-//        {
-//            var ind1 = variables.IndexOf(var1);
-//            var ind2 = variables.IndexOf(var2);
-
-//            var bbddAlg = (BBDDAlgebra)solver.First;
-//            var ind10 = bbddAlg.MkSetWithBitFalse(ind1,variables.Count);
-//            var ind11 = bbddAlg.MkSetWithBitTrue(ind1, variables.Count);
-//            var ind20 = bbddAlg.MkSetWithBitFalse(ind2, variables.Count);
-//            var ind21 = bbddAlg.MkSetWithBitTrue(ind2, variables.Count);
-//            var both0 = bbddAlg.MkAnd(ind10, ind20);
-//            var ind11ind20 = bbddAlg.MkAnd(ind11, ind20);
-//            var ind10ind21 = bbddAlg.MkAnd(ind10, ind21);
-
-//            var both0t = solver.MkProduct(both0, solver.Second.True);
-//            var ind11ind20t = solver.MkProduct(ind11ind20, solver.Second.True);
-//            var ind10ind21t = solver.MkProduct(ind10ind21, solver.Second.True);
-
-//            //Create moves
-//            var moves = new List<Move<ISumOfProducts<BBDD, T>>>();
-//            moves.Add(new Move<ISumOfProducts<BBDD, T>>(0, 0, both0t));
-//            moves.Add(new Move<ISumOfProducts<BBDD, T>>(0, 1, ind11ind20t));
-//            moves.Add(new Move<ISumOfProducts<BBDD, T>>(gap, gap + 1, ind10ind21t));
-//            moves.Add(new Move<ISumOfProducts<BBDD, T>>(gap + 1, gap + 1, both0t));
-
-//            for (int i = 1; i < gap; i++)
-//                moves.Add(new Move<ISumOfProducts<BBDD, T>>(i, i + 1, both0t));
-
-//            return Automaton<ISumOfProducts<BBDD, T>>.Create(0, new int[] { gap + 1 }, moves);
-//        }
-//    }
-
-//    public class WS1SLt<T> : WS1SFormula<T>
-//    {
-//        public string var1;
-//        public string var2;
-
-//        public WS1SLt(string var1, string var2)
-//        {
-//            this.var1 = var1;
-//            this.var2 = var2;
-//        }
-
-//        internal override Automaton<ISumOfProducts<BBDD, T>> getAutomaton(List<string> variables, ICartesianAlgebra<BBDD, T> solver)
-//        {
-//            var pos1 = variables.IndexOf(var1);
-//            var pos2 = variables.IndexOf(var2);
-
-//            var alg = (BBDDAlgebra)solver.First;
-//            var pos1is0 = alg.MkSetWithBitFalse(pos1, variables.Count);
-//            var pos1is1 = alg.MkSetWithBitTrue(pos1, variables.Count);
-//            var pos2is0 = alg.MkSetWithBitFalse(pos2, variables.Count);
-//            var pos2is1 = alg.MkSetWithBitTrue(pos2, variables.Count);
-
-//            var both0 = alg.MkAnd(pos1is0, pos2is0);
-//            var pos11pos20 = alg.MkAnd(pos1is1, pos2is0);
-//            var pos10pos21 = alg.MkAnd(pos1is0, pos2is1);
-
-//            //Create automaton for condition
-//            var moves = new Move<ISumOfProducts<BBDD, T>>[] { 
-//                new Move<ISumOfProducts<BBDD,T>>(0, 0, solver.MkProduct(both0,solver.Second.True)),
-//                new Move<ISumOfProducts<BBDD,T>>(0, 1, solver.MkProduct(pos11pos20,solver.Second.True)), 
-//                new Move<ISumOfProducts<BBDD,T>>(1, 1, solver.MkProduct(both0,solver.Second.True)),
-//                new Move<ISumOfProducts<BBDD,T>>(1, 2, solver.MkProduct(pos10pos21,solver.Second.True)), 
-//                new Move<ISumOfProducts<BBDD,T>>(2, 2, solver.MkProduct(both0,solver.Second.True))
-//            };
-//            return Automaton<ISumOfProducts<BBDD, T>>.Create(0, new int[] { 2 }, moves);
-//        }
-//    }
-
-//    public class WS1SEq<T> : WS1SFormula<T>
-//    {
-//        public string var1;
-//        public string var2;
-
-//        public WS1SEq(string var1, string var2)
-//        {
-//            this.var1 = var1;
-//            this.var2 = var2;
-//        }
-
-//        internal override Automaton<ISumOfProducts<BBDD, T>> getAutomaton(List<string> variables, ICartesianAlgebra<BBDD, T> solver)
-//        {
-//            var pos1 = variables.IndexOf(var1);
-//            var pos2 = variables.IndexOf(var2);
-
-//            //Create conditions that bit in pos1 is smaller than pos2
-//            var alg = (BBDDAlgebra)solver.First;
-//            var both1 = alg.MkAnd(alg.MkSetWithBitTrue(pos1,variables.Count), alg.MkSetWithBitTrue(pos2,variables.Count));
-//            var both0 = alg.MkAnd(alg.MkSetWithBitFalse(pos1,variables.Count), alg.MkSetWithBitFalse(pos2,variables.Count));
-//            var eqCond = alg.MkOr(both0, both1);
-
-//            //Create automaton for condition
-//            var moves = new Move<ISumOfProducts<BBDD, T>>[] { 
-//                new Move<ISumOfProducts<BBDD,T>>(0, 0, solver.MkProduct(eqCond,solver.Second.True)) 
-//            };
-//            return Automaton<ISumOfProducts<BBDD, T>>.Create(0, new int[] { 0 }, moves);
-//        }
-//    }
-
-//    public class WS1STrue<T> : WS1SFormula<T>
-//    {
-//        public WS1STrue() { }
-
-//        internal override Automaton<ISumOfProducts<BBDD, T>> getAutomaton(List<string> variables, ICartesianAlgebra<BBDD, T> solver)
-//        {
-//            var alg = (BBDDAlgebra)solver.First;
-//            var trueBv = alg.MkTrue(variables.Count);
-//            var moves = new Move<ISumOfProducts<BBDD, T>>[] { 
-//                new Move<ISumOfProducts<BBDD, T>>(0, 0, solver.MkProduct(trueBv, solver.Second.True)) 
-//            };
-//            //True automaton 
-//            return Automaton<ISumOfProducts<BBDD, T>>.Create(0, new int[] { 0 }, moves);
-//        }
-//    }
-
-//    public class WS1SExists<T> : WS1SFormula<T>
-//    {
-//        public string var;
-//        public WS1SFormula<T> phi;
-
-//        public WS1SExists(string var, WS1SFormula<T> phi)
-//        {
-//            this.var = var;
-//            this.phi = phi;
-//        }
-
-//        internal override Automaton<ISumOfProducts<BBDD, T>> getAutomaton(List<string> variables, ICartesianAlgebra<BBDD, T> solver)
-//        {
-//            //Automaton<T> for formula
-//            var varCopy = new List<string>(variables);
-//            varCopy.Add(var);
-//            var autPhi = phi.getAutomaton(varCopy, solver);
-
-//            //autPhi.ShowGraph();
-
-//            //Remove first bit from each move
-//            var newMoves = new List<Move<ISumOfProducts<BBDD, T>>>();
-//            var alg = (BBDDAlgebra)solver.First;
-//            foreach (var move in autPhi.GetMoves())
-//            {
-//                var newPred = move.Label.TransformFirst(alg.RemoveMaxBit);
-//                newMoves.Add(new Move<ISumOfProducts<BBDD, T>>(move.SourceState, move.TargetState, newPred));
-//            }
-
-//            var aut1 = Automaton<ISumOfProducts<BBDD, T>>.Create(autPhi.InitialState, autPhi.GetFinalStates(), newMoves);
-//            //var aut2 = aut1.Determinize(solver);
-//            //var aut3 = aut2.Minimize(solver);
-
-//            return aut1;
-//        }
-//    }
-//}
-
 namespace Microsoft.Automata.MSO
 {
     /// <summary>
-    /// Abstract base class for generic WS1S formulas.
+    /// WS1S variable
+    /// </summary>
+    public class WS1SVariable<T>
+    {
+        public readonly string name;
+        public readonly bool isFirstOrder;
+        public WS1SVariable(string name, bool isFirstOrder = false)
+        {
+            this.name = name;
+            this.isFirstOrder = isFirstOrder;
+        }
+
+        /// <summary>
+        /// Create the formula v1 is less than v2.
+        /// Either both v1 and v2 are first-order or both are second-order.
+        /// In the case that v1 and v2 are second-order the meaning is that both are singletons.
+        /// </summary>
+        /// <param name="v1">first varible</param>
+        /// <param name="v2">second variable</param>
+        public static WS1SFormula<T> operator <(WS1SVariable<T> v1, WS1SVariable<T> v2)
+        {
+            return new WS1SLt<T>(v1, v2);
+        }
+
+        /// <summary>
+        /// Create the formula v1 is greater than v2
+        /// Either both v1 and v2 are first-order or both are second-order.
+        /// In the case that v1 and v2 are second-order the meaning is that both are singletons.
+        /// </summary>
+        /// <param name="v1">first varible</param>
+        /// <param name="v2">second variable</param>
+        public static WS1SFormula<T> operator >(WS1SVariable<T> v1, WS1SVariable<T> v2)
+        {
+            return new WS1SLt<T>(v2, v1);
+        }
+
+        /// <summary>
+        /// Create the formula that the second-order variable X is a singleton.
+        /// </summary>
+        /// <param name="X">second-order variable</param>
+        public static WS1SFormula<T> operator !(WS1SVariable<T> X)
+        {
+            return new WS1SSingleton<T>(X);
+        }
+
+        /// <summary>
+        /// x ^ psi constructs the formula Exists(x,psi)
+        /// </summary>
+        /// <param name="x">variable</param>
+        /// <param name="psi">formula</param>
+        public static WS1SFormula<T> operator ^(WS1SVariable<T> x, WS1SFormula<T> psi)
+        {
+            return new WS1SExists<T>(x, psi);
+        }
+
+
+        public static WS1SFormula<T> operator ==(WS1SVariable<T> x, WS1SVariable<T> y)
+        {
+            return new WS1SEq<T>(x, y);
+        }
+
+        /// <summary>
+        /// ~(x == y)
+        /// </summary>
+        public static WS1SFormula<T> operator !=(WS1SVariable<T> x, WS1SVariable<T> y)
+        {
+            return new WS1SNot<T>(new WS1SEq<T>(x, y));
+        }
+
+        /// <summary>
+        /// X subset Y
+        /// </summary>
+        public static WS1SFormula<T> operator <=(WS1SVariable<T> X, WS1SVariable<T> Y)
+        {
+            return new WS1SSubset<T>(X, Y);
+        }
+
+        /// <summary>
+        /// X superset Y
+        /// </summary>
+        public static WS1SFormula<T> operator >=(WS1SVariable<T> X, WS1SVariable<T> Y)
+        {
+            return new WS1SSubset<T>(Y, X);
+        }
+
+        /// <summary>
+        /// [pred](X)
+        /// </summary>
+        public static WS1SFormula<T> operator %(T pred, WS1SVariable<T> X)
+        {
+            return new WS1SPred<T>(pred, X);
+        }
+
+        public override bool Equals(object obj)
+        {
+            WS1SVariable<T> v = obj as WS1SVariable<T>;
+            if (object.Equals(v,null))
+                return false;
+            return (name.Equals(v.name));
+        }
+
+        public override int GetHashCode()
+        {
+            return name.GetHashCode();
+        }
+
+        public override string ToString()
+        {
+            return name;
+        }
+    }
+
+    /// <summary>
+    /// Base class for symbolic WS1S formulas.
     /// </summary>
     public abstract class WS1SFormula<T>
     {
-        public Automaton<T> GetAutomaton(IBooleanAlgebra<T> alg)
+        public Automaton<IMonadicPredicate<BDD, T>> GetAutomaton(ICartesianAlgebraBDD<T> ca, params WS1SVariable<T>[] fv)
         {
-            var fvs = GetFreeVariables();
-            if (fvs.IsNonempty)
-                throw new ArgumentException("This formula must not conatain free variables","this");
-
-            var aut = getAutomaton(fvs, new CartesianAlgebraBDD<T>(alg));
-            var newMoves = new List<Move<T>>();
-            foreach (var move in aut.GetMoves())
-                newMoves.Add(new Move<T>(move.SourceState, move.TargetState, move.Label.ProjectSecond()));
-
-            return Automaton<T>.Create(aut.InitialState, aut.GetFinalStates(), newMoves);
-        }
-
-        public Automaton<ISumOfProducts<BDD, T>> GetAutomaton(ICartesianAlgebraBDD<T> ca, params string[] fv)
-        {
-            var fvs = SimpleList<string>.Empty.Append(fv);
+            var fvs = SimpleList<WS1SVariable<T>>.Empty.Append(fv);
             return getAutomaton(fvs, ca);
         }
 
-        internal abstract Automaton<ISumOfProducts<BDD, T>> getAutomaton(SimpleList<string> variables, ICartesianAlgebraBDD<T> ca);
+        internal abstract Automaton<IMonadicPredicate<BDD, T>> getAutomaton(SimpleList<WS1SVariable<T>> variables, ICartesianAlgebraBDD<T> ca);
 
-        public Automaton<BDD> GetAutomatonBDD(CharSetSolver alg, params string[] fv)
+        public Automaton<BDD> GetAutomatonBDD(IBDDAlgebra alg, int nrOfLabelBits, params WS1SVariable<T>[] fv)
         {
             if (!(typeof(T).Equals(typeof(BDD))))
                 throw new ArgumentException("Method is not supported because T is not BDD");
 
-            return getAutomatonBDD(SimpleList<string>.Empty.Append(fv), alg); 
+            return getAutomatonBDD(SimpleList<WS1SVariable<T>>.Empty.Append(fv), alg, nrOfLabelBits); 
         }
 
-        internal abstract Automaton<BDD> getAutomatonBDD(SimpleList<string> variables, CharSetSolver alg); 
+        internal abstract Automaton<BDD> getAutomatonBDD(SimpleList<WS1SVariable<T>> variables, IBDDAlgebra alg, int nrOfLabelBits);
 
-        internal abstract IEnumerable<string> EnumerateFreeVariables();
+        internal abstract IEnumerable<WS1SVariable<T>> EnumerateFreeVariablesPossiblyWithDuplicates();
 
-        public SimpleList<string> GetFreeVariables()
+        public SimpleList<WS1SVariable<T>> GetFreeVariables(bool firstOrderOnly = false)
         {
-            HashSet<string> set = new HashSet<string>();
-            var fvs = SimpleList<string>.Empty;
-            foreach (var v in EnumerateFreeVariables())
-                if (set.Add(v))
-                    fvs = fvs.Append(v);
+            HashSet<WS1SVariable<T>> set = new HashSet<WS1SVariable<T>>();
+            var fvs = SimpleList<WS1SVariable<T>>.Empty;
+            foreach (var v in EnumerateFreeVariablesPossiblyWithDuplicates())
+                if (!firstOrderOnly || v.isFirstOrder)
+                    if (set.Add(v))
+                        fvs = fvs.Append(v);
             return fvs;
         }
 
         public bool IsClosed
         {
-            get { return !GetFreeVariables().IsNonempty; }
+            get
+            {
+                var e = EnumerateFreeVariablesPossiblyWithDuplicates().GetEnumerator();
+                var nonempty = e.MoveNext();
+                return !nonempty;
+            }
+        }
+
+        /// <summary>
+        /// Create the conjunction of two predicates
+        /// </summary>
+        /// <param name="pred1">first predicate</param>
+        /// <param name="pred2">second predicate</param>
+        public static WS1SFormula<T> operator &(WS1SFormula<T> pred1, WS1SFormula<T> pred2)
+        {
+            return new WS1SAnd<T>(pred1, pred2);
+        }
+
+
+        /// <summary>
+        /// Create the disjunction of two predicates
+        /// </summary>
+        /// <param name="pred1">first predicate</param>
+        /// <param name="pred2">second predicate</param>
+        public static WS1SFormula<T> operator |(WS1SFormula<T> pred1, WS1SFormula<T> pred2)
+        {
+            return new WS1SOr<T>(pred1, pred2);
+        }
+
+        /// <summary>
+        /// Create the negation of the predicate
+        /// </summary>
+        /// <param name="pred">the predicate to be negated</param>
+        public static WS1SFormula<T> operator ~(WS1SFormula<T> pred)
+        {
+            return new WS1SNot<T>(pred);
         }
     }
+
+    #region Boolean operations 
 
     public class WS1SAnd<T> : WS1SFormula<T>
     {
@@ -773,25 +209,30 @@ namespace Microsoft.Automata.MSO
             this.phi2 = phi2;
         }
 
-        internal override Automaton<ISumOfProducts<BDD, T>> getAutomaton(SimpleList<string> variables, ICartesianAlgebraBDD<T> ca)
+        internal override Automaton<IMonadicPredicate<BDD, T>> getAutomaton(SimpleList<WS1SVariable<T>> variables, ICartesianAlgebraBDD<T> ca)
         {
             var aut1 = phi1.getAutomaton(variables, ca);
             var aut2 = phi2.getAutomaton(variables, ca);
-            return aut1.Intersect(aut2, ca).Determinize(ca).Minimize(ca);
+            var aut3 = aut1.Intersect(aut2, ca);
+            var aut = aut3.Minimize(ca);
+            //var aut_old = aut.Determinize(ca).Minimize(ca);
+            return aut;
         }
 
-        internal override Automaton<BDD> getAutomatonBDD(SimpleList<string> variables, CharSetSolver alg)
+        internal override Automaton<BDD> getAutomatonBDD(SimpleList<WS1SVariable<T>> variables, IBDDAlgebra alg, int nrOfLabelBits)
         {
-            var aut1 = phi1.getAutomatonBDD(variables, alg);
-            var aut2 = phi2.getAutomatonBDD(variables, alg);
-            return aut1.Intersect(aut2, alg).Determinize(alg).Minimize(alg);
+            var aut1 = phi1.getAutomatonBDD(variables, alg, nrOfLabelBits);
+            var aut2 = phi2.getAutomatonBDD(variables, alg, nrOfLabelBits);
+            var aut = aut1.Intersect(aut2, alg);
+            aut = aut.Minimize(alg);
+            return aut;
         }
 
-        internal override IEnumerable<string> EnumerateFreeVariables()
+        internal override IEnumerable<WS1SVariable<T>> EnumerateFreeVariablesPossiblyWithDuplicates()
         {
-            foreach (var v in phi1.EnumerateFreeVariables())
+            foreach (var v in phi1.EnumerateFreeVariablesPossiblyWithDuplicates())
                 yield return v;
-            foreach (var v in phi2.EnumerateFreeVariables())
+            foreach (var v in phi2.EnumerateFreeVariablesPossiblyWithDuplicates())
                 yield return v;
         }
 
@@ -812,29 +253,31 @@ namespace Microsoft.Automata.MSO
             this.phi2 = phi2;
         }
 
-        internal override Automaton<ISumOfProducts<BDD, T>> getAutomaton(SimpleList<string> variables, ICartesianAlgebraBDD<T> alg)
+        internal override Automaton<IMonadicPredicate<BDD, T>> getAutomaton(SimpleList<WS1SVariable<T>> variables, ICartesianAlgebraBDD<T> alg)
         {
             var aut1 = phi1.getAutomaton(variables, alg);
             var aut2 = phi2.getAutomaton(variables, alg);
+            //var res = aut1.Complement(alg).Intersect(aut2.Complement(alg), alg).Complement(alg);
+            //res = res.Determinize(alg).Minimize(alg);
+            var res = aut1.Union(aut2).RemoveEpsilons(alg.MkOr);
+            var res1 = res.Minimize(alg);
+            return res1;
+        }
+
+        internal override Automaton<BDD> getAutomatonBDD(SimpleList<WS1SVariable<T>> variables, IBDDAlgebra alg, int nrOfLabelBits)
+        {
+            var aut1 = phi1.getAutomatonBDD(variables, alg, nrOfLabelBits);
+            var aut2 = phi2.getAutomatonBDD(variables, alg, nrOfLabelBits);
             var res = aut1.Complement(alg).Intersect(aut2.Complement(alg), alg).Complement(alg);
             res = res.Determinize(alg).Minimize(alg);
             return res;
         }
 
-        internal override Automaton<BDD> getAutomatonBDD(SimpleList<string> variables, CharSetSolver alg)
+        internal override IEnumerable<WS1SVariable<T>> EnumerateFreeVariablesPossiblyWithDuplicates()
         {
-            var aut1 = phi1.getAutomatonBDD(variables, alg);
-            var aut2 = phi2.getAutomatonBDD(variables, alg);
-            var res = aut1.Complement(alg).Intersect(aut2.Complement(alg), alg).Complement(alg);
-            res = res.Determinize(alg).Minimize(alg);
-            return res;
-        }
-
-        internal override IEnumerable<string> EnumerateFreeVariables()
-        {
-            foreach (var v in phi1.EnumerateFreeVariables())
+            foreach (var v in phi1.EnumerateFreeVariablesPossiblyWithDuplicates())
                 yield return v;
-            foreach (var v in phi2.EnumerateFreeVariables())
+            foreach (var v in phi2.EnumerateFreeVariablesPossiblyWithDuplicates())
                 yield return v;
         }
 
@@ -853,39 +296,36 @@ namespace Microsoft.Automata.MSO
             this.phi = phi;
         }
 
-        internal override Automaton<ISumOfProducts<BDD, T>> getAutomaton(SimpleList<string> variables, ICartesianAlgebraBDD<T> alg)
+        internal override Automaton<IMonadicPredicate<BDD, T>> getAutomaton(SimpleList<WS1SVariable<T>> variables, ICartesianAlgebraBDD<T> alg)
         {
             var aut = phi.getAutomaton(variables, alg);
             var res = aut.Determinize(alg).Complement(alg).Minimize(alg);
-            foreach (var x in phi.EnumerateFreeVariables())
+            foreach (var x in phi.GetFreeVariables(true))
             {
-                if (char.IsLower(x[0])) //TBD: x is f.o.
-                {
-                    var sing = new WS1SSingleton<T>("x").getAutomaton(variables, alg);
-                    res = res.Intersect(sing, alg);
-                }
+                var sing = new WS1SSingleton<T>(x).getAutomaton(variables, alg);
+                res = res.Intersect(sing, alg).Determinize(alg).Minimize(alg);
             }
             return res;
         }
 
-        internal override Automaton<BDD> getAutomatonBDD(SimpleList<string> variables, CharSetSolver alg)
+        internal override Automaton<BDD> getAutomatonBDD(SimpleList<WS1SVariable<T>> variables, IBDDAlgebra alg, int nrOfLabelBits)
         {
-            var aut = phi.getAutomatonBDD(variables, alg);
+            var aut = phi.getAutomatonBDD(variables, alg, nrOfLabelBits);
             var res = aut.Determinize(alg).Complement(alg).Minimize(alg);
-            foreach (var x in phi.EnumerateFreeVariables())
+            foreach (var x in phi.EnumerateFreeVariablesPossiblyWithDuplicates())
             {
-                if (char.IsLower(x[0])) //TBD: x is f.o.
+                if (x.isFirstOrder)
                 {
-                    var sing = new WS1SSingleton<T>(x).getAutomatonBDD(variables, alg);
-                    res = res.Intersect(sing, alg);
+                    var sing = new WS1SSingleton<T>(x).getAutomatonBDD(variables, alg, nrOfLabelBits);
+                    res = res.Intersect(sing, alg).Determinize(alg).Minimize(alg);
                 }
             }
             return res;
         }
 
-        internal override IEnumerable<string> EnumerateFreeVariables()
+        internal override IEnumerable<WS1SVariable<T>> EnumerateFreeVariablesPossiblyWithDuplicates()
         {
-            return phi.EnumerateFreeVariables();
+            return phi.EnumerateFreeVariablesPossiblyWithDuplicates();
         }
 
         public override string ToString()
@@ -894,62 +334,68 @@ namespace Microsoft.Automata.MSO
         }
     }
 
+    public class WS1STrue<T> : WS1SFormula<T>
+    {
+        public WS1STrue() { }
+
+        internal override Automaton<IMonadicPredicate<BDD, T>> getAutomaton(SimpleList<WS1SVariable<T>> variables, ICartesianAlgebraBDD<T> ca)
+        {
+            return BasicAutomata.MkTrue(ca);
+        }
+
+        internal override Automaton<BDD> getAutomatonBDD(SimpleList<WS1SVariable<T>> variables, IBDDAlgebra alg, int nrOfLabelBits)
+        {
+            return BasicAutomata.MkTrue(alg);
+        }
+
+        internal override IEnumerable<WS1SVariable<T>> EnumerateFreeVariablesPossiblyWithDuplicates()
+        {
+            yield break;
+        }
+
+        public override string ToString()
+        {
+            return "true";
+        }
+    }
+
+    #endregion
+
     public class WS1SSubset<T> : WS1SFormula<T>
     {
-        public readonly string var1;
-        public readonly string var2;
+        public readonly WS1SVariable<T> var1;
+        public readonly WS1SVariable<T> var2;
 
-        public WS1SSubset(string var1, string var2)
+        public WS1SSubset(WS1SVariable<T> var1, WS1SVariable<T> var2)
         {
             this.var1 = var1;
             this.var2 = var2;
         }
 
-        internal override Automaton<ISumOfProducts<BDD, T>> getAutomaton(SimpleList<string> variables, ICartesianAlgebraBDD<T> ca)
+        internal override Automaton<IMonadicPredicate<BDD, T>> getAutomaton(SimpleList<WS1SVariable<T>> variables, ICartesianAlgebraBDD<T> ca)
         {
             var pos1 = variables.IndexOf(var1);
             var pos2 = variables.IndexOf(var2);
 
-            if (pos1 < 0)
-                throw new ArgumentException("variable '" + var1 + "' is missing from the list of free variables", "variables");
-            if (pos2 < 0)
-                throw new ArgumentException("variable '" + var2 + "' is missing from the list of free variables", "variables"); 
+            if (pos1 < 0 || pos2 < 0)
+                throw new AutomataException(AutomataExceptionKind.InvalidWS1Sformula_UnknownVariable);
 
-
-            //Create conditions that bit in pos1 is smaller than pos2
-            var pos2is1 = ca.BDDAlgebra.MkSetWithBitTrue(pos2);
-            var pos1is0 = ca.BDDAlgebra.MkSetWithBitFalse(pos1);
-            var subsetCond = ca.BDDAlgebra.MkOr(pos2is1, pos1is0);
-
-            //Create automaton for condition
-            var pairCond = ca.MkProduct(subsetCond, ca.Second.True);
-            var moves = new Move<ISumOfProducts<BDD, T>>[] { new Move<ISumOfProducts<BDD, T>>(0, 0, pairCond) };
-            return Automaton<ISumOfProducts<BDD, T>>.Create(0, new int[] { 0 }, moves);
+            return BasicAutomata.MkSubset(pos1, pos2, ca);
         }
 
-        internal override Automaton<BDD> getAutomatonBDD(SimpleList<string> variables, CharSetSolver alg) 
+        internal override Automaton<BDD> getAutomatonBDD(SimpleList<WS1SVariable<T>> variables, IBDDAlgebra alg, int nrOfLabelBits) 
         {
             var pos1 = variables.IndexOf(var1);
             var pos2 = variables.IndexOf(var2);
 
-            if (pos1 < 0)
-                throw new ArgumentException("variable '" + var1 + "' is missing from the list of free variables", "variables");
-            if (pos2 < 0)
-                throw new ArgumentException("variable '" + var2 + "' is missing from the list of free variables", "variables");
+            if (pos1 < 0 || pos2 < 0)
+                throw new AutomataException(AutomataExceptionKind.InvalidWS1Sformula_UnknownVariable);
 
-            pos1 = pos1 + (int)alg.Encoding;
-            pos2 = pos2 + (int)alg.Encoding;
-
-            //Create conditions that bit in pos1 is smaller than pos2
-            var pos2is1 = alg.MkSetWithBitTrue(pos2);
-            var pos1is0 = alg.MkSetWithBitFalse(pos1);
-            var subsetCond = alg.MkOr(pos2is1, pos1is0);
-
-            var moves = new Move<BDD>[] { new Move<BDD>(0, 0, subsetCond) };
-            return Automaton<BDD>.Create(0, new int[] { 0 }, moves);
+            var aut = BasicAutomata.MkSubset(pos1 + nrOfLabelBits, pos2 + nrOfLabelBits, alg);
+            return aut;
         }
 
-        internal override IEnumerable<string> EnumerateFreeVariables()
+        internal override IEnumerable<WS1SVariable<T>> EnumerateFreeVariablesPossiblyWithDuplicates()
         {
             yield return var1;
             yield return var2;
@@ -963,124 +409,92 @@ namespace Microsoft.Automata.MSO
 
     public class WS1SSingleton<T> : WS1SFormula<T>
     {
-        public readonly string var;
+        public readonly WS1SVariable<T> var;
 
-        public WS1SSingleton(string var)
+        public WS1SSingleton(WS1SVariable<T> var)
         {
             this.var = var;
         }
 
-        internal override Automaton<ISumOfProducts<BDD, T>> getAutomaton(SimpleList<string> variables, ICartesianAlgebraBDD<T> ca)
+        internal override Automaton<IMonadicPredicate<BDD, T>> getAutomaton(SimpleList<WS1SVariable<T>> variables, ICartesianAlgebraBDD<T> ca)
         {
             var pos = variables.IndexOf(var);
 
             if (pos < 0)
-                throw new ArgumentException("variable '" + var + "' is missing from the given list", "variables");
+                throw new AutomataException(AutomataExceptionKind.InvalidWS1Sformula_UnknownVariable);
 
-            //Create conditions that bit in pos1 is smaller than pos2
-            var bbddAlg = ca.BDDAlgebra;
-            var posIs1 = bbddAlg.MkSetWithBitTrue(pos);
-            var posIs0 = bbddAlg.MkSetWithBitFalse(pos);
-
-            //Create automaton for condition
-            var moves = new Move<ISumOfProducts<BDD, T>>[] { 
-                new Move<ISumOfProducts<BDD,T>>(0, 0, ca.MkProduct(posIs0, ca.Second.True)),
-                new Move<ISumOfProducts<BDD,T>>(0, 1, ca.MkProduct(posIs1, ca.Second.True)), 
-                new Move<ISumOfProducts<BDD,T>>(1, 1, ca.MkProduct(posIs0, ca.Second.True))
-            };
-            return Automaton<ISumOfProducts<BDD, T>>.Create(0, new int[] { 1 }, moves);
+            return BasicAutomata.MkSingleton(pos, ca);
         }
 
-        internal override Automaton<BDD> getAutomatonBDD(SimpleList<string> variables, CharSetSolver alg)
+        internal override Automaton<BDD> getAutomatonBDD(SimpleList<WS1SVariable<T>> variables, IBDDAlgebra alg, int nrOfLabelBits)
         {
             var pos = variables.IndexOf(var);
 
             if (pos < 0)
-                throw new ArgumentException("variable '" + var + "' is missing from the given list", "variables");
+                throw new AutomataException(AutomataExceptionKind.InvalidWS1Sformula_UnknownVariable);
 
-            pos = pos + (int)alg.Encoding;
-
-            //Create conditions that bit in pos1 is smaller than pos2
-            var posIs1 = alg.MkSetWithBitTrue(pos);
-            var posIs0 = alg.MkSetWithBitFalse(pos);
-
-            //Create automaton for condition
-            var moves = new Move<BDD>[] { 
-                new Move<BDD>(0, 0, posIs0),
-                new Move<BDD>(0, 1, posIs1), 
-                new Move<BDD>(1, 1, posIs0)
-            };
-            return Automaton<BDD>.Create(0, new int[] { 1 }, moves);
+            return BasicAutomata.MkSingleton(pos + nrOfLabelBits, alg);
         }
 
-        internal override IEnumerable<string> EnumerateFreeVariables()
+        internal override IEnumerable<WS1SVariable<T>> EnumerateFreeVariablesPossiblyWithDuplicates()
         {
             yield return var;
         }
 
         public override string ToString()
         {
-            return "Singleton(" + var + ")";
+            return "!" + var;
         }
     }
 
     public class WS1SPred<T> : WS1SFormula<T>
     {
         public readonly T pred;
-        public readonly string var;
+        public readonly WS1SVariable<T> var;
 
-        public WS1SPred(T pred, string var)
+        public WS1SPred(T pred, WS1SVariable<T> var)
         {
             this.pred = pred;
             this.var = var;
         }
 
-        internal override Automaton<ISumOfProducts<BDD, T>> getAutomaton(SimpleList<string> variables, ICartesianAlgebraBDD<T> ca)
+        internal override Automaton<IMonadicPredicate<BDD, T>> getAutomaton(SimpleList<WS1SVariable<T>> variables, ICartesianAlgebraBDD<T> ca)
         {
             var k = variables.IndexOf(var);
 
             if (k < 0)
-                throw new ArgumentException("variable '" + var + "' is missing from the given list", "variables");
+                throw new AutomataException(AutomataExceptionKind.InvalidWS1Sformula_UnknownVariable);
 
-            //Compute predicates for k'th bit is 0 or 1
-            var bddAlg = ca.BDDAlgebra;
-            var posIs1 = bddAlg.MkSetWithBitTrue(k);
-            var posIs0 = bddAlg.MkSetWithBitFalse(k);
-
-            var psi1 = ca.MkProduct(posIs0, ca.Second.True);
-            var psi2 = ca.MkProduct(posIs1, pred);
-            var psi = ca.MkOr(psi1, psi2);
-
-            //Create automaton for condition
-            var moves = new Move<ISumOfProducts<BDD, T>>[] { 
-                new Move<ISumOfProducts<BDD,T>>(0, 0, psi),
-            };
-            return Automaton<ISumOfProducts<BDD, T>>.Create(0, new int[] { 0 }, moves);
+            if (var.isFirstOrder)
+            {
+                return BasicAutomata.MkLabelOfPosition(k, pred, ca);
+            }
+            else
+            {
+                return BasicAutomata.MkLabelOfSet(k, pred, ca);
+            }
         }
 
-        internal override Automaton<BDD> getAutomatonBDD(SimpleList<string> variables, CharSetSolver alg)
+        internal override Automaton<BDD> getAutomatonBDD(SimpleList<WS1SVariable<T>> variables, IBDDAlgebra alg, int nrOfLabelBits)
         {
             var k = variables.IndexOf(var);
 
             if (k < 0)
-                throw new ArgumentException("variable '" + var + "' is missing from the given list", "variables");
+                throw new AutomataException(AutomataExceptionKind.InvalidWS1Sformula_UnknownVariable);
 
-            k = k + (int)alg.Encoding;
+            k = k + nrOfLabelBits;
 
-            //Compute predicates for k'th bit is 0 or 1
-            var posIs1 = alg.MkSetWithBitTrue(k);
-            var posIs0 = alg.MkSetWithBitFalse(k);
-
-            BDD predBDD = pred as BDD;              //T is known to be BDD
-            var psi2 = alg.MkAnd(posIs1, predBDD);  //builds the Cartesian product
-            var psi = alg.MkOr(posIs0, psi2);
-
-            //Create automaton for condition
-            var moves = new Move<BDD>[] { new Move<BDD>(0, 0, psi) };
-            return Automaton<BDD>.Create(0, new int[] { 0 }, moves);
+            if (var.isFirstOrder)
+            {
+                return BasicAutomata.MkLabelOfPosition(k, pred as BDD, alg);
+            }
+            else
+            {
+                return BasicAutomata.MkLabelOfSet(k, pred as BDD, alg);
+            }
         }
 
-        internal override IEnumerable<string> EnumerateFreeVariables()
+        internal override IEnumerable<WS1SVariable<T>> EnumerateFreeVariablesPossiblyWithDuplicates()
         {
             yield return var;
         }
@@ -1093,97 +507,49 @@ namespace Microsoft.Automata.MSO
 
     public class WS1SSuccN<T> : WS1SFormula<T>
     {
-        public readonly string var1;
-        public readonly string var2;
+        public readonly WS1SVariable<T> var1;
+        public readonly WS1SVariable<T> var2;
         public readonly int n;
 
-        public WS1SSuccN(string var1, string var2, int n)
+        public WS1SSuccN(WS1SVariable<T> var1, WS1SVariable<T> var2, int n)
         {
             if (n < 1)
                 throw new ArgumentException("successor offset must be positive", "n");
+
+            if (var1.isFirstOrder != var2.isFirstOrder)
+                throw new AutomataException(AutomataExceptionKind.InvalidWS1Sformula);
 
             this.var1 = var1;
             this.var2 = var2;
             this.n = n;
         }
 
-        internal override Automaton<ISumOfProducts<BDD, T>> getAutomaton(SimpleList<string> variables, ICartesianAlgebraBDD<T> ca)
+        internal override Automaton<IMonadicPredicate<BDD, T>> getAutomaton(SimpleList<WS1SVariable<T>> variables, ICartesianAlgebraBDD<T> ca)
         {
-            var ind1 = variables.IndexOf(var1);
-            var ind2 = variables.IndexOf(var2);
+            var pos1 = variables.IndexOf(var1);
+            var pos2 = variables.IndexOf(var2);
 
-            if (ind1 < 0)
-                throw new ArgumentException("variable '" + var1 + "' is missing from the list of free variables", "variables");
-            if (ind2 < 0)
-                throw new ArgumentException("variable '" + var2 + "' is missing from the list of free variables", "variables");
+            if (pos1 < 0 || pos2 < 0)
+                throw new AutomataException(AutomataExceptionKind.InvalidWS1Sformula_UnknownVariable);
 
-            var bddAlg = ca.BDDAlgebra;
-            var ind10 = bddAlg.MkSetWithBitFalse(ind1);
-            var ind11 = bddAlg.MkSetWithBitTrue(ind1);
-            var ind20 = bddAlg.MkSetWithBitFalse(ind2);
-            var ind21 = bddAlg.MkSetWithBitTrue(ind2);
-            var both0 = bddAlg.MkAnd(ind10, ind20);
-            var ind11ind20 = bddAlg.MkAnd(ind11, ind20);
-            var ind10ind21 = bddAlg.MkAnd(ind10, ind21);
-
-            var both0t = ca.MkProduct(both0, ca.Second.True);
-            var ind11ind20t = ca.MkProduct(ind11ind20, ca.Second.True);
-            var ind10ind21t = ca.MkProduct(ind10ind21, ca.Second.True);
-
-            //Create moves
-            var moves = new List<Move<ISumOfProducts<BDD, T>>>();
-            moves.Add(new Move<ISumOfProducts<BDD, T>>(0, 0, both0t));
-            moves.Add(new Move<ISumOfProducts<BDD, T>>(0, 1, ind11ind20t));
-            moves.Add(new Move<ISumOfProducts<BDD, T>>(n, n + 1, ind10ind21t));
-            moves.Add(new Move<ISumOfProducts<BDD, T>>(n + 1, n + 1, both0t));
-
-            for (int i = 1; i < n; i++)
-                moves.Add(new Move<ISumOfProducts<BDD, T>>(i, i + 1, both0t));
-
-            return Automaton<ISumOfProducts<BDD, T>>.Create(0, new int[] { n + 1 }, moves);
+            return BasicAutomata.MkSuccN(pos1, pos2, n, ca);
         }
 
-        internal override Automaton<BDD> getAutomatonBDD(SimpleList<string> variables, CharSetSolver alg) 
+        internal override Automaton<BDD> getAutomatonBDD(SimpleList<WS1SVariable<T>> variables, IBDDAlgebra alg, int nrOfLabelBits) 
         {
-            var ind1 = variables.IndexOf(var1);
-            var ind2 = variables.IndexOf(var2);
+            var pos1 = variables.IndexOf(var1);
+            var pos2 = variables.IndexOf(var2);
 
-            if (ind1 < 0)
-                throw new ArgumentException("variable '" + var1 + "' is missing from the list of free variables", "variables");
-            if (ind2 < 0)
-                throw new ArgumentException("variable '" + var2 + "' is missing from the list of free variables", "variables");
+            if (pos1 < 0 || pos2 < 0)
+                throw new AutomataException(AutomataExceptionKind.InvalidWS1Sformula_UnknownVariable);
 
-            ind1 = ind1 + (int)alg.Encoding;
-            ind2 = ind2 + (int)alg.Encoding;
+            pos1 = pos1 + nrOfLabelBits;
+            pos2 = pos2 + nrOfLabelBits;
 
-
-            var bddAlg = alg;
-            var ind10 = bddAlg.MkSetWithBitFalse(ind1);
-            var ind11 = bddAlg.MkSetWithBitTrue(ind1);
-            var ind20 = bddAlg.MkSetWithBitFalse(ind2);
-            var ind21 = bddAlg.MkSetWithBitTrue(ind2);
-            var both0 = bddAlg.MkAnd(ind10, ind20);
-            var ind11ind20 = bddAlg.MkAnd(ind11, ind20);
-            var ind10ind21 = bddAlg.MkAnd(ind10, ind21);
-
-            var both0t = both0;
-            var ind11ind20t = ind11ind20;
-            var ind10ind21t = ind10ind21;
-
-            //Create moves
-            var moves = new List<Move<BDD>>();
-            moves.Add(new Move<BDD>(0, 0, both0t));
-            moves.Add(new Move<BDD>(0, 1, ind11ind20t));
-            moves.Add(new Move<BDD>(n, n + 1, ind10ind21t));
-            moves.Add(new Move<BDD>(n + 1, n + 1, both0t));
-
-            for (int i = 1; i < n; i++)
-                moves.Add(new Move<BDD>(i, i + 1, both0t));
-
-            return Automaton<BDD>.Create(0, new int[] { n + 1 }, moves);
+            return BasicAutomata.MkSuccN(pos1, pos2, n, alg);
         }
 
-        internal override IEnumerable<string> EnumerateFreeVariables()
+        internal override IEnumerable<WS1SVariable<T>> EnumerateFreeVariablesPossiblyWithDuplicates()
         {
             yield return var1;
             yield return var2;
@@ -1197,82 +563,43 @@ namespace Microsoft.Automata.MSO
 
     public class WS1SLt<T> : WS1SFormula<T>
     {
-        public readonly string var1;
-        public readonly string var2;
+        public readonly WS1SVariable<T> var1;
+        public readonly WS1SVariable<T> var2;
 
-        public WS1SLt(string var1, string var2)
+        public WS1SLt(WS1SVariable<T> var1, WS1SVariable<T> var2)
         {
+            if (var1.isFirstOrder != var2.isFirstOrder)
+                throw new AutomataException(AutomataExceptionKind.InvalidWS1Sformula);
             this.var1 = var1;
             this.var2 = var2;
         }
 
-        internal override Automaton<ISumOfProducts<BDD, T>> getAutomaton(SimpleList<string> variables, ICartesianAlgebraBDD<T> ca)
+        internal override Automaton<IMonadicPredicate<BDD, T>> getAutomaton(SimpleList<WS1SVariable<T>> variables, ICartesianAlgebraBDD<T> ca)
         {
             var pos1 = variables.IndexOf(var1);
             var pos2 = variables.IndexOf(var2);
 
-            if (pos1 < 0)
-                throw new ArgumentException("variable '" + var1 + "' is missing from the list of free variables", "variables");
-            if (pos2 < 0)
-                throw new ArgumentException("variable '" + var2 + "' is missing from the list of free variables", "variables");
+            if (pos1 < 0 || pos2 < 0)
+                throw new AutomataException(AutomataExceptionKind.InvalidWS1Sformula_UnknownVariable);
 
-            var bddAlg = ca.BDDAlgebra;
-            var pos1is0 = bddAlg.MkSetWithBitFalse(pos1);
-            var pos1is1 = bddAlg.MkSetWithBitTrue(pos1);
-            var pos2is0 = bddAlg.MkSetWithBitFalse(pos2);
-            var pos2is1 = bddAlg.MkSetWithBitTrue(pos2);
-
-            var both0 = bddAlg.MkAnd(pos1is0, pos2is0);
-            var pos11pos20 = bddAlg.MkAnd(pos1is1, pos2is0);
-            var pos10pos21 = bddAlg.MkAnd(pos1is0, pos2is1);
-
-            //Create automaton for condition
-            var moves = new Move<ISumOfProducts<BDD, T>>[] { 
-                new Move<ISumOfProducts<BDD,T>>(0, 0, ca.MkProduct(both0,ca.Second.True)),
-                new Move<ISumOfProducts<BDD,T>>(0, 1, ca.MkProduct(pos11pos20,ca.Second.True)), 
-                new Move<ISumOfProducts<BDD,T>>(1, 1, ca.MkProduct(both0,ca.Second.True)),
-                new Move<ISumOfProducts<BDD,T>>(1, 2, ca.MkProduct(pos10pos21,ca.Second.True)), 
-                new Move<ISumOfProducts<BDD,T>>(2, 2, ca.MkProduct(both0,ca.Second.True))
-            };
-            return Automaton<ISumOfProducts<BDD, T>>.Create(0, new int[] { 2 }, moves);
+            return BasicAutomata.MkLess(pos1, pos2, ca);
         }
 
-        internal override Automaton<BDD> getAutomatonBDD(SimpleList<string> variables, CharSetSolver alg) 
+        internal override Automaton<BDD> getAutomatonBDD(SimpleList<WS1SVariable<T>> variables, IBDDAlgebra alg, int nrOfLabelBits) 
         {
             var pos1 = variables.IndexOf(var1);
             var pos2 = variables.IndexOf(var2);
 
-            if (pos1 < 0)
-                throw new ArgumentException("variable '" + var1 + "' is missing from the list of free variables", "variables");
-            if (pos2 < 0)
-                throw new ArgumentException("variable '" + var2 + "' is missing from the list of free variables", "variables");
+            if (pos1 < 0 || pos2 < 0)
+                throw new AutomataException(AutomataExceptionKind.InvalidWS1Sformula_UnknownVariable);
 
-            pos1 = pos1 + (int)alg.Encoding;
-            pos2 = pos2 + (int)alg.Encoding;
+            pos1 = pos1 + nrOfLabelBits;
+            pos2 = pos2 + nrOfLabelBits;
 
-
-            var bddAlg = alg;
-            var pos1is0 = bddAlg.MkSetWithBitFalse(pos1);
-            var pos1is1 = bddAlg.MkSetWithBitTrue(pos1);
-            var pos2is0 = bddAlg.MkSetWithBitFalse(pos2);
-            var pos2is1 = bddAlg.MkSetWithBitTrue(pos2);
-
-            var both0 = bddAlg.MkAnd(pos1is0, pos2is0);
-            var pos11pos20 = bddAlg.MkAnd(pos1is1, pos2is0);
-            var pos10pos21 = bddAlg.MkAnd(pos1is0, pos2is1);
-
-            //Create automaton for condition
-            var moves = new Move<BDD>[] { 
-                new Move<BDD>(0, 0, both0),
-                new Move<BDD>(0, 1, pos11pos20), 
-                new Move<BDD>(1, 1, both0),
-                new Move<BDD>(1, 2, pos10pos21), 
-                new Move<BDD>(2, 2, both0)
-            };
-            return Automaton<BDD>.Create(0, new int[] { 2 }, moves);
+            return BasicAutomata.MkLess(pos1, pos2, alg);
         }
 
-        internal override IEnumerable<string> EnumerateFreeVariables()
+        internal override IEnumerable<WS1SVariable<T>> EnumerateFreeVariablesPossiblyWithDuplicates()
         {
             yield return var1;
             yield return var2;
@@ -1286,61 +613,57 @@ namespace Microsoft.Automata.MSO
 
     public class WS1SEq<T> : WS1SFormula<T>
     {
-        public readonly string var1;
-        public readonly string var2;
+        public readonly WS1SVariable<T> var1;
+        public readonly WS1SVariable<T> var2;
 
-        public WS1SEq(string var1, string var2)
+        public WS1SEq(WS1SVariable<T> var1, WS1SVariable<T> var2)
         {
+            if (var1.isFirstOrder != var2.isFirstOrder)
+                throw new AutomataException(AutomataExceptionKind.InvalidWS1Sformula);
             this.var1 = var1;
             this.var2 = var2;
         }
 
-        internal override Automaton<ISumOfProducts<BDD, T>> getAutomaton(SimpleList<string> variables, ICartesianAlgebraBDD<T> ca)
+        internal override Automaton<IMonadicPredicate<BDD, T>> getAutomaton(SimpleList<WS1SVariable<T>> variables, ICartesianAlgebraBDD<T> ca)
         {
             var pos1 = variables.IndexOf(var1);
             var pos2 = variables.IndexOf(var2);
 
-            if (pos1 < 0)
-                throw new ArgumentException("variable '" + var1 + "' is missing from the list of free variables", "variables");
-            if (pos2 < 0)
-                throw new ArgumentException("variable '" + var2 + "' is missing from the list of free variables", "variables");
+            if (pos1 < 0 || pos2 < 0)
+                throw new AutomataException(AutomataExceptionKind.InvalidWS1Sformula_UnknownVariable);
 
-            //Create conditions that bit in pos1 is smaller than pos2
-            var both1 = ca.BDDAlgebra.MkAnd(ca.BDDAlgebra.MkSetWithBitTrue(pos1), ca.BDDAlgebra.MkSetWithBitTrue(pos2));
-            var both0 = ca.BDDAlgebra.MkAnd(ca.BDDAlgebra.MkSetWithBitFalse(pos1), ca.BDDAlgebra.MkSetWithBitFalse(pos2));
-            var eqCond = ca.BDDAlgebra.MkOr(both0, both1);
-
-            //Create automaton for condition
-            var moves = new Move<ISumOfProducts<BDD, T>>[] { 
-                new Move<ISumOfProducts<BDD,T>>(0, 0, ca.MkProduct(eqCond,ca.Second.True)) 
-            };
-            return Automaton<ISumOfProducts<BDD, T>>.Create(0, new int[] { 0 }, moves);
+            if (var1.isFirstOrder)
+            {
+                return BasicAutomata.MkEqualPositions(pos1, pos2, ca);
+            }
+            else
+            {
+                return BasicAutomata.MkEqualSets(pos1, pos2, ca);
+            }
         }
 
-        internal override Automaton<BDD> getAutomatonBDD(SimpleList<string> variables, CharSetSolver alg)
+        internal override Automaton<BDD> getAutomatonBDD(SimpleList<WS1SVariable<T>> variables, IBDDAlgebra alg, int nrOfLabelBits)
         {
             var pos1 = variables.IndexOf(var1);
             var pos2 = variables.IndexOf(var2);
 
-            if (pos1 < 0)
-                throw new ArgumentException("variable '" + var1 + "' is missing from the list of free variables", "variables");
-            if (pos2 < 0)
-                throw new ArgumentException("variable '" + var2 + "' is missing from the list of free variables", "variables");
+            if (pos1 < 0 || pos2 < 0)
+                throw new AutomataException(AutomataExceptionKind.InvalidWS1Sformula_UnknownVariable);
 
-            pos1 = pos1 + (int)alg.Encoding;
-            pos2 = pos2 + (int)alg.Encoding;
+            pos1 = pos1 + nrOfLabelBits;
+            pos2 = pos2 + nrOfLabelBits;
 
-            //Create conditions that bit in pos1 is smaller than pos2
-            var both1 = alg.MkAnd(alg.MkSetWithBitTrue(pos1), alg.MkSetWithBitTrue(pos2));
-            var both0 = alg.MkAnd(alg.MkSetWithBitFalse(pos1), alg.MkSetWithBitFalse(pos2));
-            var eqCond = alg.MkOr(both0, both1);
-
-            //Create automaton for condition
-            var moves = new Move<BDD>[] { new Move<BDD>(0, 0, eqCond) };
-            return Automaton<BDD>.Create(0, new int[] { 0 }, moves);
+            if (var1.isFirstOrder)
+            {
+                return BasicAutomata.MkEqualPositions(pos1, pos2, alg);
+            }
+            else
+            {
+                return BasicAutomata.MkEqualSets(pos1, pos2, alg);
+            }
         }
 
-        internal override IEnumerable<string> EnumerateFreeVariables()
+        internal override IEnumerable<WS1SVariable<T>> EnumerateFreeVariablesPossiblyWithDuplicates()
         {
             yield return var1;
             yield return var2;
@@ -1352,48 +675,18 @@ namespace Microsoft.Automata.MSO
         }
     }
 
-    public class WS1STrue<T> : WS1SFormula<T>
-    {
-        public WS1STrue() { }
-
-        internal override Automaton<ISumOfProducts<BDD, T>> getAutomaton(SimpleList<string> variables, ICartesianAlgebraBDD<T> ca)
-        {
-            var moves = new Move<ISumOfProducts<BDD, T>>[] { 
-                new Move<ISumOfProducts<BDD, T>>(0, 0, ca.True) 
-            };
-            return Automaton<ISumOfProducts<BDD, T>>.Create(0, new int[] { 0 }, moves);
-        }
-
-        internal override Automaton<BDD> getAutomatonBDD(SimpleList<string> variables, CharSetSolver alg)
-        {
-            var moves = new Move<BDD>[] { 
-                new Move<BDD>(0, 0, alg.True) 
-            };
-            return Automaton<BDD>.Create(0, new int[] { 0 }, moves);
-        }
-
-        internal override IEnumerable<string> EnumerateFreeVariables()
-        {
-            yield break;
-        }
-        public override string ToString()
-        {
-            return "true";
-        }
-    }
-
     public class WS1SExists<T> : WS1SFormula<T>
     {
-        public readonly string var;
+        public readonly WS1SVariable<T> var;
         public readonly WS1SFormula<T> phi;
 
-        public WS1SExists(string var, WS1SFormula<T> phi)
+        public WS1SExists(WS1SVariable<T> var, WS1SFormula<T> phi)
         {
             this.var = var;
             this.phi = phi;
         }
 
-        internal override Automaton<ISumOfProducts<BDD, T>> getAutomaton(SimpleList<string> variables, ICartesianAlgebraBDD<T> alg)
+        internal override Automaton<IMonadicPredicate<BDD, T>> getAutomaton(SimpleList<WS1SVariable<T>> variables, ICartesianAlgebraBDD<T> alg)
         {
             //the existential variable will shadow any previous occurrence with the same name
             //because when looking up the index of var it will be the last occurrence
@@ -1402,31 +695,32 @@ namespace Microsoft.Automata.MSO
             var autPhi = phi.getAutomaton(variablesExt, alg); 
 
             //Project away the the existential variable
-            var newMoves = new List<Move<ISumOfProducts<BDD, T>>>();
+            var newMoves = new List<Move<IMonadicPredicate<BDD, T>>>();
             foreach (var move in autPhi.GetMoves())
             {
-                var newPred = move.Label.TransformFirst(bdd => alg.BDDAlgebra.ProjectBit(bdd, varIndex));
-                newMoves.Add(new Move<ISumOfProducts<BDD, T>>(move.SourceState, move.TargetState, newPred));
+                var newPred = alg.Omit(varIndex, move.Label); 
+                newMoves.Add(new Move<IMonadicPredicate<BDD, T>>(move.SourceState, move.TargetState, newPred));
             }
 
-            var res = Automaton<ISumOfProducts<BDD, T>>.Create(autPhi.InitialState, autPhi.GetFinalStates(), newMoves);
-            //res = res.Determinize(alg).Minimize(alg);
+            var res = Automaton<IMonadicPredicate<BDD, T>>.Create(autPhi.InitialState, autPhi.GetFinalStates(), newMoves);
+            //var res = res.Determinize(alg);
+            var res_min = res.Minimize(alg);
 
-            return res;
+            return res_min;
         }
 
-        internal override Automaton<BDD> getAutomatonBDD(SimpleList<string> variables, CharSetSolver alg)
+        internal override Automaton<BDD> getAutomatonBDD(SimpleList<WS1SVariable<T>> variables, IBDDAlgebra alg, int nrOfLabelBits)
         {
             //the existential variable will shadow any previous occurrence with the same name
             //because when looking up the index of var it will be the last occurrence
-            var varIndex = variables.Count + (int)alg.Encoding;
+            var varIndex = variables.Count + nrOfLabelBits;
             var variablesExt = variables.Append(var);
-            var autPhi = phi.getAutomatonBDD(variablesExt, alg);
+            var autPhi = phi.getAutomatonBDD(variablesExt, alg, nrOfLabelBits);
 
             //Project away the the existential variable
             var newMoves = new List<Move<BDD>>();
             foreach (var move in autPhi.GetMoves())
-                newMoves.Add(new Move<BDD>(move.SourceState, move.TargetState, alg.ProjectBit(move.Label, varIndex)));
+                newMoves.Add(new Move<BDD>(move.SourceState, move.TargetState, alg.OmitBit(move.Label, varIndex)));
 
             var aut = Automaton<BDD>.Create(autPhi.InitialState, autPhi.GetFinalStates(), newMoves);
             var res = aut.Determinize(alg);
@@ -1435,9 +729,9 @@ namespace Microsoft.Automata.MSO
             return res;
         }
 
-        internal override IEnumerable<string> EnumerateFreeVariables()
+        internal override IEnumerable<WS1SVariable<T>> EnumerateFreeVariablesPossiblyWithDuplicates()
         {
-            foreach (var v in phi.EnumerateFreeVariables())
+            foreach (var v in phi.EnumerateFreeVariablesPossiblyWithDuplicates())
                 if (!var.Equals(v))
                     yield return v;
         }
@@ -1445,6 +739,305 @@ namespace Microsoft.Automata.MSO
         public override string ToString()
         {
             return "Exists(" + var + "," + phi.ToString() + ")";
+        }
+    }
+
+    public static class BasicAutomata
+    {
+        public static Automaton<BDD> MkSubset(int i, int j, IBDDAlgebra alg)
+        {
+            var bit_j_is1 = alg.MkBitTrue(j);
+            var bit_i_is0 = alg.MkBitFalse(i);
+            var subsetCond = alg.MkOr(bit_j_is1, bit_i_is0);
+            var moves = new Move<BDD>[] { new Move<BDD>(0, 0, subsetCond) };
+            var aut = Automaton<BDD>.Create(0, new int[] { 0 }, moves, false, false, true);
+            return aut;
+        }
+
+        public static Automaton<IMonadicPredicate<BDD,T>> MkSubset<T>(int i, int j, ICartesianAlgebraBDD<T> alg)
+        {
+            var bit_j_is1 = alg.BDDAlgebra.MkBitTrue(j);
+            var bit_i_is0 = alg.BDDAlgebra.MkBitFalse(i);
+            var subsetCond = alg.BDDAlgebra.MkOr(bit_j_is1, bit_i_is0);
+            var moves = new Move<IMonadicPredicate<BDD, T>>[] { new Move<IMonadicPredicate<BDD, T>>(0, 0, alg.MkCartesianProduct(subsetCond, alg.Second.True)) };
+            var aut = Automaton<IMonadicPredicate<BDD, T>>.Create(0, new int[] { 0 }, moves, false, false, true);
+            return aut;
+        }
+
+        public static Automaton<BDD> MkEqualSets(int i, int j, IBDDAlgebra alg)
+        {
+            var bit_j_is1 = alg.MkBitTrue(j);
+            var bit_i_is1 = alg.MkBitTrue(i);
+            var bit_i_is0 = alg.MkBitFalse(i);
+            var bit_j_is0 = alg.MkBitFalse(j);
+            var cond = alg.MkOr(alg.MkAnd(bit_i_is1,bit_j_is1),alg.MkAnd(bit_i_is0,bit_j_is0));
+            var moves = new Move<BDD>[] { new Move<BDD>(0, 0, cond) };
+            var aut = Automaton<BDD>.Create(0, new int[] { 0 }, moves, false, false, true);
+            return aut;
+        }
+
+        public static Automaton<IMonadicPredicate<BDD, T>> MkEqualSets<T>(int i, int j, ICartesianAlgebraBDD<T> alg)
+        {
+            var bit_j_is1 = alg.BDDAlgebra.MkBitTrue(j);
+            var bit_i_is1 = alg.BDDAlgebra.MkBitTrue(i);
+            var bit_i_is0 = alg.BDDAlgebra.MkBitFalse(i);
+            var bit_j_is0 = alg.BDDAlgebra.MkBitFalse(j);
+            var cond = alg.MkCartesianProduct(alg.BDDAlgebra.MkOr(alg.BDDAlgebra.MkAnd(bit_i_is1, bit_j_is1), alg.BDDAlgebra.MkAnd(bit_i_is0, bit_j_is0)), alg.Second.True);
+            var moves = new Move<IMonadicPredicate<BDD, T>>[] { new Move<IMonadicPredicate<BDD, T>>(0, 0, cond) };
+            var aut = Automaton<IMonadicPredicate<BDD, T>>.Create(0, new int[] { 0 }, moves, false, false, true);
+            return aut;
+        }
+
+        public static Automaton<BDD> MkEqualPositions(int i, int j, IBDDAlgebra alg)
+        {
+            var bit_j_is1 = alg.MkBitTrue(j);
+            var bit_i_is1 = alg.MkBitTrue(i);
+            var bit_i_is0 = alg.MkBitFalse(i);
+            var bit_j_is0 = alg.MkBitFalse(j);
+            var both0 = alg.MkAnd(bit_i_is0, bit_j_is0);
+            var both1 = alg.MkAnd(bit_i_is1, bit_j_is1);
+            var moves = new Move<BDD>[] { new Move<BDD>(0, 0, both0), 
+                new Move<BDD>(0, 1, both1), new Move<BDD>(1, 1, both0) };
+            var aut = Automaton<BDD>.Create(0, new int[] { 1 }, moves, false, false, true);
+            return aut;
+        }
+
+        public static Automaton<IMonadicPredicate<BDD, T>> MkEqualPositions<T>(int i, int j, ICartesianAlgebraBDD<T> alg)
+        {
+            var bit_j_is1 = alg.BDDAlgebra.MkBitTrue(j);
+            var bit_i_is1 = alg.BDDAlgebra.MkBitTrue(i);
+            var bit_i_is0 = alg.BDDAlgebra.MkBitFalse(i);
+            var bit_j_is0 = alg.BDDAlgebra.MkBitFalse(j);
+            var both0 = alg.BDDAlgebra.MkAnd(bit_i_is0, bit_j_is0);
+            var both1 = alg.BDDAlgebra.MkAnd(bit_i_is1, bit_j_is1);
+            Func<BDD, IMonadicPredicate<BDD, T>> lift = 
+                bdd => alg.MkCartesianProduct(bdd, alg.Second.True);
+            var moves = new Move<IMonadicPredicate<BDD, T>>[] { 
+                new Move<IMonadicPredicate<BDD, T>>(0, 0, lift(both0)), 
+                new Move<IMonadicPredicate<BDD, T>>(0, 1, lift(both1)), 
+                new Move<IMonadicPredicate<BDD, T>>(1, 1, lift(both0)) };
+            var aut = Automaton<IMonadicPredicate<BDD, T>>.Create(0, new int[] { 1 }, moves, false, false, true);
+            return aut;
+        }
+
+        public static Automaton<BDD> MkMember(int i, int j, IBDDAlgebra alg)
+        {
+            var bit_j_is1 = alg.MkBitTrue(j);
+            var bit_i_is1 = alg.MkBitTrue(i);
+            var bit_i_is0 = alg.MkBitFalse(i);
+            var both1 = alg.MkAnd(bit_i_is1, bit_j_is1);
+            var moves = new Move<BDD>[] { new Move<BDD>(0, 0, bit_i_is0), 
+                new Move<BDD>(0, 1, both1), new Move<BDD>(1, 1, bit_i_is0) };
+            var aut = Automaton<BDD>.Create(0, new int[] { 1 }, moves, false, false, true);
+            return aut;
+        }
+
+        public static Automaton<IMonadicPredicate<BDD, T>> MkMember<T>(int i, int j, ICartesianAlgebraBDD<T> ca)
+        {
+            Func<BDD, IMonadicPredicate<BDD, T>> lift = bdd => ca.MkCartesianProduct(bdd, ca.Second.True);
+            var alg = ca.BDDAlgebra;
+            var bit_j_is1 = alg.MkBitTrue(j);
+            var bit_i_is1 = alg.MkBitTrue(i);
+            var bit_i_is0 = alg.MkBitFalse(i);
+            var both1 = alg.MkAnd(bit_i_is1, bit_j_is1);
+            var moves = new Move<IMonadicPredicate<BDD, T>>[] { 
+                new Move<IMonadicPredicate<BDD, T>>(0, 0, lift(bit_i_is0)), 
+                new Move<IMonadicPredicate<BDD, T>>(0, 1, lift(both1)), 
+                new Move<IMonadicPredicate<BDD, T>>(1, 1, lift(bit_i_is0)) };
+            var aut = Automaton<IMonadicPredicate<BDD, T>>.Create(0, new int[] { 1 }, moves, false, false, true);
+            return aut;
+        }
+
+        public static Automaton<BDD> MkLabelOfSet(int i, BDD lab, IBDDAlgebra alg)
+        {
+            var bit_i_is0 = alg.MkBitFalse(i);
+            var cond = alg.MkOr(lab, bit_i_is0);
+            var moves = new Move<BDD>[] { new Move<BDD>(0, 0, cond) };
+            var aut = Automaton<BDD>.Create(0, new int[] { 0 }, moves, false, false, true);
+            return aut;
+        }
+        
+        public static Automaton<IMonadicPredicate<BDD, T>> MkLabelOfSet<T>(int i, T lab, ICartesianAlgebraBDD<T> ca)
+        {
+            Func<BDD, IMonadicPredicate<BDD, T>> lift1 = bdd => ca.MkCartesianProduct(bdd, ca.Second.True);
+            Func<T, IMonadicPredicate<BDD, T>> lift2 = psi => ca.MkCartesianProduct(ca.BDDAlgebra.True, psi);
+            var bit_i_is0 = ca.BDDAlgebra.MkBitFalse(i);
+            var cond = ca.MkOr(lift2(lab),lift1(bit_i_is0));
+            var moves = new Move<IMonadicPredicate<BDD, T>>[] { new Move<IMonadicPredicate<BDD, T>>(0, 0, cond) };
+            var aut = Automaton<IMonadicPredicate<BDD, T>>.Create(0, new int[] { 0 }, moves, false, false, true);
+            return aut;
+        }
+
+        public static Automaton<BDD> MkLabelOfPosition(int i, BDD lab, IBDDAlgebra alg)
+        {
+            var bit_i_is0 = alg.MkBitFalse(i);
+            var bit_i_is1 = alg.MkBitTrue(i);
+            var cond = alg.MkAnd(bit_i_is1, lab);
+            var moves = new Move<BDD>[] { 
+                new Move<BDD>(0, 0, bit_i_is0),
+                new Move<BDD>(0, 1, cond), 
+                new Move<BDD>(1, 1, bit_i_is0)};
+            var aut = Automaton<BDD>.Create(0, new int[] { 1 }, moves, false, false, true);
+            return aut;
+        }
+        
+        public static Automaton<IMonadicPredicate<BDD, T>> MkLabelOfPosition<T>(int i, T lab, ICartesianAlgebraBDD<T> ca)
+        {
+            Func<BDD, IMonadicPredicate<BDD, T>> lift1 = bdd => ca.MkCartesianProduct(bdd, ca.Second.True);
+            Func<T, IMonadicPredicate<BDD, T>> lift2 = psi => ca.MkCartesianProduct(ca.BDDAlgebra.True, psi);
+            var alg = ca.BDDAlgebra;
+            var bit_i_is0 = alg.MkBitFalse(i);
+            var bit_i_is1 = alg.MkBitTrue(i);
+            var cond = ca.MkCartesianProduct(bit_i_is1, lab);
+            var moves = new Move<IMonadicPredicate<BDD, T>>[] { 
+                new Move<IMonadicPredicate<BDD, T>>(0, 0, lift1(bit_i_is0)),
+                new Move<IMonadicPredicate<BDD, T>>(0, 1, cond), 
+                new Move<IMonadicPredicate<BDD, T>>(1, 1, lift1(bit_i_is0))};
+            var aut = Automaton<IMonadicPredicate<BDD, T>>.Create(0, new int[] { 1 }, moves, false, false, true);
+            return aut;
+        }
+
+        public static Automaton<BDD> MkLess(int i, int j, IBDDAlgebra alg)
+        {
+            var bit_i_is0 = alg.MkBitFalse(i);
+            var bit_i_is1 = alg.MkBitTrue(i);
+            var bit_j_is0 = alg.MkBitFalse(j);
+            var bit_j_is1 = alg.MkBitTrue(j);
+            var both0 = alg.MkAnd(bit_i_is0, bit_j_is0);
+            var cond1 = alg.MkAnd(bit_i_is1, bit_j_is0);
+            var cond2 = alg.MkAnd(bit_j_is1, bit_i_is0);
+            var moves = new Move<BDD>[] { new Move<BDD>(0, 0, both0),
+                new Move<BDD>(0, 1, cond1), new Move<BDD>(1, 1, both0),
+                new Move<BDD>(1, 2, cond2), new Move<BDD>(2, 2, both0)};
+            var aut = Automaton<BDD>.Create(0, new int[] { 2 }, moves, false, false, true);
+            return aut;
+        }
+
+        public static Automaton<IMonadicPredicate<BDD, T>> MkLess<T>(int i, int j, ICartesianAlgebraBDD<T> ca)
+        {
+            Func<BDD, IMonadicPredicate<BDD, T>> lift1 = bdd => ca.MkCartesianProduct(bdd, ca.Second.True);
+            Func<T, IMonadicPredicate<BDD, T>> lift2 = psi => ca.MkCartesianProduct(ca.BDDAlgebra.True, psi);
+            var alg = ca.BDDAlgebra;
+            var bit_i_is0 = alg.MkBitFalse(i);
+            var bit_i_is1 = alg.MkBitTrue(i);
+            var bit_j_is0 = alg.MkBitFalse(j);
+            var bit_j_is1 = alg.MkBitTrue(j);
+            var both0 = alg.MkAnd(bit_i_is0, bit_j_is0);
+            var cond1 = alg.MkAnd(bit_i_is1, bit_j_is0);
+            var cond2 = alg.MkAnd(bit_j_is1, bit_i_is0);
+            var moves = new Move<IMonadicPredicate<BDD, T>>[] { 
+                new Move<IMonadicPredicate<BDD, T>>(0, 0, lift1(both0)),
+                new Move<IMonadicPredicate<BDD, T>>(0, 1, lift1(cond1)), 
+                new Move<IMonadicPredicate<BDD, T>>(1, 1, lift1(both0)),
+                new Move<IMonadicPredicate<BDD, T>>(1, 2, lift1(cond2)), 
+                new Move<IMonadicPredicate<BDD, T>>(2, 2, lift1(both0))};
+            var aut = Automaton<IMonadicPredicate<BDD, T>>.Create(0, new int[] { 2 }, moves, false, false, true);
+            return aut;
+        }
+
+        public static Automaton<BDD> MkSingleton(int i, IBDDAlgebra alg)
+        {
+            var bit_i_is0 = alg.MkBitFalse(i);
+            var bit_i_is1 = alg.MkBitTrue(i);
+            var moves = new Move<BDD>[] { new Move<BDD>(0, 0, bit_i_is0),
+                new Move<BDD>(0, 1, bit_i_is1), new Move<BDD>(1, 1, bit_i_is0)};
+            var aut = Automaton<BDD>.Create(0, new int[] { 1 }, moves, false, false, true);
+            return aut;
+        }
+
+        public static Automaton<IMonadicPredicate<BDD, T>> MkSingleton<T>(int i, ICartesianAlgebraBDD<T> ca) 
+        {
+            Func<BDD, IMonadicPredicate<BDD, T>> lift1 = bdd => ca.MkCartesianProduct(bdd, ca.Second.True);
+            Func<T, IMonadicPredicate<BDD, T>> lift2 = psi => ca.MkCartesianProduct(ca.BDDAlgebra.True, psi);
+            var alg = ca.BDDAlgebra;
+            var bit_i_is0 = alg.MkBitFalse(i);
+            var bit_i_is1 = alg.MkBitTrue(i);
+            var moves = new Move<IMonadicPredicate<BDD, T>>[] { 
+                new Move<IMonadicPredicate<BDD, T>>(0, 0, lift1(bit_i_is0)),
+                new Move<IMonadicPredicate<BDD, T>>(0, 1, lift1(bit_i_is1)), 
+                new Move<IMonadicPredicate<BDD, T>>(1, 1, lift1(bit_i_is0))};
+            var aut = Automaton<IMonadicPredicate<BDD, T>>.Create(0, new int[] { 1 }, moves, false, false, true);
+            return aut;
+        }
+
+        public static Automaton<BDD> MkTrue(IBDDAlgebra alg)
+        {
+            var moves = new Move<BDD>[] { 
+                new Move<BDD>(0, 0, alg.True) 
+            };
+            return Automaton<BDD>.Create(0, new int[] { 0 }, moves, false, false, true);
+        }
+
+        public static Automaton<IMonadicPredicate<BDD, T>> MkTrue<T>(ICartesianAlgebraBDD<T> ca)
+        {
+            var moves = new Move<IMonadicPredicate<BDD, T>>[] { 
+                new Move<IMonadicPredicate<BDD, T>>(0, 0, ca.True) 
+            };
+            return Automaton<IMonadicPredicate<BDD, T>>.Create(0, new int[] { 0 }, moves, false, false, true);
+        }
+
+        public static Automaton<BDD> MkSuccN(int i1, int i2, int n, IBDDAlgebra bddAlg)
+        {
+            var alg = bddAlg;
+            var ind10 = bddAlg.MkBitFalse(i1);
+            var ind11 = bddAlg.MkBitTrue(i1);
+            var ind20 = bddAlg.MkBitFalse(i2);
+            var ind21 = bddAlg.MkBitTrue(i2);
+            var both0 = bddAlg.MkAnd(ind10, ind20);
+            var ind11ind20 = bddAlg.MkAnd(ind11, ind20);
+            var ind10ind21 = bddAlg.MkAnd(ind10, ind21);
+
+            //Create moves
+            var moves = new List<Move<BDD>>();
+            moves.Add(new Move<BDD>(0, 0, both0));
+            moves.Add(new Move<BDD>(0, 1, ind11ind20));
+            moves.Add(new Move<BDD>(n, n + 1, ind10ind21));
+            moves.Add(new Move<BDD>(n + 1, n + 1, both0));
+
+            for (int i = 1; i < n; i++)
+                moves.Add(new Move<BDD>(i, i + 1, both0));
+
+            var aut = Automaton<BDD>.Create(0, new int[] { n + 1 }, moves, false, false, true);
+            return aut;
+        }
+
+        public static Automaton<IMonadicPredicate<BDD, T>> MkSuccN<T>(int i1, int i2, int n, ICartesianAlgebraBDD<T> ca)
+        {
+
+            var bddAlg = ca.BDDAlgebra;
+            var ind10 = bddAlg.MkBitFalse(i1);
+            var ind11 = bddAlg.MkBitTrue(i1);
+            var ind20 = bddAlg.MkBitFalse(i2);
+            var ind21 = bddAlg.MkBitTrue(i2);
+            var both0 = bddAlg.MkAnd(ind10, ind20);
+            var ind11ind20 = bddAlg.MkAnd(ind11, ind20);
+            var ind10ind21 = bddAlg.MkAnd(ind10, ind21);
+
+            var both0t = ca.MkCartesianProduct(both0, ca.Second.True);
+            var ind11ind20t = ca.MkCartesianProduct(ind11ind20, ca.Second.True);
+            var ind10ind21t = ca.MkCartesianProduct(ind10ind21, ca.Second.True);
+
+            //Create moves
+            var moves = new List<Move<IMonadicPredicate<BDD, T>>>();
+            moves.Add(new Move<IMonadicPredicate<BDD, T>>(0, 0, both0t));
+            moves.Add(new Move<IMonadicPredicate<BDD, T>>(0, 1, ind11ind20t));
+            moves.Add(new Move<IMonadicPredicate<BDD, T>>(n, n + 1, ind10ind21t));
+            moves.Add(new Move<IMonadicPredicate<BDD, T>>(n + 1, n + 1, both0t));
+
+            for (int i = 1; i < n; i++)
+                moves.Add(new Move<IMonadicPredicate<BDD, T>>(i, i + 1, both0t));
+
+            var aut = Automaton<IMonadicPredicate<BDD, T>>.Create(0, new int[] { n + 1 }, moves, false, false, true);
+            return aut;
+        }
+
+        public static Automaton<T> Restrict<T>(Automaton<IMonadicPredicate<BDD, T>> autom)
+        {
+            List<Move<T>> moves = new List<Move<T>>();
+            foreach (var move in autom.GetMoves())
+                moves.Add(new Move<T>(move.SourceState, move.TargetState, move.Label.ProjectSecond()));
+            var res = Automaton<T>.Create(autom.InitialState, autom.GetFinalStates(), moves);
+            return res;
         }
     }
 }

@@ -172,7 +172,7 @@ namespace Microsoft.Automata.Internal
             get { return new HashSet<Pair<char, char>>();  }
         }
 
-        public HashSet<Pair<char, char>> MkRangeConstraint(bool caseInsensitive, char lower, char upper)
+        public HashSet<Pair<char, char>> MkRangeConstraint(char lower, char upper, bool caseInsensitive = false)
         {
             var res = new HashSet<Pair<char, char>>();
 
@@ -191,7 +191,7 @@ namespace Microsoft.Automata.Internal
             return res;
         }
 
-        public HashSet<Pair<char, char>> MkCharConstraint(bool caseInsensitive, char c)
+        public HashSet<Pair<char, char>> MkCharConstraint( char c, bool caseInsensitive = false)
         {
             var res = new HashSet<Pair<char, char>>();
             if (caseInsensitive)
@@ -457,6 +457,12 @@ namespace Microsoft.Automata.Internal
         public bool EvaluateAtom(HashSet<Pair<char, char>> atom, HashSet<Pair<char, char>> psi)
         {
             throw new NotImplementedException();
+        }
+
+
+        public HashSet<Pair<char, char>> MkDiff(HashSet<Pair<char, char>> predicate1, HashSet<Pair<char, char>> predicate2)
+        {
+            return MkAnd(predicate1, MkNot(predicate2));
         }
     }
 }

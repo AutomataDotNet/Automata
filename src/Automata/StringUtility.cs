@@ -70,13 +70,15 @@ namespace Microsoft.Automata
                 //case '\\' :
                 //    return @"\\";
                 default:
-                    if (code < 32 && code > 15)
-                    {
-                        return string.Format("\\x{0:X}", code);
-                    }
-                    else if (code <= 15)
+                    if (code <= 15)
                     {
                         return string.Format("\\x0{0:X}", code);
+                    }
+                    else if (!(((int)'a') <= code && code <= ((int)'z'))
+                         && !(((int)'A') <= code && code <= ((int)'Z'))
+                         && !(((int)'0') <= code && code <= ((int)'9')))
+                    {
+                        return string.Format("\\x{0:X}", code);
                     }
                     else
                         return c.ToString();

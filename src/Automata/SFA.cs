@@ -702,7 +702,7 @@ namespace Microsoft.Automata
                 {
                     if (IsGround(move.Label))  //must be satisfiable so same as true
                     {
-                        set = solver.CharSetProvider.MkRangeConstraint(false, (char)0, (char)(k - 1));
+                        set = solver.CharSetProvider.MkRangeConstraint((char)0, (char)(k - 1));
                         mem[move.Label] = set;
                         AddMove(move.SourceState, move.TargetState, set);
                         //concrete_moves.Add(Move<BvSet>.M(move.SourceState, move.TargetState, set));

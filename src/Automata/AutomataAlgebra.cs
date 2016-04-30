@@ -128,6 +128,12 @@ namespace Microsoft.Automata
         {
             throw new NotImplementedException();
         }
+
+
+        public Automaton<S> MkDiff(Automaton<S> predicate1, Automaton<S> predicate2)
+        {
+            return MkAnd(predicate1, MkNot(predicate2));
+        }
     }
 
     public class RegexAlgebra : AutomataAlgebra<BDD>

@@ -66,6 +66,12 @@ namespace Microsoft.Automata.Internal
         }
 
         #endregion
+
+
+        public string[] UnicodeCategoryStandardAbbreviations
+        {
+            get { return UnicodeCategoryTheory<BDD>.unicodeCategoryStandardAbbreviations; }
+        }
     }
 
     internal class UnicodeCategoryToRangesProvider : IUnicodeCategoryTheory<HashSet<Pair<char, char>>>
@@ -158,6 +164,11 @@ namespace Microsoft.Automata.Internal
         }
 
         #endregion
+
+        public string[] UnicodeCategoryStandardAbbreviations
+        {
+            get { return UnicodeCategoryTheory<BDD>.unicodeCategoryStandardAbbreviations; }
+        }
     }
 
     internal class UnicodeCategoryToHashSetProvider : IUnicodeCategoryTheory<HashSet<char>>
@@ -237,5 +248,10 @@ namespace Microsoft.Automata.Internal
         }
 
         #endregion
+
+        public string[] UnicodeCategoryStandardAbbreviations
+        {
+            get { return UnicodeCategoryTheory<BDD>.unicodeCategoryStandardAbbreviations; }
+        }
     }
 }

@@ -68,8 +68,8 @@ namespace Microsoft.Automata.Tests
         {
             var solver = new CharSetSolver(BitWidth.BV7);
 
-            var a = solver.MkCharConstraint(false, 'a');
-            var b = solver.MkCharConstraint(false, 'b');
+            var a = solver.MkCharConstraint('a');
+            var b = solver.MkCharConstraint('b');
 
             var moves = new List<Move<BDD>>();
             moves.Add(new Move<BDD>(0, 1, a));
@@ -145,7 +145,7 @@ namespace Microsoft.Automata.Tests
         {
             var solver = new CharSetSolver(BitWidth.BV7);
             string regexA = "^(((((00|11)|10((00|11))*01)|(01|10((00|11))*10)(((00|11)|01((00|11))*10))*(10|01((00|11))*01)))*)$";
-            BDD _1 = solver.MkCharConstraint(false, '1');
+            BDD _1 = solver.MkCharConstraint( '1');
             var A = solver.Convert(regexA).RelpaceAllGuards<BDD>(x => (x == null ? null : _1));
             var B = A.Determinize(solver).MinimizeHopcroft(solver);
             var lengthregex = solver.ConvertToRegex(B);
@@ -156,11 +156,11 @@ namespace Microsoft.Automata.Tests
         public void MkRegexFromAutomatonOf_3_Divisibility()
         {
             var solver = new CharSetSolver(BitWidth.BV7);
-            var _0 = solver.MkCharConstraint(false, 'a');
-            var _3 = solver.MkCharConstraint(false, 'd');
+            var _0 = solver.MkCharConstraint( 'a');
+            var _3 = solver.MkCharConstraint( 'd');
             var _03 = solver.MkOr(_0, _3);
-            var _1 = solver.MkCharConstraint(false, 'b');
-            var _2 = solver.MkCharConstraint(false, 'c');
+            var _1 = solver.MkCharConstraint( 'b');
+            var _2 = solver.MkCharConstraint( 'c');
             var moves = new Move<BDD>[]{
                 Move<BDD>.Create(0, 0, _03),
                 Move<BDD>.Create(0, 1, _2),
@@ -689,6 +689,21 @@ namespace Microsoft.Automata.Tests
                 bool eq = rex.AreEquivalent(sfa, msfa);
                 Assert.IsTrue(eq);
             }
+        }
+
+        [TestMethod]
+        public void TestHardRegex1()
+        {
+            //string regex = @".*MRU.*|.*FilledAppTile.*|.*System.*Tiles.*|.*SnappedAppTile.*|.*Installed.*|.*Installing.*|.*ReadyToInstall.*";
+            string regex = @".*viewingoption.*|.*gameclips.*|.*seasons.*|.*rottentomatocriticreview.*|.*rottentomatorating.*|.*showtimes.*|.*purchaseoptions.*|.*broadcasts.*|.*buttons.*|.*episodes.*";
+            //string regex = @"MRU|FilledAppTile|System.*Tiles|SnappedAppTile|Installed|Installing|ReadyToInstall";
+            CharSetSolver solver = new CharSetSolver();
+            var aut = solver.Convert(regex, RegexOptions.Singleline);
+            var autEpsFree = aut.RemoveEpsilons(solver.MkOr);
+            autEpsFree.ShowGraph("autEpsFree");
+            var autDet = autEpsFree.Determinize(solver);
+            var autMin = autDet.Minimize(solver);
+            autMin.ShowGraph("autMin");
         }
 
         #region misc helper functions

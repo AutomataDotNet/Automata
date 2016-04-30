@@ -5,280 +5,23 @@ using System.Text;
 
 namespace Microsoft.Automata
 {
-    /*
-
-    public class ProductAlgebra<T1, T2> : ICartesianAlgebra<T1, T2>
+    public interface IMonadicPredicate<T1, T2>
     {
-        IBooleanAlgebra<T1> first;
-        IBooleanAlgebra<T2> second;
-        ITable<T1, T2> bot;
-        ITable<T1, T2> top;
-        MintermGenerator<ITable<T1, T2>> mtg;
-
-        public IBooleanAlgebra<T1> First
-        {
-            get { return first; }
-        }
-
-        public IBooleanAlgebra<T2> Second
-        {
-            get { return second; }
-        }
-
-        public ProductAlgebra(IBooleanAlgebra<T1> first, IBooleanAlgebra<T2> second)
-        {
-            this.first = first;
-            this.second = second;
-            this.mtg = new MintermGenerator<ITable<T1, T2>>(this);
-            this.bot = new Table<T1, T2>(this);
-            this.top = new Table<T1, T2>(this, new Pair<T1, T2>(first.True, second.True));
-        }
-
-        public ITable<T1, T2> True
-        {
-            get { return top; }
-        }
-
-        public ITable<T1, T2> False
-        {
-            get { return bot; }
-        }
-
-        public IEnumerable<Pair<bool[], ITable<T1, T2>>> GenerateMinterms(params ITable<T1, T2>[] predicates)
-        {
-            return mtg.GenerateMinterms(predicates);
-        }
-
-        public ITable<T1, T2> MkOr(IEnumerable<ITable<T1, T2>> tables)
-        {
-            var rows = new HashSet<Tuple<T1,T2>>();
-            foreach (var table in tables)
-                rows.UnionWith(table.GetProducts());
-
-            var newRows = new HashSet<Tuple<T1,T2>>();
-            bool fstTrue = false;
-            bool sndTrue = false;
-            var newRowFirstTrue = new Pair<T1, T2>(first.True, second.False);
-            var newRowSecondTrue = new Pair<T1, T2>(first.False,second.True);
-            foreach(var row in rows)
-                if (row.Item1.Equals(first.True))
-                {
-                    newRowFirstTrue = new Pair<T1, T2>(first.True, second.MkOr(row.Item2, newRowFirstTrue.Second));
-                    fstTrue = true;
-                }
-                else
-                {
-                    if (row.Item2.Equals(second.True))
-                    {
-                        newRowSecondTrue = new Pair<T1, T2>(first.MkOr(row.Item1, newRowSecondTrue.First), second.True);
-                        sndTrue = true;
-                    }
-                    else
-                        newRows.Add(row);
-                }
-            if (fstTrue)
-                newRows.Add(newRowFirstTrue);
-            if (sndTrue)
-                newRows.Add(newRowSecondTrue);
-
-            return MkTable_(newRows);
-        }
-
-        public ITable<T1, T2> MkAnd(IEnumerable<ITable<T1, T2>> tables)
-        {
-            var res = True;
-            foreach (var table in tables)
-                res = MkAnd(res, table);
-            return res;
-        }
-
-        public ITable<T1, T2> MkAnd(params ITable<T1, T2>[] tables)
-        {
-            var res = True;
-            foreach (var table in tables)
-                res = MkAnd(res, table);
-            return res;
-        }
-
-        public ITable<T1, T2> MkNot(ITable<T1, T2> table)
-        {
-            var res = True;
-            foreach (var row in table.GetProducts())
-            {
-                HashSet<Pair<T1, T2>> rows = new HashSet<Pair<T1, T2>>();
-                var phi = first.MkNot(row.Item1);
-                if (!phi.Equals(first.False))
-                    rows.Add(new Pair<T1, T2>(phi, second.True));
-                var psi = second.MkNot(row.Item2);
-                if (!psi.Equals(second.False))
-                    rows.Add(new Pair<T1, T2>(first.True, psi));
-                var row_c = MkTable(rows);
-                res = MkAnd(res, row_c);
-                if (((Table<T1, T2>)res).IsEmpty)
-                    return False;
-            }
-            return ((Table<T1,T2>)res).Simplify();
-        }
-
-        /// <summary>
-        /// Complement the pair predicate by complementing its components.
-        /// </summary>
-        public ITable<T1, T2> Simplify(ITable<T1, T2> predicate)
-        {
-            return ((Table<T1,T2>)predicate).Simplify();
-        }
-
-        public bool AreEquivalent(ITable<T1, T2> table1, ITable<T1, T2> table2)
-        {
-            var table1_and_not_table2 = MkAnd(table1, MkNot(table2));
-            if (IsSatisfiable(table1_and_not_table2))
-                return false;
-            var table2_and_not_table1 = MkAnd(table2, MkNot(table1));
-            if (IsSatisfiable(table2_and_not_table1))
-                return false;
-
-            return true;
-        }
-
-        public ITable<T1, T2> MkOr(ITable<T1, T2> table1, ITable<T1, T2> table2)
-        {
-            var elems = new HashSet<Tuple<T1, T2>>(table1.GetProducts());
-            elems.UnionWith(table2.GetProducts());
-            var table = MkTable_(elems);
-            return table;
-        }
-
-        public ITable<T1, T2> MkAnd(ITable<T1, T2> table1, ITable<T1, T2> table2)
-        {
-            var rowSet = new HashSet<Tuple<T1, T2>>();
-            foreach (var row1 in table1.GetProducts())
-                foreach (var row2 in table2.GetProducts())
-                {
-                    var phi = first.MkAnd(row1.Item1, row2.Item1);
-                    if (!phi.Equals(first.False)) //else unsat is trivial
-                    {
-                        var psi = second.MkAnd(row1.Item2, row2.Item2);
-                        if (phi.Equals(first.True) && psi.Equals(second.True))
-                            return True; //collapses to true
-                        if (!phi.Equals(second.False)) //else unsat is trivial
-                            rowSet.Add(new Pair<T1, T2>(phi, psi));
-                    }
-                }
-            return ((Table<T1,T2>)MkTable_(rowSet)).Simplify();
-        }
-
-        public bool IsSatisfiable(ITable<T1, T2> predicate)
-        {
-            var e = predicate.GetProducts().GetEnumerator();
-            while (e.MoveNext())
-                if (first.IsSatisfiable(e.Current.Item1) && second.IsSatisfiable(e.Current.Item2))
-                    return true;
-            return false;
-        }
-
-        public ITable<T1, T2> MkTable(T1 first, T2 second)
-        {
-            var rowSet = new HashSet<Tuple<T1, T2>>(new Tuple<T1, T2>[] { new Tuple<T1, T2>(first, second) });
-            return MkTable_(rowSet);
-        }
-
-        public ITable<T1, T2> MkTable(IEnumerable<Tuple<T1, T2>> rows)
-        {
-            var rowSet = new HashSet<Tuple<T1, T2>>(rows);
-            return MkTable_(rowSet);
-        }
-
-        ITable<T1, T2> MkTable_(HashSet<Tuple<T1, T2>> rows)
-        {
-            if (rows.Count == 0)
-                return False;
-            else
-                return new Table<T1, T2>(this, rows);
-        }
-    }
-
-    internal class Table<T1, T2> : ITable<T1, T2>
-    {
-        List<Tuple<T1, T2>> rows;
-        ProductAlgebra<T1, T2> alg;
-        internal Table(ProductAlgebra<T1, T2> alg, IEnumerable<Tuple<T1, T2>> rows)
-        {
-            this.rows = new List<Tuple<T1, T2>>(rows);
-            this.alg = alg;
-        }
-        internal Table(ProductAlgebra<T1, T2> alg, params Tuple<T1, T2>[] rows)
-        {
-            this.rows = new List<Tuple<T1, T2>>(rows);
-            this.alg = alg;
-        }
-        internal bool IsEmpty
-        {
-            get { return rows.Count == 0; }
-        }
-
-        public IEnumerable<Tuple<T1, T2>> GetProducts()
-        {
-            return rows;
-        }
-
-        internal ITable<T1, T2> Simplify()
-        {
-            var newRows = new List<Pair<T1, T2>>();
-            foreach (var r in rows)
-                newRows.Add(new Pair<T1, T2>(alg.First.Simplify(r.Item1), alg.Second.Simplify(r.Item2)));
-            return new Table<T1,T2>(alg,newRows);
-        }
-
-
-        public override string ToString()
-        {
-            if (rows.Count > 0)
-            {
-                var row = rows[0];
-                var res = "";
-                IPrettyPrinter<T2> printer2 = this.alg.Second as IPrettyPrinter<T2>;
-                IPrettyPrinter<T1> printer1 = this.alg.First as IPrettyPrinter<T1>;
-                if (printer1 != null)
-                    res += "First=" + printer1.PrettyPrint(row.Item1);
-                if (printer2 != null)
-                    res += ", Second=" + printer2.PrettyPrint(row.Item2);
-                return res;
-            }
-            else 
-                return "False";
-        }
-
-        public ITable<T1, T2> TransformFirst(Func<T1, T1> f)
-        {
-             List<Pair<T1, T2>> rows = new List<Pair<T1, T2>>();
-             foreach (var row in GetProducts())
-                 rows.Add(new Pair<T1, T2>(f(row.Item1), row.Item2));
-             return alg.MkTable(rows);
-        }
-    }
-
-    */
-
-    public interface ISumOfProducts<T1, T2>
-    {
-        IEnumerable<Tuple<T1, T2>> EnumerateProducts();
-        ISumOfProducts<T1, T2> TransformFirst(Func<T1, T1> f);
-        //T1 ProjectFirst();
+        IEnumerable<Tuple<T1, T2>> GetSumOfProducts();
         T2 ProjectSecond();
         ICartesianAlgebra<T1, T2> Algebra { get; }
     }
 
-    public interface ICartesianAlgebra<T1, T2> : IBoolAlgMinterm<ISumOfProducts<T1, T2>>
+    public interface ICartesianAlgebra<T1, T2> : IBoolAlgMinterm<IMonadicPredicate<T1, T2>>
     {
-        //ISumOfProducts<T1, T2> MkSumOfProducts(IEnumerable<Tuple<T1, T2>> products);
-        ISumOfProducts<T1, T2> MkProduct(T1 first, T2 second);
-        //IBooleanAlgebra<T1> First { get; } 
+        IMonadicPredicate<T1, T2> MkCartesianProduct(T1 first, T2 second);
         IBooleanAlgebra<T2> Second { get; }   
     }
 
     public interface ICartesianAlgebraBDD<T> : ICartesianAlgebra<BDD, T>
     {
         IBDDAlgebra BDDAlgebra { get; }
+        IMonadicPredicate<BDD, T> Omit(int bit, IMonadicPredicate<BDD, T> pred);
     }
 
     /// <summary>
@@ -319,7 +62,7 @@ namespace Microsoft.Automata
         Dictionary<T, BDG<T, S>> MkLeafCache1 = new Dictionary<T, BDG<T, S>>();
         Dictionary<T, BDG<T, S>> MkLeafCache2 = new Dictionary<T, BDG<T, S>>();
 
-        MintermGenerator<ISumOfProducts<T, S>> mintermGenerator;
+        MintermGenerator<IMonadicPredicate<T, S>> mintermGenerator;
 
         //internal Dictionary<Tuple<Func<T, T>, BDG<T, S>>, BDG<T, S>> TransformLeavesCache =
         //    new Dictionary<Tuple<Func<T, T>, BDG<T, S>>, BDG<T, S>>();
@@ -339,7 +82,7 @@ namespace Microsoft.Automata
             MkLeafCache2[leafAlg.False] = _False;
             MkNotCache[_True] = _False;
             MkNotCache[_False] = _True;
-            this.mintermGenerator = new MintermGenerator<ISumOfProducts<T, S>>(this);
+            this.mintermGenerator = new MintermGenerator<IMonadicPredicate<T, S>>(this);
         }
 
         /// <summary>
@@ -395,22 +138,22 @@ namespace Microsoft.Automata
 
         #region IBoolAlgMinterm members
 
-        public IEnumerable<Pair<bool[], ISumOfProducts<T, S>>> GenerateMinterms(params ISumOfProducts<T, S>[] constraints)
+        public IEnumerable<Pair<bool[], IMonadicPredicate<T, S>>> GenerateMinterms(params IMonadicPredicate<T, S>[] constraints)
         {
             return mintermGenerator.GenerateMinterms(constraints);
         }
 
-        public ISumOfProducts<T, S> True
+        public IMonadicPredicate<T, S> True
         {
             get { return _True; }
         }
 
-        public ISumOfProducts<T, S> False
+        public IMonadicPredicate<T, S> False
         {
             get { return _False; }
         }
 
-        public ISumOfProducts<T, S> MkOr(IEnumerable<ISumOfProducts<T, S>> predicates)
+        public IMonadicPredicate<T, S> MkOr(IEnumerable<IMonadicPredicate<T, S>> predicates)
         {
             var res = True;
             foreach (var pred in predicates)
@@ -419,7 +162,7 @@ namespace Microsoft.Automata
             return MkNot(res);
         }
 
-        public ISumOfProducts<T, S> MkAnd(IEnumerable<ISumOfProducts<T, S>> predicates)
+        public IMonadicPredicate<T, S> MkAnd(IEnumerable<IMonadicPredicate<T, S>> predicates)
         {
             var res = True;
             foreach (var pred in predicates)
@@ -427,7 +170,7 @@ namespace Microsoft.Automata
             return res;
         }
 
-        public ISumOfProducts<T, S> MkAnd(params ISumOfProducts<T, S>[] predicates)
+        public IMonadicPredicate<T, S> MkAnd(params IMonadicPredicate<T, S>[] predicates)
         {
             var res = True;
             foreach (var pred in predicates)
@@ -435,12 +178,12 @@ namespace Microsoft.Automata
             return res;
         }
 
-        public ISumOfProducts<T, S> MkNot(ISumOfProducts<T, S> predicate)
+        public IMonadicPredicate<T, S> MkNot(IMonadicPredicate<T, S> predicate)
         {
             return ((BDG<T, S>)predicate).MkNot();
         }
 
-        public bool AreEquivalent(ISumOfProducts<T, S> predicate1, ISumOfProducts<T, S> predicate2)
+        public bool AreEquivalent(IMonadicPredicate<T, S> predicate1, IMonadicPredicate<T, S> predicate2)
         {
             //check if predicate1 does not imply predicate2
             if (IsSatisfiable(MkAnd(predicate1, MkNot(predicate2))))
@@ -453,12 +196,12 @@ namespace Microsoft.Automata
             return true;
         }
 
-        public ISumOfProducts<T, S> Simplify(ISumOfProducts<T, S> predicate)
+        public IMonadicPredicate<T, S> Simplify(IMonadicPredicate<T, S> predicate)
         {
             return predicate; //TBD, not clear what this means here
         }
 
-        public ISumOfProducts<T, S> MkAnd(ISumOfProducts<T, S> predicate1, ISumOfProducts<T, S> predicate2)
+        public IMonadicPredicate<T, S> MkAnd(IMonadicPredicate<T, S> predicate1, IMonadicPredicate<T, S> predicate2)
         {
             //using Depth as a heuristic
             BDG<T, S> p1 = (BDG<T, S>)predicate1;
@@ -469,13 +212,13 @@ namespace Microsoft.Automata
                 return p1.MkAnd(p2);
         }
 
-        public ISumOfProducts<T, S> MkOr(ISumOfProducts<T, S> predicate1, ISumOfProducts<T, S> predicate2)
+        public IMonadicPredicate<T, S> MkOr(IMonadicPredicate<T, S> predicate1, IMonadicPredicate<T, S> predicate2)
         {
             //using DeMorgan
             return MkNot(MkAnd(MkNot(predicate1), MkNot(predicate2)));
         }
 
-        public bool IsSatisfiable(ISumOfProducts<T, S> predicate)
+        public bool IsSatisfiable(IMonadicPredicate<T, S> predicate)
         {
             return predicate != False; //assuming no unsatisfiable leafs are ever created
         }
@@ -483,7 +226,7 @@ namespace Microsoft.Automata
         #endregion
 
         #region ICartesianAlgebra members
-        public ISumOfProducts<T, S> MkSumOfProducts(IEnumerable<Tuple<T, S>> products)
+        public IMonadicPredicate<T, S> MkSumOfProducts(IEnumerable<Tuple<T, S>> products)
         {
             var conj = _True;
             foreach (var row in products)
@@ -493,7 +236,7 @@ namespace Microsoft.Automata
         }
 
 
-        public ISumOfProducts<T, S> MkProduct(T first, S second)
+        public IMonadicPredicate<T, S> MkCartesianProduct(T first, S second)
         {
             return  MkNode(first, second);
         }
@@ -519,12 +262,12 @@ namespace Microsoft.Automata
         }
 
 
-        public ISumOfProducts<T, S> MkSymmetricDifference(ISumOfProducts<T, S> p1, ISumOfProducts<T, S> p2)
+        public IMonadicPredicate<T, S> MkSymmetricDifference(IMonadicPredicate<T, S> p1, IMonadicPredicate<T, S> p2)
         {
             return MkOr(MkAnd(p1,MkNot(p2)),MkAnd(p2,MkNot(p1)));
         }
 
-        public bool CheckImplication(ISumOfProducts<T, S> lhs, ISumOfProducts<T, S> rhs)
+        public bool CheckImplication(IMonadicPredicate<T, S> lhs, IMonadicPredicate<T, S> rhs)
         {
             return !IsSatisfiable(MkAnd(lhs,MkNot(rhs)));
         }
@@ -534,13 +277,13 @@ namespace Microsoft.Automata
             get { return nodeAlgebra.IsAtomic && leafAlgebra.IsAtomic; }
         }
 
-        public ISumOfProducts<T, S> GetAtom(ISumOfProducts<T, S> psi)
+        public IMonadicPredicate<T, S> GetAtom(IMonadicPredicate<T, S> psi)
         {
             if (!IsAtomic)
                 throw new AutomataException(AutomataExceptionKind.BooleanAlgebraIsNotAtomic);
 
 
-            foreach (var tuple in psi.EnumerateProducts())
+            foreach (var tuple in psi.GetSumOfProducts())
             {
                 var a2 = nodeAlgebra.GetAtom(tuple.Item2);
                 var a1 = leafAlgebra.GetAtom(tuple.Item1);
@@ -552,11 +295,17 @@ namespace Microsoft.Automata
         }
 
 
-        public bool EvaluateAtom(ISumOfProducts<T, S> atom, ISumOfProducts<T, S> psi)
+        public bool EvaluateAtom(IMonadicPredicate<T, S> atom, IMonadicPredicate<T, S> psi)
         {
             throw new NotImplementedException();
         }
 
+
+
+        public IMonadicPredicate<T, S> MkDiff(IMonadicPredicate<T, S> predicate1, IMonadicPredicate<T, S> predicate2)
+        {
+            return MkAnd(predicate1, MkNot(predicate2));
+        }
     }
 
     public class CartesianAlgebraBDD<T> : CartesianAlgebra<BDD, T>, ICartesianAlgebraBDD<T>
@@ -575,13 +324,19 @@ namespace Microsoft.Automata
         {
             get { return (BDDAlgebra)leafAlgebra; }
         }
+
+
+        public IMonadicPredicate<BDD, T> Omit(int bit, IMonadicPredicate<BDD, T> pred)
+        {
+            return ((BDG<BDD, T>)pred).TransformLeaves(bdd => BDDAlgebra.OmitBit(bdd, bit));
+        }
     }
 
     /// <summary>
     /// Binary Decision Graph. 
     /// Used as a predidate in CartesianAlgebra.
     /// </summary>
-    public class BDG<T, S> : ISumOfProducts<T, S>
+    public class BDG<T, S> : IMonadicPredicate<T, S>
     {
         /// <summary>
         /// Underlying Cartesian algebra
@@ -786,7 +541,7 @@ namespace Microsoft.Automata
                 {
                     #region restrict the children
                     var path_and_not_nodePred = algebra.nodeAlgebra.MkAnd(path, algebra.nodeAlgebra.MkNot(BranchCondition));
-                    if (algebra.nodeAlgebra.IsSatisfiable(path_and_not_nodePred))
+                    if (algebra.nodeAlgebra.IsSatisfiable(path_and_not_nodePred)) 
                     {
                         var f = this.FalseCase.Restrict(path_and_not_nodePred, psi);
                         var path_and_nodePred = algebra.nodeAlgebra.MkAnd(path, BranchCondition);
@@ -814,7 +569,7 @@ namespace Microsoft.Automata
         /// Compute all pairs (s_1,t_1),...,(s_k,t_k) such that 
         /// the BDG represents ([[s_1]]x[[t_1]]) U ... U ([[s_k]]x[[t_k]])
         /// </summary>
-        public IEnumerable<Tuple<T, S>> EnumerateProducts()
+        public IEnumerable<Tuple<T, S>> GetSumOfProducts()
         {
             foreach (var kv in GetRowsDictionary())
                 if (!(this.algebra.First.False.Equals(kv.Key)))
@@ -908,16 +663,10 @@ namespace Microsoft.Automata
             }
         }
 
-
-        public ISumOfProducts<T, S> TransformFirst(Func<T, T> f)
-        {
-            return this.TransformLeaves(f);
-        }
-
         /// <summary>
         /// Apply the transformation f to all leaves.
         /// </summary>
-        public BDG<T, S> TransformLeaves(Func<T, T> func)
+        internal BDG<T, S> TransformLeaves(Func<T, T> func)
         {
             BDG<T, S> val = null;
             var key = new Tuple<Func<T,T>,BDG<T, S>>(func,this);
@@ -943,7 +692,7 @@ namespace Microsoft.Automata
         public T ProjectFirst()
         {
             T res = algebra.First.False;
-            foreach (var p in EnumerateProducts())
+            foreach (var p in GetSumOfProducts())
                 res = algebra.First.MkOr(res, p.Item1);
             return res;
         }
@@ -951,7 +700,7 @@ namespace Microsoft.Automata
         public S ProjectSecond()
         {
             S res = algebra.nodeAlgebra.False;
-            foreach (var p in EnumerateProducts())
+            foreach (var p in GetSumOfProducts())
                 if (!p.Item1.Equals(algebra.First.False))
                 {
                     if (res.Equals(algebra.leafAlgebra.False))

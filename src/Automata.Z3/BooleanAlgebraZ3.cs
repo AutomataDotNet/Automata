@@ -5,7 +5,7 @@ using Microsoft.Z3;
 
 namespace Microsoft.Automata.Z3
 {
-    public class BooleanAlgebraZ3 : IBoolAlgMinterm<BoolExpr>
+    public class Z3BoolAlg : IBoolAlgMinterm<BoolExpr>
     {
         Context context;
         Solver solver;
@@ -14,7 +14,7 @@ namespace Microsoft.Automata.Z3
         MintermGenerator<BoolExpr> mtg;
         BoolExpr _False;
         BoolExpr _True;
-        public BooleanAlgebraZ3(Context z3context, Sort elementSort)
+        public Z3BoolAlg(Context z3context, Sort elementSort)
         {
             this.context = z3context;
             this.context.UpdateParamValue("MODEL", "true");
@@ -57,28 +57,67 @@ namespace Microsoft.Automata.Z3
 
         public BoolExpr MkOr(IEnumerable<BoolExpr> predicates)
         {
-            var predicatesArr = new List<BoolExpr>(predicates).ToArray();
-            return context.MkOr(predicatesArr);
+            var res = False;
+            foreach (var pred in predicates)
+            {
+                if (pred.Equals(True))
+                    return True;
+                else
+                    res = MkOr(res, pred);
+            }
+            return res;
         }
 
         public BoolExpr MkAnd(IEnumerable<BoolExpr> predicates)
         {
-            var predicatesArr = new List<BoolExpr>(predicates).ToArray();
-            return context.MkAnd(predicatesArr);
+            var res = True;
+            foreach (var pred in predicates)
+            {
+                if (pred.Equals(False))
+                    return False;
+                else
+                {
+                    if (res.Equals(True))
+                        res = pred;
+                    else if (!pred.Equals(True) && !pred.Equals(res))
+                        res = context.MkAnd(res, pred);
+                }
+            }
+            return res;
         }
 
         public BoolExpr MkAnd(params BoolExpr[] predicates)
         {
-            return context.MkAnd(predicates);
+            var res = True;
+            for (int i = 0; i < predicates.Length; i++ )
+            {
+                var pred = predicates[i];
+                if (pred.Equals(False))
+                    return False;
+                else
+                {
+                    if (res.Equals(True))
+                        res = pred;
+                    else if (!pred.Equals(True) && !pred.Equals(res))
+                        res = context.MkAnd(res, pred);
+                }
+            }
+            return res;
         }
 
         public BoolExpr MkNot(BoolExpr predicate)
         {
             if (predicate.Equals(_False))
                 return _True;
-            if (predicate.Equals(_True))
+            else if (predicate.Equals(_True))
                 return _False;
-            return context.MkNot(predicate);
+            else
+            {
+                if (predicate.IsNot)
+                    return (BoolExpr)predicate.Args[0];
+                else
+                    return context.MkNot(predicate);
+            }
         }
 
         public bool AreEquivalent(BoolExpr predicate1, BoolExpr predicate2)
@@ -151,18 +190,42 @@ namespace Microsoft.Automata.Z3
             else
             {
                 solver.Pop();
-                return context.MkFalse();
+                return _False;
             }
         }
 
         public BoolExpr MkAnd(BoolExpr predicate1, BoolExpr predicate2)
         {
-            return context.MkAnd(predicate1, predicate2);
+            if (predicate1.Equals(True))
+                return predicate2;
+            else if (predicate2.Equals(True))
+                return predicate1;
+            else if (predicate1.Equals(False) || predicate1.Equals(False))
+                return False;
+            else if (predicate1.Equals(predicate2))
+                return predicate2;
+            else
+                return context.MkAnd(predicate1, predicate2);
         }
 
         public BoolExpr MkOr(BoolExpr predicate1, BoolExpr predicate2)
         {
-            return context.MkOr(predicate1, predicate2);
+            if (predicate1.Equals(False))
+                return predicate2;
+            else if (predicate2.Equals(False))
+                return predicate1;
+            else if (predicate1.Equals(True) || predicate1.Equals(True))
+                return True;
+            else if (predicate1.Equals(predicate2))
+                return predicate2;
+            else
+            {
+                if ((predicate1.IsNot && predicate1.Args[0].Equals(predicate2)) ||
+                    (predicate2.IsNot && predicate2.Args[0].Equals(predicate1)))
+                    return True;
+                else
+                    return context.MkOr(predicate1, predicate2);
+            }
         }
 
         public bool IsSatisfiable(BoolExpr psi)
@@ -201,6 +264,12 @@ namespace Microsoft.Automata.Z3
             }
             else
                 throw new AutomataException(AutomataExceptionKind.PredicateIsNotSingleton);
+        }
+
+
+        public BoolExpr MkDiff(BoolExpr predicate1, BoolExpr predicate2)
+        {
+            return MkAnd(predicate1, MkNot(predicate2));
         }
     }
 }

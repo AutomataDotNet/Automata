@@ -245,6 +245,17 @@ namespace Microsoft.Automata
         BooleanAlgebraIsNotAtomic,
         OrdinalIsTooLarge,
         PredicateIsNotSingleton,
-        UnknownBDDTerminal
+        UnexpectedMTBDDTerminal,
+        InvalidWS1Sformula,
+        InvalidWS1Sformula_UnknownVariable,
+        InvalidWS1Sformula_FormulaNotClosed,
+        AlgebraMustBeCharSetSolver,
+        CompactSerializationNotSupportedForMTBDDs,
+        MTBDDsNotSupportedForThisOperation,
+        BDDSerializationNodeLimitViolation,
+        BDDSerializationBitLimitViolation,
+        BDDDeserializationError,
+        InvalidName,
+        InvalidPath
     }
 }

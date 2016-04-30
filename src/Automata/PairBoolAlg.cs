@@ -214,5 +214,11 @@ namespace Microsoft.Automata
         {
             throw new NotImplementedException();
         }
+
+
+        public Pair<S, T> MkDiff(Pair<S, T> predicate1, Pair<S, T> predicate2)
+        {
+            return MkAnd(predicate1, MkNot(predicate2));
+        }
     }
 }

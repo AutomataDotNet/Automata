@@ -76,11 +76,11 @@ namespace Microsoft.Automata.Tests
             {
                 CharSetSolver solver = new CharSetSolver(BitWidth.BV16); 
 
-                BDD set1 = solver.MkRangeConstraint(true, 'a', 'z');
+                BDD set1 = solver.MkRangeConstraint('a', 'z', true);
                 string set1str = solver.PrettyPrint(set1);
-                BDD set2 = solver.MkRangeConstraint(false, 'a', 'z');
+                BDD set2 = solver.MkRangeConstraint('a', 'z');
                 string set2str = solver.PrettyPrint(set2);
-                BDD set3 = solver.MkRangeConstraint(false, 'A', 'Z');
+                BDD set3 = solver.MkRangeConstraint( 'A', 'Z');
                 string set3str = solver.PrettyPrint(set3);
 
                 BDD set1a = solver.MkOr(set2, set3);
@@ -123,11 +123,11 @@ namespace Microsoft.Automata.Tests
         {
             CharSetSolver solver = new CharSetSolver(BitWidth.BV16);
 
-            BDD set1 = solver.MkRangeConstraint(true, 'a', 'a');
+            BDD set1 = solver.MkRangeConstraint('a', 'a', true);
             string set1str = solver.PrettyPrint(set1);
-            BDD set2 = solver.MkRangeConstraint(false, 'a', 'a');
+            BDD set2 = solver.MkRangeConstraint('a', 'a');
             string set2str = solver.PrettyPrint(set2);
-            BDD set3 = solver.MkRangeConstraint(false, 'A', 'A');
+            BDD set3 = solver.MkRangeConstraint('A', 'A');
             string set3str = solver.PrettyPrint(set3);
 
             BDD set1a = solver.MkOr(set2, set3);
@@ -142,11 +142,11 @@ namespace Microsoft.Automata.Tests
         {
             CharSetSolver solver = new CharSetSolver(BitWidth.BV16);
 
-            BDD set1 = solver.MkRangeConstraint(true, '\0', '\x01');
-            BDD set2 = solver.MkRangeConstraint(false, '\u0FFF', '\u0FFF');
+            BDD set1 = solver.MkRangeConstraint('\0', '\x01', true);
+            BDD set2 = solver.MkRangeConstraint( '\u0FFF', '\u0FFF');
             string set2str = solver.PrettyPrint(set2);
-            BDD set3 = solver.MkRangeConstraint(false, '\u00FF', '\u00FF');
-            BDD set4 = solver.MkRangeConstraint(false, '\u000F', '\u000F');
+            BDD set3 = solver.MkRangeConstraint( '\u00FF', '\u00FF');
+            BDD set4 = solver.MkRangeConstraint( '\u000F', '\u000F');
 
             BDD set = solver.MkOr(new BDD[]{set2, set3, set4, set1});
 
@@ -192,9 +192,9 @@ namespace Microsoft.Automata.Tests
         {
             CharSetSolver bddb = new CharSetSolver(BitWidth.BV16);
 
-            BDD a = bddb.MkRangeConstraint(false, 'a', 'a');
-            BDD b = bddb.MkRangeConstraint(false, 'b', 'b');
-            BDD c = bddb.MkRangeConstraint(false, 'c', 'c');
+            BDD a = bddb.MkRangeConstraint( 'a', 'a');
+            BDD b = bddb.MkRangeConstraint( 'b', 'b');
+            BDD c = bddb.MkRangeConstraint( 'c', 'c');
 
             var combinations = new List<Pair<bool[], BDD>>(bddb.GenerateMinterms(new BDD[] { a, b, c }));
             Assert.AreEqual<int>(4, combinations.Count);
@@ -205,11 +205,11 @@ namespace Microsoft.Automata.Tests
         {
             CharSetSolver bddb = new CharSetSolver(BitWidth.BV16);
 
-            BDD a = bddb.MkRangeConstraint(false, 'b', 'c');
-            BDD b = bddb.MkRangeConstraint(false, 'b', 'b');
-            BDD b2 = bddb.MkRangeConstraint(false, 'b', 'b');
-            BDD c = bddb.MkRangeConstraint(false, 'c', 'c');
-            BDD b3 = bddb.MkRangeConstraint(false, 'b', 'b');
+            BDD a = bddb.MkRangeConstraint( 'b', 'c');
+            BDD b = bddb.MkRangeConstraint( 'b', 'b');
+            BDD b2 = bddb.MkRangeConstraint( 'b', 'b');
+            BDD c = bddb.MkRangeConstraint( 'c', 'c');
+            BDD b3 = bddb.MkRangeConstraint( 'b', 'b');
 
             var combinations = new List<Pair<bool[], BDD>>(bddb.GenerateMinterms(new BDD[] { a, b, b2, c, b3 }));
             Assert.AreEqual<int>(3, combinations.Count, "only three combinations are possible");
@@ -220,7 +220,7 @@ namespace Microsoft.Automata.Tests
         {
             CharSetSolver bddb = new CharSetSolver(BitWidth.BV16);
 
-            BDD A = bddb.MkRangeConstraint(false, '1', '4');
+            BDD A = bddb.MkRangeConstraint( '1', '4');
             BDD A1 = bddb.MkRangesConstraint(false, new char[][] { new char[] { '1', '3' }, new char[] { '3', '4' }});
             BDD B = bddb.MkRangesConstraint(false, new char[][] { new char[] { '2', '3' }, new char[] { '5', '6' }, new char[] { '8', '8' } });
             BDD C = bddb.MkRangesConstraint(false, new char[][] { new char[] { '3', '4' }, new char[] { '6', '7' }, new char[] { '9', '9' } });
@@ -235,17 +235,17 @@ namespace Microsoft.Automata.Tests
         {
             CharSetSolver solver = new CharSetSolver(BitWidth.BV7);
 
-            BDD a = solver.MkRangeConstraint(false, '\0', '\x7E');
-            BDD b = solver.MkRangeConstraint(false, '1', '1');
-            BDD c = solver.MkRangeConstraint(false, '1', '3');
+            BDD a = solver.MkRangeConstraint( '\0', '\x7E');
+            BDD b = solver.MkRangeConstraint( '1', '1');
+            BDD c = solver.MkRangeConstraint( '1', '3');
 
             var Z = new List<Pair<bool[], BDD>>(solver.GenerateMinterms(new BDD[] { a, b, c })).ToArray();
             var Y = Array.ConvertAll(Z, x => x.Second);
             var X = new HashSet<BDD>(Y);
             Assert.AreEqual<int>(4, X.Count);
             
-            Assert.IsTrue(X.Contains(solver.MkRangeConstraint(false, '1', '1')));
-            Assert.IsTrue(X.Contains(solver.MkRangeConstraint(false, '2', '3')));
+            Assert.IsTrue(X.Contains(solver.MkRangeConstraint( '1', '1')));
+            Assert.IsTrue(X.Contains(solver.MkRangeConstraint( '2', '3')));
             Assert.IsTrue(X.Contains(solver.MkRangesConstraint(false, new char[][] {new char[] { '\x7F', '\x7F' } })));
             Assert.IsTrue(X.Contains(solver.MkRangesConstraint(false, new char[][] { new char[] { '4', '\x7E' }, new char[] { '\0', '0' } })));
         }

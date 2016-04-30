@@ -393,7 +393,7 @@ namespace Microsoft.Automata
         /// <param name="finalStates">final states</param>
         /// <param name="moves">moves</param>
         /// <returns></returns>
-        public static Automaton<T> Create(int initialState, IEnumerable<int> finalStates, IEnumerable<Move<T>> moves, bool eliminateUnrreachableStates = false, bool eliminateDeadStates = false)
+        public static Automaton<T> Create(int initialState, IEnumerable<int> finalStates, IEnumerable<Move<T>> moves, bool eliminateUnrreachableStates = false, bool eliminateDeadStates = false, bool deterministic = false)
         {
             var delta = new Dictionary<int, List<Move<T>>>();
             var deltaInv = new Dictionary<int, List<Move<T>>>();
@@ -419,6 +419,7 @@ namespace Microsoft.Automata
                 isDeterministic = (isDeterministic && delta[move.SourceState].Count < 2);
                 maxState = Math.Max(maxState, Math.Max(move.SourceState, move.TargetState));
             }
+            isDeterministic = (isDeterministic || deterministic);
             HashSet<int> finalStateSet = new HashSet<int>(finalStates);
             finalStateSet.RemoveWhere(x => !delta.ContainsKey(x)); //remove irrelevant states          
 
@@ -884,6 +885,19 @@ namespace Microsoft.Automata
         public static Automaton<T> MkProduct(Automaton<T> a, Automaton<T> b, IBooleanAlgebraPositive<T> solver)
         {
             return MkProduct(a, b, solver, 0);
+        }
+
+        private static Automaton<T> MkProductOfDeterministic(IEnumerable<Automaton<T>> automata, IBooleanAlgebra<T> solver)
+        {
+            Automaton<T> res = Automaton<T>.MkUnit(solver);
+            foreach (var automaton in automata)
+                res = MkProduct(res, automaton, solver).Minimize(solver);
+            return res;
+        }
+
+        public static Automaton<T> MkUnit(IBooleanAlgebraPositive<T> solver)
+        {
+            return Create(0, new int[] { 0 }, new Move<T>[] { Move<T>.Create(0, 0, solver.True) }); 
         }
 
         public static Automaton<T> MkProduct(Automaton<T> a, Automaton<T> b, IBooleanAlgebraPositive<T> solver, int timeout)
@@ -1922,7 +1936,10 @@ namespace Microsoft.Automata
             var newMoves = new List<Move<T>>();
             foreach (int state in aut.States)
             {
-                var cond = solver.MkNot(solver.MkOr(aut.EnumerateConditions(state)));
+                var conds = new List<T>(aut.EnumerateConditions(state));
+                var or_conds = solver.MkOr(conds);
+                var str_or_conds = or_conds.ToString();
+                var cond = solver.MkNot(or_conds);
                 if (solver.IsSatisfiable(cond))
                     newMoves.Add(Move<T>.Create(state, deadState, cond));
             }
@@ -1931,19 +1948,17 @@ namespace Microsoft.Automata
 
             newMoves.Add(Move<T>.Create(deadState, deadState, solver.True));
             newMoves.AddRange(GetMoves());
-            var tot = Automaton<T>.Create(aut.initialState, aut.finalStateSet, newMoves);
-            if (aut.isDeterministic)
-                tot.isDeterministic = true;
+            var tot = Automaton<T>.Create(aut.initialState, aut.finalStateSet, newMoves, false, false, aut.isDeterministic);
             return tot;
         }
 
         /// <summary>
         /// Make a complement of the automaton.
-        /// Assumes that the automaton is deterministic, otherwise throws AutomataException.
+        /// The automaton must be deterministic, otherwise throws AutomataException.
         /// </summary>
         /// <param name="solver">solver for character constraints</param>
         /// <returns>Complement of this automaton</returns>
-        internal Automaton<T> MkComplement(IBooleanAlgebra<T> solver)
+        public Automaton<T> MkComplement(IBooleanAlgebra<T> solver)
         {
             if (!isDeterministic)
                 throw new AutomataException(AutomataExceptionKind.AutomatonIsNotDeterministic);
@@ -2187,15 +2202,20 @@ namespace Microsoft.Automata
 
         #region Determinization
 
-        public Automaton<T> Determinize(IBoolAlgMinterm<T> solver)
+        public Automaton<T> Determinize(IBoolAlgMinterm<T> solver, int timeout = 0)
         {
             if (IsDeterministic)
                 return this;
-            return Determinize(solver, 0);
-        }
 
-        public Automaton<T> Determinize(IBoolAlgMinterm<T> solver, int timeout)
-        {
+            Automaton<T>[] disjuncts;
+            if (TryDecompose(out disjuncts))
+            {
+                var disjuncts_det = Array.ConvertAll(disjuncts, d => d.Determinize(solver).Minimize(solver));
+                var disjuncts_comp = Array.ConvertAll(disjuncts_det, d => d.Complement(solver).Minimize(solver));
+                var prod = Automaton<T>.MkProductOfDeterministic(disjuncts_comp, solver);
+                var union = prod.Complement(solver);
+                return union;
+            }
 
             var full = Automaton<T>.Loop(solver.True);
             var compl = Automaton<T>.MkDifference(full, this, timeout, solver); //make complement
@@ -2210,13 +2230,63 @@ namespace Microsoft.Automata
             return det;
         }
 
+        private bool TryDecompose(out Automaton<T>[] disjuncts)
+        {
+            if (!InitialStateIsSource || delta[InitialState].Count < 2 || delta[InitialState].Exists(m => !m.IsEpsilon))
+            {
+                disjuncts = null;
+                return false;
+            }
+
+            HashSet<int> previous = new HashSet<int>();
+            List<Automaton<T>> automata = new List<Automaton<T>>();
+
+            foreach (var move in delta[InitialState])
+            {
+                List<Move<T>> current_moves = new List<Move<T>>();
+                List<int> finals = new List<int>();
+                HashSet<int> current = new HashSet<int>();
+                SimpleStack<int> stack = new SimpleStack<int>();
+                int q0 = move.TargetState;
+                stack.Push(q0);
+                current.Add(q0);
+                if (IsFinalState(q0))
+                    finals.Add(q0);
+                while (stack.IsNonempty)
+                {
+                    int q = stack.Pop();
+                    foreach (var q_move in delta[q])
+                    {
+                        if (previous.Contains(q_move.TargetState))
+                        {
+                            disjuncts = null;
+                            return false;
+                        }
+                        if (current.Add(q_move.TargetState))
+                        {
+                            stack.Push(q_move.TargetState);
+                            if (IsFinalState(q_move.TargetState))
+                                finals.Add(q_move.TargetState);
+                        }
+                        current_moves.Add(q_move);
+                    }
+                }
+                automata.Add(Automaton<T>.Create(q0, finals, current_moves));
+                previous.UnionWith(current);
+            }
+
+            disjuncts = automata.ToArray();
+            return true;
+        }
+
         #endregion
 
 
         #region Minimization
         /// <summary>
-        /// Minimization of FAs using a symbolic generalization of Moore's algorithm.
+        /// Minimization of SFAs using a symbolic generalization of Moore's algorithm.
         /// This algorithm is quadratic in the number of states.
+        /// If the SFA is nondeterministic, the minimized SFA will be equivalent.
         /// </summary>
         public Automaton<T> MinimizeMoore(IBooleanAlgebra<T> solver, int timeout = 0)
         {
@@ -2233,8 +2303,8 @@ namespace Microsoft.Automata
             if (timeout > 0)
                 sw.Start();
 
-            if (fa.IsDeterministic != true)
-                throw new AutomataException(AutomataExceptionKind.AutomatonIsNotDeterministic);
+            //if (fa.IsDeterministic != true)
+            //    throw new AutomataException(AutomataExceptionKind.AutomatonIsNotDeterministic);
 
             fa = fa.MakeTotal(solver);
 
@@ -2257,7 +2327,7 @@ namespace Microsoft.Automata
                 var pair = stack.Pop();
                 foreach (var m1 in fa.GetMovesTo(pair.First))
                     foreach (var m2 in fa.GetMovesTo(pair.Second))
-                        if (m1.SourceState != m2.SourceState) //else cannot be sat, by determinism
+                        if (m1.SourceState != m2.SourceState)
                             if (solver.IsSatisfiable(solver.MkAnd(m1.Label, m2.Label)))
                             {
                                 var sources = MkPair(m1.SourceState, m2.SourceState);
@@ -2310,9 +2380,9 @@ namespace Microsoft.Automata
             foreach (var final in fa.GetFinalStates())
                 finals.Add(repr[final]);
 
-            var minimized = Automaton<T>.Create(repr[fa.InitialState], finals, moves, true, true);
+            var minimized = Automaton<T>.Create(repr[fa.InitialState], finals, moves, true, true, isDeterministic);
             minimized.isEpsilonFree = true;
-            minimized.isDeterministic = true;
+            //minimized.isDeterministic = true;
             minimized.isUnambiguous = true;
             return minimized;
         }
@@ -2468,127 +2538,9 @@ namespace Microsoft.Automata
             return res;
         }
 
-        ///// <summary>
-        ///// Minimization based a symbolic generalization of an alternative implementation of Hopcroft's algorithm. 
-        ///// </summary>
-        //public Automaton<S> Minimize2(IBoolAlg<S> solver)
-        //{
-        //    if (IsEmpty)
-        //        return Empty;
-
-        //    if (this == Epsilon)
-        //        return Epsilon;
-
-        //    if (IsDeterministic != true)
-        //        throw new AutomataException(AutomataExceptionKind.AutomatonIsNotDeterministic);
-
-        //    var condsSet = new HashSet<EquivClass>();
-        //    var condsSetOfBvSet = new HashSet<S>();
-        //    var allPreds = new List<S>();
-
-        //    var fa = this.MakeTotal(solver);
-
-        //    //collect non-equivalent conditions
-        //    if (typeof(S) == typeof(BvSet))
-        //        foreach (var move in fa.GetMoves())
-        //        {
-        //            if (condsSetOfBvSet.Add(move.Condition))
-        //                allPreds.Add(move.Condition);
-        //        }
-        //    else
-        //        foreach (var move in fa.GetMoves())
-        //        {
-        //            if (condsSet.Add(new EquivClass(solver, move.Condition)))
-        //                allPreds.Add(move.Condition);
-        //        }
-
-        //    //var refinement = new SymbolicPartitionRefinement<S>(solver, allPreds[0]);
-        //    //foreach (var c in allPreds)
-        //    //    refinement.Refine(c);
-        //    //var minterms = new List<S>(refinement.GetRegions());
-
-        //    var minterms = allPreds;
-
-        //    //var minterms2str = Array.ConvertAll(minterms.ToArray(), mt => ((CharSetSolver)solver).PrettyPrint(mt as BvSet));
-
-        //    var PR = new PartitionRefinement(GetStates(), maxState);
-        //    var initparts = new List<Part[]>(PR.Refine(GetFinalStates()));
-
-        //    var W = new Stack<Part>();
-
-        //    if (initparts.Count > 0)
-        //    {
-        //        W.Push(initparts[0][0]); //nonfinal states
-        //        W.Push(initparts[0][1]); //final states
-        //    }
-        //    else
-        //        W.Push(PR.InitialPart);
-
-        //    while (W.Count > 0)
-        //    {
-        //        //Console.WriteLine("W=" + PrintStack(W));
-        //        var P = W.Pop();
-        //        var Pelems = new List<int>(P.GetElements());
-        //        foreach (var minterm in minterms)
-        //        {
-        //            var sources = new HashSet<int>(GetSources(solver, minterm, Pelems));
-        //            if (sources.Count > 0)
-        //            {
-        //                var splits = new List<Part[]>(PR.Refine(sources));
-        //                if (splits.Count > 0)
-        //                {
-        //                    foreach (var R in splits)
-        //                        if (W.Contains(R[0])) //note that R[0] has already been modified and is in W
-        //                            W.Push(R[1]);
-        //                        else if (R[0].Size <= R[1].Size)
-        //                            W.Push(R[0]);
-        //                        else
-        //                            W.Push(R[1]);
-
-        //                    //Console.WriteLine("[{2}], {0}, {1}", ((CharSetSolver)solver).PrettyPrint(minterm as BvSet), PR.ToString(), P.ToString());
-        //                }
-        //            }
-        //        }
-        //    }
-
-        //    Dictionary<Pair<int, int>, HashSet<S>> condMap = new Dictionary<Pair<int, int>, HashSet<S>>();
-        //    foreach (var move in GetMoves())
-        //    {
-        //        int s = PR.GetPart(move.SourceState).Representative;
-        //        int t = PR.GetPart(move.TargetState).Representative;
-        //        var st = new Pair<int, int>(s, t);
-        //        HashSet<S> condSet;
-        //        if (!condMap.TryGetValue(st, out condSet))
-        //        {
-        //            condSet = new HashSet<S>();
-        //            condSet.Add(move.Condition);
-        //            condMap[st] = condSet;
-        //        }
-        //        else
-        //        {
-        //            condSet.Add(move.Condition);
-        //        }
-        //    }
-        //    int newInitState = PR.GetPart(fa.InitialState).Representative;
-        //    var newMoves = new List<Move<S>>();
-        //    var newFinals = new HashSet<int>();
-        //    foreach (var entry in condMap)
-        //    {
-        //        newMoves.Add(Move<S>.M(entry.Key.First, entry.Key.Second, solver.MkOr(entry.Value)));
-        //    }
-        //    foreach (var f in GetFinalStates())
-        //        newFinals.Add(PR.GetPart(f).Representative);
-
-        //    var res = Create(newInitState, newFinals, newMoves);
-        //    res.isDeterministic = true;
-        //    res.isEpsilonFree = true;
-        //    //eliminate the dead state
-        //    res.EliminateDeadStates();
-        //    return res;
-        //}
-
         /// <summary>
         /// Minimization of SFAs.
+        /// Can also be applied to nondeterministic SFAs.
         /// </summary>
         public Automaton<T> Minimize(IBooleanAlgebra<T> solver)
         {
@@ -2598,10 +2550,39 @@ namespace Microsoft.Automata
             if (this == Epsilon)
                 return Epsilon;
 
-            if (IsDeterministic != true)
-                throw new AutomataException(AutomataExceptionKind.AutomatonIsNotDeterministic);
+            Automaton<T> fa = this.RemoveEpsilons(solver.MkOr);
 
-            var fa = this.MakeTotal(solver);
+            if (fa.isDeterministic)
+            {
+                return MinSFA(fa, solver);
+            }
+            else
+            {
+                var fa_m = MinSFA(fa, solver);
+                if (fa_m.StateCount < fa.StateCount)
+                {
+                    var fa_m_r = fa_m.Reverse().RemoveEpsilons(solver.MkOr);
+                    var fa_m_r_m = MinSFA(fa_m_r, solver);
+                    var fa_m_r_m_r = fa_m_r_m.Reverse().RemoveEpsilons(solver.MkOr);
+                    if (fa_m.StateCount <= fa_m_r_m_r.StateCount)
+                        return fa_m;
+                    else
+                        return fa_m_r_m_r;
+                }
+                else
+                {
+                    return fa;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Algorithm MinSFA from POPL14.
+        /// </summary>
+        static Automaton<T> MinSFA(Automaton<T> autom, IBooleanAlgebra<T> solver)
+        {
+
+            var fa = autom.MakeTotal(solver);
 
             var finalBlock = new Block(fa.GetFinalStates());
             var nonfinalBlock = new Block(fa.GetNonFinalStates());
@@ -2610,7 +2591,12 @@ namespace Microsoft.Automata
             foreach (var q in fa.GetNonFinalStates()) Blocks[q] = nonfinalBlock;
 
             var W = new BlockStack();
-            if (nonfinalBlock.Count < finalBlock.Count)
+            if (!fa.isDeterministic)
+            {
+                W.Push(nonfinalBlock);
+                W.Push(finalBlock);
+            }
+            else if (nonfinalBlock.Count < finalBlock.Count)
                 W.Push(nonfinalBlock);
             else
                 W.Push(finalBlock);
@@ -2619,10 +2605,10 @@ namespace Microsoft.Automata
 
             while (!W.IsEmpty)
             {
-                var R = W.Pop();
-                var Rcopy = new Block(R);                //make a copy of B for iterating over its elemenents
+                var B = W.Pop();
+                var Bcopy = new Block(B);                //make a copy of B for iterating over its elemenents
                 var Gamma = new Dictionary<int, T>();     //joined conditions leading to B from states leading to B
-                foreach (var q in Rcopy)
+                foreach (var q in Bcopy)
                     foreach (var move in fa.deltaInv[q]) //moves leading to q
                         if (Blocks[move.SourceState].Count > 1) //singleton blocks cannot be further split
                             if (Gamma.ContainsKey(move.SourceState))
@@ -2647,6 +2633,12 @@ namespace Microsoft.Automata
                         }
                         if (W.Contains(P))
                             W.Push(P1);
+                        else if (!fa.isDeterministic)
+                        {
+                            //both blocks are needed, bisumlation based minimization
+                            W.Push(P);
+                            W.Push(P1);
+                        }
                         else if (P.Count <= P1.Count)
                             W.Push(P);
                         else
@@ -2677,9 +2669,9 @@ namespace Microsoft.Automata
                         bool splitFound = false;
 
                         var psi = Gamma[PE.Current];
-                        P1.Add(PE.Current); //C has at least 2 elements
+                        P1.Add(PE.Current); //note that PE has at least 2 elements
 
-                        #region compute C1 as the new sub-block of C
+                        #region compute P1 as the new sub-block of P
                         while (PE.MoveNext())
                         {
                             var q = PE.Current;
@@ -2728,6 +2720,12 @@ namespace Microsoft.Automata
 
                             if (W.Contains(P))
                                 W.Push(P1);
+                            else if (!fa.isDeterministic)
+                            {
+                                //both blocks are needed, bisumlation based minimization
+                                W.Push(P);
+                                W.Push(P1);
+                            }
                             else if (P.Count <= P1.Count)
                                 W.Push(P);
                             else
@@ -2738,12 +2736,19 @@ namespace Microsoft.Automata
                 }
             }
 
-            Dictionary<Pair<int, int>, HashSet<T>> condMap = new Dictionary<Pair<int, int>, HashSet<T>>();
-            foreach (var move in GetMoves())
+            Func<int, int> GetRepresentative = (q => Blocks[q].GetRepresentative());
+            return autom.JoinStates(GetRepresentative, solver.MkOr);
+        }
+
+        Automaton<T> JoinStates(Func<int, int> GetRepresentative, Func<IEnumerable<T>, T> MkDisjunction)
+        {
+            var autom = this; 
+            var condMap = new Dictionary<Tuple<int, int>, HashSet<T>>();
+            foreach (var move in autom.GetMoves())
             {
-                int s = Blocks[move.SourceState].GetRepresentative();
-                int t = Blocks[move.TargetState].GetRepresentative();
-                var st = new Pair<int, int>(s, t);
+                int s = GetRepresentative(move.SourceState);
+                int t = GetRepresentative(move.TargetState);
+                var st = new Tuple<int, int>(s, t);
                 HashSet<T> condSet;
                 if (!condMap.TryGetValue(st, out condSet))
                 {
@@ -2754,26 +2759,353 @@ namespace Microsoft.Automata
                 else
                     condSet.Add(move.Label);
             }
-            int newInitState = Blocks[fa.InitialState].GetRepresentative();
+            int newInitState = GetRepresentative(autom.InitialState);
             var newMoves = new List<Move<T>>();
             var newFinals = new HashSet<int>();
             foreach (var entry in condMap)
-                newMoves.Add(Move<T>.Create(entry.Key.First, entry.Key.Second, solver.MkOr(entry.Value)));
-            foreach (var f in GetFinalStates())
-                newFinals.Add(Blocks[f].GetRepresentative());
+                newMoves.Add(Move<T>.Create(entry.Key.Item1, entry.Key.Item2, MkDisjunction(entry.Value)));
+            foreach (var f in autom.GetFinalStates())
+                newFinals.Add(GetRepresentative(f));
 
-            var res = Create(newInitState, newFinals, newMoves);
-            res.isDeterministic = true;
-            res.isEpsilonFree = true;
-            //res.EliminateDeadStates();
+            var res = Create(newInitState, newFinals, newMoves, false, false, autom.isDeterministic);
             return res;
+        }
+
+        /// <summary>
+        /// Algorithm for minimizing nondeterministic SFAs based on bisimilarity of states.
+        /// </summary>
+        static Automaton<T> MinBiSim(Automaton<T> automIn, IBooleanAlgebra<T> solver)
+        {
+
+            var autom = automIn.MakeTotal(solver);
+            var msb = new MultiSetBuilder(solver);
+
+            var root = new SimBlockContainer();
+            root.InitializeIncomingForRoot(autom, solver, msb);
+
+            var F_Block = new SimBlock(msb, autom.GetIncoming, root, autom.GetFinalStates());
+            var NF_Block = new SimBlock(msb, autom.GetIncoming, root, autom.GetNonFinalStates());
+            root.Add(F_Block, NF_Block);
+
+            List<SimBlock> Partition = new List<SimBlock>();
+            Partition.Add(F_Block);
+            Partition.Add(NF_Block);
+
+            var W = new SimpleStack<SimBlockContainer>();
+            var NextW = new SimpleStack<SimBlockContainer>();
+            var NextWelems = new HashSet<SimBlockContainer>();
+            NextW.Push(root);
+            var newContainers = new HashSet<SimBlockContainer>();
+
+            while (NextW.IsNonempty)
+            {
+                var tmp1 = W; 
+                W = NextW;
+                NextW = tmp1;
+                NextWelems.Clear();
+
+                newContainers.Clear();
+
+                //W has compound containers whose blocks have not yet been considered as splitters
+                //each container has a multiset map corresponding to its original block
+                //that original block has already been considered as a splitter 
+                //all blocks in the containers in W are also members of Partition
+                while (!W.IsEmpty)
+                {
+                    SimBlockContainer S = W.Pop();
+                    SimBlock B = S.RemoveBlock();
+                    if (S.IsCompound)
+                        W.Push(S);
+
+                    var NextPartition = new List<SimBlock>(); 
+
+                    foreach (var D in Partition)
+                    {
+                        SimBlockContainer DC;
+                        if (newContainers.Contains(D.container))
+                            DC = D.container; //D.container was created during current iteration over W
+                        else
+                        {
+                            //D.container was created during previous iteration over W
+                            DC = new SimBlockContainer();
+                            newContainers.Add(DC);
+                            DC.Incoming = D.Incoming;
+                        }
+
+                        #region partition D wrt B with DC as the container
+                        var Ds = new Dictionary<T, SimBlock>();
+                        SimBlock Drest = null;
+                        foreach (int q in D)
+                        {
+                            MultiSet q2B;
+                            if (B.Incoming.TryGetValue(q, out q2B))
+                            {
+                                var q2B_set = q2B.ToSet();
+                                SimBlock block;
+                                if (!Ds.TryGetValue(q2B_set, out block))
+                                {
+                                    block = new SimBlock(msb, autom.GetIncoming, DC);
+                                    Ds[q2B_set] = block;
+                                    DC.Add(block);
+                                }
+                                block.Add(q);
+                            }
+                            else //states having no transitions to B
+                            {
+                                if (Drest == null)
+                                    Drest = new SimBlock(msb, autom.GetIncoming, DC);
+                                Drest.Add(q);
+                            }
+                        }
+                        #endregion
+
+                        #region continue to partition D wrt S\B
+                        LinkedListNode<SimBlock> D1node = DC.blocks.First;
+                        while (D1node != null)
+                        {
+                            var D1 = D1node.Value;
+                            if (!D1.IsSingleton)
+                            {
+                                //see if D1 can be split further wrt S\B
+                                var D1s = new Dictionary<T, SimBlock>();
+                                foreach (int q in D1)
+                                {
+                                    MultiSet q2B = B.Incoming[q];
+                                    MultiSet q2S = B.container.Incoming[q];
+                                    MultiSet diff = q2S.Minus(q2B);
+                                    T diff_set = diff.ToSet();
+                                    SimBlock block;
+                                    if (!D1s.TryGetValue(diff_set, out block))
+                                    {
+                                        block = new SimBlock(msb, autom.GetIncoming, DC);
+                                        D1s[diff_set] = block;
+                                    }
+                                    block.Add(q);
+                                }
+                                if (D1s.Count > 1) //some further split happened
+                                {
+                                    foreach (var block in D1s.Values)
+                                        DC.blocks.AddBefore(D1node, block);
+                                    DC.blocks.Remove(D1node);
+                                }
+                            }
+                            D1node = D1node.Next;
+                        }
+                        //Drest cannot be further split wrt S\B because no states in Drest lead to B
+                        //and because of prior refinement steps, either all states (or no states) in D lead to B.container
+                        if (Drest != null)
+                            DC.blocks.AddLast(Drest);
+                        #endregion
+
+                        if (DC.IsCompound)
+                        {
+                            //D was split
+                            NextPartition.AddRange(DC.blocks);
+                            if (NextWelems.Add(DC)) //DC might already be in NextW
+                                NextW.Push(DC);
+                        }
+                        else
+                            //D was not split, the container is not pushed again
+                            NextPartition.Add(D);
+                    }
+                    Partition = NextPartition;
+                }
+            }
+            Dictionary<int, SimBlock> finalPartition = new Dictionary<int, SimBlock>();
+            foreach (SimBlock sb in Partition)
+                foreach (int q in sb)
+                    finalPartition[q] = sb;
+            Func<int, int> GetRepresentative = (q => finalPartition[q].GetRepresentative());
+            return automIn.JoinStates(GetRepresentative, solver.MkOr);
+        }
+
+
+        public IEnumerable<Tuple<int, T>> GetIncoming(int target)
+        {
+            foreach (Move<T> move in deltaInv[target])
+                yield return new Tuple<int, T>(move.SourceState, move.Label);
+        }
+
+        public IEnumerable<Tuple<int, T>> GetOutgoing(int source)
+        {
+            foreach (Move<T> move in delta[source])
+                yield return new Tuple<int, T>(move.TargetState, move.Label);
+        }
+
+        internal class MultiSetBuilder
+        {
+            internal IBooleanAlgebra<T> solver;
+            internal Func<T, T> GetCanonicalPredicate;
+
+            internal MultiSet zero;
+            internal MultiSet one;
+
+            Dictionary<Tuple<T, MultiSet, MultiSet>, MultiSet> nodes = 
+                new Dictionary<Tuple<T, MultiSet, MultiSet>, MultiSet>();
+            Dictionary<int, MultiSet> leaves = new Dictionary<int, MultiSet>();
+
+            internal MultiSetBuilder(IBooleanAlgebra<T> solver)
+            {
+                this.solver = solver;
+                if (solver.IsExtensional)
+                    GetCanonicalPredicate = (psi => psi);
+                else if (solver.IsAtomic)
+                    GetCanonicalPredicate = new PredicateTrie<T>(solver).GetId;
+                else
+                    GetCanonicalPredicate = new PredicateIdMapper<T>(solver).GetId;
+                zero = new MultiSet(this, 0);
+                one = new MultiSet(this, 1);
+                leaves[0] = zero;
+                leaves[1] = one;
+            }
+
+            internal MultiSet CreateLeaf(int count)
+            {
+                if (count < 1)
+                    throw new ArgumentOutOfRangeException("count", "value must be positive");
+                MultiSet leaf;
+                if (!leaves.TryGetValue(count, out leaf))
+                {
+                    leaf = new MultiSet(this, count);
+                    leaves[count] = leaf;
+                }
+                return leaf;
+            }
+
+            internal MultiSet CreateOne(T pred)
+            {
+                return CreateNode(pred, one, zero);
+            }
+
+            internal MultiSet CreateNode(T pred, MultiSet trueCase, MultiSet falseCase)
+            {
+                if (pred.Equals(solver.True))
+                    return trueCase;
+                else if (pred.Equals(solver.False))
+                    return falseCase;
+                else
+                {
+                    if (trueCase == falseCase)
+                        return trueCase;
+                    else
+                    {
+                        var cases = new Tuple<T, MultiSet, MultiSet>(pred, trueCase, trueCase);
+                        MultiSet ms;
+                        if (!nodes.TryGetValue(cases, out ms))
+                        {
+                            ms = new MultiSet(this, cases);
+                            nodes[cases] = ms;
+                        }
+                        return ms;
+                    }
+                }
+            }
+        }
+
+        internal class MultiSet
+        {
+            internal Tuple<T, MultiSet, MultiSet> cases = null;
+            MultiSetBuilder msb = null;
+            int k;
+
+            internal MultiSet(MultiSetBuilder msb, Tuple<T, MultiSet, MultiSet> cases)
+            {
+                this.msb = msb;
+                this.cases = cases;
+            }
+
+            internal MultiSet(MultiSetBuilder msb, int k)
+            {
+                this.msb = msb;
+                this.k = k;
+                cases = null;
+            }
+
+            internal bool IsEmpty
+            {
+                get
+                {
+                    return k == 0;
+                }
+            }
+
+            internal MultiSet AddOne(T predIn)
+            {
+                var pred = msb.GetCanonicalPredicate(predIn);
+                if (cases == null)
+                {
+                    var leaf_plus_1 = msb.CreateLeaf(k + 1);
+                    var node = msb.CreateNode(pred, leaf_plus_1, this);
+                    return node;
+                }
+                else
+                {
+                    if (cases.Item1.Equals(pred))
+                    {
+                        var node = msb.CreateNode(cases.Item1, cases.Item2.IncrAll(new Dictionary<MultiSet,MultiSet>()), cases.Item3);
+                        return node;
+                    }
+                    else
+                    {
+                        var node = msb.CreateNode(pred, this.IncrAll(new Dictionary<MultiSet,MultiSet>()), this);
+                        return node;
+                    }
+                }
+            }
+
+            private MultiSet IncrAll(Dictionary<MultiSet,MultiSet> done)
+            {
+                MultiSet res;
+                if (!done.TryGetValue(this, out res))
+                {
+                    if (cases == null)
+                        res = msb.CreateLeaf(k + 1);
+                    else
+                        res = msb.CreateNode(cases.Item1, cases.Item2.IncrAll(done), cases.Item3.IncrAll(done));
+                }
+                return res;
+            }
+
+            internal MultiSet Minus(MultiSet multiSet)
+            {
+                throw new NotImplementedException();
+            }
+
+            internal T ToSet()
+            {
+                return ToSet_(new Dictionary<MultiSet, T>());
+            }
+
+            private T ToSet_(Dictionary<MultiSet, T> done)
+            {
+                T res;
+                if (done.TryGetValue(this, out res))
+                    return res;
+                else
+                {
+                    if (cases == null)
+                        if (k == 0)
+                            res = msb.solver.False;
+                        else
+                            res = msb.solver.True;
+                    else
+                    {
+                        var t = cases.Item2.ToSet_(done);
+                        var f = cases.Item3.ToSet_(done);
+                        res = msb.solver.MkOr(msb.solver.MkAnd(cases.Item1, t),
+                                                  msb.solver.MkAnd(msb.solver.MkNot(cases.Item1), f));
+                    }
+                    done[this] = res;
+                    return res;
+                }
+            }
         }
 
         internal class Block : IEnumerable<int>
         {
             int representative = -1;
             bool reprChosen = false;
-            HashSet<int> set;
+            protected HashSet<int> set;
 
             internal int GetRepresentative()
             {
@@ -2807,11 +3139,11 @@ namespace Microsoft.Automata
                 }
             }
 
-            internal void Update(Block other)
-            {
-                this.set = other.set;
-                reprChosen = false;
-            }
+            //internal void Update(Block other)
+            //{
+            //    this.set = other.set;
+            //    reprChosen = false;
+            //}
 
             internal Block() : base()
             {
@@ -2823,10 +3155,18 @@ namespace Microsoft.Automata
                 return set.Contains(item);
             }
 
-            internal Block(HashSet<int> set) 
+            internal bool IsSingleton
             {
-                this.set = set;
+                get
+                {
+                    return set.Count == 1;
+                }
             }
+
+            //internal Block(HashSet<int> set) 
+            //{
+            //    this.set = set;
+            //}
 
             internal bool IsEmpty
             {
@@ -2923,6 +3263,143 @@ namespace Microsoft.Automata
                 }
                 res += "]";
                 return res;
+            }
+        }
+
+        internal class SimBlock : Block
+        {
+            Dictionary<int, MultiSet> incoming = new Dictionary<int,MultiSet>();
+            Func<int, IEnumerable<Tuple<int,T>>> GetIncomingMoves;
+            MultiSetBuilder msb;
+
+            internal Dictionary<int, MultiSet> Incoming
+            {
+                get
+                {
+                    if (incoming == null)
+                    {
+                        incoming = new Dictionary<int, MultiSet>();
+                        foreach (int q in this.set)
+                            foreach (var pair in GetIncomingMoves(q))
+                            {
+                                MultiSet ms;
+                                if (incoming.TryGetValue(pair.Item1, out ms))
+                                    ms = ms.AddOne(pair.Item2);
+                                else
+                                    ms = msb.CreateOne(pair.Item2);
+                                incoming[q] = ms;
+                            }
+                    }
+                    return incoming;
+                }
+            }
+
+            internal SimBlockContainer container;
+
+            internal SimBlock(MultiSetBuilder msb, Func<int, IEnumerable<Tuple<int, T>>> GetIncomingMoves, SimBlockContainer container, IEnumerable<int> states)
+                : base(states)
+            {
+                this.msb = msb;
+                this.GetIncomingMoves = GetIncomingMoves;
+                this.container = container;
+            }
+
+            internal SimBlock(MultiSetBuilder msb, Func<int, IEnumerable<Tuple<int, T>>> GetIncomingMoves, SimBlockContainer container)
+                : base()
+            {
+                this.msb = msb;
+                this.GetIncomingMoves = GetIncomingMoves;
+                this.container = container;
+            }
+        }
+
+        internal class SimBlockContainer
+        {
+            internal LinkedList<SimBlock> blocks = new LinkedList<SimBlock>();
+            Dictionary<int, MultiSet> incoming = new Dictionary<int, MultiSet>();
+            internal Dictionary<int, MultiSet> Incoming
+            {
+                get { return incoming; }
+                set { incoming = value; }
+            }
+            internal bool IsCompound
+            {
+                get { return blocks.Count > 1; }
+            }
+
+            internal SimBlockContainer()
+            {
+            }
+
+            internal void SetIncoming(IDictionary<int, MultiSet> multisets)
+            {
+                incoming = new Dictionary<int, MultiSet>(multisets);
+            }
+
+            internal void InitializeIncomingForRoot(Automaton<T> autom, IBooleanAlgebra<T> solver, MultiSetBuilder msb)
+            {
+                foreach (var q in autom.GetStates())
+                    //assuming the automaton is normalized, total, and clean
+                    //the total number of distinct target states from q is automaton.delta[q].Count
+                    incoming[q] = msb.CreateLeaf(autom.delta[q].Count);
+            }
+
+            /// <summary>
+            /// Container is assumed two contain at least two blocks.
+            /// </summary>
+            public SimBlock RemoveBlock()
+            {
+                SimBlock block;
+                if (blocks.First.Value.Count <= blocks.Last.Value.Count)
+                {
+                    block = blocks.First.Value;
+                    blocks.RemoveFirst();
+                }
+                else
+                {
+                    block = blocks.Last.Value;
+                    blocks.RemoveLast();
+                    
+                }
+                return block;
+            }
+
+            public SimBlock First
+            {
+                get
+                {
+                    return blocks.First.Value;
+                }
+            }
+
+            public SimBlock Last
+            {
+                get
+                {
+                    return blocks.Last.Value;
+                }
+            }
+
+            internal void Add(params SimBlock[] newBlocks)
+            {
+                for (int i = 0; i < newBlocks.Length; i++)
+                {
+                    //if (i == 0)
+                    //    incoming = new Dictionary<int, MultiSet>(newBlocks[i].incoming);
+                    //else
+                    //{
+                    //    foreach (var entry in newBlocks[i].incoming)
+                    //    {
+                    //        MultiSet ms;
+                    //        if (incoming.TryGetValue(entry.Key, out ms))
+                    //            ms = ms.Plus(entry.Value);
+                    //        else
+                    //            ms = entry.Value;
+                    //        incoming[entry.Key] = ms;
+                    //    }
+                    //}
+                    blocks.AddLast(newBlocks[i]);
+                }
             }
         }
 
@@ -3323,7 +3800,7 @@ namespace Microsoft.Automata
             if (probabilities != null)
                 return;
 
-            if (!IsDeterministic || !IsLoopFree)
+            if (!IsDeterministic || !IsLoopFree || IsEmpty)
                 throw new AutomataException(AutomataExceptionKind.AutomatonMustBeLoopFreeAndDeterministic);
 
             var stateCardinalities = new Dictionary<int, BigInt>();

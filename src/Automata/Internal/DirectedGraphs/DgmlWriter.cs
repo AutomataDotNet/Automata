@@ -197,8 +197,11 @@ namespace Microsoft.Automata.Internal.DirectedGraphs
             if (k >= 0 && lab.Length > k)
                 lab = lab.Substring(0, k) + "...";
             lab = EncodeChars(lab);
-            if (lab.Length > 100)
+            if (lab.Length > 50)
+            {
+                info += string.Format(" HiddenLabel = \"{0}\"", lab);
                 lab = "...";
+            }
             return string.Format("<Link Source=\"{0}\" Target=\"{1}\" Label=\"{2}\" Category=\"NonepsilonTransition\" {3}/>", source, target, lab, info);
         }
 

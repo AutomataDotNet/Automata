@@ -1013,12 +1013,14 @@ namespace Microsoft.Automata
             internal string classname;
             internal bool generateSFT;
             internal bool useArray;
-            internal CSoptions(string namespacename, string classname, bool generateSFT, bool useArray)
+            internal bool returnNullOnReject;
+            internal CSoptions(string namespacename, string classname, bool generateSFT, bool useArray, bool returnNullOnReject)
             {
                 this.namespacename = namespacename;
                 this.classname = classname;
                 this.generateSFT = generateSFT;
                 this.useArray = useArray;
+                this.returnNullOnReject = returnNullOnReject;
             }
         }
 
@@ -1031,10 +1033,11 @@ namespace Microsoft.Automata
         /// <param name="classname">if null or empty then the name of the transducer is used</param>
         /// <param name="generateSFT">if true and registers are not used then generate methods for finite state streaming of input to output</param>
         /// <param name="useArray">if true then generates code using Array instead of StringBuilder and generateSFT option is then ignored</param>
-        public void ToCS(string file, string namespacename = null, string classname = null, bool generateSFT = false, bool useArray = false)
+        /// <param name="returnNullOnReject">if true then if the input is rejected then null is returned instead of exception being thrown</param>
+        public void ToCS(string file, string namespacename = null, string classname = null, bool generateSFT = false, bool useArray = false, bool returnNullOnReject = false)
         {
             StreamWriter sr = new StreamWriter(file);
-            ToCS(sr.WriteLine, namespacename, classname, generateSFT, useArray);
+            ToCS(sr.WriteLine, namespacename, classname, generateSFT, useArray, returnNullOnReject);
             sr.Close();
         }
 
@@ -1046,11 +1049,12 @@ namespace Microsoft.Automata
         /// <param name="classname">if null or empty then the name of the transducer is used</param>
         /// <param name="generateSFT">if true and registers are not used then generate methods for finite state streaming of input to output</param>
         /// <param name="useArray">if true then generates code using Array instead of StringBuilder and generateSFT option is then ignored</param>
-        public void ToCS(Action<string> WriteLine, string namespacename = null, string classname = null, bool generateSFT = false, bool useArray = false)
+        /// <param name="returnNullOnReject">if true then if the input is rejected then null is returned instead of exception being thrown</param>
+        public void ToCS(Action<string> WriteLine, string namespacename = null, string classname = null, bool generateSFT = false, bool useArray = false, bool returnNullOnReject = false)
         {
             var nn = (string.IsNullOrEmpty(namespacename) ? "tmp" : namespacename);
             var cn = (string.IsNullOrEmpty(classname) ? Name : classname);
-            ToCS(WriteLine, new CSoptions(nn, cn, solver.UnitSort.Equals(this.regSort) && generateSFT, useArray));
+            ToCS(WriteLine, new CSoptions(nn, cn, solver.UnitSort.Equals(this.regSort) && generateSFT, useArray, returnNullOnReject));
         }
 
         void ToCS(Action<string> WriteLine, CSoptions options)
@@ -1176,7 +1180,11 @@ namespace Microsoft.Automata
 
             #endregion
 
-            Func<string,string> DescribeError = (e => "throw new System.Exception(\"" + name + "\");");
+            Func<string, string> DescribeError;
+            if (options.returnNullOnReject)
+                DescribeError = (e => "return null;");
+            else
+                DescribeError = (e => "throw new System.Exception(\"" + options.classname + "\");");
 
             #endregion
 
@@ -1213,27 +1221,43 @@ namespace Microsoft.Automata
 
             if (!options.generateSFT)
             {
-                #region Apply method
-                WriteLine("public static string Apply(string input){");
-                if (options.useArray)
+                if (this.ST != null && this.ST.YieldsAreEmpty && this.ST.IsRegisterFree)
                 {
-                    WriteLine(string.Format("var output = new char[(input.Length * {0}) + {1}];", GetMaxIterYieldLength(), GetMaxFinalYieldLength()));
-                    WriteLine("int pos = 0;");
+                    #region Apply method
+                    WriteLine("public static string Apply(string input){");
+                    WriteLine("var chars = input.ToCharArray();"); //the conversion to char array is very important, boosts performance by >50%
+                    WriteLine(initValues.ToString());
+                    WriteLine("for (int i = 0; i < chars.Length; i++){");
+                    WriteLine("int c = (int)chars[i];");
+                    WriteSwitchStatements(WriteLine, DescribeCond, DescribeReg, DescribeYields, DescribeError);
+                    WriteLine("return \"\";");
+                    WriteLine("}"); //end of program
+                    #endregion
                 }
                 else
-                    WriteLine(string.Format("var output = new System.Text.StringBuilder();"/*, charsToAllocate)*/));
-                WriteLine(initValues.ToString());
+                {
+                    #region Apply method
+                    WriteLine("public static string Apply(string input){");
+                    if (options.useArray)
+                    {
+                        WriteLine(string.Format("var output = new char[(input.Length * {0}) + {1}];", GetMaxIterYieldLength(), GetMaxFinalYieldLength()));
+                        WriteLine("int pos = 0;");
+                    }
+                    else
+                        WriteLine(string.Format("var output = new System.Text.StringBuilder();"/*, charsToAllocate)*/));
+                    WriteLine(initValues.ToString());
 
-                WriteLine("var chars = input.ToCharArray();"); //the conversion to char array is very important, boosts performance by >50%
-                WriteLine("for (int i = 0; i < chars.Length; i++){");
-                WriteLine("int c = (int)chars[i];");
-                WriteSwitchStatements(WriteLine, DescribeCond, DescribeReg, DescribeYields, DescribeError);
-                if (options.useArray)
-                    WriteLine("return new string(output,0,pos);");
-                else
-                    WriteLine("return output.ToString();");
-                WriteLine("}"); //end of program
-                #endregion
+                    WriteLine("var chars = input.ToCharArray();"); //the conversion to char array is very important, boosts performance by >50%
+                    WriteLine("for (int i = 0; i < chars.Length; i++){");
+                    WriteLine("int c = (int)chars[i];");
+                    WriteSwitchStatements(WriteLine, DescribeCond, DescribeReg, DescribeYields, DescribeError);
+                    if (options.useArray)
+                        WriteLine("return new string(output,0,pos);");
+                    else
+                        WriteLine("return output.ToString();");
+                    WriteLine("}"); //end of program
+                    #endregion
+                }
             }
             else
             {
@@ -1827,9 +1851,9 @@ namespace Microsoft.Automata
         /// <param name="classname">given class name</param>
         /// <param name="useArray">use Array instead of StringBuilder internally</param>
         /// <returns></returns>
-        public IExecutableTransducer Compile(string namespacename = null, string classname = null, bool useArray = false)
+        public IExecutableTransducer Compile(string namespacename = null, string classname = null, bool useArray = false, bool returnNullOnReject = false)
         {
-            return new CompiledCSMethod<FUNC, TERM, SORT>(this, namespacename, classname, useArray);
+            return new CompiledCSMethod<FUNC, TERM, SORT>(this, namespacename, classname, useArray, returnNullOnReject);
         }
 
         public STb<FUNC, TERM, SORT> Compose(STb<FUNC, TERM, SORT> other)
@@ -1905,13 +1929,15 @@ namespace Microsoft.Automata
         MethodInfo mi;
         string namespacename;
         string classname;
+        bool returnNullOnReject;
 
-        internal CompiledCSMethod(STb<FUNC, TERM, SORT> st, string namespacename, string classname, bool useArray)
+        internal CompiledCSMethod(STb<FUNC, TERM, SORT> st, string namespacename, string classname, bool useArray, bool returnNullOnReject)
         {
+            this.returnNullOnReject = returnNullOnReject;
             this.namespacename = namespacename;
             this.classname = classname;
             var sb = new StringBuilder();
-            st.ToCS(((string s) => { sb.AppendLine(s); return; }), namespacename, classname, false, useArray);
+            st.ToCS(((string s) => { sb.AppendLine(s); return; }), namespacename, classname, false, useArray, returnNullOnReject);
             var csc = new CSharpCodeProvider();
             var parameters = new CompilerParameters();
             parameters.GenerateInMemory = true;
