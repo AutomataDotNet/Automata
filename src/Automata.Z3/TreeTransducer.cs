@@ -20,7 +20,7 @@ namespace Microsoft.Automata.Z3
     public class TreeTransducer
     {
         TreeTheory tt;
-        List<Expr> roots;
+        public readonly List<Expr> roots;
         RankedAlphabet inputAlphabet;
         RankedAlphabet outputAlphabet;
         Dictionary<Expr, Dictionary<FuncDecl, List<TreeRule>>> ruleMap;
@@ -49,6 +49,24 @@ namespace Microsoft.Automata.Z3
                 return _emptyTreeRuleList;
             else
                 return rules[rank];
+        }
+
+        /// <summary>
+        /// Enumerate all rules from the state with the given rank.
+        /// </summary>
+        public IEnumerable<TreeRule> GetRulesByRank(int rank)
+        {
+            //if (!(0 <= rank && rank < inputAlphabet.MaxRank))
+            //    throw new AutomataException(AutomataExceptionKind.RankedAlphabet_RankIsOutOfBounds);
+            foreach (var state in stateList)
+            {
+                var rules = ruleMapByRank[state];
+                if (rules[rank] != null)
+                {
+                    foreach (var r in rules[rank])
+                        yield return r;
+                }
+            }
         }
 
         /// <summary>
@@ -1425,7 +1443,7 @@ namespace Microsoft.Automata.Z3
         /// 4) all states are reachable from the initial state;
         /// 5) all states q are alive (Language(q) is nonempty).
         /// </summary>
-        internal TreeTransducer Clean()
+        public TreeTransducer Clean()
         {
             if (clean)
                 return this;
@@ -1849,6 +1867,224 @@ namespace Microsoft.Automata.Z3
         }
 
         /// <summary>
+        /// Creates an equivalent bottom-up deterministic tree automaton from A.
+        /// The returned TA is deterministic and all lookaheads are singletons.
+        /// </summary>
+        public TreeTransducer DeterminizeWithoutCompletion()
+        {
+            return TreeTransducer.DeterminizeWithoutCompletion(this);
+        }
+
+        /// <summary>
+        /// Creates an equivalent bottom-up deterministic tree automaton from A.
+        /// The returned TA is deterministic and all lookaheads are singletons.
+        /// </summary>
+        static TreeTransducer DeterminizeWithoutCompletion(TreeTransducer TA)
+        {
+            if (TA.determinized)
+                return TA;
+
+            if (!TA.IsAcceptor)
+                throw new AutomataException(AutomataExceptionKind.TreeTransducer_NotAcceptor);
+
+            var A = TA;
+
+            var tt = A.tt;
+            var alph = A.inputAlphabet;
+
+            //all symbols in the rank order
+            var symbs = new List<string>[alph.MaxRank + 1];
+            for (int i = 0; i < symbs.Length; i++)
+                symbs[i] = new List<string>();
+            foreach (var s in alph.Symbols)
+                symbs[alph.GetRank(s.Name.ToString())].Add(s.Name.ToString());
+
+            Func<Expr, int> Expr2Int = tt.Z.GetNumeralInt;
+            Func<int, Expr> Int2Expr = tt.Z.MkInt;
+
+            //bottom-up transitions organized by function symbols
+            var delta = new Dictionary<string, Dictionary<Pair<Sequence<int>, int>, Expr>>();
+            foreach (var fnk in alph.Symbols)
+                delta[fnk.Name.ToString()] = new Dictionary<Pair<Sequence<int>, int>, Expr>();
+
+            foreach (var rule in A.rulesList)
+            {
+                var fdelta = delta[rule.Symbol.Name.ToString()];
+                var children = new Sequence<int>(Array.ConvertAll(rule.lookahead, q => Expr2Int(q.SomeElement)));
+                var bottomup_move = new Pair<Sequence<int>, int>(children, Expr2Int(rule.state));
+                Expr pred;
+                if (fdelta.TryGetValue(bottomup_move, out pred))
+                    pred = tt.Z.MkOr(pred, rule.Guard);
+                else
+                    pred = rule.Guard;
+                fdelta[bottomup_move] = pred;
+            }
+
+            var stateIds = Array.ConvertAll(A.stateList.ToArray(), tt.Z.GetNumeralInt);
+
+            PowerSetStateBuilder P = PowerSetStateBuilder.Create(stateIds);
+
+            HashSet<int> accStates = new HashSet<int>(Array.ConvertAll(A.roots.ToArray(), tt.Z.GetNumeralInt));
+
+            Func<int, bool> IsAcceptingPowerState = pstate =>
+            {
+                foreach (int st in P.GetMembers(pstate))
+                    if (accStates.Contains(st))
+                        return true;
+
+                return false;
+            };
+
+            //stack of unprocessed powerstate sequences
+            var stack = new Stack<Sequence<int>>();
+            stack.Push(Sequence<int>.Empty);
+
+            Func<Sequence<int>, Sequence<int>, bool> IsCrossProductMember = (stateSeq, stateSetSeq) =>
+            {
+                for (int i = 0; i < stateSeq.Length; i++)
+                    if (!P.IsMember(stateSeq[i], stateSetSeq[i]))
+                        return false;
+                return true;
+            };
+
+            var newStates = new HashSet<Expr>();
+            var newRules = new List<TreeRule>();
+            ConsList<int> newStateIds = null;
+
+            while (stack.Count > 0)
+            {
+                var qs = stack.Pop();
+                var rank = qs.Length;
+                foreach (var f in symbs[rank]) //for each symbol of given rank
+                {
+                    var fnk = alph.GetConstructor(f);
+                    var delta_f = delta[f];
+                    var fmoves = new List<KeyValuePair<Pair<Sequence<int>, int>, Expr>>();
+                    foreach (var entry in delta_f)
+                        if (IsCrossProductMember(entry.Key.First, qs))
+                            fmoves.Add(entry);
+
+                    var preds = Array.ConvertAll(fmoves.ToArray(), fm => fm.Value);
+                    var minterms = tt.Z.GenerateMinterms(preds);
+
+                    foreach (var minterm in minterms)
+                    {
+                        var pred = tt.Z.ToNNF(tt.Z.Simplify(minterm.Second));
+                        var targetStatesInA = new List<int>();
+                        for (int i = 0; i < preds.Length; i++)
+                            if (minterm.First[i])
+                                targetStatesInA.Add(fmoves[i].Key.Second);
+
+                        //This lines avoid completion. Only consider rules that go to a target state
+                        if (!(targetStatesInA.Count == 0))
+                        {
+                            var targetState = P.MakePowerSetState(targetStatesInA);
+                            var targetStateExpr = Int2Expr(targetState);
+                            var lookahead = Array.ConvertAll(qs.ToArray(), n => new ExprSet(Int2Expr(n)));
+                            newRules.Add(new TreeRule(targetStateExpr, fnk, pred, null, lookahead));
+                            if (newStates.Add(targetStateExpr))
+                            {
+                                newStateIds = new ConsList<int>(targetState, newStateIds);
+
+                                for (int k = 1; k <= alph.MaxRank; k++)
+                                    foreach (var seq in EnumerateMatchRules(k, newStateIds,
+                                        new List<TreeRule>(A.GetRulesByRank(k)), P, tt.Z))
+                                        if (seq.Exists(q => q == targetState)) //make sure targetState occurs at least once
+                                            stack.Push(new Sequence<int>(seq.ToArray()));
+                            }
+                        }
+                    }
+                }
+            }
+
+            List<Expr> newAccStates = new List<Expr>();
+            List<Expr> newStateList = new List<Expr>(newStates);
+            foreach (var q in newStateIds)
+            {
+                if (IsAcceptingPowerState(q))
+                    newAccStates.Add(Int2Expr(q));
+            }
+
+            var dta = new TreeTransducer(newAccStates, alph, alph, newStateList, newRules);
+            dta.determinized = true;
+            return dta;
+        }
+
+        /// <summary>
+        /// Check whether the automaton is bottom-up deterministic
+        /// </summary>
+        public bool IsDeterminstic()
+        {
+            if (!clean)
+                return false;
+
+            if (determinized)
+                return true;
+
+            var A = this;
+
+            var tt = A.tt;
+            var alph = A.inputAlphabet;
+
+            //all symbols in the rank order
+            var symbs = new List<string>[alph.MaxRank + 1];
+            for (int i = 0; i < symbs.Length; i++)
+                symbs[i] = new List<string>();
+            foreach (var s in alph.Symbols)
+                symbs[alph.GetRank(s.Name.ToString())].Add(s.Name.ToString());
+
+            Func<Expr, int> Expr2Int = tt.Z.GetNumeralInt;
+            Func<int, Expr> Int2Expr = tt.Z.MkInt;
+
+            //bottom-up transitions organized by function symbols
+            var delta = new Dictionary<string, Dictionary<Pair<Sequence<int>, int>, Expr>>();
+            foreach (var fnk in alph.Symbols)
+                delta[fnk.Name.ToString()] = new Dictionary<Pair<Sequence<int>, int>, Expr>();
+
+            foreach (var rule in A.rulesList)
+            {
+                var fdelta = delta[rule.Symbol.Name.ToString()];
+                var children = new Sequence<int>(Array.ConvertAll(rule.lookahead, q => Expr2Int(q.SomeElement)));
+                var bottomup_move = new Pair<Sequence<int>, int>(children, Expr2Int(rule.state));
+                Expr pred;
+                if (fdelta.TryGetValue(bottomup_move, out pred))
+                    pred = tt.Z.MkOr(pred, rule.Guard);
+                else
+                    pred = rule.Guard;
+                fdelta[bottomup_move] = pred;
+            }
+
+
+
+            foreach (var el in delta)
+            {
+                var dict = new Dictionary<Sequence<int>, Expr>();
+
+                foreach (var kvp in el.Value)
+                {
+                    var trig = kvp.Key.First;
+                    Expr pred;
+
+                    if (dict.TryGetValue(trig, out pred))
+                    {
+                        if (tt.Z.IsSatisfiable(tt.Z.MkAnd(pred, kvp.Value)))
+                            return false;
+
+                        pred = tt.Z.MkOr(pred, kvp.Value);
+                    }
+                    else
+                        pred = kvp.Value;
+
+                    dict[trig] = pred;
+                }
+
+            }
+
+            determinized = true;
+            return true;
+        }
+
+        /// <summary>
         /// Enumerate the tuples of the crossproduct of given length
         /// </summary>
         private static IEnumerable<ConsList<int>> EnumerateX(int length, ConsList<int> elems)
@@ -1864,16 +2100,53 @@ namespace Microsoft.Automata.Z3
         }
 
         /// <summary>
+        /// Enumerate the tuples of the crossproduct of given length
+        /// </summary>
+        private static IEnumerable<ConsList<int>> EnumerateMatchRules(int length, ConsList<int> elems,
+            List<TreeRule> rules, PowerSetStateBuilder P, Z3Provider Z)
+        {
+            if (rules.Count == 0)
+                yield break;
+
+            if (elems == null || length == 0)
+                yield return null;
+            else
+            {
+                foreach (var q in elems)
+                {
+                    List<TreeRule> newR = new List<TreeRule>();
+                    foreach (var rule in rules)
+                    {
+                        int index = rule.lookahead.Length - length;
+                        var statesinQ = new List<int>(P.GetMembers(q));
+                        if (rule.lookahead[index].elements.Exists(r => statesinQ.Contains(
+                            Z.GetNumeralInt(r))))
+                        {
+                            newR.Add(rule);
+                        }
+                    }
+                    if (newR.Count > 0)
+                    {
+                        foreach (var seq in EnumerateMatchRules(length - 1, elems, newR, P, Z))
+                            yield return new ConsList<int>(q, seq);
+                    }
+                }
+            }
+        }
+
+
+
+        /// <summary>
         /// Minimization based on a symbolic generalization of Moores's algorithm for DFAs.
         /// </summary>
-        public TreeTransducer Minimize()
+        public TreeTransducer MinimizeOld(bool sink_is_needed = true)
         {
             if (IsEmpty)
                 return this;
 
-            var A = this.Determinize();
-            var fa = A.RemoveUselessStates(); //fa may be partial here
-            var sink_is_needed = (fa.sinkIsNeeded); //at least one non-coaccessible state was removed
+            var fa = this;
+            //var fa = A.RemoveUselessStates(); //fa may be partial here
+            //var sink_is_needed = (fa.sinkIsNeeded); //at least one non-coaccessible state was removed
 
             //make an ordered pair of states
             Func<Expr, Expr, Pair<Expr, Expr>> MkPair = (x, y) => (TT.Z.GetNumeralInt(x) < TT.Z.GetNumeralInt(y) ? new Pair<Expr, Expr>(x, y) : new Pair<Expr, Expr>(y, x));
@@ -2061,6 +2334,613 @@ namespace Microsoft.Automata.Z3
             dta.clean = true;
             dta.determinized = true;
             return dta;
+        }
+
+        /// <summary>
+        /// Minimization based on a symbolic generalization of Moores's algorithm for DFAs.
+        /// </summary>
+        public TreeTransducer Minimize()
+        {
+            Func<Expr, int> Expr2int = (x => int.Parse(x.ToString()));
+            Func<int, Expr> Int2Expr = tt.Z.MkInt;
+
+            if (IsEmpty)
+                return this;
+
+            #region better representation of automaton rules and states
+            var C = new Dictionary<int, int>();
+            HashSet<int> Q = new HashSet<int>();
+            foreach (var st in stateList)
+            {
+                var sti = Expr2int(st);
+                Q.Add(sti);
+                C[sti] = 0;
+            }
+            Q.Add(-1);
+
+            HashSet<int> F = new HashSet<int>();
+            foreach (var st in roots)
+                F.Add(Expr2int(st));
+
+            var symbolToInt = new Dictionary<string, int>();
+            var intToSymbol = new Dictionary<int, FuncDecl>();
+
+            var R = new Dictionary<List<int>, HashSet<Pair<int, Expr>>>(new ListComparer<int>());
+            foreach (var rule in rulesList)
+            {
+                var symb = rule.Symbol.ToString();
+                int symbId;
+                if (symbolToInt.ContainsKey(symb))
+                    symbId = symbolToInt[symb];
+                else
+                {
+                    symbId = symbolToInt.Count + 1;
+                    symbolToInt[symb] = symbId;
+                    intToSymbol[symbId] = rule.Symbol;
+                }
+                var rhs = new List<int>();
+                rhs.Add(symbId);
+                for (int i = 0; i < rule.Rank; i++)
+                {
+                    var li = rule.lookahead[i];
+                    rhs.Add(Expr2int(li.SomeElement));
+                }
+                HashSet<Pair<int, Expr>> value = null;
+                if (R.ContainsKey(rhs))
+                {
+                    value = R[rhs];
+                }
+                else
+                {
+                    value = new HashSet<Pair<int, Expr>>();
+                    R[rhs] = value;
+                }
+                var toState = Expr2int(rule.state);
+                value.Add(new Pair<int, Expr>(toState, rule.Guard));
+                C[toState]++;
+            }
+
+            #endregion
+
+            var B = new Dictionary<int, HashSet<List<int>>>();
+            var P = new Partition(new HashSet<int>(Q));
+            var K = new HashSet<int>();
+            int numIter = 1;
+            foreach (var rule in R)
+            {
+                var cond = tt.Z.True;
+                foreach (var kvpair in rule.Value)
+                {
+                    HashSet<List<int>> value;
+                    var key = kvpair.First;
+                    cond = tt.Z.MkAnd(cond, kvpair.Second);
+                    if (!B.ContainsKey(key))
+                    {
+                        value = new HashSet<List<int>>();
+                        B[key] = value;
+                    }
+                    else
+                    {
+                        value = B[key];
+                    }
+
+                    value.Add(rule.Key);
+                }
+                cond = tt.Z.MkNot(cond);
+                if (tt.Z.IsSatisfiable(cond))
+                    rule.Value.Add(new Pair<int, Expr>(-1, cond));
+            }
+
+            initial(P, K, Q, F, R);
+
+            while (K.Count > 0 && P.getSize() < Q.Count)
+            {
+                Dictionary<int, HashSet<int>> subparts = new Dictionary<int, HashSet<int>>();
+                var kfirst = 0;
+                foreach (var v in K)
+                {
+                    kfirst = v;
+                    break;
+                }
+                HashSet<int> states = new HashSet<int>(P.block(kfirst));
+                ++numIter;
+
+                K.Remove(kfirst);
+
+                foreach (var state in states)
+                {
+                    foreach (var rightOld in B[state])
+                    {
+                        foreach (var pairLeftGuard in delta(rightOld, R))
+                        {
+                            var left1 = pairLeftGuard.First;
+                            var guard1 = pairLeftGuard.Second;
+
+                            for (int k = 1; k < rightOld.Count; k++)
+                            {
+                                //Check this one well
+                                var right = new List<int>(rightOld);
+                                var q = right[k];
+
+                                var next = P.next(q);
+                                right[k] = next;
+
+                                foreach (var pairLeftGuard2 in delta(right, R))
+                                {
+                                    var left2 = pairLeftGuard2.First;
+                                    var guard2 = pairLeftGuard2.Second;
+                                    var conj = tt.Z.MkAnd(guard1, guard2);
+
+                                    //in paper left2=delta(...next...) j=left1
+                                    if (tt.Z.IsSatisfiable(conj) && !P.equiv(left2, left1))
+                                    {
+                                        subparts.Clear();
+
+                                        int qrep = P.first(q);
+                                        int i = qrep;
+                                        var alreadyAdded = new HashSet<int>();
+
+                                        var smallConj = conj;
+
+                                        do
+                                        {
+                                            var newRight = new List<int>(right);
+                                            newRight[k] = i;
+
+                                            foreach (var pairLeftGuard3 in delta(newRight, R))
+                                            {
+                                                var newConj = tt.Z.MkAnd(smallConj, pairLeftGuard3.Second);
+                                                if (tt.Z.IsSatisfiable(newConj))
+                                                {
+                                                    var ind = P.first(pairLeftGuard3.First);
+
+
+                                                    HashSet<int> subind;
+                                                    if (subparts.ContainsKey(ind))
+                                                        subind = subparts[ind];
+                                                    else
+                                                    {
+                                                        subind = new HashSet<int>();
+                                                        subparts[ind] = subind;
+                                                    }
+
+                                                    subind.Add(i);
+                                                    smallConj = newConj;
+                                                    break;
+                                                }
+                                            }
+                                            i = P.next(i);
+
+                                        } while (i != P.first(q));
+
+
+                                        HashSet<int> largest = new HashSet<int>();
+                                        foreach (var part in subparts)
+                                        {
+                                            if (part.Value.Count > largest.Count)
+                                                largest = part.Value;
+                                        }
+
+                                        foreach (var part in subparts)
+                                        {
+                                            int j = 0;
+                                            foreach (var v in part.Value)
+                                            {
+                                                j = v;
+                                                break;
+                                            }
+                                            if (!part.Value.Equals(largest))
+                                            {
+                                                P.refine(part.Value);
+                                                K.Add(j);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            var res = merge(P, Q, F, C, R);
+            F = res.First;
+            R = res.Second;
+
+            var newFinStates = new List<int>();
+            foreach (var st in F)
+            {
+                newFinStates.Add(st);
+            }
+            var newRules = new List<TreeRule>();
+            foreach (var rule in R)
+            {
+                var from = rule.Key;
+                string symbol = null;
+                var stFrom = new int[from.Count - 1];
+                var isFirst = true;
+                int ind = 0;
+                foreach (var num in from)
+                {
+                    if (isFirst)
+                    {
+                        symbol = intToSymbol[num].Name.ToString();
+                        isFirst = false;
+                    }
+                    else
+                    {
+                        stFrom[ind] = num;
+                        ind++;
+                    }
+                }
+                foreach (var kvp in rule.Value)
+                {
+                    if (kvp.First != -1)
+                        newRules.Add(tt.Z.TT.MkTreeAcceptorRule(inputAlphabet, kvp.First, symbol, kvp.Second, stFrom));
+                }
+            }
+
+            return tt.Z.TT.MkTreeAutomaton(newFinStates.ToArray(), inputAlphabet, outputAlphabet, newRules);
+        }
+
+        private Dictionary<int, HashSet<int>> getSubparts(
+            int pos,
+            int k,
+            Expr condition,
+            int[] all,
+            List<int> right,
+            Dictionary<int, HashSet<int>> subparts,
+            Partition P,
+            Dictionary<List<int>, HashSet<Pair<int, Expr>>> R)
+        {
+            if (pos == all.Length)
+            {
+                return subparts;
+            }
+            else
+            {
+
+                var newRight = new List<int>(right);
+                var i = all[pos];
+                newRight[k] = i;
+                foreach (var pairLeftGuard3 in delta(newRight, R))
+                {
+                    var newConj = tt.Z.MkAnd(condition, pairLeftGuard3.Second);
+                    if (tt.Z.IsSatisfiable(newConj))
+                    {
+                        //TODO Should I check some sat again
+                        var newSubs = new Dictionary<int, HashSet<int>>(subparts);
+                        var ind = P.first(pairLeftGuard3.First);
+                        HashSet<int> subind;
+                        if (newSubs.ContainsKey(ind))
+                            subind = newSubs[ind];
+                        else
+                        {
+                            subind = new HashSet<int>();
+                            newSubs[ind] = subind;
+                        }
+
+                        subind.Add(i);
+                        var res = getSubparts(pos + 1, k, newConj, all, right, newSubs, P, R);
+                    }
+                }
+                return null;
+            }
+        }
+
+
+        private HashSet<Pair<int, Expr>> delta(List<int> q, Dictionary<List<int>, HashSet<Pair<int, Expr>>> R)
+        {
+            if (R.ContainsKey(q))
+                return R[q];
+
+            HashSet<Pair<int, Expr>> r = new HashSet<Pair<int, Expr>>();
+            r.Add(new Pair<int, Expr>(-1, TT.Z.True));
+            return r;
+        }
+
+        private void rmState(int q, HashSet<int> Q, HashSet<int> F, Dictionary<int, int> C)
+        {
+            Q.Remove(q);
+            F.Remove(q);
+            C.Remove(q);
+        }
+
+        private Pair<HashSet<int>, Dictionary<List<int>, HashSet<Pair<int, Expr>>>>
+            merge(Partition P, HashSet<int> Q, HashSet<int> F, Dictionary<int, int> C,
+            Dictionary<List<int>, HashSet<Pair<int, Expr>>> R)
+        {
+            var R1 = new Dictionary<List<int>, HashSet<Pair<int, Expr>>>();
+            var Q1 = new HashSet<int>(Q);
+            var F1 = new HashSet<int>(F);
+            var C1 = new Dictionary<int, int>(C);
+            foreach (var state in Q)
+            {
+                var rep = P.first(state);
+                if (rep != state)
+                {
+                    C1[rep] += C1[state];
+                    rmState(state, Q1, F1, C1);
+                }
+            }
+
+            ListComparer<int> lc = new ListComparer<int>();
+            foreach (var rule in R)
+            {
+                List<int> r = new List<int>(rule.Key);
+
+                for (int k = 1; k < r.Count; k++)
+                    r[k] = P.first(r[k]);
+
+                if (!lc.Equals(r, rule.Key))
+                {
+                    var set = new HashSet<Pair<int, Expr>>();
+                    foreach (var kvp in rule.Value)
+                    {
+                        var st = kvp.First;
+                        var ex = kvp.Second;
+                        set.Add(new Pair<int, Expr>(P.first(st), ex));
+                    }
+                    R1[r] = set;
+                }
+                else
+                {
+                    var set = new HashSet<Pair<int, Expr>>();
+                    foreach (var kvp in rule.Value)
+                    {
+                        set.Add(new Pair<int, Expr>(P.first(kvp.First), kvp.Second));
+                    }
+                    R1[r] = set;
+                }
+
+            }
+
+            //Make sure it changes                        
+            return new Pair<HashSet<int>, Dictionary<List<int>, HashSet<Pair<int, Expr>>>>(
+                F1, R1);
+        }
+
+        private void initial(Partition P, HashSet<int> K, HashSet<int> Q, HashSet<int> F,
+            Dictionary<List<int>, HashSet<Pair<int, Expr>>> R)
+        {
+            Func<Expr, int> Expr2int = (x => int.Parse(x.ToString()));
+            Dictionary<int, HashSet<Triple>> signatures =
+                new Dictionary<int, HashSet<Triple>>();
+            int q = 0;
+
+            foreach (var rule in R)
+            {
+                var right = rule.Key;
+
+                foreach (var kvp in rule.Value)
+                {
+                    if (!signatures.ContainsKey(kvp.First))
+                        signatures[kvp.First] = new HashSet<Triple>();
+
+                    for (int k = 1; k < right.Count; ++k)
+                    {
+                        var t = new Triple(right[0], right.Count - 1, k);
+                        q = right[k];
+                        if (!signatures.ContainsKey(q))
+                            signatures[q] = new HashSet<Triple>();
+                        signatures[q].Add(t);
+                    }
+                }
+            }
+            foreach (var state in F)
+            {
+                if (!signatures.ContainsKey(state))
+                    signatures[state] = new HashSet<Triple>();
+                signatures[state].Add(new Triple(0, 0, 0));
+            }
+            var blocks = new Dictionary<HashSet<Triple>, HashSet<int>>(new HashSetComparer());
+            foreach (var state in Q)
+                //TODO this is supposed to be different from sink
+                if (state != -1)
+                {
+                    var ss = signatures[state];
+                    HashSet<int> set;
+                    if (blocks.ContainsKey(ss))
+                    {
+                        set = blocks[ss];
+                    }
+                    else
+                    {
+                        set = new HashSet<int>();
+                        blocks[ss] = set;
+                    }
+                    set.Add(state);
+                }
+
+            foreach (var block in blocks)
+            {
+                foreach (var v in block.Value)
+                {
+                    q = v;
+                    break;
+                }
+                P.refine(block.Value);
+                K.Add(q);
+            }
+
+        }
+
+
+        /// <summary>
+        /// Converts the tree automaton into an quotiented SFA for minimization
+        /// </summary>
+        public TreeTransducer MinimizeViaSFA()
+        {
+            if (!this.IsAcceptor)
+                throw new AutomataException(AutomataExceptionKind.TreeTransducer_NotAcceptor);
+
+            var moves = new List<Move<Expr>>();
+            var finals = new HashSet<int>();
+
+            //Initial state that is activated by rank 0 rules
+            int q0 = 0;
+            int circle = 1;
+            Expr circleExpr = tt.Z.MkInt(circle);
+
+            #region Function that extract state number
+            var stateIdMap = new Dictionary<Expr, int>();
+            int __id__ = 2;
+            Func<Expr, int> GetStateId = e =>
+            {
+                int id;
+                if (stateIdMap.TryGetValue(e, out id))
+                    return id;
+                id = __id__++;
+                stateIdMap[e] = id;
+                return id;
+            };
+            #endregion
+
+            #region build datatype sort
+            string sortName = "Quotiented";
+            int K = this.inputAlphabet.constructors.Length;
+            var fieldNames = new string[K][];
+            var fieldSorts = new Sort[K][];
+            var testerNames = new string[K];
+            var constructors = new Constructor[K];
+            var mapConstructor = new Dictionary<String, Constructor>();
+
+            for (int i = 0; i < K; i++)
+            {
+                FuncDecl constructor = inputAlphabet.constructors[i];
+                var name = constructor.Name.ToString();
+                var arity = constructor.Arity;
+                fieldNames[i] = new string[arity];
+                fieldSorts[i] = new Sort[arity];
+                var field_refs = new uint[arity];
+                fieldSorts[i][0] = this.inputAlphabet.AttrSort;
+                for (int j = 1; j < arity; j++)
+                    fieldSorts[i][j] = TT.Z.IntSort;
+                for (int j = 0; j < arity; j++)
+                    fieldNames[i][j] = name + "@" + j;
+
+                var c = TT.Z.z3.MkConstructor(name, "$is" + name, fieldNames[i], fieldSorts[i], field_refs);
+                constructors[i] = c;
+                mapConstructor[name] = c;
+            }
+
+            Sort quotientedSort = TT.Z.z3.MkDatatypeSort(sortName, constructors);
+            #endregion
+
+            #region Build quotiented SFA
+            //Final states are same as for STA
+            foreach (var state in this.roots)
+                finals.Add(GetStateId(state));
+
+            string dtVarID = "__DT";
+            Expr varDT = tt.Z.MkConst(dtVarID, quotientedSort);
+
+            int count = 0;
+            // Generate quotiented rules over richer algebra
+            foreach (var rule in rulesList)
+            {
+                count++;
+                //We are going bottom-up so the the rule.State is the target
+                int target = GetStateId(rule.State);
+
+                var constr = mapConstructor[rule.Symbol.Name.ToString()];
+                var f = constr.ConstructorDecl;
+
+
+                if (rule.Rank == 0)
+                {
+                    Expr gamma = tt.Z.ApplySubstitution(rule.Guard, inputAlphabet.AttrVar,
+                        tt.Z.MkApp(constr.AccessorDecls[0], varDT));
+                    gamma = tt.Z.MkAnd(gamma, tt.Z.MkApp(constr.TesterDecl, varDT));
+                    moves.Add(Move<Expr>.Create(q0, target, gamma));
+                }
+                else
+                {
+                    //rank is >0
+                    for (int i = 0; i < rule.Rank; i++)
+                    {
+                        var lookahead = rule.Lookahead(i);
+                        if (!lookahead.IsSingleton)
+                            throw new AutomataException(AutomataExceptionKind.TreeTransducer_NotClean);
+
+                        //source state in the SFA transition is the i-th el of the lookahead
+                        int qi = GetStateId(lookahead.SomeElement);
+
+                        Expr gamma = tt.Z.ApplySubstitution(rule.Guard, inputAlphabet.AttrVar,
+                            tt.Z.MkApp(constr.AccessorDecls[0], varDT));
+
+                        for (int j = 1; j < rule.Rank + 1; j++)
+                        {
+                            Expr sub = null;
+                            if (j == i + 1)
+                                sub = tt.Z.MkEq(tt.Z.MkApp(constr.AccessorDecls[j], varDT), circleExpr);
+                            else
+                            {
+                                int id = GetStateId(rule.Lookahead(j - 1).SomeElement);
+                                sub = tt.Z.MkEq(tt.Z.MkApp(constr.AccessorDecls[j], varDT), tt.Z.MkInt(id));
+                            }
+
+                            gamma = tt.Z.MkAnd(gamma, tt.Z.MkApp(constr.TesterDecl, varDT));
+                            gamma = tt.Z.MkAnd(gamma, sub);
+                        }
+
+                        moves.Add(Move<Expr>.Create(qi, target, gamma));
+                    }
+                }
+            }
+
+            //Create quotiented SFA
+            var autom = Automaton<Expr>.Create(q0, finals, moves);
+            autom.isDeterministic = true;
+            var sfa = new SFA<FuncDecl, Expr, Sort>(this.TT.Z, quotientedSort, autom);
+            #endregion
+
+            var b = sfa.Minimize();
+
+            // Get equivalence classes of quotiented SFA and build STA
+            Dictionary<int, Block> Blocks = sfa.Automaton.GetStateEquivalenceClasses(sfa.Solver);
+            Dictionary<string, Dictionary<Pair<List<int>, int>, HashSet<Expr>>> condMap =
+                new Dictionary<string, Dictionary<Pair<List<int>, int>, HashSet<Expr>>>();
+            foreach (var move in this.rulesList)
+            {
+                int to = Blocks[GetStateId(move.state)].GetRepresentative();
+                int[] from = new int[move.lookahead.Length];
+                for (int i = 0; i < from.Length; i++)
+                    from[i] = Blocks[GetStateId(move.lookahead[i].SomeElement)].GetRepresentative();
+
+                string constr = move.Symbol.Name.ToString();
+                Dictionary<Pair<List<int>, int>, HashSet<Expr>> dict;
+                if (!condMap.TryGetValue(constr, out dict))
+                {
+                    dict = new Dictionary<Pair<List<int>, int>, HashSet<Expr>>();
+                    condMap[constr] = dict;
+                }
+
+                var st = new Pair<List<int>, int>(new List<int>(from), to);
+                HashSet<Expr> condSet;
+                if (!dict.TryGetValue(st, out condSet))
+                {
+                    condSet = new HashSet<Expr>();
+                    condSet.Add(move.Guard);
+                    dict[st] = condSet;
+                }
+                else
+                    condSet.Add(move.Guard);
+            }
+
+            var newMoves = new List<TreeRule>();
+            var newFinals = new HashSet<int>();
+            foreach (var constrDicPair in condMap)
+                foreach (var entry in constrDicPair.Value)
+                {
+                    newMoves.Add(tt.Z.TT.MkTreeAcceptorRule(this.
+                        inputAlphabet, entry.Key.Second, constrDicPair.Key, tt.Z.MkOr(entry.Value), entry.Key.First.ToArray()));
+                }
+
+            foreach (var f in this.roots)
+                newFinals.Add(Blocks[GetStateId(f)].GetRepresentative());
+
+            return tt.Z.TT.MkTreeAutomaton(newFinals, inputAlphabet, inputAlphabet, newMoves); ;
         }
 
         /// <summary>

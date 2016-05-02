@@ -358,7 +358,7 @@ namespace Automata.Tests
     {
         internal const string DllFilePath = "test.dll";
         internal static string SourceFile = "test.cpp";
-        internal static string BatFile = "build_test.bat";
+        internal static string BatFile = "test.bat";
         internal static string Directory
         {
             get { return System.Environment.CurrentDirectory + @"\"; }

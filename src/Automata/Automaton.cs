@@ -2771,6 +2771,7 @@ namespace Microsoft.Automata
             return res;
         }
 
+
         /// <summary>
         /// Algorithm for minimizing nondeterministic SFAs based on bisimilarity of states.
         /// </summary>
@@ -2863,7 +2864,7 @@ namespace Microsoft.Automata
                         LinkedListNode<SimBlock> D1node = DC.blocks.First;
                         while (D1node != null)
                         {
-                            var D1 = D1node.Value;
+                            SimBlock D1 = D1node.Value;
                             if (!D1.IsSingleton)
                             {
                                 //see if D1 can be split further wrt S\B
@@ -2919,7 +2920,7 @@ namespace Microsoft.Automata
             return automIn.JoinStates(GetRepresentative, solver.MkOr);
         }
 
-
+        
         public IEnumerable<Tuple<int, T>> GetIncoming(int target)
         {
             foreach (Move<T> move in deltaInv[target])
@@ -3101,171 +3102,6 @@ namespace Microsoft.Automata
             }
         }
 
-        internal class Block : IEnumerable<int>
-        {
-            int representative = -1;
-            bool reprChosen = false;
-            protected HashSet<int> set;
-
-            internal int GetRepresentative()
-            {
-                if (reprChosen)
-                    return representative;
-                else
-                {
-                    var e = set.GetEnumerator();
-                    e.MoveNext();
-                    representative = e.Current;
-                    reprChosen = true;
-                    return representative;
-                }
-            }
-
-            internal bool Add(int item)
-            {
-                return set.Add(item);
-            }
-
-            internal Block(IEnumerable<int> items, Predicate<int> match = null)
-            {
-                if (match == null)
-                    set = new HashSet<int>(items);
-                else
-                {
-                    set = new HashSet<int>();
-                    foreach (var item in items)
-                        if (match(item))
-                            set.Add(item);
-                }
-            }
-
-            //internal void Update(Block other)
-            //{
-            //    this.set = other.set;
-            //    reprChosen = false;
-            //}
-
-            internal Block() : base()
-            {
-                set = new HashSet<int>();
-            }
-
-            internal bool Contains(int item)
-            {
-                return set.Contains(item);
-            }
-
-            internal bool IsSingleton
-            {
-                get
-                {
-                    return set.Count == 1;
-                }
-            }
-
-            //internal Block(HashSet<int> set) 
-            //{
-            //    this.set = set;
-            //}
-
-            internal bool IsEmpty
-            {
-                get { return set.Count == 0; }
-            }
-
-            internal int Count
-            {
-                get { return set.Count; }
-            }
-
-            internal void Remove(int item)
-            {
-                set.Remove(item);
-                reprChosen = false;
-            }
-
-            internal void Clear()
-            {
-                set.Clear();
-                reprChosen = false;
-            }
-
-            public override string ToString()
-            {
-                string res = "[";
-                var e = GetEnumerator();
-                while (e.MoveNext())
-                {
-                    if (res != "[")
-                        res += ",";
-                    res += e.Current;
-                }
-                res += "]";
-                return res;
-            }
-
-            public IEnumerator<int> GetEnumerator()
-            {
-                return set.GetEnumerator();
-            }
-
-            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-            {
-                throw new NotImplementedException();
-            }
-        }
-
-        internal class BlockStack
-        {
-            ConsList<Block> list = null;
-            HashSet<Block> set = new HashSet<Block>();
-
-            internal BlockStack()
-            {
-                Stack<int> foo = new Stack<int>();
-                foo.Contains(0);
-            }
-
-            internal bool IsEmpty
-            {
-                get { return list == null; }
-            }
-
-            internal void Push(Block b)
-            {
-                list = new ConsList<Block>(b, list);
-                set.Add(b);
-            }
-
-            internal Block Pop()
-            {
-                var b = list.First;
-                list = list.Rest;
-                set.Remove(b);
-                return b;
-            }
-
-            internal bool Contains(Block b)
-            {
-                return set.Contains(b);
-            }
-
-            public override string ToString()
-            {
-                string res = "[";
-                var l = list;
-                while (l != null)
-                {
-                    if (res != "[")
-                        res += ",";
-                    res += l.First.ToString();
-                    l = l.Rest;
-                }
-                res += "]";
-                return res;
-            }
-        }
-
         internal class SimBlock : Block
         {
             Dictionary<int, MultiSet> incoming = new Dictionary<int,MultiSet>();
@@ -3401,6 +3237,230 @@ namespace Microsoft.Automata
                     blocks.AddLast(newBlocks[i]);
                 }
             }
+        }
+ 
+        //internal class Block : IEnumerable<int>
+        //{
+        //    int representative = -1;
+        //    bool reprChosen = false;
+        //    protected HashSet<int> set;
+
+        //    //internal void Update(Block other)
+        //    //{
+        //    //    this.set = other.set;
+        //    //    reprChosen = false;
+        //    //}
+
+        //    internal Block() : base()
+        //    {
+        //        set = new HashSet<int>();
+        //    }
+
+        //    internal bool IsSingleton
+        //    {
+        //        get
+        //        {
+        //            return set.Count == 1;
+        //        }
+        //    }
+
+        //    //internal Block(HashSet<int> set) 
+        //    //{
+        //    //    this.set = set;
+        //    //}
+
+        //    //internal bool IsEmpty
+
+
+        public Dictionary<int, Block> GetStateEquivalenceClasses(IBooleanAlgebra<T> solver, bool makeTotal = true)
+        {
+            if (IsEmpty)
+                throw new AutomataException(AutomataExceptionKind.AutomatonInvalidInput);
+
+            if (this == Epsilon)
+                throw new AutomataException(AutomataExceptionKind.AutomatonInvalidInput);
+
+            if (IsDeterministic != true)
+                throw new AutomataException(AutomataExceptionKind.AutomatonIsNotDeterministic);
+
+            var fa = makeTotal ? this.MakeTotal(solver) : this;
+
+            var finalBlock = new Block(fa.GetFinalStates());
+            var nonfinalBlock = new Block(fa.GetNonFinalStates());
+            var Blocks = new Dictionary<int, Block>();
+            foreach (var q in fa.GetFinalStates()) Blocks[q] = finalBlock;
+            foreach (var q in fa.GetNonFinalStates()) Blocks[q] = nonfinalBlock;
+
+            var W = new BlockStack();
+
+            if (makeTotal)
+            {
+                if (nonfinalBlock.Count < finalBlock.Count)
+                    W.Push(nonfinalBlock);
+                else
+                    W.Push(finalBlock);
+            }
+            else
+
+            {
+                // This version should work when you don't want to make the automaton total
+                W.Push(nonfinalBlock);
+                W.Push(finalBlock);
+            }
+
+            Func<T, T, T> MkDiff = (x, y) => solver.MkAnd(x, solver.MkNot(y));
+
+            while (!W.IsEmpty)
+            {
+                var R = W.Pop();
+                var Rcopy = new Block(R);                //make a copy of B for iterating over its elemenents
+                var Gamma = new Dictionary<int, T>();     //joined conditions leading to B from states leading to B
+                foreach (var q in Rcopy)
+                    foreach (var move in fa.deltaInv[q]) //moves leading to q
+                        if (Blocks[move.SourceState].Count > 1) //singleton blocks cannot be further split
+                            if (Gamma.ContainsKey(move.SourceState))
+                                Gamma[move.SourceState] = solver.MkOr(Gamma[move.SourceState], move.Label);
+                            else
+                                Gamma[move.SourceState] = move.Label;
+
+                #region apply initial splitting without using guards
+                var relevant = new HashSet<Block>();
+                foreach (var q in Gamma.Keys)
+                    relevant.Add(Blocks[q]);
+
+                foreach (var P in relevant)
+                {
+                    var P1 = new Block(Gamma.Keys, P.Contains); //all q in Gamma.Keys such that P.Contains(q)
+                    if (P1.Count < P.Count)
+                    {
+                        foreach (var p in P1)
+                        {
+                            P.Remove(p);
+                            Blocks[p] = P1;
+                        }
+                        if (W.Contains(P))
+                            W.Push(P1);
+                        else if (P.Count <= P1.Count)
+                            W.Push(P);
+                        else
+                            W.Push(P1);
+                    }
+                }
+                #endregion
+
+                //keep using Bcopy until no more changes occur
+                //effectively, this replaces the loop over characters
+                bool iterate = true;
+                while (iterate)
+                {
+                    iterate = false;
+                    //in each relevant block all states lead to B due to the initial splitting
+                    var relevant2 = new HashSet<Block>();
+                    foreach (var q in Gamma.Keys)
+                        if (Blocks[q].Count > 1)
+                            relevant2.Add(Blocks[q]); //collect the relevant blocks
+
+                    //only relevant blocks are potentially split
+                    foreach (var P in relevant2)
+                    {
+                        var PE = P.GetEnumerator();
+                        PE.MoveNext();
+
+                        var P1 = new Block();
+                        bool splitFound = false;
+
+                        var psi = Gamma[PE.Current];
+                        P1.Add(PE.Current); //C has at least 2 elements
+
+                        #region compute C1 as the new sub-block of C
+                        while (PE.MoveNext())
+                        {
+                            var q = PE.Current;
+                            var phi = Gamma[q];
+                            if (splitFound)
+                            {
+                                var psi_and_phi = solver.MkAnd(psi, phi);
+                                if (solver.IsSatisfiable(psi_and_phi))
+                                    P1.Add(q);
+                            }
+                            else
+                            {
+                                var psi_min_phi = MkDiff(psi, phi);
+                                if (solver.IsSatisfiable(psi_min_phi))
+                                {
+                                    psi = psi_min_phi;
+                                    splitFound = true;
+                                }
+                                else // [[psi]] is subset of [[phi]]
+                                {
+                                    var phi_min_psi = MkDiff(phi, psi);
+                                    if (!solver.IsSatisfiable(phi_min_psi))
+                                        P1.Add(q); //psi and phi are equivalent
+                                    else
+                                    {
+                                        //there is some a: q --a--> B and p --a--> compl(B) for all p in C1
+                                        P1.Clear();
+                                        P1.Add(q);
+                                        psi = phi_min_psi;
+                                        splitFound = true;
+                                    }
+                                }
+                            }
+                        }
+                        #endregion
+
+                        #region split P
+                        if (P1.Count < P.Count)
+                        {
+                            iterate = (iterate || (P.Count > 2)); //otherwise C was split into singletons
+                            foreach (var p in P1)
+                            {
+                                P.Remove(p);
+                                Blocks[p] = P1;
+                            }
+
+                            if (W.Contains(P))
+                                W.Push(P1);
+                            else if (P.Count <= P1.Count)
+                                W.Push(P);
+                            else
+                                W.Push(P1);
+                        }
+                        #endregion
+                    }
+                }
+            }
+
+            return Blocks;
+
+            //Dictionary<Pair<int, int>, HashSet<T>> condMap = new Dictionary<Pair<int, int>, HashSet<T>>();
+            //foreach (var move in GetMoves())
+            //{
+            //    int s = Blocks[move.SourceState].GetRepresentative();
+            //    int t = Blocks[move.TargetState].GetRepresentative();
+            //    var st = new Pair<int, int>(s, t);
+            //    HashSet<T> condSet;
+            //    if (!condMap.TryGetValue(st, out condSet))
+            //    {
+            //        condSet = new HashSet<T>();
+            //        condSet.Add(move.Label);
+            //        condMap[st] = condSet;
+            //    }
+            //    else
+            //        condSet.Add(move.Label);
+            //}
+            //int newInitState = Blocks[fa.InitialState].GetRepresentative();
+            //var newMoves = new List<Move<T>>();
+            //var newFinals = new HashSet<int>();
+            //foreach (var entry in condMap)
+            //    newMoves.Add(Move<T>.Create(entry.Key.First, entry.Key.Second, solver.MkOr(entry.Value)));
+            //foreach (var f in GetFinalStates())
+            //    newFinals.Add(Blocks[f].GetRepresentative());
+
+            //var res = Create(newInitState, newFinals, newMoves);
+            //res.isDeterministic = true;
+            //res.isEpsilonFree = true;
+            //return res;
         }
 
         private string PrintStack(Stack<Part> W)
@@ -4043,6 +4103,168 @@ namespace Microsoft.Automata
     }
 
     #region Helper classes used in minimization and determinization algorithms
+    public class Block : IEnumerable<int>
+    {
+        int representative = -1;
+        bool reprChosen = false;
+        internal HashSet<int> set;
+
+        public int GetRepresentative()
+        {
+            if (reprChosen)
+                return representative;
+            else
+            {
+                var e = set.GetEnumerator();
+                e.MoveNext();
+                representative = e.Current;
+                reprChosen = true;
+                return representative;
+            }
+        }
+
+        internal bool Add(int item)
+        {
+            return set.Add(item);
+        }
+
+        internal Block(IEnumerable<int> items, Predicate<int> match = null)
+        {
+            if (match == null)
+                set = new HashSet<int>(items);
+            else
+            {
+                set = new HashSet<int>();
+                foreach (var item in items)
+                    if (match(item))
+                        set.Add(item);
+            }
+        }
+
+        internal void Update(Block other)
+        {
+            this.set = other.set;
+            reprChosen = false;
+        }
+
+        internal Block() : base()
+        {
+            set = new HashSet<int>();
+        }
+
+        internal bool Contains(int item)
+        {
+            return set.Contains(item);
+        }
+
+        internal Block(HashSet<int> set)
+        {
+            this.set = set;
+        }
+
+        internal bool IsEmpty
+        {
+            get { return set.Count == 0; }
+        }
+
+        internal bool IsSingleton
+        {
+            get { return set.Count == 1; }
+        }
+
+        internal int Count
+        {
+            get { return set.Count; }
+        }
+
+        internal void Remove(int item)
+        {
+            set.Remove(item);
+            reprChosen = false;
+        }
+
+        internal void Clear()
+        {
+            set.Clear();
+            reprChosen = false;
+        }
+
+        public override string ToString()
+        {
+            string res = "[";
+            var e = GetEnumerator();
+            while (e.MoveNext())
+            {
+                if (res != "[")
+                    res += ",";
+                res += e.Current;
+            }
+            res += "]";
+            return res;
+        }
+
+        public IEnumerator<int> GetEnumerator()
+        {
+            return set.GetEnumerator();
+        }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    internal class BlockStack
+    {
+        ConsList<Block> list = null;
+        HashSet<Block> set = new HashSet<Block>();
+
+        internal BlockStack()
+        {
+            Stack<int> foo = new Stack<int>();
+            foo.Contains(0);
+        }
+
+        internal bool IsEmpty
+        {
+            get { return list == null; }
+        }
+
+        internal void Push(Block b)
+        {
+            list = new ConsList<Block>(b, list);
+            set.Add(b);
+        }
+
+        internal Block Pop()
+        {
+            var b = list.First;
+            list = list.Rest;
+            set.Remove(b);
+            return b;
+        }
+
+        internal bool Contains(Block b)
+        {
+            return set.Contains(b);
+        }
+
+        public override string ToString()
+        {
+            string res = "[";
+            var l = list;
+            while (l != null)
+            {
+                if (res != "[")
+                    res += ",";
+                res += l.First.ToString();
+                l = l.Rest;
+            }
+            res += "]";
+            return res;
+        }
+    }
+
 
     internal class Equivalence : IEnumerable<Pair<int, int>>
     {
