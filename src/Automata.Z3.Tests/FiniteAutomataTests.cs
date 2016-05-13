@@ -121,7 +121,7 @@ namespace Microsoft.Automata.Z3.Tests
         {
             var z3p = new Z3Provider(BitWidth.BV7);
 
-            Automaton<Expr> fa = Automaton<Expr>.Create(0, new int[] { 2, 4 }, new Move<Expr>[]{
+            Automaton<Expr> fa = Automaton<Expr>.Create(z3p, 0, new int[] { 2, 4 }, new Move<Expr>[]{
                 MkEqTrans(z3p,0, 0, 'a'),
                 MkEqTrans(z3p,1, 1, 'b'),
                 MkEqTrans(z3p,2, 2, 'c'),
@@ -747,7 +747,7 @@ namespace Microsoft.Automata.Z3.Tests
                 moves.Add(Move<Expr>.Create(i, i + 1, gamma(i)));
             for (int i = 0; i < K; i++)
                 moves.Add(Move<Expr>.Create(i == 0 ? 0 : K + i, K + i + 1, i == 0 ? z3p.MkNot(gamma(i)) : gamma(i)));
-            var aut = Automaton<Expr>.Create(0, new int[] { K, 2 * K }, moves);
+            var aut = Automaton<Expr>.Create(z3p, 0, new int[] { K, 2 * K }, moves);
 
             var sfa = new SFA<FuncDecl, Expr, Sort>(z3p, z3p.CharSort, aut);
             sfa.Automaton.CheckDeterminism(sfa.Solver, true);
@@ -779,7 +779,7 @@ namespace Microsoft.Automata.Z3.Tests
                 moves.Add(Move<Expr>.Create(i, i + 1, gamma(i)));
             for (int i = 0; i < K; i++)
                 moves.Add(Move<Expr>.Create(i == 0 ? 0 : K + i, K + i + 1, i ==0 ? z3p.MkNot(gamma(i)) : gamma(i)));
-            var aut = Automaton<Expr>.Create(0, new int[] { K, 2 * K }, moves);
+            var aut = Automaton<Expr>.Create(z3p, 0, new int[] { K, 2 * K }, moves);
 
             var sfa = new SFA<FuncDecl, Expr, Sort>(z3p, z3p.CharSort, aut);
             sfa.Automaton.CheckDeterminism(sfa.Solver, true);
@@ -811,7 +811,7 @@ namespace Microsoft.Automata.Z3.Tests
                 moves.Add(Move<Expr>.Create(i, i + 1, gamma(i)));
             for (int i = 0; i < K; i++)
                 moves.Add(Move<Expr>.Create(i == 0 ? 0 : K + i, K + i + 1, i == 0 ? z3p.MkNot(gamma(i)) : gamma(i)));
-            var aut = Automaton<Expr>.Create(0, new int[] { K, 2 * K }, moves);
+            var aut = Automaton<Expr>.Create(z3p, 0, new int[] { K, 2 * K }, moves);
 
             var sfa = new SFA<FuncDecl, Expr, Sort>(z3p, z3p.CharSort, aut);
             sfa.Automaton.CheckDeterminism(sfa.Solver, true);

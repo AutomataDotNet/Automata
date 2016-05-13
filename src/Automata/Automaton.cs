@@ -21,6 +21,16 @@ namespace Microsoft.Automata
         public bool isDeterministic = false;
         internal bool isUnambiguous = false;
 
+        private IBooleanAlgebra<T> algebra;
+
+        public IBooleanAlgebra<T> Algebra
+        {
+            get
+            {
+                return algebra;
+            }
+        }
+
         #region special word boundary states
         internal bool DoesNotContainWordBoundaries
         {
@@ -223,51 +233,56 @@ namespace Microsoft.Automata
             }
             else
                 return null;
-        }
+        }           
 
-        /// <summary>
-        /// The empty automaton
-        /// </summary>
-        public readonly static Automaton<T> Empty = MkEmpty<T>();
-            
-
-        static Automaton<S> MkEmpty<S>(){            
-            var fsa = new Automaton<S>();
+        public static Automaton<T> MkEmpty(IBooleanAlgebra<T> algebra){            
+            var fsa = new Automaton<T>();
+            fsa.algebra = algebra;
             fsa.initialState = 0;
             fsa.finalStateSet = new HashSet<int>();
             fsa.isEpsilonFree = true;
             fsa.maxState = 0;
-            fsa.delta = new Dictionary<int,List<Move<S>>>();
-            fsa.delta[0] = new List<Move<S>>();
-            fsa.deltaInv = new Dictionary<int, List<Move<S>>>();
-            fsa.deltaInv[0] = new List<Move<S>>();
+            fsa.delta = new Dictionary<int,List<Move<T>>>();
+            fsa.delta[0] = new List<Move<T>>();
+            fsa.deltaInv = new Dictionary<int, List<Move<T>>>();
+            fsa.deltaInv[0] = new List<Move<T>>();
             fsa.isDeterministic = true;
             return fsa;
         }   
 
-        /// <summary>
-        /// The automaton with one state that is also final and one move state --psi--&gt; state
-        /// </summary>
-        /// <param name="psi">condition on the loop</param>
-        /// <param name="state">state id of the loop</param>
-        /// <returns></returns>
-        public static Automaton<T> Loop(T psi, int state = 0)
-        {
-            return Automaton<T>.Create(state, new int[] { state }, new Move<T>[] { Move<T>.Create(state, state, psi) });
-        }
+        ///// <summary>
+        ///// The automaton with one state that is also final and one move state --psi--&gt; state
+        ///// </summary>
+        ///// <param name="psi">condition on the loop</param>
+        ///// <param name="state">state id of the loop</param>
+        ///// <returns></returns>
+        //public static Automaton<T> Loop(T psi, int state = 0)
+        //{
+        //    return Automaton<T>.Create(state, new int[] { state }, new Move<T>[] { Move<T>.Create(state, state, psi) });
+        //}
 
         /// <summary>
         /// The automaton that accepts only the empty word.
         /// </summary>
-        public readonly static Automaton<T> Epsilon = Automaton<T>.Create(0, new int[] { 0 }, new Move<T>[] { });
+        public static Automaton<T> MkEpsilon(IBooleanAlgebra<T> algebra){
+            return Automaton<T>.Create(algebra, 0, new int[] { 0 }, new Move<T>[] { });
+        }
 
         /// <summary>
-        /// The automaton with a single state 0 and transition from 0 to 0 with the given condition.
+        /// The automaton that accepts nothing.
         /// </summary>
-        public static Automaton<T> Loop(T cond)
+        public static Automaton<T> MkFull(IBooleanAlgebra<T> algebra)
         {
-            return Automaton<T>.Create(0, new int[] { 0 }, new Move<T>[] {Move<T>.Create(0, 0, cond)});
+            return Automaton<T>.Create(algebra, 0, new int[] { 0 }, new Move<T>[] { Move<T>.Create(0, 0, algebra.True) });
         }
+
+        ///// <summary>
+        ///// The automaton with a single state 0 and transition from 0 to 0 with the given condition.
+        ///// </summary>
+        //public static Automaton<T> Loop(T cond)
+        //{
+        //    return Automaton<T>.Create(0, new int[] { 0 }, new Move<T>[] {Move<T>.Create(0, 0, cond)});
+        //}
 
         public bool HasMoreThanOneFinalState
         {
@@ -387,13 +402,21 @@ namespace Microsoft.Automata
         }
 
         /// <summary>
+        /// True iff there are no moves and the initial state is also final.
+        /// </summary>
+        public bool IsEpsilon 
+        {
+            get { return finalStateSet.Count == 1 && StateCount == 1 && delta[initialState].Count == 0 && DoesNotContainWordBoundaries; }
+        }
+
+        /// <summary>
         /// Create a symbolic automaton.
         /// </summary>
         /// <param name="initialState">initial state</param>
         /// <param name="finalStates">final states</param>
         /// <param name="moves">moves</param>
         /// <returns></returns>
-        public static Automaton<T> Create(int initialState, IEnumerable<int> finalStates, IEnumerable<Move<T>> moves, bool eliminateUnrreachableStates = false, bool eliminateDeadStates = false, bool deterministic = false)
+        public static Automaton<T> Create(IBooleanAlgebra<T> algebra, int initialState, IEnumerable<int> finalStates, IEnumerable<Move<T>> moves, bool eliminateUnrreachableStates = false, bool eliminateDeadStates = false, bool deterministic = false)
         {
             var delta = new Dictionary<int, List<Move<T>>>();
             var deltaInv = new Dictionary<int, List<Move<T>>>();
@@ -424,6 +447,7 @@ namespace Microsoft.Automata
             finalStateSet.RemoveWhere(x => !delta.ContainsKey(x)); //remove irrelevant states          
 
             Automaton<T> fsa = new Automaton<T>();
+            fsa.algebra = algebra;
             fsa.initialState = initialState;
             fsa.finalStateSet = finalStateSet;
             fsa.isEpsilonFree = noEpsilons;
@@ -444,12 +468,12 @@ namespace Microsoft.Automata
         /// <summary>
         /// Convert the automaton to an automaton where each guard p has been replaced with transform(p).
         /// </summary>
-        public Automaton<S> RelpaceAllGuards<S>(Func<T,S> transform)
+        public Automaton<T> RelpaceAllGuards<S>(Func<T,T> transform)
         {
-            List<Move<S>> moves1 = new List<Move<S>>();
+            List<Move<T>> moves1 = new List<Move<T>>();
             foreach (var move in GetMoves())
-                moves1.Add(Move<S>.Create(move.SourceState, move.TargetState, transform(move.Label)));
-            return Automaton<S>.Create(initialState, this.GetFinalStates(), moves1); 
+                moves1.Add(Move<T>.Create(move.SourceState, move.TargetState, transform(move.Label)));
+            return Automaton<T>.Create(this.algebra, initialState, this.GetFinalStates(), moves1); 
         }
 
         /// <summary>
@@ -804,7 +828,7 @@ namespace Microsoft.Automata
             }
             if (finalStateSet.Contains(initialState))
                 newFinalStates.Add(newInitialState);
-            var aut = Create(newInitialState, newFinalStates, moves);
+            var aut = Create(this.algebra, newInitialState, newFinalStates, moves);
             if (!this.DoesNotContainWordBoundaries)
                 foreach (var q in EnumerateWordBoundaries())
                     aut.AddWordBoundary(stateRemap[q]);
@@ -889,15 +913,10 @@ namespace Microsoft.Automata
 
         private static Automaton<T> MkProductOfDeterministic(IEnumerable<Automaton<T>> automata, IBooleanAlgebra<T> solver)
         {
-            Automaton<T> res = Automaton<T>.MkUnit(solver);
+            Automaton<T> res = Automaton<T>.MkFull(solver);
             foreach (var automaton in automata)
                 res = MkProduct(res, automaton, solver).Minimize(solver);
             return res;
-        }
-
-        public static Automaton<T> MkUnit(IBooleanAlgebraPositive<T> solver)
-        {
-            return Create(0, new int[] { 0 }, new Move<T>[] { Move<T>.Create(0, 0, solver.True) }); 
         }
 
         public static Automaton<T> MkProduct(Automaton<T> a, Automaton<T> b, IBooleanAlgebraPositive<T> solver, int timeout)
@@ -977,7 +996,7 @@ namespace Microsoft.Automata
                     }
 
             if (backReachableFromSomeFinal.Count == 0)
-                return Automaton<T>.Empty; //nothing is accepted
+                return Automaton<T>.MkEmpty(a.algebra); //nothing is accepted
 
             //eliminate all dead states, i.e. states not in backReachableFromSomeFinal
             List<int> states1 = new List<int>();
@@ -999,9 +1018,9 @@ namespace Microsoft.Automata
                 delta[state] = trans;
             }
             if (finalStates.Count == 0)
-                return Automaton<T>.Empty; //nothing is accepted
+                return Automaton<T>.MkEmpty(a.algebra); //nothing is accepted
 
-            Automaton<T> product = Automaton<T>.Create(0, finalStates, EnumerateMoves(delta));
+            Automaton<T> product = Automaton<T>.Create(a.algebra, 0, finalStates, EnumerateMoves(delta));
             product.isEpsilonFree = true;
             product.isDeterministic = (a.IsDeterministic == true && b.IsDeterministic == true ? true : false);
             return product;
@@ -1107,16 +1126,16 @@ namespace Microsoft.Automata
          
 
             var finalMoves =  new List<Move<T>>(EnumerateMoves(delta));
-            Automaton<T> product = Automaton<T>.Create(0, finalStates, finalMoves, true, true);
+            Automaton<T> product = Automaton<T>.Create(a.Algebra, 0, finalStates, finalMoves, true, true);
             product.isEpsilonFree = true;
 
-            ambiguousLanguage = Automaton<T>.Empty;
+            ambiguousLanguage = Automaton<T>.MkEmpty(a.algebra);
             foreach (var ambSt in ambiguousStates)
             {
-                var auta = Automaton<T>.Create(0, new int[]{ambSt}, finalMoves,true,true);
+                var auta = Automaton<T>.Create(a.Algebra, 0, new int[] { ambSt }, finalMoves, true, true);
                 if (!auta.IsEmpty)
                 {
-                    var autb = Automaton<T>.Create(ambSt, finalStates, finalMoves,true,true);
+                    var autb = Automaton<T>.Create(a.Algebra, ambSt, finalStates, finalMoves, true, true);
                     if (!autb.IsEmpty)
                     {
                         auta.Concat(autb);
@@ -1155,7 +1174,7 @@ namespace Microsoft.Automata
             moves.AddRange(b1.GetMoves());
             List<int> finalStates = new List<int>(a.GetFinalStates());
             finalStates.AddRange(b1.GetFinalStates());
-            return Create(initialState, finalStates, moves);
+            return Create(a.algebra, initialState, finalStates, moves);
         }        
 
         /// <summary>
@@ -1183,7 +1202,7 @@ namespace Microsoft.Automata
                 diff = b1.maxState + 1;
             }
 
-            return Create(initialState, finalStates, moves);
+            return Create(a.algebra, initialState, finalStates, moves);
         }
 
         /// <summary>
@@ -1209,7 +1228,7 @@ namespace Microsoft.Automata
                 finalStates.AddRange(b1.GetFinalStates());
             }
   
-            return Create(initialState, finalStates, moves);
+            return Create(a.algebra, initialState, finalStates, moves);
         }
 
         /// <summary>
@@ -1228,7 +1247,7 @@ namespace Microsoft.Automata
             moves.AddRange(b1.GetMoves());
             List<int> finalStates = new List<int>(a.GetFinalStates());
             finalStates.AddRange(b1.GetFinalStates());
-            return Create(initialState, finalStates, moves);
+            return Create(a.algebra, initialState, finalStates, moves);
         }
 
         #endregion
@@ -1279,7 +1298,7 @@ namespace Microsoft.Automata
             foreach (int state in GetFinalStates())
                 finalStates.Add(eEquiv[state]);
 
-            return Automaton<T>.Create(initialState, finalStates, EnumerateMoves(conditionMap, eMoves));
+            return Automaton<T>.Create(this.algebra, initialState, finalStates, EnumerateMoves(conditionMap, eMoves));
         }
 
         private IEnumerable<Move<T>> EnumerateMoves(Dictionary<Pair<int, int>, T> conditionMap, HashSet<Move<T>> eMoves)
@@ -1379,7 +1398,7 @@ namespace Microsoft.Automata
                 }
             }
 
-            Automaton<T> nfa = Automaton<T>.Create(fa.InitialState, finalStates, EnumerateMoves(outgoingTransitions));
+            Automaton<T> nfa = Automaton<T>.Create(this.algebra, fa.InitialState, finalStates, EnumerateMoves(outgoingTransitions));
             nfa.isEpsilonFree = true;
             return nfa;
         }
@@ -1454,7 +1473,7 @@ namespace Microsoft.Automata
         /// <param name="solver">boolean algebra solver over S</param>
         public Automaton<T> Complement(IBoolAlgMinterm<T> solver)
         {
-            return MkDifference(Loop(solver.True), this, -1, solver);
+            return MkDifference(MkFull(algebra), this, -1, solver);
         }
 
         /// <summary>
@@ -1508,7 +1527,7 @@ namespace Microsoft.Automata
                 newMoves.Add(Move<T>.Epsilon(newInitState, state));
 
             List<int> finalStates = new List<int>(GetFinalStates());
-            return Create(newInitState, finalStates, newMoves);
+            return Create(this.algebra, newInitState, finalStates, newMoves);
         }
 
         /// <summary>
@@ -1521,7 +1540,7 @@ namespace Microsoft.Automata
             foreach (var state in States)
                 newMoves.Add(Move<T>.Epsilon(state, newFinalState));
 
-            return Create(initialState, new int[]{newFinalState}, newMoves);
+            return Create(this.algebra, initialState, new int[] { newFinalState }, newMoves);
         }
 
         /// <summary>
@@ -1727,10 +1746,10 @@ namespace Microsoft.Automata
 
             }
             if (prodFinalStateIds.Count == 0)
-                return Automaton<T>.Empty;
+                return Automaton<T>.MkEmpty(A.algebra);
 
             var prodFinalStateIdsList = new List<int>(prodFinalStateIds);
-            Automaton<T> prod = Automaton<T>.Create(prodInitialStateId, prodFinalStateIdsList, EnumerateMoves(prodDelta));
+            Automaton<T> prod = Automaton<T>.Create(A.algebra, prodInitialStateId, prodFinalStateIdsList, EnumerateMoves(prodDelta));
             prod.isEpsilonFree = true;
             if (A.IsDeterministic)
                 prod.isDeterministic = true;
@@ -1948,7 +1967,7 @@ namespace Microsoft.Automata
 
             newMoves.Add(Move<T>.Create(deadState, deadState, solver.True));
             newMoves.AddRange(GetMoves());
-            var tot = Automaton<T>.Create(aut.initialState, aut.finalStateSet, newMoves, false, false, aut.isDeterministic);
+            var tot = Automaton<T>.Create(aut.Algebra, aut.initialState, aut.finalStateSet, newMoves, false, false, aut.isDeterministic);
             return tot;
         }
 
@@ -1985,7 +2004,7 @@ namespace Microsoft.Automata
                 if (!IsFinalState(state))
                     complFinalStates.Add(state);
 
-            var complAut = Automaton<T>.Create(initialState, complFinalStates, complMoves);
+            var complAut = Automaton<T>.Create(this.algebra, initialState, complFinalStates, complMoves);
             complAut.isDeterministic = true;
             complAut.EliminateDeadStates();
             return complAut;
@@ -2047,7 +2066,7 @@ namespace Microsoft.Automata
         /// <param name="solver">used to make conjunctions and to check satisfiability of resulting conditions</param>
         public bool IsAmbiguous(IBooleanAlgebra<T> solver, out Automaton<T> ambiguousLanguage)
         {
-            ambiguousLanguage = Automaton<T>.Empty;
+            ambiguousLanguage = Automaton<T>.MkEmpty(algebra);
             if (!isEpsilonFree)
                 throw new AutomataException(AutomataExceptionKind.AutomatonIsNotEpsilonfree);
 
@@ -2217,14 +2236,14 @@ namespace Microsoft.Automata
                 return union;
             }
 
-            var full = Automaton<T>.Loop(solver.True);
+            var full = Automaton<T>.MkFull(algebra);
             var compl = Automaton<T>.MkDifference(full, this, timeout, solver); //make complement
             var totCompl = compl.MakeTotal(solver); //make total
             //the above algo guarantees that totCompl is deterministic
             //so just switch final states with nonfinal states
             var fstates = new HashSet<int>(totCompl.GetStates());
             fstates.ExceptWith(totCompl.GetFinalStates());
-            var det = Automaton<T>.Create(totCompl.InitialState, fstates, totCompl.GetMoves());
+            var det = Automaton<T>.Create(algebra, totCompl.InitialState, fstates, totCompl.GetMoves());
             det.EliminateDeadStates();
             det.isDeterministic = true;
             return det;
@@ -2271,7 +2290,7 @@ namespace Microsoft.Automata
                         current_moves.Add(q_move);
                     }
                 }
-                automata.Add(Automaton<T>.Create(q0, finals, current_moves));
+                automata.Add(Automaton<T>.Create(this.algebra, q0, finals, current_moves));
                 previous.UnionWith(current);
             }
 
@@ -2292,10 +2311,10 @@ namespace Microsoft.Automata
         {
             //return MinimizeClassical(solver, 0, false);
             if (IsEmpty)
-                return Empty;
+                return Minimize(algebra);
 
-            if (this == Epsilon)
-                return Epsilon;
+            if (this.IsEpsilon)
+                return this;
 
             var fa = this;
             var sw = new System.Diagnostics.Stopwatch();
@@ -2380,7 +2399,7 @@ namespace Microsoft.Automata
             foreach (var final in fa.GetFinalStates())
                 finals.Add(repr[final]);
 
-            var minimized = Automaton<T>.Create(repr[fa.InitialState], finals, moves, true, true, isDeterministic);
+            var minimized = Automaton<T>.Create(this.Algebra, repr[fa.InitialState], finals, moves, true, true, isDeterministic);
             minimized.isEpsilonFree = true;
             //minimized.isDeterministic = true;
             minimized.isUnambiguous = true;
@@ -2422,14 +2441,14 @@ namespace Microsoft.Automata
                 sw.Start();
 
             if (IsEmpty)
-                return Empty;
+                return Minimize(solver);
 
             //If it's singleton state accepting only the empty string
             if(MoveCount==0)
                 return this;
 
-            if (this == Epsilon)
-                return Epsilon;
+            if (this.IsEpsilon)
+                return this;
 
             if (IsDeterministic != true)
                 throw new AutomataException(AutomataExceptionKind.AutomatonIsNotDeterministic);
@@ -2532,7 +2551,7 @@ namespace Microsoft.Automata
             foreach (var f in GetFinalStates())
                 newFinals.Add(PR.GetPart(f).Representative);
 
-            var res = Create(newInitState, newFinals, newMoves);
+            var res = Create(this.algebra, newInitState, newFinals, newMoves);
             res.isDeterministic = true;
             res.isEpsilonFree = true;
             return res;
@@ -2545,10 +2564,15 @@ namespace Microsoft.Automata
         public Automaton<T> Minimize(IBooleanAlgebra<T> solver)
         {
             if (IsEmpty)
-                return Empty;
+            {
+                if (StateCount > 1 || MoveCount > 0)
+                    return MkEmpty(algebra);
+                else
+                    return this;
+            }
 
-            if (this == Epsilon)
-                return Epsilon;
+            if (this.IsEpsilon)
+                return this;
 
             Automaton<T> fa = this.RemoveEpsilons(solver.MkOr);
 
@@ -2767,7 +2791,7 @@ namespace Microsoft.Automata
             foreach (var f in autom.GetFinalStates())
                 newFinals.Add(GetRepresentative(f));
 
-            var res = Create(newInitState, newFinals, newMoves, false, false, autom.isDeterministic);
+            var res = Create(this.Algebra, newInitState, newFinals, newMoves, false, false, autom.isDeterministic);
             return res;
         }
 
@@ -3277,7 +3301,7 @@ namespace Microsoft.Automata
             if (IsEmpty)
                 throw new AutomataException(AutomataExceptionKind.AutomatonInvalidInput);
 
-            if (this == Epsilon)
+            if (IsEpsilon)
                 throw new AutomataException(AutomataExceptionKind.AutomatonInvalidInput);
 
             if (IsDeterministic != true)
@@ -3490,11 +3514,8 @@ namespace Microsoft.Automata
         /// </summary>
         public Automaton<T> MinimizeClassical(IBooleanAlgebra<T> solver, int timeout, bool isTotal)
         {
-            if (IsEmpty)
-                return Empty;
-
-            if (this == Epsilon)
-                return Epsilon;
+            if (IsEmpty || IsEpsilon)
+                return Minimize(solver);
 
             var fa = this;
             var sw = new System.Diagnostics.Stopwatch();
@@ -3606,7 +3627,7 @@ namespace Microsoft.Automata
             foreach (int state in fa.GetFinalStates())
                 mfaFinalStates.Add(equivIdMap[state]);
 
-            Automaton<T> mfa = Automaton<T>.Create(mfaInitialState, mfaFinalStates, mfaTransitions);
+            Automaton<T> mfa = Automaton<T>.Create(this.algebra, mfaInitialState, mfaFinalStates, mfaTransitions);
             mfa.isDeterministic = true;
             mfa.isEpsilonFree = true;
             mfa.EliminateDeadStates();
@@ -3621,8 +3642,10 @@ namespace Microsoft.Automata
         /// <returns></returns>
         public Automaton<T> Reverse()
         {
-            if (IsEmpty)
-                return Automaton<T>.Empty;
+            if (IsEmpty || IsEpsilon)
+            {
+                return this;
+            }
 
             List<Move<T>> reversed_moves = new List<Move<T>>();
             foreach (var move in this.GetMoves())
@@ -3630,13 +3653,13 @@ namespace Microsoft.Automata
 
             Automaton<T> res = null;
             if (finalStateSet.Count == 1)
-                res = Create(FinalState, new int[] { initialState }, reversed_moves);
+                res = Create(this.algebra, FinalState, new int[] { initialState }, reversed_moves);
             else
             {
                 int new_initial_state = maxState + 1;
                 foreach (var f in this.finalStateSet)
                     reversed_moves.Add(Move<T>.Epsilon(new_initial_state, f));
-                res = Create(new_initial_state, new int[] { initialState }, reversed_moves);
+                res = Create(this.algebra, new_initial_state, new int[] { initialState }, reversed_moves);
             }
             return res;
         }

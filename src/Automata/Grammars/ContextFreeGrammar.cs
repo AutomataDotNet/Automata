@@ -574,7 +574,7 @@ namespace Microsoft.Automata.Grammars
             #endregion
 
             foreach (Nonterminal B in Vars)
-                M[B] = Automaton<GrammarSymbol>.Create(initStateMap[B], new int[] {finalStateMap[B]}, movesOfM[B]);
+                M[B] = Automaton<GrammarSymbol>.Create(null, initStateMap[B], new int[] {finalStateMap[B]}, movesOfM[B]);
             #endregion
 
             var G_ = new Dictionary<Nonterminal, ContextFreeGrammar>();

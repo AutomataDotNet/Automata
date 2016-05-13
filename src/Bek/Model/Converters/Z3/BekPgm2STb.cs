@@ -67,9 +67,9 @@ namespace Microsoft.Bek.Model.Converters.Z3
             //for efficieny keep lookup tables of character predicates to sets
             Dictionary<Expr, BDD> predLookup = new Dictionary<Expr, BDD>();
 
-            Automaton<BDD> previouspatterns = Automaton<BDD>.Empty;
+            Automaton<BDD> previouspatterns = Automaton<BDD>.MkEmpty(css);
 
-            Automaton<BV2> N = Automaton<BV2>.Empty.Complement(css2);
+            Automaton<BV2> N = Automaton<BV2>.MkFull(css2);
 
             var hasNoEndAnchor = new HashSet<int>();
 
@@ -117,7 +117,7 @@ namespace Microsoft.Bek.Model.Converters.Z3
                     }
                     st = mv.TargetState;
                 }
-                var N_i = Automaton<BV2>.Create(M.InitialState, new int[] { newFinalState }, liftedMoves);
+                var N_i = Automaton<BV2>.Create(css2, M.InitialState, new int[] { newFinalState }, liftedMoves);
 
                 //Microsoft.Automata.Visualizer.ToDot(N_i, "N" + i , "C:\\Automata\\Docs\\Papers\\Bex\\N" + i +".dot", x => "(" + css.PrettyPrint(x.First) + "," + css.PrettyPrint(x.Second) + ")");
 

@@ -406,7 +406,7 @@ namespace MSOZ3Test
         [TestMethod]
         public void TestMSO_Le()
         {
-            var solver = new CharSetSolver(BitWidth.BV32);
+            var solver = new CharSetSolver(BitWidth.BV16);
             //var phi = new MSOTrue();
             MSOFormula<BDD> phi = new MSOExistsFo<BDD>("z", new MSOExistsFo<BDD>("x", new MSOExistsFo<BDD>("y",
                 new MSOAnd<BDD>(
@@ -444,7 +444,7 @@ namespace MSOZ3Test
         [TestMethod]
         public void TestMSO_Eq()
         {
-            var solver = new CharSetSolver(BitWidth.BV32);
+            var solver = new CharSetSolver(BitWidth.BV16);
             //var phi = new MSOTrue();
             MSOFormula<BDD> phi = new MSOExistsFo<BDD>("x", new MSOExistsFo<BDD>("y", new MSONot<BDD>(new MSOEq<BDD>("x", "y"))));
 
@@ -457,7 +457,7 @@ namespace MSOZ3Test
         [TestMethod]
         public void TestMSO_Forall()
         {
-            var solver = new CharSetSolver(BitWidth.BV7);  
+            var solver = new CharSetSolver(BitWidth.BV16);  
             MSOFormula<BDD> phi = new MSOForallFo<BDD>("x", new MSOPredicate<BDD>(solver.MkCharConstraint('c',true), "x"));
 
             var aut = phi.GetAutomaton(solver);
@@ -615,7 +615,7 @@ namespace MSOZ3Test
 
             var aut = phi.GetAutomaton(solver);
 
-            var expected_automaton = Automaton<BoolExpr>.Create(0, new int[] { 0 },
+            var expected_automaton = Automaton<BoolExpr>.Create(solver, 0, new int[] { 0 },
                 new Move<BoolExpr>[]{
                 Move<BoolExpr>.Create(0,0, z3Context.MkNot(IsInt(0))),
                 Move<BoolExpr>.Create(0,1, IsInt(0)),
@@ -634,7 +634,7 @@ namespace MSOZ3Test
             var a = z3Context.MkEq(solver.x, z3Context.MkNumeral(0, S));
             var b = z3Context.MkNot(a);
 
-            var sfa = Automaton<BoolExpr>.Create(0, new int[] { 3, 4, 5 },
+            var sfa = Automaton<BoolExpr>.Create(solver, 0, new int[] { 3, 4, 5 },
                 new Move<BoolExpr>[]{
                 Move<BoolExpr>.Create(0, 1, a),
                 Move<BoolExpr>.Create(0, 2, b),

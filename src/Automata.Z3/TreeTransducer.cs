@@ -2890,7 +2890,7 @@ namespace Microsoft.Automata.Z3
             }
 
             //Create quotiented SFA
-            var autom = Automaton<Expr>.Create(q0, finals, moves);
+            var autom = Automaton<Expr>.Create(this.tt.Z,q0, finals, moves);
             autom.isDeterministic = true;
             var sfa = new SFA<FuncDecl, Expr, Sort>(this.TT.Z, quotientedSort, autom);
             #endregion
@@ -3375,7 +3375,7 @@ namespace Microsoft.Automata.Z3
                 }
             }
 
-            var autom = Automaton<Expr>.Create(__init__, finals, moves);
+            var autom = Automaton<Expr>.Create(this.tt.Z,__init__, finals, moves);
             var sfa = new SFA<FuncDecl, Expr, Sort>(this.TT.Z, this.inputAlphabet.AttrSort, autom);
             return sfa;
         }

@@ -218,7 +218,7 @@ namespace Microsoft.Automata
             foreach (var f in patternAutomataPairs[L].Item2.GetFinalStates())
                 finalStates.Add(MkState(L, f));
 
-            var tmpAutE = Automaton<Pair<BDD, T>>.Create(MkState(0, patternAutomataPairs[0].Item2.InitialState), finalStates, allMoves);
+            var tmpAutE = Automaton<Pair<BDD, T>>.Create(null, MkState(0, patternAutomataPairs[0].Item2.InitialState), finalStates, allMoves);
             Func<Pair<BDD, T>, Pair<BDD, T>, Pair<BDD, T>> error = (f1, f2) =>
                 {
                     throw new AutomataException(AutomataExceptionKind.InternalError);

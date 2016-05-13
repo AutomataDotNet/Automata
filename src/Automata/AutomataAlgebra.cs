@@ -9,20 +9,26 @@ namespace Microsoft.Automata
     {
         IBoolAlgMinterm<S> solver;
         MintermGenerator<Automaton<S>> mtg;
+
+        Automaton<S> empty;
+        Automaton<S> full;
+
         public AutomataAlgebra(IBoolAlgMinterm<S> solver)
         {
             this.solver = solver;
             mtg = new MintermGenerator<Automaton<S>>(this);
+            this.empty = Automaton<S>.MkEmpty(solver);
+            this.full = Automaton<S>.MkFull(solver);
         }
 
         public Automaton<S> True
         {
-            get { return Automaton<S>.Loop(solver.True); }
+            get { return full; }
         }
 
         public Automaton<S> False
         {
-            get { return Automaton<S>.Empty; }
+            get { return empty; }
         }
 
         public Automaton<S> MkOr(IEnumerable<Automaton<S>> automata)
@@ -119,7 +125,7 @@ namespace Microsoft.Automata
             for (int i = 0; i < path.Count; i++)
                 moves.Add(Move<S>.Create(i, i + 1, solver.GetAtom(path[i])));
 
-            var atom = Automaton<S>.Create(0, new int[] { path.Count }, moves);
+            var atom = Automaton<S>.Create(solver, 0, new int[] { path.Count }, moves);
             return atom;
         }
 

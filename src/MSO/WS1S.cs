@@ -87,7 +87,7 @@ namespace Microsoft.Automata.MSO
             var moves = new Move<BDD>[] { new Move<BDD>(0, 0, solver.True) };
 
             //True automaton and then difference
-            var trueAut = Automaton<BDD>.Create(0, new int[] { 0 }, moves);
+            var trueAut = Automaton<BDD>.Create(solver, 0, new int[] { 0 }, moves);
             var aut = phi.getAutomaton(variables, solver);
             var neg_aut = trueAut.Minus(aut, solver).Determinize(solver).Minimize(solver);
             return neg_aut;
@@ -132,7 +132,7 @@ namespace Microsoft.Automata.MSO
 
             //Create automaton for condition
             var moves = new Move<BDD>[] { new Move<BDD>(0, 0, subsetCond) };
-            return Automaton<BDD>.Create(0, new int[] { 0 }, moves);//.Determinize(solver).Minimize(solver);
+            return Automaton<BDD>.Create(solver, 0, new int[] { 0 }, moves);//.Determinize(solver).Minimize(solver);
         }
     }
 
@@ -162,7 +162,7 @@ namespace Microsoft.Automata.MSO
                 new Move<BDD>(0, 1, posIs1), 
                 new Move<BDD>(1, 1, posIs0)
             };
-            return Automaton<BDD>.Create(0, new int[] { 1 }, moves);
+            return Automaton<BDD>.Create(solver, 0, new int[] { 1 }, moves);
         }
     }
 
@@ -194,7 +194,7 @@ namespace Microsoft.Automata.MSO
 
             //Create automaton for condition
             var moves = new Move<BDD>[] { new Move<BDD>(0, 0, psi) };
-            return Automaton<BDD>.Create(0, new int[] { 0 }, moves);
+            return Automaton<BDD>.Create(solver, 0, new int[] { 0 }, moves);
         }
     }
 
@@ -234,7 +234,7 @@ namespace Microsoft.Automata.MSO
                 new Move<BDD>(1, 2, pos10pos21), 
                 new Move<BDD>(2, 2, both0), 
             };
-            return Automaton<BDD>.Create(0, new int[] { 2 }, moves);//.Determinize(solver).Minimize(solver);
+            return Automaton<BDD>.Create(solver, 0, new int[] { 2 }, moves);//.Determinize(solver).Minimize(solver);
         }
     }
 
@@ -275,7 +275,7 @@ namespace Microsoft.Automata.MSO
                 new Move<BDD>(1, 2, pos10pos21), 
                 new Move<BDD>(2, 2, both0), 
             };
-            return Automaton<BDD>.Create(0, new int[] { 2 }, moves);//.Determinize(solver).Minimize(solver);
+            return Automaton<BDD>.Create(solver, 0, new int[] { 2 }, moves);//.Determinize(solver).Minimize(solver);
         }
     }
 
@@ -304,7 +304,7 @@ namespace Microsoft.Automata.MSO
 
             //Create automaton for condition
             var moves = new Move<BDD>[] { new Move<BDD>(0, 0, eqCond) };
-            return Automaton<BDD>.Create(0, new int[] { 0 }, moves);//.Determinize(solver).Minimize(solver);
+            return Automaton<BDD>.Create(solver, 0, new int[] { 0 }, moves);//.Determinize(solver).Minimize(solver);
         }
     }
 
@@ -318,7 +318,7 @@ namespace Microsoft.Automata.MSO
         internal override Automaton<BDD> getAutomaton(SimpleList<string> variables, CharSetSolver solver)
         {
             var moves = new Move<BDD>[] { new Move<BDD>(0, 0, solver.True) };
-            return Automaton<BDD>.Create(0, new int[] { 0 }, moves);
+            return Automaton<BDD>.Create(solver, 0, new int[] { 0 }, moves);
         }
     }
 
@@ -350,7 +350,7 @@ namespace Microsoft.Automata.MSO
                 newMoves.Add(new Move<BDD>(move.SourceState, move.TargetState, newCond));
             }
 
-            var res = Automaton<BDD>.Create(autPhi.InitialState, autPhi.GetFinalStates(), newMoves);
+            var res = Automaton<BDD>.Create(solver, autPhi.InitialState, autPhi.GetFinalStates(), newMoves);
             if (MINIMIZE)
                 res = res.Determinize(solver).Minimize(solver);
             return res;

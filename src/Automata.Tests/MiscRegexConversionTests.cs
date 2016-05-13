@@ -30,6 +30,11 @@ namespace Microsoft.Automata.Tests
                     name = "skip" + i;
                 //css.ShowGraph(aut, name);
             }
+            string s = "foobar";
+            s.StartsWith("foo");
+            s.EndsWith("bar");
+            s.Equals("foobar");
+
             for (int i = 0; i < captures.Length; i++)
             {
 
@@ -59,17 +64,17 @@ namespace Microsoft.Automata.Tests
             Assert.IsFalse(css.Accepts(aut, "@B"));
             Assert.IsFalse(css.Accepts(aut, "A@B_"));
 
-            CheckValidity(css, aut, regex);
+            CheckValidity(css, aut, new Regex(regex, RegexOptions.Singleline));
         }
 
-        void CheckValidity(CharSetSolver css, Automaton<BDD> aut, string regex)
+        void CheckValidity(CharSetSolver css, Automaton<BDD> aut, Regex regex)
         {
             if (!aut.IsEmpty)
                 for (int i = 0; i < 1000; i++)
                 {
                     var str = css.GenerateMember(aut);
                     if (!str.Contains("\u200C") && !str.Contains("\u200D") && !str.Contains("\n"))
-                        Assert.IsTrue(Regex.IsMatch(str, regex, RegexOptions.Singleline), str);
+                        Assert.IsTrue(regex.IsMatch(str), str);
                 }
 
             var aut_compl = aut.Complement(css).Minimize(css);
@@ -78,7 +83,7 @@ namespace Microsoft.Automata.Tests
                 {
                     var str = css.GenerateMember(aut_compl);
                     if (!str.Contains("\u200C") && !str.Contains("\u200D") && !str.Contains("\n"))
-                        if (Regex.IsMatch(str, regex, RegexOptions.Singleline))
+                        if (regex.IsMatch(str))
                             Assert.IsFalse(true, regex + ":" + StringUtility.Escape(str));
                 }
         }
@@ -100,7 +105,7 @@ namespace Microsoft.Automata.Tests
                 {
                     string regex = regexes[i];
                     var aut = css.Convert(regex);
-                    CheckValidity(css, aut, regex);
+                    CheckValidity(css, aut, new Regex(regex, RegexOptions.Singleline));
                 }
             }
         }
@@ -139,7 +144,7 @@ namespace Microsoft.Automata.Tests
             CharSetSolver css = new CharSetSolver(BitWidth.BV7);
             var aut = css.Convert(r).RemoveEpsilons(css.MkOr).Determinize(css).Minimize(css);
             //css.ShowGraph(aut, "TrivialWordBoundary1");
-            CheckValidity(css, aut, r);
+            CheckValidity(css, aut, new Regex(r, RegexOptions.Singleline));
         }
 
         [TestMethod]
@@ -149,7 +154,7 @@ namespace Microsoft.Automata.Tests
             CharSetSolver css = new CharSetSolver(BitWidth.BV7);
             var aut = css.Convert(r).RemoveEpsilons(css.MkOr).Determinize(css).Minimize(css);
             //css.ShowGraph(aut, "TrivialWordBoundary2");
-            CheckValidity(css, aut, r);
+            CheckValidity(css, aut, new Regex(r, RegexOptions.Singleline));
         }
 
         [TestMethod]
@@ -159,19 +164,24 @@ namespace Microsoft.Automata.Tests
             CharSetSolver css = new CharSetSolver(BitWidth.BV7);
             var aut = css.Convert(r).RemoveEpsilons(css.MkOr).Determinize(css).Minimize(css);
             //css.ShowGraph(aut, "TrivialWordBoundary3");
-            CheckValidity(css, aut, r);
+            CheckValidity(css, aut, new Regex(r, RegexOptions.Singleline));
         }
 
         [TestMethod]
         public void TestTrivialWordBoundary4()
         {
-            string r = @"\b[A@]\b$"; 
+            Regex r = new Regex(@"^\b[A@]\b$",RegexOptions.None); 
             CharSetSolver css = new CharSetSolver(BitWidth.BV16);
-            var aut = css.Convert(r, RegexOptions.Singleline, true);
+            var aut = css.Convert(r.ToString(), RegexOptions.Singleline, true);
             //css.ShowGraph(aut, "TrivialWordBoundary4_with_b");
             css.RegexConverter.EliminateBoundaryStates(aut);
             var aut1 = aut.RemoveEpsilons(css.MkOr).Determinize(css).Minimize(css);
-            //css.ShowGraph(aut1, "TrivialWordBoundary4");
+            //css.ShowGraph(aut, "TrivialWordBoundary4");
+
+            string s = "@";
+            bool ismatchExpected = r.IsMatch(s);
+            bool ismatchActual = css.Accepts(aut1, s);
+
             CheckValidity(css, aut, r);
         }
 
@@ -191,14 +201,5 @@ namespace Microsoft.Automata.Tests
             }
         }
 
-        //[TestMethod]
-        public void TestMatchTermination() 
-        {
-            //does not terminate
-            var s = ".I.....bj.HU....Z-4@";
-            var regex = "^((\\.)?([a-zA-Z0-9_-]?)(\\.)?([a-zA-Z0-9_-]?)(\\.)?)+$";
-            bool res = Regex.IsMatch(s, regex, RegexOptions.None);
-            Assert.IsTrue(res);
-        }
     }
 }

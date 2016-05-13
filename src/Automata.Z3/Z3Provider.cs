@@ -3414,7 +3414,7 @@ namespace Microsoft.Automata.Z3
 
         public Automaton<BDD> ConvertAutomatonGuardsFromExpr(Automaton<Expr> aut)
         {
-            var aut1 = Automaton<BDD>.Create(aut.InitialState, aut.GetFinalStates(), ConvertMoves(aut.GetMoves()));
+            var aut1 = Automaton<BDD>.Create(this.CharSetProvider, aut.InitialState, aut.GetFinalStates(), ConvertMoves(aut.GetMoves()));
             aut1.isDeterministic = aut.isDeterministic;
             aut1.isEpsilonFree = aut.isEpsilonFree;
             return aut1;
@@ -3422,7 +3422,7 @@ namespace Microsoft.Automata.Z3
 
         public Automaton<Expr> ConvertAutomatonGuardsToExpr(Automaton<BDD> aut) 
         {
-            var aut1 = Automaton<Expr>.Create(aut.InitialState, aut.GetFinalStates(), ConvertMoves2(aut.GetMoves()));
+            var aut1 = Automaton<Expr>.Create(this, aut.InitialState, aut.GetFinalStates(), ConvertMoves2(aut.GetMoves()));
             aut1.isDeterministic = aut.isDeterministic;
             aut1.isEpsilonFree = aut.isEpsilonFree;
             return aut1;

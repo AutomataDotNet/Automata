@@ -74,7 +74,7 @@ namespace Microsoft.Automata
             List<Move<S>> moves = new List<Move<S>>();
             for (int i = 0; i < symbol.Length; i++)
                 moves.Add(Move<S>.Create(i, i + 1, solver.MkCharConstraint(symbol[i])));
-            Automaton<S> autom = Automaton<S>.Create(0, new int[] { symbol.Length }, moves);
+            Automaton<S> autom = Automaton<S>.Create(solver, 0, new int[] { symbol.Length }, moves);
             return autom;
         }
 
@@ -405,7 +405,7 @@ namespace Microsoft.Automata
             S moveCond = CreateConditionFromSet((node._options & RegexOptions.IgnoreCase) != 0, set);
 
             if (moveCond.Equals(solver.False))
-                return Automaton<S>.Empty; //the condition is unsatisfiable
+                return this.automBuilder.empty; //the condition is unsatisfiable
 
             if (!description.ContainsKey(moveCond))
                 description[moveCond] = RegexCharClass.SetDescription(set);
@@ -624,9 +624,9 @@ namespace Microsoft.Automata
             if (moveCond.Equals(solver.False))
             {
                 if (node._m == 0)
-                    return Automaton<S>.Epsilon; // (Empty)* = Epsilon
+                    return this.automBuilder.epsilon; // (Empty)* = Epsilon
                 else
-                    return Automaton<S>.Empty;
+                    return this.automBuilder.empty;
             }
 
             if (!description.ContainsKey(moveCond))

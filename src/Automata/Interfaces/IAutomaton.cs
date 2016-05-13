@@ -43,5 +43,10 @@ namespace Microsoft.Automata
         /// Provides a description of the label for visualization purposes.
         /// </summary>
         string DescribeStartLabel();
+
+        /// <summary>
+        /// Gets the algebra of the labels.
+        /// </summary>
+        IBooleanAlgebra<L> Algebra { get; }
     }
 }

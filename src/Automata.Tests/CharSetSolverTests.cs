@@ -72,22 +72,22 @@ namespace Microsoft.Automata.Tests
         [TestMethod]
         public void ChooseTest()
         {
-            for (int i = 0; i < 1; i++)
+            for (int i = 0; i < 10; i++)
             {
                 CharSetSolver solver = new CharSetSolver(BitWidth.BV16); 
 
-                BDD set1 = solver.MkRangeConstraint('a', 'z', true);
+                BDD set1 = solver.MkRangeConstraint('a', 'c', true);
                 string set1str = solver.PrettyPrint(set1);
-                BDD set2 = solver.MkRangeConstraint('a', 'z');
+                BDD set2 = solver.MkRangeConstraint('a', 'c');
                 string set2str = solver.PrettyPrint(set2);
-                BDD set3 = solver.MkRangeConstraint( 'A', 'Z');
+                BDD set3 = solver.MkRangeConstraint( 'A', 'C');
                 string set3str = solver.PrettyPrint(set3);
 
                 BDD set1a = solver.MkOr(set2, set3);
 
-                Assert.AreEqual<string>("[A-Za-z]",set1str);
-                Assert.AreEqual<string>("[a-z]", set2str);
-                Assert.AreEqual<string>("[A-Z]", set3str);
+                Assert.AreEqual<string>("[A-Ca-c]",set1str);
+                Assert.AreEqual<string>("[a-c]", set2str);
+                Assert.AreEqual<string>("[A-C]", set3str);
 
 
 

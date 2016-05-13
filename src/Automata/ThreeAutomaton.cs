@@ -14,6 +14,8 @@ namespace Microsoft.Automata
         private HashSet<int> rejectingStateSet;
         private HashSet<int> acceptingStateSet;
         private int maxState;
+        IBooleanAlgebra<S> algebra;
+
 
         #region accessors
         /// <summary>
@@ -99,7 +101,7 @@ namespace Microsoft.Automata
                 foreach (var st in min.dontCareStateSet)
                     if (r.Next() % 2 == 0)
                         fin.Add(st);
-                tmp = Automaton<S>.Create(min.initialState, fin, min.GetMoves());
+                tmp = Automaton<S>.Create(solver, min.initialState, fin, min.GetMoves());
                 if (tmp.StateCount < minSt)
                     minDfa = tmp;
             }
@@ -112,7 +114,7 @@ namespace Microsoft.Automata
         /// <returns></returns>
         public Automaton<S> GetSmallestLanguageSFA()
         {
-            return Automaton<S>.Create(initialState, acceptingStateSet, GetMoves());
+            return Automaton<S>.Create(this.algebra, initialState, acceptingStateSet, GetMoves());
         }
 
         /// <summary>
@@ -123,7 +125,7 @@ namespace Microsoft.Automata
         {
             List<int> finalStates = new List<int>(acceptingStateSet);
             finalStates.AddRange(dontCareStateSet);
-            return Automaton<S>.Create(initialState, finalStates, GetMoves());
+            return Automaton<S>.Create(algebra, initialState, finalStates, GetMoves());
         }
 
         /// <summary>
@@ -133,7 +135,7 @@ namespace Microsoft.Automata
         /// <param name="acceptingStates">final states</param>
         /// <param name="moves">moves</param>
         /// <returns></returns>
-        public static ThreeAutomaton<S> Create(int initialState, IEnumerable<int> rejectingStates, IEnumerable<int> acceptingStates, IEnumerable<Move<S>> moves)
+        public static ThreeAutomaton<S> Create(IBooleanAlgebra<S> algebra, int initialState, IEnumerable<int> rejectingStates, IEnumerable<int> acceptingStates, IEnumerable<Move<S>> moves)
         {
             var delta = new Dictionary<int, List<Move<S>>>();
             var deltaInv = new Dictionary<int, List<Move<S>>>();
@@ -167,6 +169,7 @@ namespace Microsoft.Automata
 
 
             ThreeAutomaton<S> fsa = new ThreeAutomaton<S>();
+            fsa.algebra = algebra;
             fsa.initialState = initialState;
             fsa.acceptingStateSet = acceptingStateSet;
             fsa.rejectingStateSet = rejectingStateSet;
@@ -341,7 +344,7 @@ namespace Microsoft.Automata
             }
             if (acceptingStateSet.Contains(initialState))
                 newAcceptingStates.Add(newInitialState);
-            return Create(newInitialState, newRejectingStates, newAcceptingStates, moves);
+            return Create(algebra, newInitialState, newRejectingStates, newAcceptingStates, moves);
         }
 
         #region Product construction
@@ -362,8 +365,8 @@ namespace Microsoft.Automata
 
         public static ThreeAutomaton<S> MkProduct(ThreeAutomaton<S> aut1, ThreeAutomaton<S> aut2, IBooleanAlgebra<S> solver, bool inters)
         {
-            var a = aut1.MakeTotal(solver);
-            var b = aut2.MakeTotal(solver);
+            var a = aut1.MakeTotal();
+            var b = aut2.MakeTotal();
 
             var stateIdMap = new Dictionary<Pair<int, int>, int>();
             var initPair = new Pair<int, int>(a.InitialState, b.InitialState);
@@ -453,7 +456,7 @@ namespace Microsoft.Automata
                     incomingTransitions[t.TargetState].Add(t);
 
 
-            return ThreeAutomaton<S>.Create(0, rejStates, accStates, EnumerateMoves(delta));            
+            return ThreeAutomaton<S>.Create(aut1.algebra, 0, rejStates, accStates, EnumerateMoves(delta));            
         }
 
         private static IEnumerable<Move<S>> EnumerateMoves(Dictionary<int, List<Move<S>>> delta)
@@ -495,9 +498,9 @@ namespace Microsoft.Automata
         /// Creates the automaton that accepts the complement of L(this).
         /// </summary>
         /// <param name="solver">boolean algebra solver over S</param>
-        public ThreeAutomaton<S> Complement(IBoolAlgMinterm<S> solver)
+        public ThreeAutomaton<S> Complement()
         {
-            return MkComplement(solver);
+            return MkComplement();
         }
 
         /// <summary>
@@ -526,20 +529,20 @@ namespace Microsoft.Automata
         /// <param name="B">another autonmaton</param>
         public bool IsEquivalentWith(ThreeAutomaton<S> B, IBoolAlgMinterm<S> solver)
         {
-            Automaton<S> accA = Automaton<S>.Create(this.initialState, this.acceptingStateSet, this.GetMoves());
-            Automaton<S> accB = Automaton<S>.Create(B.initialState, B.acceptingStateSet, B.GetMoves());
+            Automaton<S> accA = Automaton<S>.Create(algebra, this.initialState, this.acceptingStateSet, this.GetMoves());
+            Automaton<S> accB = Automaton<S>.Create(algebra, B.initialState, B.acceptingStateSet, B.GetMoves());
             if (!accA.IsEquivalentWith(accB, solver))
                 return false;
 
-            Automaton<S> rejA = Automaton<S>.Create(this.initialState, this.rejectingStateSet, this.GetMoves());
-            Automaton<S> rejB = Automaton<S>.Create(B.initialState, B.rejectingStateSet, B.GetMoves());
+            Automaton<S> rejA = Automaton<S>.Create(algebra, this.initialState, this.rejectingStateSet, this.GetMoves());
+            Automaton<S> rejB = Automaton<S>.Create(algebra,  B.initialState, B.rejectingStateSet, B.GetMoves());
             return rejA.IsEquivalentWith(rejB, solver);
         }       
 
         /// <summary>
         /// The sink state will be the state with the largest id.
         /// </summary>
-        public ThreeAutomaton<S> MakeTotal(IBooleanAlgebra<S> solver)
+        public ThreeAutomaton<S> MakeTotal()
         {
             var aut = this;
 
@@ -548,18 +551,18 @@ namespace Microsoft.Automata
             var newMoves = new List<Move<S>>();
             foreach (int state in aut.States)
             {
-                var cond = solver.MkNot(solver.MkOr(aut.EnumerateConditions(state)));
-                if (solver.IsSatisfiable(cond))
+                var cond = algebra.MkNot(algebra.MkOr(aut.EnumerateConditions(state)));
+                if (algebra.IsSatisfiable(cond))
                     newMoves.Add(Move<S>.Create(state, deadState, cond));
                     
             }
             if (newMoves.Count == 0)
                 return this;
 
-            newMoves.Add(Move<S>.Create(deadState, deadState, solver.True));
+            newMoves.Add(Move<S>.Create(deadState, deadState, algebra.True));
             newMoves.AddRange(GetMoves());
 
-            return ThreeAutomaton<S>.Create(aut.initialState, aut.rejectingStateSet, aut.acceptingStateSet, newMoves);
+            return ThreeAutomaton<S>.Create(algebra, aut.initialState, aut.rejectingStateSet, aut.acceptingStateSet, newMoves);
         }
 
         /// <summary>
@@ -568,9 +571,9 @@ namespace Microsoft.Automata
         /// </summary>
         /// <param name="solver">solver for character constraints</param>
         /// <returns>Complement of this automaton</returns>
-        public ThreeAutomaton<S> MkComplement(IBooleanAlgebra<S> solver)
+        public ThreeAutomaton<S> MkComplement()
         {
-            return ThreeAutomaton<S>.Create(initialState, acceptingStateSet, rejectingStateSet, this.GetMoves());
+            return ThreeAutomaton<S>.Create(algebra, initialState, acceptingStateSet, rejectingStateSet, this.GetMoves());
         }
 
         private IEnumerable<S> EnumerateConditions(int sourceState)
@@ -649,7 +652,7 @@ namespace Microsoft.Automata
         /// </summary>
         ThreeAutomaton<S> MinimizeClassical(IBooleanAlgebra<S> solver, int timeout)
         {
-            var fa = this.MakeTotal(solver);
+            var fa = this.MakeTotal();
 
             Equivalence E = new Equivalence();
 
@@ -754,7 +757,7 @@ namespace Microsoft.Automata
             foreach (int state in rejectingStateSet)
                 mfaRejStates.Add(equivIdMap[state]);
 
-            return ThreeAutomaton<S>.Create(mfaInitialState,mfaRejStates, mfaAccStates, mfaTransitions);
+            return ThreeAutomaton<S>.Create(algebra, mfaInitialState, mfaRejStates, mfaAccStates, mfaTransitions);
         }
 
         private S MkComplementCondition(IEnumerable<Move<S>> list, IBooleanAlgebra<S> solver)
@@ -935,6 +938,12 @@ namespace Microsoft.Automata
 
         #endregion
 
+
+
+        public IBooleanAlgebra<S> Algebra
+        {
+            get { return algebra; }
+        }
     }
 }
 

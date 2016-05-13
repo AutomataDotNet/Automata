@@ -64,7 +64,7 @@ namespace Microsoft.Automata.Internal.Utilities
             foreach (var kv in moves)
                 allmoves.Add(Move<BDD>.Create(kv.Key.First, kv.Key.Second, kv.Value));
 
-            var aut = Automaton<BDD>.Create(initialState, finals, allmoves);
+            var aut = Automaton<BDD>.Create(solver, initialState, finals, allmoves);
             return aut;
         }
 
@@ -93,7 +93,7 @@ namespace Microsoft.Automata.Internal.Utilities
             foreach (var kv in moves)
                 allmoves.Add(Move<BDD>.Create(kv.Key.First, kv.Key.Second, kv.Value));
 
-            var aut = Automaton<BDD>.Create(initialState, finals, allmoves);
+            var aut = Automaton<BDD>.Create(solver, initialState, finals, allmoves);
             return aut;
         }
 
@@ -123,7 +123,7 @@ namespace Microsoft.Automata.Internal.Utilities
             foreach (var kv in moves)
                 allmoves.Add(Move<BDD>.Create(kv.Key.First, kv.Key.Second, kv.Value));
 
-            var aut = Automaton<BDD>.Create(initialState, finals, allmoves);
+            var aut = Automaton<BDD>.Create(solver, initialState, finals, allmoves);
             return aut;
         }
 

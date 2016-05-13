@@ -318,8 +318,7 @@ namespace Microsoft.Automata
         /// </summary>
         public SFA<FUNC, TERM, SORT> Complement()
         {
-            Automaton<TERM> full =
-                Automaton<TERM>.Create(0, new int[] { 0 }, new Move<TERM>[] { Move<TERM>.Create(0, 0, solver.True) });
+            Automaton<TERM> full = Automaton<TERM>.MkFull(this.automaton.Algebra);
             var compl = Automaton<TERM>.MkDifference(full, automaton.MakeTotal(solver), 0, solver);
             return new SFA<FUNC, TERM, SORT>(solver, inpSort, string.Format("Compl[{0}]", name), compl);
         }
@@ -393,7 +392,7 @@ namespace Microsoft.Automata
         /// </summary>
         public SFA<FUNC, TERM, SORT> NormalizeLabels()
         {
-            var res = Automaton<TERM>.Create(automaton.InitialState, automaton.GetFinalStates(), NormalizeLabels(automaton.GetMoves()));
+            var res = Automaton<TERM>.Create(automaton.Algebra, automaton.InitialState, automaton.GetFinalStates(), NormalizeLabels(automaton.GetMoves()));
             return new SFA<FUNC, TERM, SORT>(solver, inpSort, "Norm[" + name + "]", res);
         }
 
@@ -735,10 +734,16 @@ namespace Microsoft.Automata
             foreach (var entry in moveMap)
                 concrete_moves.Add(Move<BDD>.Create(entry.Key.First, entry.Key.Second, entry.Value));
 
-            var res = Automaton<BDD>.Create(this.automaton.InitialState, this.automaton.GetFinalStates(), concrete_moves);
+            var res = Automaton<BDD>.Create(this.solver.CharSetProvider, this.automaton.InitialState, this.automaton.GetFinalStates(), concrete_moves);
             return res;
         }
         #endregion
+
+
+        public IBooleanAlgebra<TERM> Algebra
+        {
+            get { return solver; }
+        }
     }
 }
 

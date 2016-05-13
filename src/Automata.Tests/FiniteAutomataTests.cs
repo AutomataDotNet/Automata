@@ -77,14 +77,14 @@ namespace Microsoft.Automata.Tests
             moves.Add(new Move<BDD>(1, 3, a));
             moves.Add(new Move<BDD>(2, 3, b));
 
-            var aut1 = Automaton<BDD>.Create(0, new int[] { 2, 3 }, moves);
+            var aut1 = Automaton<BDD>.Create(solver, 0, new int[] { 2, 3 }, moves);
             Automaton<BDD> ambl;
 
             Assert.IsFalse(aut1.IsAmbiguous(solver, out ambl));
             Assert.IsTrue(ambl.IsEmpty);
             
 
-            var aut2 = Automaton<BDD>.Create(0, new int[] { 2, 3, 1 }, moves);
+            var aut2 = Automaton<BDD>.Create(solver, 0, new int[] { 2, 3, 1 }, moves);
             Assert.IsTrue(aut2.IsAmbiguous(solver, out ambl));
 
             //solver.ShowGraph(ambl.Determinize(solver).Minimize(solver),"amb");
@@ -172,7 +172,7 @@ namespace Microsoft.Automata.Tests
                 Move<BDD>.Create(2, 0, _2),
                 Move<BDD>.Create(2, 1, _1)
             };
-            var aut = Automaton<BDD>.Create(0, new int[] { 0}, moves);
+            var aut = Automaton<BDD>.Create(solver, 0, new int[] { 0}, moves);
            //solver.ShowGraph(aut, "div3a");
             string regex = solver.ConvertToRegex(aut).Replace("[ad]", "(a|d)").Replace("[b]", "b").Replace("[c]", "c");
             var aut2 = solver.Convert(regex).Determinize(solver).MinimizeHopcroft(solver);
@@ -699,11 +699,11 @@ namespace Microsoft.Automata.Tests
             //string regex = @"MRU|FilledAppTile|System.*Tiles|SnappedAppTile|Installed|Installing|ReadyToInstall";
             CharSetSolver solver = new CharSetSolver();
             var aut = solver.Convert(regex, RegexOptions.Singleline);
-            var autEpsFree = aut.RemoveEpsilons(solver.MkOr);
-            autEpsFree.ShowGraph("autEpsFree");
-            var autDet = autEpsFree.Determinize(solver);
+            //var autEpsFree = aut.RemoveEpsilons(solver.MkOr);
+            //autEpsFree.ShowGraph("autEpsFree");
+            var autDet = aut.Determinize(solver);
             var autMin = autDet.Minimize(solver);
-            autMin.ShowGraph("autMin");
+            //autMin.ShowGraph("autMin");
         }
 
         #region misc helper functions

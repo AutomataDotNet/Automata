@@ -148,7 +148,7 @@ namespace Microsoft.Bek.Tests
                  else
                      moves.Add(Move<BDD>.Create(move.SourceState, move.TargetState, solver.ConvertToCharSet(move.Label)));
 
-             var res = Automaton<BDD>.Create(aut.InitialState, aut.GetFinalStates(), moves);
+             var res = Automaton<BDD>.Create(solver.CharSetProvider, aut.InitialState, aut.GetFinalStates(), moves);
              return res;
          }
 

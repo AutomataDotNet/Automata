@@ -209,7 +209,7 @@ namespace Microsoft.Automata
             SORT inSort, SORT outSort, SORT regSort, int initialState,
           IEnumerable<Move<Rule<TERM>>> movesAndFinalOutputs)
         {
-            var aut = Automaton<Rule<TERM>>.Create(initialState, ExtractFinalStates(movesAndFinalOutputs),
+            var aut = Automaton<Rule<TERM>>.Create(null, initialState, ExtractFinalStates(movesAndFinalOutputs),
               movesAndFinalOutputs);
             aut.EliminateUnrreachableStates();
             aut.EliminateDeadStates();
@@ -228,7 +228,7 @@ namespace Microsoft.Automata
                 new Move<Rule<TERM>>(0,0,Rule<TERM>.Mk(solver.True, solver.UnitConst, solver.MkVar(0, sort))),
                 new Move<Rule<TERM>>(0,0,Rule<TERM>.MkFinal(solver.True))};
             return new ST<FUNC, TERM, SORT>(solver, "Id", solver.UnitConst, sort, sort, solver.UnitSort,
-              Automaton<Rule<TERM>>.Create(0, new int[] { 0 }, moves), false);
+              Automaton<Rule<TERM>>.Create(null, 0, new int[] { 0 }, moves), false);
         }
 
 
@@ -905,7 +905,7 @@ namespace Microsoft.Automata
 
             string name = string.Format("{0}_o_{1}", A.Name, B.Name);
             ST<FUNC, TERM, SORT> AB = new ST<FUNC, TERM, SORT>(Z, name, initReg, A.InputSort, B.OutputSort, regSort,
-              Automaton<Rule<TERM>>.Create(0, ExtractFinalStates(moves), moves), AllYieldsAreEmpty(moves));
+              Automaton<Rule<TERM>>.Create(null, 0, ExtractFinalStates(moves), moves), AllYieldsAreEmpty(moves));
             AB.automaton.EliminateDeadStates();
             return AB;
         }
@@ -987,7 +987,7 @@ namespace Microsoft.Automata
             if (!inputSort.Equals(sfa.InputSort))
                 throw new AutomataException(AutomataExceptionKind.InputSortsMustBeIdentical);
 
-            var D = Automaton<Rule<TERM>>.Create(sfa.InitialState, sfa.Automaton.GetFinalStates(),
+            var D = Automaton<Rule<TERM>>.Create(null, sfa.InitialState, sfa.Automaton.GetFinalStates(),
                 LiftMoves(sfa.Solver, sfa.Automaton));
 
             var restr = Automaton<Rule<TERM>>.MkProduct(automaton, D, new RestrictionSolver(solver), 0);
@@ -1067,7 +1067,7 @@ namespace Microsoft.Automata
             else
             {
                 var st = new ST<FUNC, TERM, SORT>(solver, string.Format("RY[{0}]", name), initReg, inputSort, outputSort, registerSort,
-                    Automaton<Rule<TERM>>.Create(automaton.InitialState, automaton.GetFinalStates(), EliminateYields(automaton.GetMoves())), true);
+                    Automaton<Rule<TERM>>.Create(null, automaton.InitialState, automaton.GetFinalStates(), EliminateYields(automaton.GetMoves())), true);
                 st.isMultiInput = isMultiInput;
                 return st;
             }
@@ -1113,7 +1113,7 @@ namespace Microsoft.Automata
         /// </summary>
         public static ST<FUNC, TERM, SORT> SFAtoST(SFA<FUNC, TERM, SORT> sfa)
         {
-            var A = Automaton<Rule<TERM>>.Create(sfa.InitialState, sfa.Automaton.GetFinalStates(), LiftMoves(sfa.Solver, sfa.Automaton));
+            var A = Automaton<Rule<TERM>>.Create(null, sfa.InitialState, sfa.Automaton.GetFinalStates(), LiftMoves(sfa.Solver, sfa.Automaton));
 
             return new ST<FUNC, TERM, SORT>(sfa.Solver, string.Format("ST[{0}]", sfa.Name), 
                 sfa.Solver.UnitConst, sfa.InputSort, sfa.Solver.UnitSort, sfa.Solver.UnitSort, A, true);
@@ -1418,7 +1418,7 @@ namespace Microsoft.Automata
                     new_moves.Add(Move<string>.Create(move.SourceState, move.TargetState, lab_str));
                 }
             }
-            var aut = Automaton<string>.Create(InitialState, new int[]{new_fin_state}, new_moves);
+            var aut = Automaton<string>.Create(null, InitialState, new int[]{new_fin_state}, new_moves);
             return aut;
         }
 
@@ -1650,7 +1650,7 @@ namespace Microsoft.Automata
                 else
                     finalStates.Add(move.TargetState);
             var sfa = new SFA<FUNC, TERM, SORT>(solver, inputSort, string.Format("SFA[{0}]", name),
-                Automaton<TERM>.Create(automaton.InitialState, finalStates, moves));
+                Automaton<TERM>.Create(this.solver, automaton.InitialState, finalStates, moves));
             return sfa;
 
         }
@@ -1693,7 +1693,7 @@ namespace Microsoft.Automata
             alive.IntersectWith(reachable);
             if (alive.Count == 0)
             {
-                this.automaton = Automaton<Rule<TERM>>.Empty;
+                this.automaton = Automaton<Rule<TERM>>.MkEmpty(null);
                 return;
             }
             //backwards reachability
@@ -1726,7 +1726,7 @@ namespace Microsoft.Automata
                 else
                     finalStates.Add(move.TargetState);
             var sfa = new SFA<FUNC, TERM, SORT>(solver, inputSort, string.Format("SFA[{0}]", name),
-                Automaton<TERM>.Create(automaton.InitialState, finalStates, moves));
+                Automaton<TERM>.Create(this.solver, automaton.InitialState, finalStates, moves));
             return sfa;
         }
 
@@ -1805,7 +1805,7 @@ namespace Microsoft.Automata
                 }
             }
 
-            var aut = Automaton<TERM>.Create(automaton.InitialState, automaton.GetFinalStates(), newMoves);
+            var aut = Automaton<TERM>.Create(this.solver, automaton.InitialState, automaton.GetFinalStates(), newMoves);
             return new SFA<FUNC, TERM, SORT>(solver, elemSort, aut);
         }
 
@@ -2882,7 +2882,7 @@ namespace Microsoft.Automata
                 liftedMoves.Add(Move<Rule<TERM>>.Create(move.SourceState, move.TargetState, r));
             }
 
-            var aut = Automaton<Rule<TERM>>.Create(automaton.InitialState, automaton.GetFinalStates(), liftedMoves);
+            var aut = Automaton<Rule<TERM>>.Create(null, automaton.InitialState, automaton.GetFinalStates(), liftedMoves);
 
             var st = new ST<FUNC, TERM, SORT>(solver, "lift_" + name, initReg, liftedInputSort, outputSort, registerSort, aut, false);
             st.isMultiInput = true;
@@ -3034,7 +3034,7 @@ namespace Microsoft.Automata
                 else
                     return null;
             }
-            var aut = Automaton<Rule<TERM>>.Create(automaton.InitialState, automaton.GetFinalStates(), newMoves);
+            var aut = Automaton<Rule<TERM>>.Create(null, automaton.InitialState, automaton.GetFinalStates(), newMoves);
             var sft = new ST<FUNC, TERM, SORT>(solver, "del_reg_" + name, solver.UnitConst, inputSort, outputSort, solver.UnitSort, aut, noYields);
             sft.isMultiInput = isMultiInput;
             return sft;
@@ -3698,6 +3698,12 @@ namespace Microsoft.Automata
                         return false;
             }
             return true;
+        }
+
+
+        public IBooleanAlgebra<Rule<TERM>> Algebra
+        {
+            get { throw new NotSupportedException(); }
         }
     }
 

@@ -464,7 +464,7 @@ namespace Microsoft.Automata
             foreach (var f in automaton.GetFinalStates())
                 moves.Add(new Move<BDD>(f, newFinalState, null));
 
-            automaton = Automaton<BDD>.Create(newInitialState, new int[] { newFinalState }, moves);
+            automaton = Automaton<BDD>.Create(automaton.Algebra, newInitialState, new int[] { newFinalState }, moves);
 
             Func<int, int, Pair<int, int>> P = (m, n) => { return new Pair<int, int>(m, n); };          
 
@@ -569,7 +569,7 @@ namespace Microsoft.Automata
             foreach (var f in automaton.GetFinalStates())
                 moves.Add(new Move<BDD>(f, newFinalState, null));
 
-            automaton = Automaton<BDD>.Create(newInitialState, new int[] { newFinalState }, moves);
+            automaton = Automaton<BDD>.Create(automaton.Algebra, newInitialState, new int[] { newFinalState }, moves);
 
             Func<int, int, Pair<int,int>> P = (m,n) => {return new Pair<int,int>(m,n);};
 
@@ -837,7 +837,7 @@ namespace Microsoft.Automata
             foreach (var move in aut.GetMoves())
                 moves.Add(Move<string>.Create(move.SourceState, move.TargetState, PrettyPrint(move.Label) + " (" + aut.GetProbability(move) + ")"));
 
-            var autwrap = Automaton<string>.Create(aut.InitialState, aut.GetFinalStates(), moves);
+            var autwrap = Automaton<string>.Create(null, aut.InitialState, aut.GetFinalStates(), moves);
             Internal.DirectedGraphs.DgmlWriter.ShowGraph<string>(-1, autwrap, name);
         }
 
@@ -945,7 +945,7 @@ namespace Microsoft.Automata
                 if (stateProbs[i] > 0.0)
                     finalStates.Add(i);
             }
-            var aut = Automaton<BDD>.Create(0, finalStates, moves);
+            var aut = Automaton<BDD>.Create(this, 0, finalStates, moves);
             aut.isDeterministic = true;
             aut.isEpsilonFree = true;
             aut.didTopSort = true;
@@ -1040,7 +1040,7 @@ namespace Microsoft.Automata
                 }
 
             }
-            return Automaton<BDD>.Create(initialState, finalStates, moves);
+            return Automaton<BDD>.Create(this, initialState, finalStates, moves);
         }
 
         internal class AutWrapper : IAutomaton<BDD>
@@ -1096,6 +1096,12 @@ namespace Microsoft.Automata
             }
 
             #endregion
+
+
+            public IBooleanAlgebra<BDD> Algebra
+            {
+                get { return solver; }
+            }
         }
 
         #region IPrettyPrinter<BvSet> Members

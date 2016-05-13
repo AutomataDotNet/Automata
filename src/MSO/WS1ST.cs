@@ -702,7 +702,7 @@ namespace Microsoft.Automata.MSO
                 newMoves.Add(new Move<IMonadicPredicate<BDD, T>>(move.SourceState, move.TargetState, newPred));
             }
 
-            var res = Automaton<IMonadicPredicate<BDD, T>>.Create(autPhi.InitialState, autPhi.GetFinalStates(), newMoves);
+            var res = Automaton<IMonadicPredicate<BDD, T>>.Create(alg, autPhi.InitialState, autPhi.GetFinalStates(), newMoves);
             //var res = res.Determinize(alg);
             var res_min = res.Minimize(alg);
 
@@ -722,7 +722,7 @@ namespace Microsoft.Automata.MSO
             foreach (var move in autPhi.GetMoves())
                 newMoves.Add(new Move<BDD>(move.SourceState, move.TargetState, alg.OmitBit(move.Label, varIndex)));
 
-            var aut = Automaton<BDD>.Create(autPhi.InitialState, autPhi.GetFinalStates(), newMoves);
+            var aut = Automaton<BDD>.Create(alg, autPhi.InitialState, autPhi.GetFinalStates(), newMoves);
             var res = aut.Determinize(alg);
             res = res.Minimize(alg);
 
@@ -750,7 +750,7 @@ namespace Microsoft.Automata.MSO
             var bit_i_is0 = alg.MkBitFalse(i);
             var subsetCond = alg.MkOr(bit_j_is1, bit_i_is0);
             var moves = new Move<BDD>[] { new Move<BDD>(0, 0, subsetCond) };
-            var aut = Automaton<BDD>.Create(0, new int[] { 0 }, moves, false, false, true);
+            var aut = Automaton<BDD>.Create(alg, 0, new int[] { 0 }, moves, false, false, true);
             return aut;
         }
 
@@ -760,7 +760,7 @@ namespace Microsoft.Automata.MSO
             var bit_i_is0 = alg.BDDAlgebra.MkBitFalse(i);
             var subsetCond = alg.BDDAlgebra.MkOr(bit_j_is1, bit_i_is0);
             var moves = new Move<IMonadicPredicate<BDD, T>>[] { new Move<IMonadicPredicate<BDD, T>>(0, 0, alg.MkCartesianProduct(subsetCond, alg.Second.True)) };
-            var aut = Automaton<IMonadicPredicate<BDD, T>>.Create(0, new int[] { 0 }, moves, false, false, true);
+            var aut = Automaton<IMonadicPredicate<BDD, T>>.Create(alg, 0, new int[] { 0 }, moves, false, false, true);
             return aut;
         }
 
@@ -772,7 +772,7 @@ namespace Microsoft.Automata.MSO
             var bit_j_is0 = alg.MkBitFalse(j);
             var cond = alg.MkOr(alg.MkAnd(bit_i_is1,bit_j_is1),alg.MkAnd(bit_i_is0,bit_j_is0));
             var moves = new Move<BDD>[] { new Move<BDD>(0, 0, cond) };
-            var aut = Automaton<BDD>.Create(0, new int[] { 0 }, moves, false, false, true);
+            var aut = Automaton<BDD>.Create(alg, 0, new int[] { 0 }, moves, false, false, true);
             return aut;
         }
 
@@ -784,7 +784,7 @@ namespace Microsoft.Automata.MSO
             var bit_j_is0 = alg.BDDAlgebra.MkBitFalse(j);
             var cond = alg.MkCartesianProduct(alg.BDDAlgebra.MkOr(alg.BDDAlgebra.MkAnd(bit_i_is1, bit_j_is1), alg.BDDAlgebra.MkAnd(bit_i_is0, bit_j_is0)), alg.Second.True);
             var moves = new Move<IMonadicPredicate<BDD, T>>[] { new Move<IMonadicPredicate<BDD, T>>(0, 0, cond) };
-            var aut = Automaton<IMonadicPredicate<BDD, T>>.Create(0, new int[] { 0 }, moves, false, false, true);
+            var aut = Automaton<IMonadicPredicate<BDD, T>>.Create(alg, 0, new int[] { 0 }, moves, false, false, true);
             return aut;
         }
 
@@ -798,7 +798,7 @@ namespace Microsoft.Automata.MSO
             var both1 = alg.MkAnd(bit_i_is1, bit_j_is1);
             var moves = new Move<BDD>[] { new Move<BDD>(0, 0, both0), 
                 new Move<BDD>(0, 1, both1), new Move<BDD>(1, 1, both0) };
-            var aut = Automaton<BDD>.Create(0, new int[] { 1 }, moves, false, false, true);
+            var aut = Automaton<BDD>.Create(alg, 0, new int[] { 1 }, moves, false, false, true);
             return aut;
         }
 
@@ -816,7 +816,7 @@ namespace Microsoft.Automata.MSO
                 new Move<IMonadicPredicate<BDD, T>>(0, 0, lift(both0)), 
                 new Move<IMonadicPredicate<BDD, T>>(0, 1, lift(both1)), 
                 new Move<IMonadicPredicate<BDD, T>>(1, 1, lift(both0)) };
-            var aut = Automaton<IMonadicPredicate<BDD, T>>.Create(0, new int[] { 1 }, moves, false, false, true);
+            var aut = Automaton<IMonadicPredicate<BDD, T>>.Create(alg, 0, new int[] { 1 }, moves, false, false, true);
             return aut;
         }
 
@@ -828,7 +828,7 @@ namespace Microsoft.Automata.MSO
             var both1 = alg.MkAnd(bit_i_is1, bit_j_is1);
             var moves = new Move<BDD>[] { new Move<BDD>(0, 0, bit_i_is0), 
                 new Move<BDD>(0, 1, both1), new Move<BDD>(1, 1, bit_i_is0) };
-            var aut = Automaton<BDD>.Create(0, new int[] { 1 }, moves, false, false, true);
+            var aut = Automaton<BDD>.Create(alg, 0, new int[] { 1 }, moves, false, false, true);
             return aut;
         }
 
@@ -844,7 +844,7 @@ namespace Microsoft.Automata.MSO
                 new Move<IMonadicPredicate<BDD, T>>(0, 0, lift(bit_i_is0)), 
                 new Move<IMonadicPredicate<BDD, T>>(0, 1, lift(both1)), 
                 new Move<IMonadicPredicate<BDD, T>>(1, 1, lift(bit_i_is0)) };
-            var aut = Automaton<IMonadicPredicate<BDD, T>>.Create(0, new int[] { 1 }, moves, false, false, true);
+            var aut = Automaton<IMonadicPredicate<BDD, T>>.Create(ca, 0, new int[] { 1 }, moves, false, false, true);
             return aut;
         }
 
@@ -853,7 +853,7 @@ namespace Microsoft.Automata.MSO
             var bit_i_is0 = alg.MkBitFalse(i);
             var cond = alg.MkOr(lab, bit_i_is0);
             var moves = new Move<BDD>[] { new Move<BDD>(0, 0, cond) };
-            var aut = Automaton<BDD>.Create(0, new int[] { 0 }, moves, false, false, true);
+            var aut = Automaton<BDD>.Create(alg, 0, new int[] { 0 }, moves, false, false, true);
             return aut;
         }
         
@@ -864,7 +864,7 @@ namespace Microsoft.Automata.MSO
             var bit_i_is0 = ca.BDDAlgebra.MkBitFalse(i);
             var cond = ca.MkOr(lift2(lab),lift1(bit_i_is0));
             var moves = new Move<IMonadicPredicate<BDD, T>>[] { new Move<IMonadicPredicate<BDD, T>>(0, 0, cond) };
-            var aut = Automaton<IMonadicPredicate<BDD, T>>.Create(0, new int[] { 0 }, moves, false, false, true);
+            var aut = Automaton<IMonadicPredicate<BDD, T>>.Create(ca, 0, new int[] { 0 }, moves, false, false, true);
             return aut;
         }
 
@@ -877,7 +877,7 @@ namespace Microsoft.Automata.MSO
                 new Move<BDD>(0, 0, bit_i_is0),
                 new Move<BDD>(0, 1, cond), 
                 new Move<BDD>(1, 1, bit_i_is0)};
-            var aut = Automaton<BDD>.Create(0, new int[] { 1 }, moves, false, false, true);
+            var aut = Automaton<BDD>.Create(alg, 0, new int[] { 1 }, moves, false, false, true);
             return aut;
         }
         
@@ -893,7 +893,7 @@ namespace Microsoft.Automata.MSO
                 new Move<IMonadicPredicate<BDD, T>>(0, 0, lift1(bit_i_is0)),
                 new Move<IMonadicPredicate<BDD, T>>(0, 1, cond), 
                 new Move<IMonadicPredicate<BDD, T>>(1, 1, lift1(bit_i_is0))};
-            var aut = Automaton<IMonadicPredicate<BDD, T>>.Create(0, new int[] { 1 }, moves, false, false, true);
+            var aut = Automaton<IMonadicPredicate<BDD, T>>.Create(ca, 0, new int[] { 1 }, moves, false, false, true);
             return aut;
         }
 
@@ -909,7 +909,7 @@ namespace Microsoft.Automata.MSO
             var moves = new Move<BDD>[] { new Move<BDD>(0, 0, both0),
                 new Move<BDD>(0, 1, cond1), new Move<BDD>(1, 1, both0),
                 new Move<BDD>(1, 2, cond2), new Move<BDD>(2, 2, both0)};
-            var aut = Automaton<BDD>.Create(0, new int[] { 2 }, moves, false, false, true);
+            var aut = Automaton<BDD>.Create(alg, 0, new int[] { 2 }, moves, false, false, true);
             return aut;
         }
 
@@ -931,7 +931,7 @@ namespace Microsoft.Automata.MSO
                 new Move<IMonadicPredicate<BDD, T>>(1, 1, lift1(both0)),
                 new Move<IMonadicPredicate<BDD, T>>(1, 2, lift1(cond2)), 
                 new Move<IMonadicPredicate<BDD, T>>(2, 2, lift1(both0))};
-            var aut = Automaton<IMonadicPredicate<BDD, T>>.Create(0, new int[] { 2 }, moves, false, false, true);
+            var aut = Automaton<IMonadicPredicate<BDD, T>>.Create(ca, 0, new int[] { 2 }, moves, false, false, true);
             return aut;
         }
 
@@ -941,7 +941,7 @@ namespace Microsoft.Automata.MSO
             var bit_i_is1 = alg.MkBitTrue(i);
             var moves = new Move<BDD>[] { new Move<BDD>(0, 0, bit_i_is0),
                 new Move<BDD>(0, 1, bit_i_is1), new Move<BDD>(1, 1, bit_i_is0)};
-            var aut = Automaton<BDD>.Create(0, new int[] { 1 }, moves, false, false, true);
+            var aut = Automaton<BDD>.Create(alg, 0, new int[] { 1 }, moves, false, false, true);
             return aut;
         }
 
@@ -956,7 +956,7 @@ namespace Microsoft.Automata.MSO
                 new Move<IMonadicPredicate<BDD, T>>(0, 0, lift1(bit_i_is0)),
                 new Move<IMonadicPredicate<BDD, T>>(0, 1, lift1(bit_i_is1)), 
                 new Move<IMonadicPredicate<BDD, T>>(1, 1, lift1(bit_i_is0))};
-            var aut = Automaton<IMonadicPredicate<BDD, T>>.Create(0, new int[] { 1 }, moves, false, false, true);
+            var aut = Automaton<IMonadicPredicate<BDD, T>>.Create(ca, 0, new int[] { 1 }, moves, false, false, true);
             return aut;
         }
 
@@ -965,7 +965,7 @@ namespace Microsoft.Automata.MSO
             var moves = new Move<BDD>[] { 
                 new Move<BDD>(0, 0, alg.True) 
             };
-            return Automaton<BDD>.Create(0, new int[] { 0 }, moves, false, false, true);
+            return Automaton<BDD>.Create(alg, 0, new int[] { 0 }, moves, false, false, true);
         }
 
         public static Automaton<IMonadicPredicate<BDD, T>> MkTrue<T>(ICartesianAlgebraBDD<T> ca)
@@ -973,7 +973,7 @@ namespace Microsoft.Automata.MSO
             var moves = new Move<IMonadicPredicate<BDD, T>>[] { 
                 new Move<IMonadicPredicate<BDD, T>>(0, 0, ca.True) 
             };
-            return Automaton<IMonadicPredicate<BDD, T>>.Create(0, new int[] { 0 }, moves, false, false, true);
+            return Automaton<IMonadicPredicate<BDD, T>>.Create(ca, 0, new int[] { 0 }, moves, false, false, true);
         }
 
         public static Automaton<BDD> MkSuccN(int i1, int i2, int n, IBDDAlgebra bddAlg)
@@ -997,7 +997,7 @@ namespace Microsoft.Automata.MSO
             for (int i = 1; i < n; i++)
                 moves.Add(new Move<BDD>(i, i + 1, both0));
 
-            var aut = Automaton<BDD>.Create(0, new int[] { n + 1 }, moves, false, false, true);
+            var aut = Automaton<BDD>.Create(bddAlg, 0, new int[] { n + 1 }, moves, false, false, true);
             return aut;
         }
 
@@ -1027,7 +1027,7 @@ namespace Microsoft.Automata.MSO
             for (int i = 1; i < n; i++)
                 moves.Add(new Move<IMonadicPredicate<BDD, T>>(i, i + 1, both0t));
 
-            var aut = Automaton<IMonadicPredicate<BDD, T>>.Create(0, new int[] { n + 1 }, moves, false, false, true);
+            var aut = Automaton<IMonadicPredicate<BDD, T>>.Create(ca, 0, new int[] { n + 1 }, moves, false, false, true);
             return aut;
         }
 
@@ -1036,7 +1036,7 @@ namespace Microsoft.Automata.MSO
             List<Move<T>> moves = new List<Move<T>>();
             foreach (var move in autom.GetMoves())
                 moves.Add(new Move<T>(move.SourceState, move.TargetState, move.Label.ProjectSecond()));
-            var res = Automaton<T>.Create(autom.InitialState, autom.GetFinalStates(), moves);
+            var res = Automaton<T>.Create(((ICartesianAlgebra<BDD,T>)autom.Algebra).Second, autom.InitialState, autom.GetFinalStates(), moves);
             return res;
         }
     }

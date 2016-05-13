@@ -93,15 +93,18 @@ namespace Automata.Tests
         public void TestEvilRegex()
         {
             Regex EvilRegex = new Regex(@"^(([a-z])+.)+[A-Z]([a-z])+$", RegexOptions.Compiled | (RegexOptions.Singleline));
-            string a = "aaaaaaaaaaaaaaaaa";
+            string a = "aaaaaaaaaaaaaaaaaaa";
             //takes time exponential in the length of a
-            for (int i = 0; i < 15; i++)
+            int t = 0;
+            for (int i = 0; i < 19; i++)
             {
-                int t = System.Environment.TickCount;
+                t = System.Environment.TickCount;
                 EvilRegex.IsMatch(a);
-                TestContext.WriteLine("{0}ms", System.Environment.TickCount - t);
+                t = System.Environment.TickCount - t;
+                TestContext.WriteLine("{0}, {1}", a.Length, t);
                 a += "a";
             }
+            Assert.IsTrue(t > 1000);
         }
 
         [TestMethod]
@@ -112,14 +115,39 @@ namespace Automata.Tests
             string r1 = @"^(?i:[\xD7-\xD8])$";
             string r2 = @"^(?i:[\xD7\xD8])$";
             var solver = new CharSetSolver();
-            Assert.IsTrue(Regex.IsMatch("\xF7", r1));  //<--- ERROR
-            Assert.IsFalse(Regex.IsMatch("\xF7", r2)); //<--- CORRECT
+            Assert.IsTrue(Regex.IsMatch("\xF7", @"^(?i:[\xD7-\xD8])$"));  //<--- ERROR
+            Assert.IsFalse(Regex.IsMatch("\xF7", @"^(?i:[\xD7\xD8])$")); //<--- CORRECT
             //var a1 = solver.Convert(r1);
             //var a2 = solver.Convert(r2);
             //solver.ShowGraph(a1, "a1");
             //solver.ShowGraph(a2, "a2");
             //Assert.IsFalse(solver.Accepts(a1, "\xD7"));
             //Assert.IsTrue(solver.Accepts(a2, "\xD7"));
+        }
+
+        [TestMethod]
+        public void TestMatchTermination()
+        {
+            //exponetial time
+            string[] s = new string[] { 
+                "_a_aa_aa_aa@", 
+                "_a_aa_aa__aa@",
+                "_a_aa_aa___aa@",
+                "_a_aa_aa____aa@",
+                "_a_aa_aa_____aa@",
+                "_a_aa_aa______aa@",
+            };
+            var regex = new Regex("^(_?a?_?a?_?)+$", RegexOptions.Compiled);
+            int t = 0;
+            for (int i = 0; i < s.Length; i++)
+            {
+                t = System.Environment.TickCount;
+                bool res = regex.IsMatch(s[i]);
+                t = System.Environment.TickCount - t;
+                TestContext.WriteLine("{0}, {1}", s[i].Length, t);
+                Assert.IsFalse(res);
+            }
+            Assert.IsTrue(t > 1000);
         }
     }
 }

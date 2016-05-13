@@ -300,7 +300,7 @@ namespace Microsoft.Automata
             if (S == T)
                 return "";
 
-            var aut1 = Automaton<BDD>.Create(S, new int[] { T }, aut.GetMoves());
+            var aut1 = Automaton<BDD>.Create(solver, S, new int[] { T }, aut.GetMoves());
             var autR = solver.Convert(System.Text.RegularExpressions.Regex.Escape(c.ToString()));
 
             var contst = aut1.Intersect(autR, solver).Determinize(solver).Minimize(solver);
@@ -346,7 +346,7 @@ namespace Microsoft.Automata
             if (S == T)
                 return "";
 
-            var aut1 = Automaton<BDD>.Create(S, new int[] { T }, aut.GetMoves());
+            var aut1 = Automaton<BDD>.Create(aut.Algebra, S, new int[] { T }, aut.GetMoves());
             var contst = aut1.Determinize(solver).Minimize(solver);
             var finst = contst.GetFinalStates();
             var strings = new Dictionary<int, string>();

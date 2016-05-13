@@ -12,6 +12,8 @@ namespace Microsoft.Automata
     /// </summary>
     public class RegexToAutomatonBuilder<T, S>
     {
+        internal Automaton<S> epsilon;
+        internal Automaton<S> empty;
         /// <summary>
         /// Create a new incremental automata builder.
         /// </summary>
@@ -22,6 +24,8 @@ namespace Microsoft.Automata
             this.nodeId = 0;
             this.solver = solver;
             this.Callback = callback;
+            this.epsilon = Automaton<S>.MkEpsilon(solver);
+            this.empty = Automaton<S>.MkEmpty(solver);
         }
 
         private int nodeId;
@@ -63,7 +67,7 @@ namespace Microsoft.Automata
                 var sfa = Callback(child);
                 if (sfa.IsEmpty)                  //may happen if a move condition is unsat
                     continue;                     //just ignore the empty SFA
-                if (sfa == Automaton<S>.Epsilon)  //may happen if some branch is ()
+                if (sfa.IsEpsilon)                //may happen if some branch is ()
                 {
                     includesEmptyWord = true;
                     continue;
@@ -107,7 +111,7 @@ namespace Microsoft.Automata
         {
             if (!noWordBoundaries)
             {
-                var res0 = Automaton<S>.Create(start, EnumFinStates(sfas), EnumMoves(start, sfas));
+                var res0 = Automaton<S>.Create(solver, start, EnumFinStates(sfas), EnumMoves(start, sfas));
                 res0.AddWordBoundaries(EnumWordBounbdaries(sfas));
                 return res0;
             }
@@ -116,9 +120,9 @@ namespace Microsoft.Automata
             if (sfas.Count == 0)
             {
                 if (addEmptyWord)
-                    return Automaton<S>.Epsilon;
+                    return this.epsilon;
                 else
-                    return Automaton<S>.Empty;
+                    return this.empty;
             }
             if (sfas.Count == 1)
             {
@@ -233,7 +237,7 @@ namespace Microsoft.Automata
                     }
             }
 
-            Automaton<S> res = Automaton<S>.Create(start, finalStates, GenerateMoves(conditionMap, eMoves));
+            Automaton<S> res = Automaton<S>.Create(solver, start, finalStates, GenerateMoves(conditionMap, eMoves));
             res.isDeterministic = isDeterministic;
             return res;
         }
@@ -265,13 +269,13 @@ namespace Microsoft.Automata
                 isBeg = (start && i == 0);
                 isEnd = (end && i == r.Length - 1);
                 var sfa = Callback(child);
-                if (sfa == Automaton<S>.Empty)
+                if (sfa.IsEmpty)
                 {
                     isBeg = start;
                     isEnd = end;
-                    return Automaton<S>.Empty; //the whole concatenation becomes empty
+                    return this.empty; //the whole concatenation becomes empty
                 }
-                if (sfa == Automaton<S>.Epsilon)
+                if (sfa.IsEpsilon)
                     continue;  //the epsilon is a noop in concatenation, just ignore it
                 sfas.Add(sfa);
             }
@@ -283,7 +287,7 @@ namespace Microsoft.Automata
         private Automaton<S> ConcatenateSFAs(List<Automaton<S>> sfas)
         {
             if (sfas.Count == 0)
-                return Automaton<S>.Epsilon; //all of SFAS were epsilons, so the result is Epsilon
+                return this.epsilon; //all of SFAS were epsilons, so the result is Epsilon
 
             if (sfas.Count == 1)   //concatenation is trivial
                 return sfas[0];
@@ -305,16 +309,16 @@ namespace Microsoft.Automata
             if (isBeg || isEnd)
             {  //may start or end with any characters since no anchor is used 
                 var st = this.MkStateId();
-                return Automaton<S>.Create(st, new int[] { st }, new Move<S>[] { Move<S>.Create(st, st, solver.True) });
+                return Automaton<S>.Create(this.solver, st, new int[] { st }, new Move<S>[] { Move<S>.Create(st, st, solver.True) });
             }
             else //an intermediate empty string is just an epsilon transition
-                return Automaton<S>.Epsilon;
+                return this.epsilon;
         }
 
         public Automaton<S> MkEmptyAutomaton()
         {
             var st = this.MkStateId();
-            return Automaton<S>.Create(st, new int[] {}, new Move<S>[] {});
+            return Automaton<S>.Create(this.solver, st, new int[] { }, new Move<S>[] { });
         }
 
         /// <summary>
@@ -323,7 +327,7 @@ namespace Microsoft.Automata
         public Automaton<S> MkFull()
         {
             var st = this.MkStateId();
-            return Automaton<S>.Create(st, new int[] { st }, new Move<S>[] { Move<S>.Create(st, st, solver.True) });
+            return Automaton<S>.Create(this.solver, st, new int[] { st }, new Move<S>[] { Move<S>.Create(st, st, solver.True) });
         }
 
         /// <summary>
@@ -331,7 +335,7 @@ namespace Microsoft.Automata
         /// </summary>
         public Automaton<S> MkEmptyLang()
         {
-            return Automaton<S>.Empty;
+            return this.empty;
         }
 
         /// <summary>
@@ -361,7 +365,7 @@ namespace Microsoft.Automata
             for (int i = 0; i < count; i++)
                 moves.Add(Move<S>.Create(initialstate + i, initialstate + i + 1, s[i]));
 
-            Automaton<S> res = Automaton<S>.Create(initialstate, finalstates, moves);
+            Automaton<S> res = Automaton<S>.Create(this.solver, initialstate, finalstates, moves);
             res.isDeterministic = true;
             if (start) //may start with any characters
             {
@@ -399,7 +403,7 @@ namespace Microsoft.Automata
             Automaton<S> loop;
 
             if (m == 0 && sfa.IsEmpty)
-                loop = Automaton<S>.Epsilon;
+                loop = this.epsilon;
             else if (m == 0 && n == int.MaxValue) //case: *
             {
                 loop = MakeKleeneClosure(sfa);
@@ -418,13 +422,13 @@ namespace Microsoft.Automata
             else if (m == 1 && n == 1) //trivial case: r{1,1} = r
             {
                 if (sfa.IsEmpty)
-                    return Automaton<S>.Empty;
+                    return this.empty;
                 loop = sfa;
             }
             else if (n == int.MaxValue) //case: + or generally {m,} for m >= 1
             {
                 if (sfa.IsEmpty)
-                    return Automaton<S>.Empty;
+                    return this.empty;
 
                 if (sfa.IsFinalState(sfa.InitialState))
                     loop = MakeKleeneClosure(sfa); //the repetition is a loop
@@ -492,16 +496,16 @@ namespace Microsoft.Automata
             if (start)
             {
                 var st = this.MkStateId();
-                if (loop != Automaton<S>.Epsilon)
+                if (!loop.IsEpsilon)
                 {
-                    Automaton<S> prefix = Automaton<S>.Create(st, new int[] { st },
+                    Automaton<S> prefix = Automaton<S>.Create(this.solver, st, new int[] { st },
                         new Move<S>[] { Move<S>.Create(st, st, solver.True) });
                     prefix.Concat(loop);
                     loop = prefix;
                 }
                 else
                 {
-                    loop = Automaton<S>.Create(st, new int[] { st },
+                    loop = Automaton<S>.Create(this.solver, st, new int[] { st },
                         new Move<S>[] { Move<S>.Create(st, st, solver.True) });
                 }
 
@@ -509,12 +513,12 @@ namespace Microsoft.Automata
             if (end)
             {
                 var st = this.MkStateId();
-                if (loop != Automaton<S>.Epsilon)
-                    loop.Concat(Automaton<S>.Create(st, new int[] { st },
+                if (!loop.IsEpsilon)
+                    loop.Concat(Automaton<S>.Create(this.solver, st, new int[] { st },
                         new Move<S>[] { Move<S>.Create(st, st, solver.True) }));
                 else
                 {
-                    loop = Automaton<S>.Create(st, new int[] { st },
+                    loop = Automaton<S>.Create(this.solver, st, new int[] { st },
                         new Move<S>[] { Move<S>.Create(st, st, solver.True) });
                 }
             }
@@ -523,8 +527,8 @@ namespace Microsoft.Automata
 
         private Automaton<S> MakeKleeneClosure(Automaton<S> sfa)
         {
-            if (sfa == Automaton<S>.Empty || sfa == Automaton<S>.Epsilon)
-                return Automaton<S>.Epsilon;
+            if (sfa.IsEmpty || sfa.IsEpsilon)
+                return this.epsilon;
 
             if (sfa.IsKleeneClosure())
                 return sfa;
@@ -568,13 +572,13 @@ namespace Microsoft.Automata
             int st = this.MkStateId();
             if (m == 0 && n == int.MaxValue) //case : *
             {
-                res = Automaton<S>.Create(st,
+                res = Automaton<S>.Create(this.solver, st,
                                  new int[] { st }, new Move<S>[] { Move<S>.Create(st, st, cond) });
             }
             else if (m == 0 && n == 1) //case : ?
             {
                 int st2 = this.MkStateId();
-                res = Automaton<S>.Create(st,
+                res = Automaton<S>.Create(this.solver, st,
                                  new int[] { st, st2 }, new Move<S>[] { Move<S>.Create(st, st2, cond) });
             }
             else if (n == int.MaxValue) //case : + or {m,}
@@ -588,7 +592,7 @@ namespace Microsoft.Automata
                     st1 = st2;
                 }
                 moves.Add(Move<S>.Create(st1, st1, cond));
-                res = Automaton<S>.Create(st, new int[] { st1 }, moves);
+                res = Automaton<S>.Create(this.solver, st, new int[] { st1 }, moves);
             }
             else //general case {m,n}
             {
@@ -605,7 +609,7 @@ namespace Microsoft.Automata
                         finalstates.Add(st2);
                     st1 = st2;
                 }
-                res = Automaton<S>.Create(st, finalstates, moves);
+                res = Automaton<S>.Create(this.solver, st, finalstates, moves);
             }
             res.isEpsilonFree = true;
             res.isDeterministic = true;
@@ -631,7 +635,7 @@ namespace Microsoft.Automata
             var st1 = this.MkStateId();
             var notNewLineCond = solver.MkNot(newLineCond);
 
-            Automaton<S> fa = Automaton<S>.Create(st, new int[] { st },
+            Automaton<S> fa = Automaton<S>.Create(this.solver, st, new int[] { st },
                 new Move<S>[]{
                     Move<S>.Create(st,st, newLineCond), 
                     Move<S>.Create(st,st1, notNewLineCond),
@@ -656,7 +660,7 @@ namespace Microsoft.Automata
             var st1 = this.MkStateId();
             var minStateId2 = this.MkStateId();
 
-            Automaton<S> fa = Automaton<S>.Create(st, new int[] { st, st1 },
+            Automaton<S> fa = Automaton<S>.Create(this.solver, st, new int[] { st, st1 },
                     new Move<S>[]{
                            Move<S>.Create(st,st1, newLineCond),
                            Move<S>.Create(st1,st1, solver.True)});
@@ -675,7 +679,7 @@ namespace Microsoft.Automata
             if (isBeg)
                 return MkFull();
             else
-                return Automaton<S>.Epsilon; //must end without additional characters
+                return this.epsilon; //must end without additional characters
         }
 
         /// <summary>
@@ -690,7 +694,7 @@ namespace Microsoft.Automata
                 //otherwise, allow any trailing characters
                 return MkFull();
             else
-                return Automaton<S>.Epsilon;
+                return this.epsilon;
         }
 
 
@@ -703,7 +707,7 @@ namespace Microsoft.Automata
             {
                 var f1 = MkFull();
                 int stateid = MkStateId();
-                var aut = Automaton<S>.Create(stateid, new int[] { stateid }, new Move<S>[] { });
+                var aut = Automaton<S>.Create(this.solver, stateid, new int[] { stateid }, new Move<S>[] { });
                 aut.AddWordBoundary(stateid);
                 var f2 = MkFull();
                 f1.Concat(aut);
@@ -714,7 +718,7 @@ namespace Microsoft.Automata
             {
                 var f = MkFull();
                 int stateid = MkStateId();
-                var aut = Automaton<S>.Create(stateid, new int[] { stateid }, new Move<S>[] { });
+                var aut = Automaton<S>.Create(this.solver, stateid, new int[] { stateid }, new Move<S>[] { });
                 aut.AddWordBoundary(stateid);
                 f.Concat(aut);
                 return f;
@@ -722,7 +726,7 @@ namespace Microsoft.Automata
             else if (isEnd)
             {
                 int stateid = MkStateId();
-                var aut = Automaton<S>.Create(stateid, new int[] { stateid }, new Move<S>[] { });
+                var aut = Automaton<S>.Create(this.solver, stateid, new int[] { stateid }, new Move<S>[] { });
                 aut.AddWordBoundary(stateid);
                 var f = MkFull();
                 aut.Concat(f);
@@ -731,7 +735,7 @@ namespace Microsoft.Automata
             else
             {
                 int stateid = MkStateId();
-                var aut = Automaton<S>.Create(stateid, new int[] { stateid }, new Move<S>[] { });
+                var aut = Automaton<S>.Create(this.solver, stateid, new int[] { stateid }, new Move<S>[] { });
                 aut.AddWordBoundary(stateid);
                 return aut;
             }
