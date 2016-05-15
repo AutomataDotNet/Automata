@@ -96,7 +96,7 @@ namespace Automata.Tests
             string a = "aaaaaaaaaaaaaaaaaaa";
             //takes time exponential in the length of a
             int t = 0;
-            for (int i = 0; i < 19; i++)
+            for (int i = 0; i < 15; i++)
             {
                 t = System.Environment.TickCount;
                 EvilRegex.IsMatch(a);
@@ -134,8 +134,8 @@ namespace Automata.Tests
                 "_a_aa_aa__aa@",
                 "_a_aa_aa___aa@",
                 "_a_aa_aa____aa@",
-                "_a_aa_aa_____aa@",
-                "_a_aa_aa______aa@",
+                //"_a_aa_aa_____aa@",
+                //"_a_aa_aa______aa@", //takes 1 min!!!
             };
             var regex = new Regex("^(_?a?_?a?_?)+$", RegexOptions.Compiled);
             int t = 0;

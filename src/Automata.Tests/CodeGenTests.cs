@@ -19,7 +19,7 @@ namespace Automata.Tests
         internal static int Repetitions = 10;
 
         [TestMethod]
-        public void TestRegex2cpp()
+        public void gen_cpp_TestRegex2cpp()
         {
             Regex Regex9 = new Regex(@"^(?i:www\.bing\.com)$", RegexOptions.Compiled | (RegexOptions.Singleline));
             Regex Regex10 = new Regex(@"^(?i:SERP|Web|Auth|FacebookConnect)$", RegexOptions.Compiled | (RegexOptions.Singleline));
@@ -331,7 +331,7 @@ namespace Automata.Tests
         }
 
         [TestMethod]
-        public void TestRegex2csharp()
+        public void gen_csharp_TestRegex2csharp()
         {
             var solver = new CharSetSolver();
             string regex = @"^(\w\d)+$";
@@ -351,6 +351,116 @@ namespace Automata.Tests
             //Console.ReadLine();
             Assert.IsTrue(yes);
             Assert.IsFalse(no);
+        }
+
+        [TestMethod]
+        public void gen_chsarp_TestSampleRegexes2csharp()
+        {
+            var solver = new CharSetSolver(BitWidth.BV16);
+            List<string> regexesAll = new List<string>(File.ReadAllLines(regexesFile));
+            List<int> timedout = new List<int>();
+            List<int> excluded = new List<int>(new int[] { 36, 50, 64, 65, 162, 166, 210, 238, 334, 355, 392, 455, 
+                471, 490, 594, 611, 612, 671, 725, 731, 741, 760, 775, 800, 852, 
+                870, 873, 880, 882, 893, 923, 991, 997, 1053, 1062, 1164, 1220, 
+                1228, 1273, 1318, 1339, 1352, 1386, 1404, 1413, 1414, 1423, 1424, 
+                1429, 1431, 1434, 1482, 1487, 1516, 1517, 1518, 1519, 1520, 1537, 
+                1565, 1566, 1635, 1744, 1749, 1829, 1868 });
+            List<string> regexes = new List<string>();
+
+            for (int i = 1; i < regexesAll.Count; i++)
+                if (!excluded.Contains(i))
+                    regexes.Add(regexesAll[i]);
+
+            int K = 50; //number of pos/neg strings to be generated for each regex
+            for (int i = 1; i < 100; i++)
+            {
+                try
+                {
+                    var regex = regexes[i];
+                    var aut = solver.Convert(regex, RegexOptions.Singleline);
+                    var autDet = aut.Determinize(solver, 2000);
+                    var autMin = autDet.Minimize(solver);
+                    var autMinC = aut.Complement(solver);
+                    if (autMin.IsEmpty || autMinC.IsEmpty)
+                        continue;
+
+                    CheckIsClean(autMin);
+
+                    //var autMinExpr = z3.ConvertAutomatonGuardsToExpr(autMin);
+                    //var sfa = new SFA<FuncDecl, Expr, Sort>(z3, z3.CharacterSort, autMinExpr);
+                    //var stbb = new STBuilder<FuncDecl, Expr, Sort>(z3);
+                    //var st = ST<FuncDecl, Expr, Sort>.SFAtoST(sfa);
+                    //var stb = st.ToSTb();
+                    ////var csAcceptor = stb.Compile("RegexTransfomer", "SampleAcceptor", false, true);
+
+                    var csAcceptor = solver.ToCS(autMin);
+
+                    HashSet<string> posSamples = new HashSet<string>();
+                    HashSet<string> negSamples = new HashSet<string>();
+                    int k = autMin.FindShortestFinalPath(autMin.InitialState).Item1.Length;
+                    var maxLengthAut = solver.Convert("^.{0," + (3 * k) + "}$").Determinize(solver).Minimize(solver);
+                    int tries = 0;
+                    var aut1 = autMin.Intersect(maxLengthAut, solver);
+                    while (posSamples.Count < K && tries < 10 * K)
+                    {
+                        var s = solver.GenerateMemberUniformly(aut1);
+                        if (!s.EndsWith("\n"))
+                            if (!posSamples.Add(s))
+                                tries++;
+                    }
+                    tries = 0;
+                    int k2 = autMinC.FindShortestFinalPath(autMin.InitialState).Item1.Length;
+                    var maxLengthAut2 = solver.Convert("^.{0," + (3 * k2) + "}$").Determinize(solver).Minimize(solver);
+                    var autMinCprefix = autMinC.Intersect(maxLengthAut2, solver);
+                    while (negSamples.Count < K && tries < 10 * K)
+                    {
+                        var s = solver.GenerateMemberUniformly(autMinCprefix);
+                        if (!s.EndsWith("\n"))
+                            if (!negSamples.Add(s))
+                                tries++;
+                    }
+
+                    foreach (string s in posSamples)
+                    {
+                        if (!RexEngine.IsMatch(s, regex, RegexOptions.Singleline))
+                        {
+                            Console.WriteLine("match expected regex:" + i);
+                            break;
+                        }
+                        if (!csAcceptor.IsMatch(s))
+                        {
+                            Console.WriteLine("match expected regex:" + i);
+                            break;
+                        }
+                    }
+                    foreach (string s in negSamples)
+                    {
+                        if (RexEngine.IsMatch(s, regex, RegexOptions.Singleline))
+                        {
+                            Console.WriteLine("mismatch expected regex:" + i);
+                            break;
+                        }
+                        if (csAcceptor.IsMatch(s))
+                        {
+                            Console.WriteLine("mismatch expected regex:" + i);
+                            break;
+                        }
+                    }
+                }
+                catch (TimeoutException)
+                {
+                    Console.WriteLine("timeout regex:" + i);
+                    timedout.Add(i);
+                    continue;
+                }
+            }
+        }
+
+        private void CheckIsClean(Automaton<BDD> aut)
+        {
+            foreach (var m in aut.GetMoves())
+                if (m.Label.IsEmpty)
+                    Assert.IsFalse(true);
         }
     }
 

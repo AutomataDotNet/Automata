@@ -399,6 +399,13 @@ namespace Microsoft.Automata
             if (n < m)
                 return False;
             uint mask = (uint)1 << maxBit;
+            //filter out bits greater than maxBit
+            if (maxBit < 31)
+            {
+                uint filter = (mask << 1) - 1;
+                m = m & filter;
+                n = n & filter;
+            }
             return CreateFromInterval1(mask, maxBit, m, n);
         }
 

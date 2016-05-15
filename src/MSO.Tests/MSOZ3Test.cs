@@ -427,7 +427,7 @@ namespace MSOZ3Test
         [TestMethod]
         public void TestMSO_Le1()
         {
-            var solver = new CharSetSolver(BitWidth.BV7);
+            var solver = new CharSetSolver(BitWidth.BV16);
             //var phi = new MSOTrue();
             MSOFormula<BDD> phi = new MSOExistsFo<BDD>("x", new MSOExistsFo<BDD>("y",
                     new MSOLt<BDD>("x", "y")));
