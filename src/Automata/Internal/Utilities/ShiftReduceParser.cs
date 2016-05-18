@@ -1,4 +1,4 @@
-// Gardens Point Parser Generator
+﻿// Gardens Point Parser Generator
 // Copyright (c) Wayne Kelly, QUT 2005-2010
 // (see accompanying GPPGcopyright.rtf)
 
@@ -30,7 +30,8 @@ namespace QUT.Gppg
         /// <summary>
         /// The abstract scanner for this parser.
         /// </summary>
-        protected AbstractScanner<TValue, TSpan> Scanner {
+        protected AbstractScanner<TValue, TSpan> Scanner
+        {
             get { return scanner; }
             set { scanner = value; }
         }
@@ -107,17 +108,17 @@ namespace QUT.Gppg
         /// <param name="rules">The array of Rule objects</param>
         protected void InitRules(Rule[] rules) { this.rules = rules; }
 
-      /// <summary>
-      /// Initialization method to allow derived classes to
-      /// insert the states table into this base class.
-      /// </summary>
-      /// <param name="states">The pre-initialized states table</param>
+        /// <summary>
+        /// Initialization method to allow derived classes to
+        /// insert the states table into this base class.
+        /// </summary>
+        /// <param name="states">The pre-initialized states table</param>
         protected void InitStates(State[] states) { this.states = states; }
 
-      /// <summary>
-      /// OBSOLETE FOR VERSION 1.4.0
-      /// </summary>
-      /// <param name="size"></param>
+        /// <summary>
+        /// OBSOLETE FOR VERSION 1.4.0
+        /// </summary>
+        /// <param name="size"></param>
         protected void InitStateTable(int size) { states = new State[size]; }
 
         /// <summary>
@@ -338,7 +339,7 @@ namespace QUT.Gppg
                     //  Default action "@$ = @1.Merge(@N)" for location info.
                     TSpan at1 = LocationStack[LocationStack.Depth - rule.RightHandSide.Length];
                     TSpan atN = LocationStack[LocationStack.Depth - 1];
-                    CurrentLocationSpan = 
+                    CurrentLocationSpan =
                         ((at1 != null && atN != null) ? at1.Merge(atN) : default(TSpan));
                 }
             }
@@ -469,7 +470,7 @@ namespace QUT.Gppg
                     {
 #if TRACE_ACTIONS
                             Console.Error.Write("Reading a token: ");
-#endif                       
+#endif
                         NextToken = scanner.yylex();
                     }
 
@@ -593,7 +594,7 @@ namespace QUT.Gppg
         private string SymbolToString(int symbol)
         {
             if (symbol < 0)
-                return nonTerminals[-symbol-1];
+                return nonTerminals[-symbol - 1];
             else
                 return TerminalToString(symbol);
         }
@@ -722,7 +723,7 @@ namespace QUT.Gppg
 #else
     internal abstract class AbstractScanner<TValue, TSpan>
 #endif
-        where TSpan : IMerge<TSpan>
+ where TSpan : IMerge<TSpan>
     {
         /// <summary>
         /// Lexical value optionally set by the scanner. The value
@@ -793,9 +794,9 @@ namespace QUT.Gppg
 #else
     internal class State
     {
-      /// <summary>
-      /// The index of this state in the states array.
-      /// </summary>
+        /// <summary>
+        /// The index of this state in the states array.
+        /// </summary>
         internal int number;
 #endif
         internal Dictionary<int, int> ParserTable;   // Terminal -> ParseAction
@@ -934,3 +935,4 @@ namespace QUT.Gppg
         internal bool IsEmpty() { return tos == 0; }
     }
 }
+

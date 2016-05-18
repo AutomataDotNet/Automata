@@ -51,6 +51,11 @@
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Mona\AST.cs" />
+    <Compile Include="Mona\mona.lex.cs" />
+    <Compile Include="Mona\mona.y.cs" />
+    <Compile Include="Mona\MonaParseException.cs" />
+    <Compile Include="Mona\MonaParser.cs" />
     <Compile Include="MSO.cs" />
     <Compile Include="MSOT.cs" />
     <Compile Include="MSOAlgebra.cs" />
@@ -65,9 +70,17 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <None Include="Mona\genparser.bat" />
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>
+  </ItemGroup>
+  <ItemGroup />
+  <ItemGroup>
+    <None Include="Mona\mona.lex" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Mona\mona.y" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

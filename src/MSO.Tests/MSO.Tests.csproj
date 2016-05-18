@@ -74,6 +74,7 @@
   <ItemGroup>
     <Compile Include="MSOZ3Test.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="MonaTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Automata.Z3\Automata.Z3.csproj">
