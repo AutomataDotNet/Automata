@@ -69,8 +69,8 @@ formula
    | RESTRICT LPAR formula RPAR    { $$ = MkBooleanFormula($1, $3); }
    | EMPTY LPAR term RPAR          { $$ = MkAtom($1, $3); }
    | q0 names formula              { $$ = MkQ0Formula($1, $2, $3); }
-   | q RBRACKET univs vars COLON formula { $$ = MkQFormula($1, $4, $5, $3); }
-   | q vars COLON formula          { $$ = MkQFormula($1, $2, $3); }
+   | q RBRACKET univs vars COLON formula { $$ = MkQFormula($1, $4, $6, $3); }
+   | q vars COLON formula          { $$ = MkQFormula($1, $2, $4); }
    | formula AND formula           { $$ = MkBooleanFormula($2, $1, $3); }
    | formula OR formula            { $$ = MkBooleanFormula($2, $1, $3); }
    | formula IMPLIES formula       { $$ = MkBooleanFormula($2, $1, $3); }

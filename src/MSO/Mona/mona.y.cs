@@ -4,9 +4,9 @@
 
 // GPPG version 1.5.0
 // Machine:  MARGUS-X1
-// DateTime: 5/18/2016 1:06:52 AM
+// DateTime: 5/18/2016 1:40:54 PM
 // UserName: margus
-// Input file <mona.y - 5/18/2016 1:06:42 AM>
+// Input file <mona.y - 5/18/2016 1:49:57 AM>
 
 // options: babel lines gplex
 
@@ -347,11 +347,11 @@ public partial class MonaParser: ShiftReduceParser<object, LexLocation>
         break;
       case 20: // formula -> q, RBRACKET, univs, vars, COLON, formula
 #line 72 "mona.y"
-{ CurrentSemanticValue = MkQFormula(ValueStack[ValueStack.Depth-6], ValueStack[ValueStack.Depth-3], ValueStack[ValueStack.Depth-2], ValueStack[ValueStack.Depth-4]); }
+{ CurrentSemanticValue = MkQFormula(ValueStack[ValueStack.Depth-6], ValueStack[ValueStack.Depth-3], ValueStack[ValueStack.Depth-1], ValueStack[ValueStack.Depth-4]); }
         break;
       case 21: // formula -> q, vars, COLON, formula
 #line 73 "mona.y"
-{ CurrentSemanticValue = MkQFormula(ValueStack[ValueStack.Depth-4], ValueStack[ValueStack.Depth-3], ValueStack[ValueStack.Depth-2]); }
+{ CurrentSemanticValue = MkQFormula(ValueStack[ValueStack.Depth-4], ValueStack[ValueStack.Depth-3], ValueStack[ValueStack.Depth-1]); }
         break;
       case 22: // formula -> formula, AND, formula
 #line 74 "mona.y"
