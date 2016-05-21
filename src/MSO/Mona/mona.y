@@ -13,7 +13,9 @@
 %token TRUE FALSE NOT AND OR IMPLIES EQUIV
 %token IN NOTIN SUBSET EMPTY RESTRICT
 %token EX0 EX1 EX2 ALL0 ALL1 ALL2 LET0 LET1 LET2 VAR0 VAR1 VAR2
-%token UNIVERSE WHERE PREFIX MAX MIN PCONST UNION INTER
+%token WHERE PREFIX MAX MIN PCONST UNION INTER
+%token GUIDE UNIVERSE INCLUDE ASSERT EXECUTE CONST
+%token DEFAULTWHERE1 DEFAULTWHERE2 TREE MACRO PRED ALLPOS TYPE
 %token ARROW NAME NUMBER
 %token LBRACKET RBRACKET LBRACE RBRACE LPAR RPAR COMMA COLON SEMICOLON
 %token DOT UP
@@ -39,8 +41,8 @@
 %% 
 
 program 
-   : header SEMICOLON decls        { $$ = MkProgram($1, $3); }
-   | decls                         { $$ = MkProgram($1); }
+   : header SEMICOLON decls                        { $$ = MkProgram($1, $3); }
+   | decls                                         { $$ = MkProgram($1); }
    ;
 
 header
@@ -48,107 +50,124 @@ header
    ;
 
 decls
-   : decl SEMICOLON decls_         { $$ = MkDeclarations($1, $3); }
-   ;
-
-decls_
-   : EOF                           { $$ = MkDeclarations(); }
-   | decl SEMICOLON decls_         { $$ = MkDeclarations($1, $3); }
+   : decl SEMICOLON EOF                            { $$ = MkList<Decl>($1, MkList<Decl>()); }
+   | decl SEMICOLON decls                          { $$ = MkList<Decl>($1, $3); }
    ;
 
 decl 
-   : var_decl 
-   | formula                       
+   : formula                                       { $$ = MkFormulaDecl($1); }
+   | UNIVERSE univargs                             { $$ = MkUnivDecl($2); }        
+   | ASSERT formula                                { $$ = MkAssertDecl($2); }
+   | EXECUTE formula                               { $$ = MkExecuteDecl($2); }
+   | CONST NAME EQ intterm                         { $$ = MkConstDecl($2, $4); }
+   | DEFAULTWHERE1 LPAR NAME RPAR EQ formula       { $$ = MkDefaultWhere1Decl($3, $6); }
+   | DEFAULTWHERE2 LPAR NAME RPAR EQ formula       { $$ = MkDefaultWhere2Decl($3, $6); }
+   | VAR0 names                                    { $$ = MkVar0Decl($2); }                     
+   | VAR1 univs vws                                { $$ = MkVar1Decl($3, $2); }
+   | VAR2 univs vws                                { $$ = MkVar2Decl($3, $2); }
+   | TREE univs vws                                { $$ = MkTreeDecl($3, $2); }
+   | VAR1 vws                                      { $$ = MkVar1Decl($2); }    
+   | VAR2 vws                                      { $$ = MkVar2Decl($2); }    
+   | TREE vws                                      { $$ = MkTreeDecl($2); }        
+   ;
+
+intterm 
+   : LPAR intterm RPAR                             { $$ = $2; }
+   | intterm PLUS intterm                          { $$ = MkArithmFuncApp($2, $1, $3); }
+   | intterm MINUS intterm                         { $$ = MkArithmFuncApp($2, $1, $3); }
+   | intterm TIMES intterm                         { $$ = MkArithmFuncApp($2, $1, $3); }
+   | intterm DIV intterm                           { $$ = MkArithmFuncApp($2, $1, $3); }
+   | intterm MOD intterm                           { $$ = MkArithmFuncApp($2, $1, $3); }
+   | NAME                                          { $$ = MkConstRef($1); }
+   | NUMBER                                        { $$ = MkInt($1); }
+   ;
+
+univargs
+   : univarg COMMA univargs                        { $$ = MkList<UnivArg>($1, $3); }
+   | univarg                                       { $$ = MkList<UnivArg>($1, MkList<UnivArg>()); }
+   ;
+
+univarg 
+   : NAME COLON NAME                               { $$ = MkUnivArgWithType($1, $3); }
+   | NAME COLON NUMBER                             { $$ = MkUnivArgWithSucc($1, $3); }
+   | NAME                                          { $$ = MkUnivArg($1); }
+   ;
+
+vws
+   : NAME COMMA vws                                { $$ = MkList<VarWhere>(MkVarWhere($1), $3); }
+   | NAME WHERE formula COMMA vws                  { $$ = MkList<VarWhere>(MkVarWhere($1, $3), $4); }
+   | NAME WHERE formula                            { $$ = MkList<VarWhere>(MkVarWhere($1, $3), MkList<VarWhere>()); }
+   | NAME                                          { $$ = MkList<VarWhere>(MkVarWhere($1), MkList<VarWhere>()); }
    ;
 
 formula 
-   : TRUE                          { $$ = MkBooleanFormula($1) ; }
-   | FALSE                         { $$ = MkBooleanFormula($1) ; }
-   | LPAR formula RPAR             { $$ = $2; }
-   | NOT formula                   { $$ = MkBooleanFormula($1, $2); }
-   | RESTRICT LPAR formula RPAR    { $$ = MkBooleanFormula($1, $3); }
-   | EMPTY LPAR term RPAR          { $$ = MkAtom($1, $3); }
-   | q0 names formula              { $$ = MkQ0Formula($1, $2, $3); }
-   | q RBRACKET univs vars COLON formula { $$ = MkQFormula($1, $4, $6, $3); }
-   | q vars COLON formula          { $$ = MkQFormula($1, $2, $4); }
-   | formula AND formula           { $$ = MkBooleanFormula($2, $1, $3); }
-   | formula OR formula            { $$ = MkBooleanFormula($2, $1, $3); }
-   | formula IMPLIES formula       { $$ = MkBooleanFormula($2, $1, $3); }
-   | formula EQUIV formula         { $$ = MkBooleanFormula($2, $1, $3); }
-   | term EQ term                  { $$ = MkAtom($2, $1, $3); }
-   | term NE term                  { $$ = MkAtom($2, $1, $3); } 
-   | term GT term                  { $$ = MkAtom($2, $1, $3); }
-   | term GE term                  { $$ = MkAtom($2, $1, $3); }
-   | term LT term                  { $$ = MkAtom($2, $1, $3); }
-   | term LE term                  { $$ = MkAtom($2, $1, $3); }
-   | term IN term                  { $$ = MkAtom($2, $1, $3); }
-   | term NOTIN term               { $$ = MkAtom($2, $1, $3); }
-   | term SUBSET term              { $$ = MkAtom($2, $1, $3); } 
-   | NAME LPAR exps                { $$ = MkPredApp($1, $3); }
-   | NAME                          { $$ = MkBooleanFormula($1); }
+   : TRUE                                          { $$ = MkBooleanConstant($1) ; }
+   | FALSE                                         { $$ = MkBooleanConstant($1) ; }
+   | LPAR formula RPAR                             { $$ = $2; }
+   | NOT formula                                   { $$ = MkBooleanFormula($1, $2); }
+   | RESTRICT LPAR formula RPAR                    { $$ = MkRestrict($1, $3); }
+   | EMPTY LPAR term RPAR                          { $$ = MkIsEmpty($1, $3); }
+   | Q0 names COLON formula                        { $$ = MkQ0Formula($1, $2, $4); }
+   | Q univs vws COLON formula                     { $$ = MkQFormula($1, $3, $5, $2); }
+   | Q vws COLON formula                           { $$ = MkQFormula($1, $2, $4); }
+   | formula AND formula                           { $$ = MkBooleanFormula($2, $1, $3); }
+   | formula OR formula                            { $$ = MkBooleanFormula($2, $1, $3); }
+   | formula IMPLIES formula                       { $$ = MkBooleanFormula($2, $1, $3); }
+   | formula EQUIV formula                         { $$ = MkBooleanFormula($2, $1, $3); }
+   | term EQ term                                  { $$ = MkAtom2($2, $1, $3); }
+   | term NE term                                  { $$ = MkAtom2($2, $1, $3); } 
+   | term GT term                                  { $$ = MkAtom2($2, $1, $3); }
+   | term GE term                                  { $$ = MkAtom2($2, $1, $3); }
+   | term LT term                                  { $$ = MkAtom2($2, $1, $3); }
+   | term LE term                                  { $$ = MkAtom2($2, $1, $3); }
+   | term IN term                                  { $$ = MkAtom2($2, $1, $3); }
+   | term NOTIN term                               { $$ = MkAtom2($2, $1, $3); }
+   | term SUBSET term                              { $$ = MkAtom2($2, $1, $3); } 
+   | NAME LPAR exps                                { $$ = MkPredApp($1, $3); }
+   | NAME                                          { $$ = MkBooleanVariable($1); }
    ;
 
-q
+Q
    : EX1 | EX2 | ALL1 | ALL2 
    ;
 
-q0 
+Q0 
    : EX0 | ALL0
    ;
 
 exps 
-   : RPAR                          { $$ = MkList<Expression>();}
-   | COMMA exp exps                { $$ = MkList<Expression>($2, $3);}
+   : RPAR                                          { $$ = MkList<Expression>();}
+   | COMMA exp exps                                { $$ = MkList<Expression>($2, $3);}
    ;
-
-names
-   : NAME names_                   { $$ = MkList<Token>($1, $2); }
-   ;
-names_
-   : COLON                         { $$ = MkList<Token>(); }
-   | COMMA NAME names_             { $$ = MkList<Token>($1, $2); }
-   ;
-
 exp
    : term
    | formula
    ;
 
-univs
-   : NAME univs_                   { $$ = MkList<Token>($1, $2); }
-   ;
-univs_
-   : RBRACKET                      { $$ = MkList<Token>(); }
-   | COMMA NAME univs_             { $$ = MkList<Token>($2, $3); }
+names
+   : NAME COMMA names                              { $$ = MkList<Token>($1, $3); }
+   | NAME                                          { $$ = MkList<Token>($1, MkList<Token>()); }
    ;
 
-vars
-   : NAME COMMA vars               { $$ = MkList<VarWhere>(MkVar($1), $3); }
-   | NAME WHERE formula COMMA vars { $$ = MkList<VarWhere>(MkVar($1, $3), $4); }
-   | NAME WHERE formula            { $$ = MkList<VarWhere>(MkVar($1, $3), MkList<VarWhere>()); }
-   | NAME                          { $$ = MkList<VarWhere>(MkVar($1), MkList<VarWhere>()); }
+univs
+   : LBRACKET NAME univs_                          { $$ = MkList<Token>($1, $2); }
+   ;
+univs_
+   : RBRACKET                                      { $$ = MkList<Token>(); }
+   | COMMA NAME univs_                             { $$ = MkList<Token>($2, $3); }
    ;
 
 term 
-   : NAME                          { $$ = MkName($1); }
-   | NUMBER                        { $$ = MkInt($1); }   
-   | LPAR term RPAR                { $$ = $2; }                    
-   | term PLUS term                { $$ = MkFuncApp($2, $1, $3); }
-   | term MINUS term               { $$ = MkFuncApp($2, $1, $3); }
-   | term TIMES term               { $$ = MkFuncApp($2, $1, $3); }
-   | term DIV term                 { $$ = MkFuncApp($2, $1, $3); }
-   | term MOD term                 { $$ = MkFuncApp($2, $1, $3); }
-   | MIN term                      { $$ = MkFuncApp($1, $2); }             
-   | MAX term                      { $$ = MkFuncApp($1, $2); }
-   ;
-
-var_decl 
-   : var_kind LBRACKET univs vars  { $$ = MkVarDecl($1, $4, $3); }
-   | var_kind vars                 { $$ = MkVarDecl($1, $2); }
-   ;
-   
-var_kind 
-   : VAR1 | VAR2
+   : NAME                                          { $$ = MkName($1); }
+   | NUMBER                                        { $$ = MkInt($1); }   
+   | LPAR term RPAR                                { $$ = $2; }                    
+   | term PLUS term                                { $$ = MkArithmFuncApp($2, $1, $3); }
+   | term MINUS term                               { $$ = MkArithmFuncApp($2, $1, $3); }
+   | term TIMES term                               { $$ = MkArithmFuncApp($2, $1, $3); }
+   | term DIV term                                 { $$ = MkArithmFuncApp($2, $1, $3); }
+   | term MOD term                                 { $$ = MkArithmFuncApp($2, $1, $3); }
+   | MIN term                                      { $$ = MkMinOrMax($1, $2); }             
+   | MAX term                                      { $$ = MkMinOrMax($1, $2); }
    ;
 
 %%

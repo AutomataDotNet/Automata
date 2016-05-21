@@ -11,26 +11,29 @@ namespace MSO.Tests
         public void MonaTest1()
         {
             string input = @"
+/*
+header declares M2L-STR semantics 
+(finite input strings)
+*/
 m2l-str;
 
-# fo vars p, q and r
-var1 p, q, r; 
-var2 $;
-p = q + 1; # p is the successor of q
-p < r; /* r is after p */
-p in $ & q notin $;
+var1 p, q, r;            # fo vars p, q and r
+var2 $;                  # s0 var $
+p = q + 1;               # p is the successor of q
+p < r;                   # r is after p
+p in $ & q in $;         # both p an q are in $
 ";
             Program pgm = MonaParser.Parse(input);
             Assert.AreEqual<int>(5, pgm.declarations.Count);
+            Assert.AreEqual<Tokens>(Tokens.M2LSTR, pgm.header.Kind);
         }
 
-
-        [TestMethod]
+        //[TestMethod]
         public void MonaTest2()
         {
             string input = @"
 # Qe describes the valid indices of a queue
-    pred isWfQueue(var2 Qe) =
+pred isWfQueue(var2 Qe) =
    all1 p: (p in Qe & p > 0  => p - 1 in Qe);
 
 # isx holds if p contains an x
@@ -86,6 +89,122 @@ ex1 p: is3(p, Qe', Q1', Q2'); # Q' does contain the element 3
 ";
             Program pgm = MonaParser.Parse(input);
             Assert.IsTrue(pgm.declarations.Count > 0);
+        }
+
+        [TestMethod]
+        public void MonaTestVar0decl()
+        {
+            string input = @"
+var0 a, b ; # Boolean vars a and b
+";
+            Program pgm = MonaParser.Parse(input);
+            Assert.AreEqual<int>(1, pgm.declarations.Count);
+            Assert.AreEqual<string>("var0 a,b;", pgm.ToString().Trim());
+        }
+
+        [TestMethod]
+        public void MonaTestVar0decl_error()
+        {
+            string input = @"
+var1 a; # variable a 
+var0 a; # variable a again
+";
+            try
+            {
+                Program pgm = MonaParser.Parse(input);
+            }
+            catch (Exception e)
+            {
+                Assert.IsTrue(e is MonaParseException);
+                return;
+            }
+            Assert.IsTrue(false, "expected MonaParseException");
+        }
+
+        [TestMethod]
+        public void MonaTestUnivDecl()
+        {
+            string input = @"
+m2l-tree;
+universe U1, U2:110101, U3:foo; # sample universes
+";
+            Program pgm = MonaParser.Parse(input);
+            Assert.AreEqual<int>(1, pgm.declarations.Count);
+            Assert.IsTrue(pgm.declarations[0] is UnivDecl);
+            var univdecl = pgm.declarations[0] as UnivDecl;
+            Assert.IsTrue(univdecl.args.Count == 3);
+            Assert.IsTrue(univdecl.args[1] is UnivArgWithSucc);
+            Assert.IsTrue(univdecl.args[2] is UnivArgWithType);
+        }
+
+        [TestMethod]
+        public void MonaTestUnivDecl_error()
+        {
+            string input = @"
+m2l-tree;
+universe U1, U2:110201, U3:foo; # sample universes
+";
+            try
+            {
+                Program pgm = MonaParser.Parse(input);
+            }
+            catch (Exception e)
+            {
+                Assert.IsTrue(e is MonaParseException);
+                return;
+            }
+            Assert.IsTrue(false, "expecting MonaParseException");
+            return;
+        }
+
+        [TestMethod]
+        public void MonaTestConstDecl()
+        {
+            string input = @"
+const a = 23 + 2;
+const b = a + (2 - a);
+";
+            Program pgm = MonaParser.Parse(input);
+            Assert.AreEqual<int>(2, pgm.declarations.Count);
+            Assert.IsTrue(pgm.declarations[0] is ConstDecl);
+            Assert.IsTrue(pgm.declarations[1] is ConstDecl);
+            var a = pgm.declarations[0] as ConstDecl;
+            Assert.IsTrue(a.name.text == "a");
+            var b = pgm.declarations[1] as ConstDecl;
+            Assert.IsTrue(b.name.text == "b");
+        }
+
+        [TestMethod]
+        public void MonaTestConstDecl_error()
+        {
+            string input = @"
+const a = 23 + 2;
+const b = a + (2 - c);
+";
+            try
+            {
+                Program pgm = MonaParser.Parse(input);
+            }
+            catch (Exception e)
+            {
+                Assert.IsTrue(e is MonaParseException);
+                return;
+            }
+            Assert.IsTrue(false, "expecting MonaParseException");
+            return;
+        }
+
+        [TestMethod]
+        public void MonaTestDefaultWhereDecl()
+        {
+            string input = @"
+defaultwhere1(p) = p < 10;
+";
+            Program pgm = MonaParser.Parse(input);
+            Assert.AreEqual<int>(1, pgm.declarations.Count);
+            Assert.IsTrue(pgm.declarations[0] is DefaultWhereDecl);
+            Assert.IsFalse((pgm.declarations[0] as DefaultWhereDecl).isSecondOrder);
+            Assert.IsTrue((pgm.declarations[0] as DefaultWhereDecl).kind == DeclKind.defaultwhere1);
         }
 
     }

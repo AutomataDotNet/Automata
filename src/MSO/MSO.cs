@@ -50,7 +50,7 @@ namespace Microsoft.Automata.MSO
             return new WS1SAnd(phi1.toWS1S(), phi2.toWS1S());
         }
     }
-
+     
     public class MSOOr : MSOBinaryPred
     {
         public MSOOr(MSOFormula phi1, MSOFormula phi2) : base(phi1, phi2) { }

@@ -52,6 +52,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Mona\AST.cs" />
+    <Compile Include="Mona\Cons.cs" />
     <Compile Include="Mona\mona.lex.cs" />
     <Compile Include="Mona\mona.y.cs" />
     <Compile Include="Mona\MonaParseException.cs" />
@@ -83,6 +84,10 @@
     <None Include="Mona\mona.y" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PreBuildEvent>cd ../../Mona/
+genparser.bat</PreBuildEvent>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

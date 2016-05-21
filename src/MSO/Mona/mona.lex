@@ -73,8 +73,21 @@ LET2            let2
 VAR0            var0
 VAR1            var1
 VAR2            var2
+TREE            tree
 
+GUIDE           guide 
 UNIVERSE        universe
+INCLUDE         include
+ASSERT          assert
+EXECUTE         execute
+CONST           const
+DEFAULTWHERE1   defaultwhere1
+DEFAULTWHERE2   defaultwhere2
+MACRO           macro
+PRED            pred
+ALLPOS          allpos
+TYPE            type
+
 WHERE           where
 PREFIX          prefix
 MAX             max
@@ -148,7 +161,6 @@ BADCHAR         [^ \t\r\f\v\n]
 {VAR1}            {return MakeMonaToken(Tokens.VAR1);}
 {VAR2}            {return MakeMonaToken(Tokens.VAR2);}
 
-{UNIVERSE}        {return MakeMonaToken(Tokens.UNIVERSE);}
 {WHERE}           {return MakeMonaToken(Tokens.WHERE);}
 {PREFIX}          {return MakeMonaToken(Tokens.PREFIX);}
 {MAX}             {return MakeMonaToken(Tokens.MAX);}
@@ -158,9 +170,6 @@ BADCHAR         [^ \t\r\f\v\n]
 {INTER}           {return MakeMonaToken(Tokens.INTER);}
 
 {ARROW}           {return MakeMonaToken(Tokens.ARROW);}
-
-{NAME}            {return MakeMonaToken(Tokens.NAME);}
-{NUMBER}          {return MakeMonaToken(Tokens.NUMBER);}
 
 {LBRACKET}        {return MakeMonaToken(Tokens.LBRACKET);}
 {RBRACKET}        {return MakeMonaToken(Tokens.RBRACKET);}
@@ -172,10 +181,27 @@ BADCHAR         [^ \t\r\f\v\n]
 {COLON}           {return MakeMonaToken(Tokens.COLON);}
 {SEMICOLON}       {return MakeMonaToken(Tokens.SEMICOLON);}
 
+{GUIDE}           {return MakeMonaToken(Tokens.GUIDE);}
+{UNIVERSE}        {return MakeMonaToken(Tokens.UNIVERSE);}
+{INCLUDE}         {return MakeMonaToken(Tokens.INCLUDE);}
+{ASSERT}          {return MakeMonaToken(Tokens.ASSERT);}
+{EXECUTE}         {return MakeMonaToken(Tokens.EXECUTE);}
+{CONST}           {return MakeMonaToken(Tokens.CONST);}
+{DEFAULTWHERE1}   {return MakeMonaToken(Tokens.DEFAULTWHERE1);}
+{DEFAULTWHERE2}   {return MakeMonaToken(Tokens.DEFAULTWHERE2);}
+{TREE}            {return MakeMonaToken(Tokens.TREE);}
+{MACRO}           {return MakeMonaToken(Tokens.MACRO);}
+{PRED}            {return MakeMonaToken(Tokens.PRED);}
+{ALLPOS}          {return MakeMonaToken(Tokens.ALLPOS);}
+{TYPE}            {return MakeMonaToken(Tokens.TYPE);}
+
 {DOT}             {return MakeMonaToken(Tokens.DOT);}
 {UP}              {return MakeMonaToken(Tokens.UP);}
 
 {COMMENT}         {return MakeMonaToken(Tokens.COMMENT);}
+
+{NAME}            {return MakeMonaToken(Tokens.NAME);}
+{NUMBER}          {return MakeMonaToken(Tokens.NUMBER);}
 
 {BADCHAR}         {return MakeMonaToken(Tokens.BADCHAR);}
 

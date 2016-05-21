@@ -1,0 +1,3279 @@
+<html><head><title>mona.y</title></head>
+<body bgcolor="white">
+<hr><pre>
+<b>Grammar and Diagnosis mona.y - 5/19/2016 2:55:26 PM</b>
+
+<a name="prod1">    1</a> $accept: program EOF
+             ;
+
+<a name="prod2">    2</a> program: header SEMICOLON decls
+<a name="prod3">    3</a>        | decls
+             ;
+
+<a name="prod4">    4</a> header: WS1S
+<a name="prod5">    5</a>       | WS2S
+<a name="prod6">    6</a>       | M2LSTR
+<a name="prod7">    7</a>       | M2LTREE
+            ;
+
+<a name="prod8">    8</a> decls: decl SEMICOLON decls_
+           ;
+
+<a name="prod9">    9</a> decls_: EOF
+<a name="prod10">   10</a>       | decl SEMICOLON decls_
+            ;
+
+<a name="prod11">   11</a> decl: formula
+<a name="prod12">   12</a>     | VAR0 names
+<a name="prod13">   13</a>     | var_kind univs vws
+<a name="prod14">   14</a>     | var_kind vws
+          ;
+
+<a name="prod15">   15</a> var_kind: VAR1
+<a name="prod16">   16</a>         | VAR2
+<a name="prod17">   17</a>         | TREE
+              ;
+
+<a name="prod18">   18</a> vws: NAME COMMA vws
+<a name="prod19">   19</a>    | NAME WHERE formula COMMA vws
+<a name="prod20">   20</a>    | NAME WHERE formula
+<a name="prod21">   21</a>    | NAME
+         ;
+
+<a name="prod22">   22</a> formula: TRUE
+<a name="prod23">   23</a>        | FALSE
+<a name="prod24">   24</a>        | LPAR formula RPAR
+<a name="prod25">   25</a>        | NOT formula
+<a name="prod26">   26</a>        | RESTRICT LPAR formula RPAR
+<a name="prod27">   27</a>        | EMPTY LPAR term RPAR
+<a name="prod28">   28</a>        | Q0 names COLON formula
+<a name="prod29">   29</a>        | Q univs vws COLON formula
+<a name="prod30">   30</a>        | Q vws COLON formula
+<a name="prod31">   31</a>        | formula AND formula
+<a name="prod32">   32</a>        | formula OR formula
+<a name="prod33">   33</a>        | formula IMPLIES formula
+<a name="prod34">   34</a>        | formula EQUIV formula
+<a name="prod35">   35</a>        | term EQ term
+<a name="prod36">   36</a>        | term NE term
+<a name="prod37">   37</a>        | term GT term
+<a name="prod38">   38</a>        | term GE term
+<a name="prod39">   39</a>        | term LT term
+<a name="prod40">   40</a>        | term LE term
+<a name="prod41">   41</a>        | term IN term
+<a name="prod42">   42</a>        | term NOTIN term
+<a name="prod43">   43</a>        | term SUBSET term
+<a name="prod44">   44</a>        | NAME LPAR exps
+<a name="prod45">   45</a>        | NAME
+             ;
+
+<a name="prod46">   46</a> Q: EX1
+<a name="prod47">   47</a>  | EX2
+<a name="prod48">   48</a>  | ALL1
+<a name="prod49">   49</a>  | ALL2
+       ;
+
+<a name="prod50">   50</a> Q0: EX0
+<a name="prod51">   51</a>   | ALL0
+        ;
+
+<a name="prod52">   52</a> exps: RPAR
+<a name="prod53">   53</a>     | COMMA exp exps
+          ;
+
+<a name="prod54">   54</a> exp: term
+<a name="prod55">   55</a>    | formula
+         ;
+
+<a name="prod56">   56</a> names: NAME COMMA names
+<a name="prod57">   57</a>      | NAME
+           ;
+
+<a name="prod58">   58</a> univs: LBRACKET NAME univs_
+           ;
+
+<a name="prod59">   59</a> univs_: RBRACKET
+<a name="prod60">   60</a>       | COMMA NAME univs_
+            ;
+
+<a name="prod61">   61</a> term: NAME
+<a name="prod62">   62</a>     | NUMBER
+<a name="prod63">   63</a>     | LPAR term RPAR
+<a name="prod64">   64</a>     | term PLUS term
+<a name="prod65">   65</a>     | term MINUS term
+<a name="prod66">   66</a>     | term TIMES term
+<a name="prod67">   67</a>     | term DIV term
+<a name="prod68">   68</a>     | term MOD term
+<a name="prod69">   69</a>     | MIN term
+<a name="prod70">   70</a>     | MAX term
+          ;
+<b><a name="state0">State</a> <a href="#state0">0</a></b>
+    Shortest prefix: 
+    Shortest path: <a href="#state0">0</a>
+    Predecessors: 
+
+  <b>Kernel Items</b>
+    1 $accept: . program EOF
+
+  <b>Parser Actions</b>
+    WS1S           shift, and go to state <a href="#state129">129</a>
+    WS2S           shift, and go to state <a href="#state130">130</a>
+    M2LSTR         shift, and go to state <a href="#state131">131</a>
+    M2LTREE        shift, and go to state <a href="#state132">132</a>
+    TRUE           shift, and go to state <a href="#state22">22</a>
+    FALSE          shift, and go to state <a href="#state23">23</a>
+    LPAR           shift, and go to state <a href="#state24">24</a>
+    NOT            shift, and go to state <a href="#state65">65</a>
+    RESTRICT       shift, and go to state <a href="#state67">67</a>
+    EMPTY          shift, and go to state <a href="#state71">71</a>
+    EX0            shift, and go to state <a href="#state79">79</a>
+    ALL0           shift, and go to state <a href="#state80">80</a>
+    EX1            shift, and go to state <a href="#state86">86</a>
+    EX2            shift, and go to state <a href="#state87">87</a>
+    ALL1           shift, and go to state <a href="#state88">88</a>
+    ALL2           shift, and go to state <a href="#state89">89</a>
+    NAME           shift, and go to state <a href="#state91">91</a>
+    NUMBER         shift, and go to state <a href="#state42">42</a>
+    MIN            shift, and go to state <a href="#state45">45</a>
+    MAX            shift, and go to state <a href="#state47">47</a>
+    VAR0           shift, and go to state <a href="#state120">120</a>
+    VAR1           shift, and go to state <a href="#state126">126</a>
+    VAR2           shift, and go to state <a href="#state127">127</a>
+    TREE           shift, and go to state <a href="#state128">128</a>
+
+  <b>Transitions</b>
+    program        go to state <a href="#state1">1</a>
+    header         go to state <a href="#state3">3</a>
+    decls          go to state <a href="#state133">133</a>
+    decl           go to state <a href="#state6">6</a>
+    formula        go to state <a href="#state13">13</a>
+    Q0             go to state <a href="#state75">75</a>
+    Q              go to state <a href="#state81">81</a>
+    term           go to state <a href="#state90">90</a>
+    var_kind       go to state <a href="#state122">122</a>
+
+
+<b><a name="state1">State</a> <a href="#state1">1</a></b>
+    Shortest prefix: program
+    Shortest path: <a href="#state0">0</a>-><a href="#state1">1</a>
+    Predecessors: <a href="#state0">0</a>
+
+  <b>Kernel Items</b>
+    1 $accept: program . EOF
+
+  <b>Parser Actions</b>
+    EOF            shift, and go to state <a href="#state2">2</a>
+
+
+
+<b><a name="state2">State</a> <a href="#state2">2</a></b>
+    Shortest prefix: program EOF
+    Shortest path: <a href="#state0">0</a>-><a href="#state1">1</a>-><a href="#state2">2</a>
+    Predecessors: <a href="#state1">1</a>
+
+  <b>Kernel Items</b>
+    1 $accept: program EOF .
+	-lookahead: {  }
+
+  <b>Parser Actions</b>
+    error          reduce using <a href="#prod1">rule 1</a> ($accept)
+    EOF            reduce using <a href="#prod1">rule 1</a> ($accept)
+    WS1S           reduce using <a href="#prod1">rule 1</a> ($accept)
+    WS2S           reduce using <a href="#prod1">rule 1</a> ($accept)
+    M2LSTR         reduce using <a href="#prod1">rule 1</a> ($accept)
+    M2LTREE        reduce using <a href="#prod1">rule 1</a> ($accept)
+    LT             reduce using <a href="#prod1">rule 1</a> ($accept)
+    GT             reduce using <a href="#prod1">rule 1</a> ($accept)
+    LE             reduce using <a href="#prod1">rule 1</a> ($accept)
+    GE             reduce using <a href="#prod1">rule 1</a> ($accept)
+    EQ             reduce using <a href="#prod1">rule 1</a> ($accept)
+    NE             reduce using <a href="#prod1">rule 1</a> ($accept)
+    PLUS           reduce using <a href="#prod1">rule 1</a> ($accept)
+    MINUS          reduce using <a href="#prod1">rule 1</a> ($accept)
+    TIMES          reduce using <a href="#prod1">rule 1</a> ($accept)
+    DIV            reduce using <a href="#prod1">rule 1</a> ($accept)
+    MOD            reduce using <a href="#prod1">rule 1</a> ($accept)
+    SETMINUS       reduce using <a href="#prod1">rule 1</a> ($accept)
+    TRUE           reduce using <a href="#prod1">rule 1</a> ($accept)
+    FALSE          reduce using <a href="#prod1">rule 1</a> ($accept)
+    NOT            reduce using <a href="#prod1">rule 1</a> ($accept)
+    AND            reduce using <a href="#prod1">rule 1</a> ($accept)
+    OR             reduce using <a href="#prod1">rule 1</a> ($accept)
+    IMPLIES        reduce using <a href="#prod1">rule 1</a> ($accept)
+    EQUIV          reduce using <a href="#prod1">rule 1</a> ($accept)
+    IN             reduce using <a href="#prod1">rule 1</a> ($accept)
+    NOTIN          reduce using <a href="#prod1">rule 1</a> ($accept)
+    SUBSET         reduce using <a href="#prod1">rule 1</a> ($accept)
+    EMPTY          reduce using <a href="#prod1">rule 1</a> ($accept)
+    RESTRICT       reduce using <a href="#prod1">rule 1</a> ($accept)
+    EX0            reduce using <a href="#prod1">rule 1</a> ($accept)
+    EX1            reduce using <a href="#prod1">rule 1</a> ($accept)
+    EX2            reduce using <a href="#prod1">rule 1</a> ($accept)
+    ALL0           reduce using <a href="#prod1">rule 1</a> ($accept)
+    ALL1           reduce using <a href="#prod1">rule 1</a> ($accept)
+    ALL2           reduce using <a href="#prod1">rule 1</a> ($accept)
+    LET0           reduce using <a href="#prod1">rule 1</a> ($accept)
+    LET1           reduce using <a href="#prod1">rule 1</a> ($accept)
+    LET2           reduce using <a href="#prod1">rule 1</a> ($accept)
+    VAR0           reduce using <a href="#prod1">rule 1</a> ($accept)
+    VAR1           reduce using <a href="#prod1">rule 1</a> ($accept)
+    VAR2           reduce using <a href="#prod1">rule 1</a> ($accept)
+    WHERE          reduce using <a href="#prod1">rule 1</a> ($accept)
+    PREFIX         reduce using <a href="#prod1">rule 1</a> ($accept)
+    MAX            reduce using <a href="#prod1">rule 1</a> ($accept)
+    MIN            reduce using <a href="#prod1">rule 1</a> ($accept)
+    PCONST         reduce using <a href="#prod1">rule 1</a> ($accept)
+    UNION          reduce using <a href="#prod1">rule 1</a> ($accept)
+    INTER          reduce using <a href="#prod1">rule 1</a> ($accept)
+    GUIDE          reduce using <a href="#prod1">rule 1</a> ($accept)
+    UNIVERSE       reduce using <a href="#prod1">rule 1</a> ($accept)
+    INCLUDE        reduce using <a href="#prod1">rule 1</a> ($accept)
+    ASSERT         reduce using <a href="#prod1">rule 1</a> ($accept)
+    EXECUTE        reduce using <a href="#prod1">rule 1</a> ($accept)
+    CONST          reduce using <a href="#prod1">rule 1</a> ($accept)
+    DEFAULTWHERE1  reduce using <a href="#prod1">rule 1</a> ($accept)
+    DEFAULTWHERE2  reduce using <a href="#prod1">rule 1</a> ($accept)
+    TREE           reduce using <a href="#prod1">rule 1</a> ($accept)
+    MACRO          reduce using <a href="#prod1">rule 1</a> ($accept)
+    PRED           reduce using <a href="#prod1">rule 1</a> ($accept)
+    ALLPOS         reduce using <a href="#prod1">rule 1</a> ($accept)
+    TYPE           reduce using <a href="#prod1">rule 1</a> ($accept)
+    ARROW          reduce using <a href="#prod1">rule 1</a> ($accept)
+    NAME           reduce using <a href="#prod1">rule 1</a> ($accept)
+    NUMBER         reduce using <a href="#prod1">rule 1</a> ($accept)
+    LBRACKET       reduce using <a href="#prod1">rule 1</a> ($accept)
+    RBRACKET       reduce using <a href="#prod1">rule 1</a> ($accept)
+    LBRACE         reduce using <a href="#prod1">rule 1</a> ($accept)
+    RBRACE         reduce using <a href="#prod1">rule 1</a> ($accept)
+    LPAR           reduce using <a href="#prod1">rule 1</a> ($accept)
+    RPAR           reduce using <a href="#prod1">rule 1</a> ($accept)
+    COMMA          reduce using <a href="#prod1">rule 1</a> ($accept)
+    COLON          reduce using <a href="#prod1">rule 1</a> ($accept)
+    SEMICOLON      reduce using <a href="#prod1">rule 1</a> ($accept)
+    DOT            reduce using <a href="#prod1">rule 1</a> ($accept)
+    UP             reduce using <a href="#prod1">rule 1</a> ($accept)
+    BADCHAR        reduce using <a href="#prod1">rule 1</a> ($accept)
+    maxParseToken  reduce using <a href="#prod1">rule 1</a> ($accept)
+    COMMENT        reduce using <a href="#prod1">rule 1</a> ($accept)
+
+
+
+<b><a name="state3">State</a> <a href="#state3">3</a></b>
+    Shortest prefix: header
+    Shortest path: <a href="#state0">0</a>-><a href="#state3">3</a>
+    Predecessors: <a href="#state0">0</a>
+
+  <b>Kernel Items</b>
+    2 program: header . SEMICOLON decls
+
+  <b>Parser Actions</b>
+    SEMICOLON      shift, and go to state <a href="#state4">4</a>
+
+
+
+<b><a name="state4">State</a> <a href="#state4">4</a></b>
+    Shortest prefix: header SEMICOLON
+    Shortest path: <a href="#state0">0</a>-><a href="#state3">3</a>-><a href="#state4">4</a>
+    Predecessors: <a href="#state3">3</a>
+
+  <b>Kernel Items</b>
+    2 program: header SEMICOLON . decls
+
+  <b>Parser Actions</b>
+    TRUE           shift, and go to state <a href="#state22">22</a>
+    FALSE          shift, and go to state <a href="#state23">23</a>
+    LPAR           shift, and go to state <a href="#state24">24</a>
+    NOT            shift, and go to state <a href="#state65">65</a>
+    RESTRICT       shift, and go to state <a href="#state67">67</a>
+    EMPTY          shift, and go to state <a href="#state71">71</a>
+    EX0            shift, and go to state <a href="#state79">79</a>
+    ALL0           shift, and go to state <a href="#state80">80</a>
+    EX1            shift, and go to state <a href="#state86">86</a>
+    EX2            shift, and go to state <a href="#state87">87</a>
+    ALL1           shift, and go to state <a href="#state88">88</a>
+    ALL2           shift, and go to state <a href="#state89">89</a>
+    NAME           shift, and go to state <a href="#state91">91</a>
+    NUMBER         shift, and go to state <a href="#state42">42</a>
+    MIN            shift, and go to state <a href="#state45">45</a>
+    MAX            shift, and go to state <a href="#state47">47</a>
+    VAR0           shift, and go to state <a href="#state120">120</a>
+    VAR1           shift, and go to state <a href="#state126">126</a>
+    VAR2           shift, and go to state <a href="#state127">127</a>
+    TREE           shift, and go to state <a href="#state128">128</a>
+
+  <b>Transitions</b>
+    decls          go to state <a href="#state5">5</a>
+    decl           go to state <a href="#state6">6</a>
+    formula        go to state <a href="#state13">13</a>
+    Q0             go to state <a href="#state75">75</a>
+    Q              go to state <a href="#state81">81</a>
+    term           go to state <a href="#state90">90</a>
+    var_kind       go to state <a href="#state122">122</a>
+
+
+<b><a name="state5">State</a> <a href="#state5">5</a></b>
+    Shortest prefix: header SEMICOLON decls
+    Shortest path: <a href="#state0">0</a>-><a href="#state3">3</a>-><a href="#state4">4</a>-><a href="#state5">5</a>
+    Predecessors: <a href="#state4">4</a>
+
+  <b>Kernel Items</b>
+    2 program: header SEMICOLON decls .
+	-lookahead: { EOF }
+
+  <b>Parser Actions</b>
+    EOF            reduce using <a href="#prod2">rule 2</a> (program)
+
+
+
+<b><a name="state6">State</a> <a href="#state6">6</a></b>
+    Shortest prefix: decl
+    Shortest path: <a href="#state0">0</a>-><a href="#state6">6</a>
+    Predecessors: <a href="#state0">0</a>, <a href="#state4">4</a>
+
+  <b>Kernel Items</b>
+    8 decls: decl . SEMICOLON decls_
+
+  <b>Parser Actions</b>
+    SEMICOLON      shift, and go to state <a href="#state7">7</a>
+
+
+
+<b><a name="state7">State</a> <a href="#state7">7</a></b>
+    Shortest prefix: decl SEMICOLON
+    Shortest path: <a href="#state0">0</a>-><a href="#state6">6</a>-><a href="#state7">7</a>
+    Predecessors: <a href="#state6">6</a>
+
+  <b>Kernel Items</b>
+    8 decls: decl SEMICOLON . decls_
+
+  <b>Parser Actions</b>
+    EOF            shift, and go to state <a href="#state9">9</a>
+    TRUE           shift, and go to state <a href="#state22">22</a>
+    FALSE          shift, and go to state <a href="#state23">23</a>
+    LPAR           shift, and go to state <a href="#state24">24</a>
+    NOT            shift, and go to state <a href="#state65">65</a>
+    RESTRICT       shift, and go to state <a href="#state67">67</a>
+    EMPTY          shift, and go to state <a href="#state71">71</a>
+    EX0            shift, and go to state <a href="#state79">79</a>
+    ALL0           shift, and go to state <a href="#state80">80</a>
+    EX1            shift, and go to state <a href="#state86">86</a>
+    EX2            shift, and go to state <a href="#state87">87</a>
+    ALL1           shift, and go to state <a href="#state88">88</a>
+    ALL2           shift, and go to state <a href="#state89">89</a>
+    NAME           shift, and go to state <a href="#state91">91</a>
+    NUMBER         shift, and go to state <a href="#state42">42</a>
+    MIN            shift, and go to state <a href="#state45">45</a>
+    MAX            shift, and go to state <a href="#state47">47</a>
+    VAR0           shift, and go to state <a href="#state120">120</a>
+    VAR1           shift, and go to state <a href="#state126">126</a>
+    VAR2           shift, and go to state <a href="#state127">127</a>
+    TREE           shift, and go to state <a href="#state128">128</a>
+
+  <b>Transitions</b>
+    decls_         go to state <a href="#state8">8</a>
+    decl           go to state <a href="#state10">10</a>
+    formula        go to state <a href="#state13">13</a>
+    Q0             go to state <a href="#state75">75</a>
+    Q              go to state <a href="#state81">81</a>
+    term           go to state <a href="#state90">90</a>
+    var_kind       go to state <a href="#state122">122</a>
+
+
+<b><a name="state8">State</a> <a href="#state8">8</a></b>
+    Shortest prefix: decl SEMICOLON decls_
+    Shortest path: <a href="#state0">0</a>-><a href="#state6">6</a>-><a href="#state7">7</a>-><a href="#state8">8</a>
+    Predecessors: <a href="#state7">7</a>
+
+  <b>Kernel Items</b>
+    8 decls: decl SEMICOLON decls_ .
+	-lookahead: { EOF }
+
+  <b>Parser Actions</b>
+    EOF            reduce using <a href="#prod8">rule 8</a> (decls)
+
+
+
+<b><a name="state9">State</a> <a href="#state9">9</a></b>
+    Shortest prefix: decl SEMICOLON EOF
+    Shortest path: <a href="#state0">0</a>-><a href="#state6">6</a>-><a href="#state7">7</a>-><a href="#state9">9</a>
+    Predecessors: <a href="#state7">7</a>, <a href="#state11">11</a>
+
+  <b>Kernel Items</b>
+    9 decls_: EOF .
+	-lookahead: { EOF }
+
+  <b>Parser Actions</b>
+    EOF            reduce using <a href="#prod9">rule 9</a> (decls_)
+
+
+
+<b><a name="state10">State</a> <a href="#state10">10</a></b>
+    Shortest prefix: decl SEMICOLON decl
+    Shortest path: <a href="#state0">0</a>-><a href="#state6">6</a>-><a href="#state7">7</a>-><a href="#state10">10</a>
+    Predecessors: <a href="#state7">7</a>, <a href="#state11">11</a>
+
+  <b>Kernel Items</b>
+    10 decls_: decl . SEMICOLON decls_
+
+  <b>Parser Actions</b>
+    SEMICOLON      shift, and go to state <a href="#state11">11</a>
+
+
+
+<b><a name="state11">State</a> <a href="#state11">11</a></b>
+    Shortest prefix: decl SEMICOLON decl SEMICOLON
+    Shortest path: <a href="#state0">0</a>-><a href="#state6">6</a>-><a href="#state7">7</a>-><a href="#state10">10</a>-><a href="#state11">11</a>
+    Predecessors: <a href="#state10">10</a>
+
+  <b>Kernel Items</b>
+    10 decls_: decl SEMICOLON . decls_
+
+  <b>Parser Actions</b>
+    EOF            shift, and go to state <a href="#state9">9</a>
+    TRUE           shift, and go to state <a href="#state22">22</a>
+    FALSE          shift, and go to state <a href="#state23">23</a>
+    LPAR           shift, and go to state <a href="#state24">24</a>
+    NOT            shift, and go to state <a href="#state65">65</a>
+    RESTRICT       shift, and go to state <a href="#state67">67</a>
+    EMPTY          shift, and go to state <a href="#state71">71</a>
+    EX0            shift, and go to state <a href="#state79">79</a>
+    ALL0           shift, and go to state <a href="#state80">80</a>
+    EX1            shift, and go to state <a href="#state86">86</a>
+    EX2            shift, and go to state <a href="#state87">87</a>
+    ALL1           shift, and go to state <a href="#state88">88</a>
+    ALL2           shift, and go to state <a href="#state89">89</a>
+    NAME           shift, and go to state <a href="#state91">91</a>
+    NUMBER         shift, and go to state <a href="#state42">42</a>
+    MIN            shift, and go to state <a href="#state45">45</a>
+    MAX            shift, and go to state <a href="#state47">47</a>
+    VAR0           shift, and go to state <a href="#state120">120</a>
+    VAR1           shift, and go to state <a href="#state126">126</a>
+    VAR2           shift, and go to state <a href="#state127">127</a>
+    TREE           shift, and go to state <a href="#state128">128</a>
+
+  <b>Transitions</b>
+    decls_         go to state <a href="#state12">12</a>
+    decl           go to state <a href="#state10">10</a>
+    formula        go to state <a href="#state13">13</a>
+    Q0             go to state <a href="#state75">75</a>
+    Q              go to state <a href="#state81">81</a>
+    term           go to state <a href="#state90">90</a>
+    var_kind       go to state <a href="#state122">122</a>
+
+
+<b><a name="state12">State</a> <a href="#state12">12</a></b>
+    Shortest prefix: decl SEMICOLON decl SEMICOLON decls_
+    Shortest path: <a href="#state0">0</a>-><a href="#state6">6</a>-><a href="#state7">7</a>-><a href="#state10">10</a>-><a href="#state11">11</a>-><a href="#state12">12</a>
+    Predecessors: <a href="#state11">11</a>
+
+  <b>Kernel Items</b>
+    10 decls_: decl SEMICOLON decls_ .
+	-lookahead: { EOF }
+
+  <b>Parser Actions</b>
+    EOF            reduce using <a href="#prod10">rule 10</a> (decls_)
+
+
+
+<b><a name="state13">State</a> <a href="#state13">13</a></b>
+    Shortest prefix: formula
+    Shortest path: <a href="#state0">0</a>-><a href="#state13">13</a>
+    Predecessors: <a href="#state0">0</a>, <a href="#state4">4</a>, <a href="#state7">7</a>, <a href="#state11">11</a>
+
+  <b>Kernel Items</b>
+    11 decl: formula .
+	-lookahead: { SEMICOLON }
+    31 formula: formula . AND formula
+    32 formula: formula . OR formula
+    33 formula: formula . IMPLIES formula
+    34 formula: formula . EQUIV formula
+
+  <b>Parser Actions</b>
+    AND            shift, and go to state <a href="#state14">14</a>
+    OR             shift, and go to state <a href="#state16">16</a>
+    IMPLIES        shift, and go to state <a href="#state18">18</a>
+    EQUIV          shift, and go to state <a href="#state20">20</a>
+    SEMICOLON      reduce using <a href="#prod11">rule 11</a> (decl)
+
+
+
+<b><a name="state14">State</a> <a href="#state14">14</a></b>
+    Shortest prefix: formula AND
+    Shortest path: <a href="#state0">0</a>-><a href="#state13">13</a>-><a href="#state14">14</a>
+    Predecessors: <a href="#state13">13</a>, <a href="#state15">15</a>, <a href="#state17">17</a>, <a href="#state19">19</a>, <a href="#state21">21</a>, <a href="#state25">25</a>, <a href="#state66">66</a>, <a href="#state69">69</a>, <a href="#state78">78</a>, <a href="#state85">85</a>, <a href="#state99">99</a>, <a href="#state104">104</a>, <a href="#state109">109</a>
+
+  <b>Kernel Items</b>
+    31 formula: formula AND . formula
+
+  <b>Parser Actions</b>
+    TRUE           shift, and go to state <a href="#state22">22</a>
+    FALSE          shift, and go to state <a href="#state23">23</a>
+    LPAR           shift, and go to state <a href="#state24">24</a>
+    NOT            shift, and go to state <a href="#state65">65</a>
+    RESTRICT       shift, and go to state <a href="#state67">67</a>
+    EMPTY          shift, and go to state <a href="#state71">71</a>
+    EX0            shift, and go to state <a href="#state79">79</a>
+    ALL0           shift, and go to state <a href="#state80">80</a>
+    EX1            shift, and go to state <a href="#state86">86</a>
+    EX2            shift, and go to state <a href="#state87">87</a>
+    ALL1           shift, and go to state <a href="#state88">88</a>
+    ALL2           shift, and go to state <a href="#state89">89</a>
+    NAME           shift, and go to state <a href="#state91">91</a>
+    NUMBER         shift, and go to state <a href="#state42">42</a>
+    MIN            shift, and go to state <a href="#state45">45</a>
+    MAX            shift, and go to state <a href="#state47">47</a>
+
+  <b>Transitions</b>
+    formula        go to state <a href="#state15">15</a>
+    Q0             go to state <a href="#state75">75</a>
+    Q              go to state <a href="#state81">81</a>
+    term           go to state <a href="#state90">90</a>
+
+
+<b><a name="state15">State</a> <a href="#state15">15</a></b>
+    Shortest prefix: formula AND formula
+    Shortest path: <a href="#state0">0</a>-><a href="#state13">13</a>-><a href="#state14">14</a>-><a href="#state15">15</a>
+    Predecessors: <a href="#state14">14</a>
+
+  <b>Kernel Items</b>
+    31 formula: formula AND formula .
+	-lookahead: { AND, OR, IMPLIES, EQUIV, SEMICOLON, RPAR, COMMA, COLON }
+    31 formula: formula . AND formula
+    32 formula: formula . OR formula
+    33 formula: formula . IMPLIES formula
+    34 formula: formula . EQUIV formula
+
+  <b>Parser Actions</b>
+    AND            reduce using <a href="#prod31">rule 31</a> (formula)
+    OR             reduce using <a href="#prod31">rule 31</a> (formula)
+    IMPLIES        reduce using <a href="#prod31">rule 31</a> (formula)
+    EQUIV          reduce using <a href="#prod31">rule 31</a> (formula)
+    SEMICOLON      reduce using <a href="#prod31">rule 31</a> (formula)
+    RPAR           reduce using <a href="#prod31">rule 31</a> (formula)
+    COMMA          reduce using <a href="#prod31">rule 31</a> (formula)
+    COLON          reduce using <a href="#prod31">rule 31</a> (formula)
+
+
+
+<b><a name="state16">State</a> <a href="#state16">16</a></b>
+    Shortest prefix: formula OR
+    Shortest path: <a href="#state0">0</a>-><a href="#state13">13</a>-><a href="#state16">16</a>
+    Predecessors: <a href="#state13">13</a>, <a href="#state15">15</a>, <a href="#state17">17</a>, <a href="#state19">19</a>, <a href="#state21">21</a>, <a href="#state25">25</a>, <a href="#state66">66</a>, <a href="#state69">69</a>, <a href="#state78">78</a>, <a href="#state85">85</a>, <a href="#state99">99</a>, <a href="#state104">104</a>, <a href="#state109">109</a>
+
+  <b>Kernel Items</b>
+    32 formula: formula OR . formula
+
+  <b>Parser Actions</b>
+    TRUE           shift, and go to state <a href="#state22">22</a>
+    FALSE          shift, and go to state <a href="#state23">23</a>
+    LPAR           shift, and go to state <a href="#state24">24</a>
+    NOT            shift, and go to state <a href="#state65">65</a>
+    RESTRICT       shift, and go to state <a href="#state67">67</a>
+    EMPTY          shift, and go to state <a href="#state71">71</a>
+    EX0            shift, and go to state <a href="#state79">79</a>
+    ALL0           shift, and go to state <a href="#state80">80</a>
+    EX1            shift, and go to state <a href="#state86">86</a>
+    EX2            shift, and go to state <a href="#state87">87</a>
+    ALL1           shift, and go to state <a href="#state88">88</a>
+    ALL2           shift, and go to state <a href="#state89">89</a>
+    NAME           shift, and go to state <a href="#state91">91</a>
+    NUMBER         shift, and go to state <a href="#state42">42</a>
+    MIN            shift, and go to state <a href="#state45">45</a>
+    MAX            shift, and go to state <a href="#state47">47</a>
+
+  <b>Transitions</b>
+    formula        go to state <a href="#state17">17</a>
+    Q0             go to state <a href="#state75">75</a>
+    Q              go to state <a href="#state81">81</a>
+    term           go to state <a href="#state90">90</a>
+
+
+<b><a name="state17">State</a> <a href="#state17">17</a></b>
+    Shortest prefix: formula OR formula
+    Shortest path: <a href="#state0">0</a>-><a href="#state13">13</a>-><a href="#state16">16</a>-><a href="#state17">17</a>
+    Predecessors: <a href="#state16">16</a>
+
+  <b>Kernel Items</b>
+    32 formula: formula OR formula .
+	-lookahead: { AND, OR, IMPLIES, EQUIV, SEMICOLON, RPAR, COMMA, COLON }
+    31 formula: formula . AND formula
+    32 formula: formula . OR formula
+    33 formula: formula . IMPLIES formula
+    34 formula: formula . EQUIV formula
+
+  <b>Parser Actions</b>
+    AND            shift, and go to state <a href="#state14">14</a>
+    OR             reduce using <a href="#prod32">rule 32</a> (formula)
+    IMPLIES        reduce using <a href="#prod32">rule 32</a> (formula)
+    EQUIV          reduce using <a href="#prod32">rule 32</a> (formula)
+    SEMICOLON      reduce using <a href="#prod32">rule 32</a> (formula)
+    RPAR           reduce using <a href="#prod32">rule 32</a> (formula)
+    COMMA          reduce using <a href="#prod32">rule 32</a> (formula)
+    COLON          reduce using <a href="#prod32">rule 32</a> (formula)
+
+
+
+<b><a name="state18">State</a> <a href="#state18">18</a></b>
+    Shortest prefix: formula IMPLIES
+    Shortest path: <a href="#state0">0</a>-><a href="#state13">13</a>-><a href="#state18">18</a>
+    Predecessors: <a href="#state13">13</a>, <a href="#state15">15</a>, <a href="#state17">17</a>, <a href="#state19">19</a>, <a href="#state21">21</a>, <a href="#state25">25</a>, <a href="#state66">66</a>, <a href="#state69">69</a>, <a href="#state78">78</a>, <a href="#state85">85</a>, <a href="#state99">99</a>, <a href="#state104">104</a>, <a href="#state109">109</a>
+
+  <b>Kernel Items</b>
+    33 formula: formula IMPLIES . formula
+
+  <b>Parser Actions</b>
+    TRUE           shift, and go to state <a href="#state22">22</a>
+    FALSE          shift, and go to state <a href="#state23">23</a>
+    LPAR           shift, and go to state <a href="#state24">24</a>
+    NOT            shift, and go to state <a href="#state65">65</a>
+    RESTRICT       shift, and go to state <a href="#state67">67</a>
+    EMPTY          shift, and go to state <a href="#state71">71</a>
+    EX0            shift, and go to state <a href="#state79">79</a>
+    ALL0           shift, and go to state <a href="#state80">80</a>
+    EX1            shift, and go to state <a href="#state86">86</a>
+    EX2            shift, and go to state <a href="#state87">87</a>
+    ALL1           shift, and go to state <a href="#state88">88</a>
+    ALL2           shift, and go to state <a href="#state89">89</a>
+    NAME           shift, and go to state <a href="#state91">91</a>
+    NUMBER         shift, and go to state <a href="#state42">42</a>
+    MIN            shift, and go to state <a href="#state45">45</a>
+    MAX            shift, and go to state <a href="#state47">47</a>
+
+  <b>Transitions</b>
+    formula        go to state <a href="#state19">19</a>
+    Q0             go to state <a href="#state75">75</a>
+    Q              go to state <a href="#state81">81</a>
+    term           go to state <a href="#state90">90</a>
+
+
+<b><a name="state19">State</a> <a href="#state19">19</a></b>
+    Shortest prefix: formula IMPLIES formula
+    Shortest path: <a href="#state0">0</a>-><a href="#state13">13</a>-><a href="#state18">18</a>-><a href="#state19">19</a>
+    Predecessors: <a href="#state18">18</a>
+
+  <b>Kernel Items</b>
+    33 formula: formula IMPLIES formula .
+	-lookahead: { AND, OR, IMPLIES, EQUIV, SEMICOLON, RPAR, COMMA, COLON }
+    31 formula: formula . AND formula
+    32 formula: formula . OR formula
+    33 formula: formula . IMPLIES formula
+    34 formula: formula . EQUIV formula
+
+  <b>Parser Actions</b>
+    AND            shift, and go to state <a href="#state14">14</a>
+    OR             shift, and go to state <a href="#state16">16</a>
+    IMPLIES        shift, and go to state <a href="#state18">18</a>
+    EQUIV          reduce using <a href="#prod33">rule 33</a> (formula)
+    SEMICOLON      reduce using <a href="#prod33">rule 33</a> (formula)
+    RPAR           reduce using <a href="#prod33">rule 33</a> (formula)
+    COMMA          reduce using <a href="#prod33">rule 33</a> (formula)
+    COLON          reduce using <a href="#prod33">rule 33</a> (formula)
+
+
+
+<b><a name="state20">State</a> <a href="#state20">20</a></b>
+    Shortest prefix: formula EQUIV
+    Shortest path: <a href="#state0">0</a>-><a href="#state13">13</a>-><a href="#state20">20</a>
+    Predecessors: <a href="#state13">13</a>, <a href="#state15">15</a>, <a href="#state17">17</a>, <a href="#state19">19</a>, <a href="#state21">21</a>, <a href="#state25">25</a>, <a href="#state66">66</a>, <a href="#state69">69</a>, <a href="#state78">78</a>, <a href="#state85">85</a>, <a href="#state99">99</a>, <a href="#state104">104</a>, <a href="#state109">109</a>
+
+  <b>Kernel Items</b>
+    34 formula: formula EQUIV . formula
+
+  <b>Parser Actions</b>
+    TRUE           shift, and go to state <a href="#state22">22</a>
+    FALSE          shift, and go to state <a href="#state23">23</a>
+    LPAR           shift, and go to state <a href="#state24">24</a>
+    NOT            shift, and go to state <a href="#state65">65</a>
+    RESTRICT       shift, and go to state <a href="#state67">67</a>
+    EMPTY          shift, and go to state <a href="#state71">71</a>
+    EX0            shift, and go to state <a href="#state79">79</a>
+    ALL0           shift, and go to state <a href="#state80">80</a>
+    EX1            shift, and go to state <a href="#state86">86</a>
+    EX2            shift, and go to state <a href="#state87">87</a>
+    ALL1           shift, and go to state <a href="#state88">88</a>
+    ALL2           shift, and go to state <a href="#state89">89</a>
+    NAME           shift, and go to state <a href="#state91">91</a>
+    NUMBER         shift, and go to state <a href="#state42">42</a>
+    MIN            shift, and go to state <a href="#state45">45</a>
+    MAX            shift, and go to state <a href="#state47">47</a>
+
+  <b>Transitions</b>
+    formula        go to state <a href="#state21">21</a>
+    Q0             go to state <a href="#state75">75</a>
+    Q              go to state <a href="#state81">81</a>
+    term           go to state <a href="#state90">90</a>
+
+
+<b><a name="state21">State</a> <a href="#state21">21</a></b>
+    Shortest prefix: formula EQUIV formula
+    Shortest path: <a href="#state0">0</a>-><a href="#state13">13</a>-><a href="#state20">20</a>-><a href="#state21">21</a>
+    Predecessors: <a href="#state20">20</a>
+
+  <b>Kernel Items</b>
+    34 formula: formula EQUIV formula .
+	-lookahead: { AND, OR, IMPLIES, EQUIV, SEMICOLON, RPAR, COMMA, COLON }
+    31 formula: formula . AND formula
+    32 formula: formula . OR formula
+    33 formula: formula . IMPLIES formula
+    34 formula: formula . EQUIV formula
+
+  <b>Parser Actions</b>
+    AND            shift, and go to state <a href="#state14">14</a>
+    OR             shift, and go to state <a href="#state16">16</a>
+    IMPLIES        shift, and go to state <a href="#state18">18</a>
+    EQUIV          shift, and go to state <a href="#state20">20</a>
+    SEMICOLON      reduce using <a href="#prod34">rule 34</a> (formula)
+    RPAR           reduce using <a href="#prod34">rule 34</a> (formula)
+    COMMA          reduce using <a href="#prod34">rule 34</a> (formula)
+    COLON          reduce using <a href="#prod34">rule 34</a> (formula)
+
+
+
+<b><a name="state22">State</a> <a href="#state22">22</a></b>
+    Shortest prefix: TRUE
+    Shortest path: <a href="#state0">0</a>-><a href="#state22">22</a>
+    Predecessors: <a href="#state0">0</a>, <a href="#state4">4</a>, <a href="#state7">7</a>, <a href="#state11">11</a>, <a href="#state14">14</a>, <a href="#state16">16</a>, <a href="#state18">18</a>, <a href="#state20">20</a>, <a href="#state24">24</a>, <a href="#state65">65</a>, <a href="#state68">68</a>, <a href="#state77">77</a>, <a href="#state84">84</a>, <a href="#state95">95</a>, <a href="#state103">103</a>, <a href="#state108">108</a>
+
+  <b>Kernel Items</b>
+    22 formula: TRUE .
+	-lookahead: { AND, OR, IMPLIES, EQUIV, SEMICOLON, RPAR, COMMA, COLON }
+
+  <b>Parser Actions</b>
+    AND            reduce using <a href="#prod22">rule 22</a> (formula)
+    OR             reduce using <a href="#prod22">rule 22</a> (formula)
+    IMPLIES        reduce using <a href="#prod22">rule 22</a> (formula)
+    EQUIV          reduce using <a href="#prod22">rule 22</a> (formula)
+    SEMICOLON      reduce using <a href="#prod22">rule 22</a> (formula)
+    RPAR           reduce using <a href="#prod22">rule 22</a> (formula)
+    COMMA          reduce using <a href="#prod22">rule 22</a> (formula)
+    COLON          reduce using <a href="#prod22">rule 22</a> (formula)
+
+
+
+<b><a name="state23">State</a> <a href="#state23">23</a></b>
+    Shortest prefix: FALSE
+    Shortest path: <a href="#state0">0</a>-><a href="#state23">23</a>
+    Predecessors: <a href="#state0">0</a>, <a href="#state4">4</a>, <a href="#state7">7</a>, <a href="#state11">11</a>, <a href="#state14">14</a>, <a href="#state16">16</a>, <a href="#state18">18</a>, <a href="#state20">20</a>, <a href="#state24">24</a>, <a href="#state65">65</a>, <a href="#state68">68</a>, <a href="#state77">77</a>, <a href="#state84">84</a>, <a href="#state95">95</a>, <a href="#state103">103</a>, <a href="#state108">108</a>
+
+  <b>Kernel Items</b>
+    23 formula: FALSE .
+	-lookahead: { AND, OR, IMPLIES, EQUIV, SEMICOLON, RPAR, COMMA, COLON }
+
+  <b>Parser Actions</b>
+    AND            reduce using <a href="#prod23">rule 23</a> (formula)
+    OR             reduce using <a href="#prod23">rule 23</a> (formula)
+    IMPLIES        reduce using <a href="#prod23">rule 23</a> (formula)
+    EQUIV          reduce using <a href="#prod23">rule 23</a> (formula)
+    SEMICOLON      reduce using <a href="#prod23">rule 23</a> (formula)
+    RPAR           reduce using <a href="#prod23">rule 23</a> (formula)
+    COMMA          reduce using <a href="#prod23">rule 23</a> (formula)
+    COLON          reduce using <a href="#prod23">rule 23</a> (formula)
+
+
+
+<b><a name="state24">State</a> <a href="#state24">24</a></b>
+    Shortest prefix: LPAR
+    Shortest path: <a href="#state0">0</a>-><a href="#state24">24</a>
+    Predecessors: <a href="#state0">0</a>, <a href="#state4">4</a>, <a href="#state7">7</a>, <a href="#state11">11</a>, <a href="#state14">14</a>, <a href="#state16">16</a>, <a href="#state18">18</a>, <a href="#state20">20</a>, <a href="#state24">24</a>, <a href="#state65">65</a>, <a href="#state68">68</a>, <a href="#state77">77</a>, <a href="#state84">84</a>, <a href="#state95">95</a>, <a href="#state103">103</a>, <a href="#state108">108</a>
+
+  <b>Kernel Items</b>
+    24 formula: LPAR . formula RPAR
+    63 term: LPAR . term RPAR
+
+  <b>Parser Actions</b>
+    TRUE           shift, and go to state <a href="#state22">22</a>
+    FALSE          shift, and go to state <a href="#state23">23</a>
+    LPAR           shift, and go to state <a href="#state24">24</a>
+    NOT            shift, and go to state <a href="#state65">65</a>
+    RESTRICT       shift, and go to state <a href="#state67">67</a>
+    EMPTY          shift, and go to state <a href="#state71">71</a>
+    EX0            shift, and go to state <a href="#state79">79</a>
+    ALL0           shift, and go to state <a href="#state80">80</a>
+    EX1            shift, and go to state <a href="#state86">86</a>
+    EX2            shift, and go to state <a href="#state87">87</a>
+    ALL1           shift, and go to state <a href="#state88">88</a>
+    ALL2           shift, and go to state <a href="#state89">89</a>
+    NAME           shift, and go to state <a href="#state91">91</a>
+    NUMBER         shift, and go to state <a href="#state42">42</a>
+    MIN            shift, and go to state <a href="#state45">45</a>
+    MAX            shift, and go to state <a href="#state47">47</a>
+
+  <b>Transitions</b>
+    formula        go to state <a href="#state25">25</a>
+    term           go to state <a href="#state27">27</a>
+    Q0             go to state <a href="#state75">75</a>
+    Q              go to state <a href="#state81">81</a>
+
+
+<b><a name="state25">State</a> <a href="#state25">25</a></b>
+    Shortest prefix: LPAR formula
+    Shortest path: <a href="#state0">0</a>-><a href="#state24">24</a>-><a href="#state25">25</a>
+    Predecessors: <a href="#state24">24</a>
+
+  <b>Kernel Items</b>
+    24 formula: LPAR formula . RPAR
+    31 formula: formula . AND formula
+    32 formula: formula . OR formula
+    33 formula: formula . IMPLIES formula
+    34 formula: formula . EQUIV formula
+
+  <b>Parser Actions</b>
+    RPAR           shift, and go to state <a href="#state26">26</a>
+    AND            shift, and go to state <a href="#state14">14</a>
+    OR             shift, and go to state <a href="#state16">16</a>
+    IMPLIES        shift, and go to state <a href="#state18">18</a>
+    EQUIV          shift, and go to state <a href="#state20">20</a>
+
+
+
+<b><a name="state26">State</a> <a href="#state26">26</a></b>
+    Shortest prefix: LPAR formula RPAR
+    Shortest path: <a href="#state0">0</a>-><a href="#state24">24</a>-><a href="#state25">25</a>-><a href="#state26">26</a>
+    Predecessors: <a href="#state25">25</a>
+
+  <b>Kernel Items</b>
+    24 formula: LPAR formula RPAR .
+	-lookahead: { AND, OR, IMPLIES, EQUIV, SEMICOLON, RPAR, COMMA, COLON }
+
+  <b>Parser Actions</b>
+    AND            reduce using <a href="#prod24">rule 24</a> (formula)
+    OR             reduce using <a href="#prod24">rule 24</a> (formula)
+    IMPLIES        reduce using <a href="#prod24">rule 24</a> (formula)
+    EQUIV          reduce using <a href="#prod24">rule 24</a> (formula)
+    SEMICOLON      reduce using <a href="#prod24">rule 24</a> (formula)
+    RPAR           reduce using <a href="#prod24">rule 24</a> (formula)
+    COMMA          reduce using <a href="#prod24">rule 24</a> (formula)
+    COLON          reduce using <a href="#prod24">rule 24</a> (formula)
+
+
+
+<b><a name="state27">State</a> <a href="#state27">27</a></b>
+    Shortest prefix: LPAR term
+    Shortest path: <a href="#state0">0</a>-><a href="#state24">24</a>-><a href="#state27">27</a>
+    Predecessors: <a href="#state24">24</a>
+
+  <b>Kernel Items</b>
+    63 term: LPAR term . RPAR
+    35 formula: term . EQ term
+    64 term: term . PLUS term
+    65 term: term . MINUS term
+    66 term: term . TIMES term
+    67 term: term . DIV term
+    68 term: term . MOD term
+    36 formula: term . NE term
+    37 formula: term . GT term
+    38 formula: term . GE term
+    39 formula: term . LT term
+    40 formula: term . LE term
+    41 formula: term . IN term
+    42 formula: term . NOTIN term
+    43 formula: term . SUBSET term
+
+  <b>Parser Actions</b>
+    RPAR           shift, and go to state <a href="#state28">28</a>
+    EQ             shift, and go to state <a href="#state29">29</a>
+    PLUS           shift, and go to state <a href="#state31">31</a>
+    MINUS          shift, and go to state <a href="#state33">33</a>
+    TIMES          shift, and go to state <a href="#state35">35</a>
+    DIV            shift, and go to state <a href="#state37">37</a>
+    MOD            shift, and go to state <a href="#state39">39</a>
+    NE             shift, and go to state <a href="#state49">49</a>
+    GT             shift, and go to state <a href="#state51">51</a>
+    GE             shift, and go to state <a href="#state53">53</a>
+    LT             shift, and go to state <a href="#state55">55</a>
+    LE             shift, and go to state <a href="#state57">57</a>
+    IN             shift, and go to state <a href="#state59">59</a>
+    NOTIN          shift, and go to state <a href="#state61">61</a>
+    SUBSET         shift, and go to state <a href="#state63">63</a>
+
+
+
+<b><a name="state28">State</a> <a href="#state28">28</a></b>
+    Shortest prefix: LPAR term RPAR
+    Shortest path: <a href="#state0">0</a>-><a href="#state24">24</a>-><a href="#state27">27</a>-><a href="#state28">28</a>
+    Predecessors: <a href="#state27">27</a>, <a href="#state44">44</a>
+
+  <b>Kernel Items</b>
+    63 term: LPAR term RPAR .
+	-lookahead: { EQ, PLUS, MINUS, TIMES, DIV, MOD, NE, GT, GE, LT, LE, IN, NOTIN, 
+                SUBSET, RPAR, AND, OR, IMPLIES, EQUIV, SEMICOLON, COMMA, 
+                COLON }
+
+  <b>Parser Actions</b>
+    EQ             reduce using <a href="#prod63">rule 63</a> (term)
+    PLUS           reduce using <a href="#prod63">rule 63</a> (term)
+    MINUS          reduce using <a href="#prod63">rule 63</a> (term)
+    TIMES          reduce using <a href="#prod63">rule 63</a> (term)
+    DIV            reduce using <a href="#prod63">rule 63</a> (term)
+    MOD            reduce using <a href="#prod63">rule 63</a> (term)
+    NE             reduce using <a href="#prod63">rule 63</a> (term)
+    GT             reduce using <a href="#prod63">rule 63</a> (term)
+    GE             reduce using <a href="#prod63">rule 63</a> (term)
+    LT             reduce using <a href="#prod63">rule 63</a> (term)
+    LE             reduce using <a href="#prod63">rule 63</a> (term)
+    IN             reduce using <a href="#prod63">rule 63</a> (term)
+    NOTIN          reduce using <a href="#prod63">rule 63</a> (term)
+    SUBSET         reduce using <a href="#prod63">rule 63</a> (term)
+    RPAR           reduce using <a href="#prod63">rule 63</a> (term)
+    AND            reduce using <a href="#prod63">rule 63</a> (term)
+    OR             reduce using <a href="#prod63">rule 63</a> (term)
+    IMPLIES        reduce using <a href="#prod63">rule 63</a> (term)
+    EQUIV          reduce using <a href="#prod63">rule 63</a> (term)
+    SEMICOLON      reduce using <a href="#prod63">rule 63</a> (term)
+    COMMA          reduce using <a href="#prod63">rule 63</a> (term)
+    COLON          reduce using <a href="#prod63">rule 63</a> (term)
+
+
+
+<b><a name="state29">State</a> <a href="#state29">29</a></b>
+    Shortest prefix: term EQ
+    Shortest path: <a href="#state0">0</a>-><a href="#state90">90</a>-><a href="#state29">29</a>
+    Predecessors: <a href="#state27">27</a>, <a href="#state90">90</a>, <a href="#state98">98</a>
+
+  <b>Kernel Items</b>
+    35 formula: term EQ . term
+
+  <b>Parser Actions</b>
+    NAME           shift, and go to state <a href="#state41">41</a>
+    NUMBER         shift, and go to state <a href="#state42">42</a>
+    LPAR           shift, and go to state <a href="#state43">43</a>
+    MIN            shift, and go to state <a href="#state45">45</a>
+    MAX            shift, and go to state <a href="#state47">47</a>
+
+  <b>Transitions</b>
+    term           go to state <a href="#state30">30</a>
+
+
+<b><a name="state30">State</a> <a href="#state30">30</a></b>
+    Shortest prefix: term EQ term
+    Shortest path: <a href="#state0">0</a>-><a href="#state90">90</a>-><a href="#state29">29</a>-><a href="#state30">30</a>
+    Predecessors: <a href="#state29">29</a>
+
+  <b>Kernel Items</b>
+    35 formula: term EQ term .
+	-lookahead: { AND, OR, IMPLIES, EQUIV, SEMICOLON, RPAR, COMMA, COLON }
+    64 term: term . PLUS term
+    65 term: term . MINUS term
+    66 term: term . TIMES term
+    67 term: term . DIV term
+    68 term: term . MOD term
+
+  <b>Parser Actions</b>
+    PLUS           shift, and go to state <a href="#state31">31</a>
+    MINUS          shift, and go to state <a href="#state33">33</a>
+    TIMES          shift, and go to state <a href="#state35">35</a>
+    DIV            shift, and go to state <a href="#state37">37</a>
+    MOD            shift, and go to state <a href="#state39">39</a>
+    AND            reduce using <a href="#prod35">rule 35</a> (formula)
+    OR             reduce using <a href="#prod35">rule 35</a> (formula)
+    IMPLIES        reduce using <a href="#prod35">rule 35</a> (formula)
+    EQUIV          reduce using <a href="#prod35">rule 35</a> (formula)
+    SEMICOLON      reduce using <a href="#prod35">rule 35</a> (formula)
+    RPAR           reduce using <a href="#prod35">rule 35</a> (formula)
+    COMMA          reduce using <a href="#prod35">rule 35</a> (formula)
+    COLON          reduce using <a href="#prod35">rule 35</a> (formula)
+
+
+
+<b><a name="state31">State</a> <a href="#state31">31</a></b>
+    Shortest prefix: term PLUS
+    Shortest path: <a href="#state0">0</a>-><a href="#state90">90</a>-><a href="#state31">31</a>
+    Predecessors: <a href="#state27">27</a>, <a href="#state30">30</a>, <a href="#state32">32</a>, <a href="#state34">34</a>, <a href="#state36">36</a>, <a href="#state38">38</a>, <a href="#state40">40</a>, <a href="#state44">44</a>, <a href="#state46">46</a>, <a href="#state48">48</a>, <a href="#state50">50</a>, <a href="#state52">52</a>, <a href="#state54">54</a>, <a href="#state56">56</a>, <a href="#state58">58</a>, <a href="#state60">60</a>, 
+                  <a href="#state62">62</a>, <a href="#state64">64</a>, <a href="#state73">73</a>, <a href="#state90">90</a>, <a href="#state98">98</a>
+
+  <b>Kernel Items</b>
+    64 term: term PLUS . term
+
+  <b>Parser Actions</b>
+    NAME           shift, and go to state <a href="#state41">41</a>
+    NUMBER         shift, and go to state <a href="#state42">42</a>
+    LPAR           shift, and go to state <a href="#state43">43</a>
+    MIN            shift, and go to state <a href="#state45">45</a>
+    MAX            shift, and go to state <a href="#state47">47</a>
+
+  <b>Transitions</b>
+    term           go to state <a href="#state32">32</a>
+
+
+<b><a name="state32">State</a> <a href="#state32">32</a></b>
+    Shortest prefix: term PLUS term
+    Shortest path: <a href="#state0">0</a>-><a href="#state90">90</a>-><a href="#state31">31</a>-><a href="#state32">32</a>
+    Predecessors: <a href="#state31">31</a>
+
+  <b>Kernel Items</b>
+    64 term: term PLUS term .
+	-lookahead: { EQ, PLUS, MINUS, TIMES, DIV, MOD, NE, GT, GE, LT, LE, IN, NOTIN, 
+                SUBSET, RPAR, AND, OR, IMPLIES, EQUIV, SEMICOLON, COMMA, 
+                COLON }
+    64 term: term . PLUS term
+    65 term: term . MINUS term
+    66 term: term . TIMES term
+    67 term: term . DIV term
+    68 term: term . MOD term
+
+  <b>Parser Actions</b>
+    PLUS           reduce using <a href="#prod64">rule 64</a> (term)
+    MINUS          reduce using <a href="#prod64">rule 64</a> (term)
+    TIMES          shift, and go to state <a href="#state35">35</a>
+    DIV            shift, and go to state <a href="#state37">37</a>
+    MOD            shift, and go to state <a href="#state39">39</a>
+    EQ             reduce using <a href="#prod64">rule 64</a> (term)
+    NE             reduce using <a href="#prod64">rule 64</a> (term)
+    GT             reduce using <a href="#prod64">rule 64</a> (term)
+    GE             reduce using <a href="#prod64">rule 64</a> (term)
+    LT             reduce using <a href="#prod64">rule 64</a> (term)
+    LE             reduce using <a href="#prod64">rule 64</a> (term)
+    IN             reduce using <a href="#prod64">rule 64</a> (term)
+    NOTIN          reduce using <a href="#prod64">rule 64</a> (term)
+    SUBSET         reduce using <a href="#prod64">rule 64</a> (term)
+    RPAR           reduce using <a href="#prod64">rule 64</a> (term)
+    AND            reduce using <a href="#prod64">rule 64</a> (term)
+    OR             reduce using <a href="#prod64">rule 64</a> (term)
+    IMPLIES        reduce using <a href="#prod64">rule 64</a> (term)
+    EQUIV          reduce using <a href="#prod64">rule 64</a> (term)
+    SEMICOLON      reduce using <a href="#prod64">rule 64</a> (term)
+    COMMA          reduce using <a href="#prod64">rule 64</a> (term)
+    COLON          reduce using <a href="#prod64">rule 64</a> (term)
+
+
+
+<b><a name="state33">State</a> <a href="#state33">33</a></b>
+    Shortest prefix: term MINUS
+    Shortest path: <a href="#state0">0</a>-><a href="#state90">90</a>-><a href="#state33">33</a>
+    Predecessors: <a href="#state27">27</a>, <a href="#state30">30</a>, <a href="#state32">32</a>, <a href="#state34">34</a>, <a href="#state36">36</a>, <a href="#state38">38</a>, <a href="#state40">40</a>, <a href="#state44">44</a>, <a href="#state46">46</a>, <a href="#state48">48</a>, <a href="#state50">50</a>, <a href="#state52">52</a>, <a href="#state54">54</a>, <a href="#state56">56</a>, <a href="#state58">58</a>, <a href="#state60">60</a>, 
+                  <a href="#state62">62</a>, <a href="#state64">64</a>, <a href="#state73">73</a>, <a href="#state90">90</a>, <a href="#state98">98</a>
+
+  <b>Kernel Items</b>
+    65 term: term MINUS . term
+
+  <b>Parser Actions</b>
+    NAME           shift, and go to state <a href="#state41">41</a>
+    NUMBER         shift, and go to state <a href="#state42">42</a>
+    LPAR           shift, and go to state <a href="#state43">43</a>
+    MIN            shift, and go to state <a href="#state45">45</a>
+    MAX            shift, and go to state <a href="#state47">47</a>
+
+  <b>Transitions</b>
+    term           go to state <a href="#state34">34</a>
+
+
+<b><a name="state34">State</a> <a href="#state34">34</a></b>
+    Shortest prefix: term MINUS term
+    Shortest path: <a href="#state0">0</a>-><a href="#state90">90</a>-><a href="#state33">33</a>-><a href="#state34">34</a>
+    Predecessors: <a href="#state33">33</a>
+
+  <b>Kernel Items</b>
+    65 term: term MINUS term .
+	-lookahead: { EQ, PLUS, MINUS, TIMES, DIV, MOD, NE, GT, GE, LT, LE, IN, NOTIN, 
+                SUBSET, RPAR, AND, OR, IMPLIES, EQUIV, SEMICOLON, COMMA, 
+                COLON }
+    64 term: term . PLUS term
+    65 term: term . MINUS term
+    66 term: term . TIMES term
+    67 term: term . DIV term
+    68 term: term . MOD term
+
+  <b>Parser Actions</b>
+    PLUS           reduce using <a href="#prod65">rule 65</a> (term)
+    MINUS          reduce using <a href="#prod65">rule 65</a> (term)
+    TIMES          shift, and go to state <a href="#state35">35</a>
+    DIV            shift, and go to state <a href="#state37">37</a>
+    MOD            shift, and go to state <a href="#state39">39</a>
+    EQ             reduce using <a href="#prod65">rule 65</a> (term)
+    NE             reduce using <a href="#prod65">rule 65</a> (term)
+    GT             reduce using <a href="#prod65">rule 65</a> (term)
+    GE             reduce using <a href="#prod65">rule 65</a> (term)
+    LT             reduce using <a href="#prod65">rule 65</a> (term)
+    LE             reduce using <a href="#prod65">rule 65</a> (term)
+    IN             reduce using <a href="#prod65">rule 65</a> (term)
+    NOTIN          reduce using <a href="#prod65">rule 65</a> (term)
+    SUBSET         reduce using <a href="#prod65">rule 65</a> (term)
+    RPAR           reduce using <a href="#prod65">rule 65</a> (term)
+    AND            reduce using <a href="#prod65">rule 65</a> (term)
+    OR             reduce using <a href="#prod65">rule 65</a> (term)
+    IMPLIES        reduce using <a href="#prod65">rule 65</a> (term)
+    EQUIV          reduce using <a href="#prod65">rule 65</a> (term)
+    SEMICOLON      reduce using <a href="#prod65">rule 65</a> (term)
+    COMMA          reduce using <a href="#prod65">rule 65</a> (term)
+    COLON          reduce using <a href="#prod65">rule 65</a> (term)
+
+
+
+<b><a name="state35">State</a> <a href="#state35">35</a></b>
+    Shortest prefix: term TIMES
+    Shortest path: <a href="#state0">0</a>-><a href="#state90">90</a>-><a href="#state35">35</a>
+    Predecessors: <a href="#state27">27</a>, <a href="#state30">30</a>, <a href="#state32">32</a>, <a href="#state34">34</a>, <a href="#state36">36</a>, <a href="#state38">38</a>, <a href="#state40">40</a>, <a href="#state44">44</a>, <a href="#state46">46</a>, <a href="#state48">48</a>, <a href="#state50">50</a>, <a href="#state52">52</a>, <a href="#state54">54</a>, <a href="#state56">56</a>, <a href="#state58">58</a>, <a href="#state60">60</a>, 
+                  <a href="#state62">62</a>, <a href="#state64">64</a>, <a href="#state73">73</a>, <a href="#state90">90</a>, <a href="#state98">98</a>
+
+  <b>Kernel Items</b>
+    66 term: term TIMES . term
+
+  <b>Parser Actions</b>
+    NAME           shift, and go to state <a href="#state41">41</a>
+    NUMBER         shift, and go to state <a href="#state42">42</a>
+    LPAR           shift, and go to state <a href="#state43">43</a>
+    MIN            shift, and go to state <a href="#state45">45</a>
+    MAX            shift, and go to state <a href="#state47">47</a>
+
+  <b>Transitions</b>
+    term           go to state <a href="#state36">36</a>
+
+
+<b><a name="state36">State</a> <a href="#state36">36</a></b>
+    Shortest prefix: term TIMES term
+    Shortest path: <a href="#state0">0</a>-><a href="#state90">90</a>-><a href="#state35">35</a>-><a href="#state36">36</a>
+    Predecessors: <a href="#state35">35</a>
+
+  <b>Kernel Items</b>
+    66 term: term TIMES term .
+	-lookahead: { EQ, PLUS, MINUS, TIMES, DIV, MOD, NE, GT, GE, LT, LE, IN, NOTIN, 
+                SUBSET, RPAR, AND, OR, IMPLIES, EQUIV, SEMICOLON, COMMA, 
+                COLON }
+    64 term: term . PLUS term
+    65 term: term . MINUS term
+    66 term: term . TIMES term
+    67 term: term . DIV term
+    68 term: term . MOD term
+
+  <b>Parser Actions</b>
+    PLUS           reduce using <a href="#prod66">rule 66</a> (term)
+    MINUS          reduce using <a href="#prod66">rule 66</a> (term)
+    TIMES          reduce using <a href="#prod66">rule 66</a> (term)
+    DIV            reduce using <a href="#prod66">rule 66</a> (term)
+    MOD            reduce using <a href="#prod66">rule 66</a> (term)
+    EQ             reduce using <a href="#prod66">rule 66</a> (term)
+    NE             reduce using <a href="#prod66">rule 66</a> (term)
+    GT             reduce using <a href="#prod66">rule 66</a> (term)
+    GE             reduce using <a href="#prod66">rule 66</a> (term)
+    LT             reduce using <a href="#prod66">rule 66</a> (term)
+    LE             reduce using <a href="#prod66">rule 66</a> (term)
+    IN             reduce using <a href="#prod66">rule 66</a> (term)
+    NOTIN          reduce using <a href="#prod66">rule 66</a> (term)
+    SUBSET         reduce using <a href="#prod66">rule 66</a> (term)
+    RPAR           reduce using <a href="#prod66">rule 66</a> (term)
+    AND            reduce using <a href="#prod66">rule 66</a> (term)
+    OR             reduce using <a href="#prod66">rule 66</a> (term)
+    IMPLIES        reduce using <a href="#prod66">rule 66</a> (term)
+    EQUIV          reduce using <a href="#prod66">rule 66</a> (term)
+    SEMICOLON      reduce using <a href="#prod66">rule 66</a> (term)
+    COMMA          reduce using <a href="#prod66">rule 66</a> (term)
+    COLON          reduce using <a href="#prod66">rule 66</a> (term)
+
+
+
+<b><a name="state37">State</a> <a href="#state37">37</a></b>
+    Shortest prefix: term DIV
+    Shortest path: <a href="#state0">0</a>-><a href="#state90">90</a>-><a href="#state37">37</a>
+    Predecessors: <a href="#state27">27</a>, <a href="#state30">30</a>, <a href="#state32">32</a>, <a href="#state34">34</a>, <a href="#state36">36</a>, <a href="#state38">38</a>, <a href="#state40">40</a>, <a href="#state44">44</a>, <a href="#state46">46</a>, <a href="#state48">48</a>, <a href="#state50">50</a>, <a href="#state52">52</a>, <a href="#state54">54</a>, <a href="#state56">56</a>, <a href="#state58">58</a>, <a href="#state60">60</a>, 
+                  <a href="#state62">62</a>, <a href="#state64">64</a>, <a href="#state73">73</a>, <a href="#state90">90</a>, <a href="#state98">98</a>
+
+  <b>Kernel Items</b>
+    67 term: term DIV . term
+
+  <b>Parser Actions</b>
+    NAME           shift, and go to state <a href="#state41">41</a>
+    NUMBER         shift, and go to state <a href="#state42">42</a>
+    LPAR           shift, and go to state <a href="#state43">43</a>
+    MIN            shift, and go to state <a href="#state45">45</a>
+    MAX            shift, and go to state <a href="#state47">47</a>
+
+  <b>Transitions</b>
+    term           go to state <a href="#state38">38</a>
+
+
+<b><a name="state38">State</a> <a href="#state38">38</a></b>
+    Shortest prefix: term DIV term
+    Shortest path: <a href="#state0">0</a>-><a href="#state90">90</a>-><a href="#state37">37</a>-><a href="#state38">38</a>
+    Predecessors: <a href="#state37">37</a>
+
+  <b>Kernel Items</b>
+    67 term: term DIV term .
+	-lookahead: { EQ, PLUS, MINUS, TIMES, DIV, MOD, NE, GT, GE, LT, LE, IN, NOTIN, 
+                SUBSET, RPAR, AND, OR, IMPLIES, EQUIV, SEMICOLON, COMMA, 
+                COLON }
+    64 term: term . PLUS term
+    65 term: term . MINUS term
+    66 term: term . TIMES term
+    67 term: term . DIV term
+    68 term: term . MOD term
+
+  <b>Parser Actions</b>
+    PLUS           reduce using <a href="#prod67">rule 67</a> (term)
+    MINUS          reduce using <a href="#prod67">rule 67</a> (term)
+    TIMES          reduce using <a href="#prod67">rule 67</a> (term)
+    DIV            reduce using <a href="#prod67">rule 67</a> (term)
+    MOD            reduce using <a href="#prod67">rule 67</a> (term)
+    EQ             reduce using <a href="#prod67">rule 67</a> (term)
+    NE             reduce using <a href="#prod67">rule 67</a> (term)
+    GT             reduce using <a href="#prod67">rule 67</a> (term)
+    GE             reduce using <a href="#prod67">rule 67</a> (term)
+    LT             reduce using <a href="#prod67">rule 67</a> (term)
+    LE             reduce using <a href="#prod67">rule 67</a> (term)
+    IN             reduce using <a href="#prod67">rule 67</a> (term)
+    NOTIN          reduce using <a href="#prod67">rule 67</a> (term)
+    SUBSET         reduce using <a href="#prod67">rule 67</a> (term)
+    RPAR           reduce using <a href="#prod67">rule 67</a> (term)
+    AND            reduce using <a href="#prod67">rule 67</a> (term)
+    OR             reduce using <a href="#prod67">rule 67</a> (term)
+    IMPLIES        reduce using <a href="#prod67">rule 67</a> (term)
+    EQUIV          reduce using <a href="#prod67">rule 67</a> (term)
+    SEMICOLON      reduce using <a href="#prod67">rule 67</a> (term)
+    COMMA          reduce using <a href="#prod67">rule 67</a> (term)
+    COLON          reduce using <a href="#prod67">rule 67</a> (term)
+
+
+
+<b><a name="state39">State</a> <a href="#state39">39</a></b>
+    Shortest prefix: term MOD
+    Shortest path: <a href="#state0">0</a>-><a href="#state90">90</a>-><a href="#state39">39</a>
+    Predecessors: <a href="#state27">27</a>, <a href="#state30">30</a>, <a href="#state32">32</a>, <a href="#state34">34</a>, <a href="#state36">36</a>, <a href="#state38">38</a>, <a href="#state40">40</a>, <a href="#state44">44</a>, <a href="#state46">46</a>, <a href="#state48">48</a>, <a href="#state50">50</a>, <a href="#state52">52</a>, <a href="#state54">54</a>, <a href="#state56">56</a>, <a href="#state58">58</a>, <a href="#state60">60</a>, 
+                  <a href="#state62">62</a>, <a href="#state64">64</a>, <a href="#state73">73</a>, <a href="#state90">90</a>, <a href="#state98">98</a>
+
+  <b>Kernel Items</b>
+    68 term: term MOD . term
+
+  <b>Parser Actions</b>
+    NAME           shift, and go to state <a href="#state41">41</a>
+    NUMBER         shift, and go to state <a href="#state42">42</a>
+    LPAR           shift, and go to state <a href="#state43">43</a>
+    MIN            shift, and go to state <a href="#state45">45</a>
+    MAX            shift, and go to state <a href="#state47">47</a>
+
+  <b>Transitions</b>
+    term           go to state <a href="#state40">40</a>
+
+
+<b><a name="state40">State</a> <a href="#state40">40</a></b>
+    Shortest prefix: term MOD term
+    Shortest path: <a href="#state0">0</a>-><a href="#state90">90</a>-><a href="#state39">39</a>-><a href="#state40">40</a>
+    Predecessors: <a href="#state39">39</a>
+
+  <b>Kernel Items</b>
+    68 term: term MOD term .
+	-lookahead: { EQ, PLUS, MINUS, TIMES, DIV, MOD, NE, GT, GE, LT, LE, IN, NOTIN, 
+                SUBSET, RPAR, AND, OR, IMPLIES, EQUIV, SEMICOLON, COMMA, 
+                COLON }
+    64 term: term . PLUS term
+    65 term: term . MINUS term
+    66 term: term . TIMES term
+    67 term: term . DIV term
+    68 term: term . MOD term
+
+  <b>Parser Actions</b>
+    PLUS           reduce using <a href="#prod68">rule 68</a> (term)
+    MINUS          reduce using <a href="#prod68">rule 68</a> (term)
+    TIMES          reduce using <a href="#prod68">rule 68</a> (term)
+    DIV            reduce using <a href="#prod68">rule 68</a> (term)
+    MOD            reduce using <a href="#prod68">rule 68</a> (term)
+    EQ             reduce using <a href="#prod68">rule 68</a> (term)
+    NE             reduce using <a href="#prod68">rule 68</a> (term)
+    GT             reduce using <a href="#prod68">rule 68</a> (term)
+    GE             reduce using <a href="#prod68">rule 68</a> (term)
+    LT             reduce using <a href="#prod68">rule 68</a> (term)
+    LE             reduce using <a href="#prod68">rule 68</a> (term)
+    IN             reduce using <a href="#prod68">rule 68</a> (term)
+    NOTIN          reduce using <a href="#prod68">rule 68</a> (term)
+    SUBSET         reduce using <a href="#prod68">rule 68</a> (term)
+    RPAR           reduce using <a href="#prod68">rule 68</a> (term)
+    AND            reduce using <a href="#prod68">rule 68</a> (term)
+    OR             reduce using <a href="#prod68">rule 68</a> (term)
+    IMPLIES        reduce using <a href="#prod68">rule 68</a> (term)
+    EQUIV          reduce using <a href="#prod68">rule 68</a> (term)
+    SEMICOLON      reduce using <a href="#prod68">rule 68</a> (term)
+    COMMA          reduce using <a href="#prod68">rule 68</a> (term)
+    COLON          reduce using <a href="#prod68">rule 68</a> (term)
+
+
+
+<b><a name="state41">State</a> <a href="#state41">41</a></b>
+    Shortest prefix: MIN NAME
+    Shortest path: <a href="#state0">0</a>-><a href="#state45">45</a>-><a href="#state41">41</a>
+    Predecessors: <a href="#state29">29</a>, <a href="#state31">31</a>, <a href="#state33">33</a>, <a href="#state35">35</a>, <a href="#state37">37</a>, <a href="#state39">39</a>, <a href="#state43">43</a>, <a href="#state45">45</a>, <a href="#state47">47</a>, <a href="#state49">49</a>, <a href="#state51">51</a>, <a href="#state53">53</a>, <a href="#state55">55</a>, <a href="#state57">57</a>, <a href="#state59">59</a>, <a href="#state61">61</a>, 
+                  <a href="#state63">63</a>, <a href="#state72">72</a>
+
+  <b>Kernel Items</b>
+    61 term: NAME .
+	-lookahead: { PLUS, MINUS, TIMES, DIV, MOD, AND, OR, IMPLIES, EQUIV, 
+                SEMICOLON, RPAR, COMMA, COLON, EQ, NE, GT, GE, LT, LE, IN, 
+                NOTIN, SUBSET }
+
+  <b>Parser Actions</b>
+    PLUS           reduce using <a href="#prod61">rule 61</a> (term)
+    MINUS          reduce using <a href="#prod61">rule 61</a> (term)
+    TIMES          reduce using <a href="#prod61">rule 61</a> (term)
+    DIV            reduce using <a href="#prod61">rule 61</a> (term)
+    MOD            reduce using <a href="#prod61">rule 61</a> (term)
+    AND            reduce using <a href="#prod61">rule 61</a> (term)
+    OR             reduce using <a href="#prod61">rule 61</a> (term)
+    IMPLIES        reduce using <a href="#prod61">rule 61</a> (term)
+    EQUIV          reduce using <a href="#prod61">rule 61</a> (term)
+    SEMICOLON      reduce using <a href="#prod61">rule 61</a> (term)
+    RPAR           reduce using <a href="#prod61">rule 61</a> (term)
+    COMMA          reduce using <a href="#prod61">rule 61</a> (term)
+    COLON          reduce using <a href="#prod61">rule 61</a> (term)
+    EQ             reduce using <a href="#prod61">rule 61</a> (term)
+    NE             reduce using <a href="#prod61">rule 61</a> (term)
+    GT             reduce using <a href="#prod61">rule 61</a> (term)
+    GE             reduce using <a href="#prod61">rule 61</a> (term)
+    LT             reduce using <a href="#prod61">rule 61</a> (term)
+    LE             reduce using <a href="#prod61">rule 61</a> (term)
+    IN             reduce using <a href="#prod61">rule 61</a> (term)
+    NOTIN          reduce using <a href="#prod61">rule 61</a> (term)
+    SUBSET         reduce using <a href="#prod61">rule 61</a> (term)
+
+
+
+<b><a name="state42">State</a> <a href="#state42">42</a></b>
+    Shortest prefix: NUMBER
+    Shortest path: <a href="#state0">0</a>-><a href="#state42">42</a>
+    Predecessors: <a href="#state0">0</a>, <a href="#state4">4</a>, <a href="#state7">7</a>, <a href="#state11">11</a>, <a href="#state14">14</a>, <a href="#state16">16</a>, <a href="#state18">18</a>, <a href="#state20">20</a>, <a href="#state24">24</a>, <a href="#state29">29</a>, <a href="#state31">31</a>, <a href="#state33">33</a>, <a href="#state35">35</a>, <a href="#state37">37</a>, <a href="#state39">39</a>, <a href="#state43">43</a>, 
+                  <a href="#state45">45</a>, <a href="#state47">47</a>, <a href="#state49">49</a>, <a href="#state51">51</a>, <a href="#state53">53</a>, <a href="#state55">55</a>, <a href="#state57">57</a>, <a href="#state59">59</a>, <a href="#state61">61</a>, <a href="#state63">63</a>, <a href="#state65">65</a>, <a href="#state68">68</a>, <a href="#state72">72</a>, <a href="#state77">77</a>, <a href="#state84">84</a>, <a href="#state95">95</a>, 
+                  <a href="#state103">103</a>, <a href="#state108">108</a>
+
+  <b>Kernel Items</b>
+    62 term: NUMBER .
+	-lookahead: { EQ, PLUS, MINUS, TIMES, DIV, MOD, NE, GT, GE, LT, LE, IN, NOTIN, 
+                SUBSET, RPAR, AND, OR, IMPLIES, EQUIV, SEMICOLON, COMMA, 
+                COLON }
+
+  <b>Parser Actions</b>
+    EQ             reduce using <a href="#prod62">rule 62</a> (term)
+    PLUS           reduce using <a href="#prod62">rule 62</a> (term)
+    MINUS          reduce using <a href="#prod62">rule 62</a> (term)
+    TIMES          reduce using <a href="#prod62">rule 62</a> (term)
+    DIV            reduce using <a href="#prod62">rule 62</a> (term)
+    MOD            reduce using <a href="#prod62">rule 62</a> (term)
+    NE             reduce using <a href="#prod62">rule 62</a> (term)
+    GT             reduce using <a href="#prod62">rule 62</a> (term)
+    GE             reduce using <a href="#prod62">rule 62</a> (term)
+    LT             reduce using <a href="#prod62">rule 62</a> (term)
+    LE             reduce using <a href="#prod62">rule 62</a> (term)
+    IN             reduce using <a href="#prod62">rule 62</a> (term)
+    NOTIN          reduce using <a href="#prod62">rule 62</a> (term)
+    SUBSET         reduce using <a href="#prod62">rule 62</a> (term)
+    RPAR           reduce using <a href="#prod62">rule 62</a> (term)
+    AND            reduce using <a href="#prod62">rule 62</a> (term)
+    OR             reduce using <a href="#prod62">rule 62</a> (term)
+    IMPLIES        reduce using <a href="#prod62">rule 62</a> (term)
+    EQUIV          reduce using <a href="#prod62">rule 62</a> (term)
+    SEMICOLON      reduce using <a href="#prod62">rule 62</a> (term)
+    COMMA          reduce using <a href="#prod62">rule 62</a> (term)
+    COLON          reduce using <a href="#prod62">rule 62</a> (term)
+
+
+
+<b><a name="state43">State</a> <a href="#state43">43</a></b>
+    Shortest prefix: MIN LPAR
+    Shortest path: <a href="#state0">0</a>-><a href="#state45">45</a>-><a href="#state43">43</a>
+    Predecessors: <a href="#state29">29</a>, <a href="#state31">31</a>, <a href="#state33">33</a>, <a href="#state35">35</a>, <a href="#state37">37</a>, <a href="#state39">39</a>, <a href="#state43">43</a>, <a href="#state45">45</a>, <a href="#state47">47</a>, <a href="#state49">49</a>, <a href="#state51">51</a>, <a href="#state53">53</a>, <a href="#state55">55</a>, <a href="#state57">57</a>, <a href="#state59">59</a>, <a href="#state61">61</a>, 
+                  <a href="#state63">63</a>, <a href="#state72">72</a>
+
+  <b>Kernel Items</b>
+    63 term: LPAR . term RPAR
+
+  <b>Parser Actions</b>
+    NAME           shift, and go to state <a href="#state41">41</a>
+    NUMBER         shift, and go to state <a href="#state42">42</a>
+    LPAR           shift, and go to state <a href="#state43">43</a>
+    MIN            shift, and go to state <a href="#state45">45</a>
+    MAX            shift, and go to state <a href="#state47">47</a>
+
+  <b>Transitions</b>
+    term           go to state <a href="#state44">44</a>
+
+
+<b><a name="state44">State</a> <a href="#state44">44</a></b>
+    Shortest prefix: MIN LPAR term
+    Shortest path: <a href="#state0">0</a>-><a href="#state45">45</a>-><a href="#state43">43</a>-><a href="#state44">44</a>
+    Predecessors: <a href="#state43">43</a>
+
+  <b>Kernel Items</b>
+    63 term: LPAR term . RPAR
+    64 term: term . PLUS term
+    65 term: term . MINUS term
+    66 term: term . TIMES term
+    67 term: term . DIV term
+    68 term: term . MOD term
+
+  <b>Parser Actions</b>
+    RPAR           shift, and go to state <a href="#state28">28</a>
+    PLUS           shift, and go to state <a href="#state31">31</a>
+    MINUS          shift, and go to state <a href="#state33">33</a>
+    TIMES          shift, and go to state <a href="#state35">35</a>
+    DIV            shift, and go to state <a href="#state37">37</a>
+    MOD            shift, and go to state <a href="#state39">39</a>
+
+
+
+<b><a name="state45">State</a> <a href="#state45">45</a></b>
+    Shortest prefix: MIN
+    Shortest path: <a href="#state0">0</a>-><a href="#state45">45</a>
+    Predecessors: <a href="#state0">0</a>, <a href="#state4">4</a>, <a href="#state7">7</a>, <a href="#state11">11</a>, <a href="#state14">14</a>, <a href="#state16">16</a>, <a href="#state18">18</a>, <a href="#state20">20</a>, <a href="#state24">24</a>, <a href="#state29">29</a>, <a href="#state31">31</a>, <a href="#state33">33</a>, <a href="#state35">35</a>, <a href="#state37">37</a>, <a href="#state39">39</a>, <a href="#state43">43</a>, 
+                  <a href="#state45">45</a>, <a href="#state47">47</a>, <a href="#state49">49</a>, <a href="#state51">51</a>, <a href="#state53">53</a>, <a href="#state55">55</a>, <a href="#state57">57</a>, <a href="#state59">59</a>, <a href="#state61">61</a>, <a href="#state63">63</a>, <a href="#state65">65</a>, <a href="#state68">68</a>, <a href="#state72">72</a>, <a href="#state77">77</a>, <a href="#state84">84</a>, <a href="#state95">95</a>, 
+                  <a href="#state103">103</a>, <a href="#state108">108</a>
+
+  <b>Kernel Items</b>
+    69 term: MIN . term
+
+  <b>Parser Actions</b>
+    NAME           shift, and go to state <a href="#state41">41</a>
+    NUMBER         shift, and go to state <a href="#state42">42</a>
+    LPAR           shift, and go to state <a href="#state43">43</a>
+    MIN            shift, and go to state <a href="#state45">45</a>
+    MAX            shift, and go to state <a href="#state47">47</a>
+
+  <b>Transitions</b>
+    term           go to state <a href="#state46">46</a>
+
+
+<b><a name="state46">State</a> <a href="#state46">46</a></b>
+    Shortest prefix: MIN term
+    Shortest path: <a href="#state0">0</a>-><a href="#state45">45</a>-><a href="#state46">46</a>
+    Predecessors: <a href="#state45">45</a>
+
+  <b>Kernel Items</b>
+    69 term: MIN term .
+	-lookahead: { EQ, PLUS, MINUS, TIMES, DIV, MOD, NE, GT, GE, LT, LE, IN, NOTIN, 
+                SUBSET, RPAR, AND, OR, IMPLIES, EQUIV, SEMICOLON, COMMA, 
+                COLON }
+    64 term: term . PLUS term
+    65 term: term . MINUS term
+    66 term: term . TIMES term
+    67 term: term . DIV term
+    68 term: term . MOD term
+
+  <b>Parser Actions</b>
+    PLUS           shift, and go to state <a href="#state31">31</a>
+    MINUS          shift, and go to state <a href="#state33">33</a>
+    TIMES          shift, and go to state <a href="#state35">35</a>
+    DIV            shift, and go to state <a href="#state37">37</a>
+    MOD            shift, and go to state <a href="#state39">39</a>
+    EQ             reduce using <a href="#prod69">rule 69</a> (term)
+    NE             reduce using <a href="#prod69">rule 69</a> (term)
+    GT             reduce using <a href="#prod69">rule 69</a> (term)
+    GE             reduce using <a href="#prod69">rule 69</a> (term)
+    LT             reduce using <a href="#prod69">rule 69</a> (term)
+    LE             reduce using <a href="#prod69">rule 69</a> (term)
+    IN             reduce using <a href="#prod69">rule 69</a> (term)
+    NOTIN          reduce using <a href="#prod69">rule 69</a> (term)
+    SUBSET         reduce using <a href="#prod69">rule 69</a> (term)
+    RPAR           reduce using <a href="#prod69">rule 69</a> (term)
+    AND            reduce using <a href="#prod69">rule 69</a> (term)
+    OR             reduce using <a href="#prod69">rule 69</a> (term)
+    IMPLIES        reduce using <a href="#prod69">rule 69</a> (term)
+    EQUIV          reduce using <a href="#prod69">rule 69</a> (term)
+    SEMICOLON      reduce using <a href="#prod69">rule 69</a> (term)
+    COMMA          reduce using <a href="#prod69">rule 69</a> (term)
+    COLON          reduce using <a href="#prod69">rule 69</a> (term)
+
+
+
+<b><a name="state47">State</a> <a href="#state47">47</a></b>
+    Shortest prefix: MAX
+    Shortest path: <a href="#state0">0</a>-><a href="#state47">47</a>
+    Predecessors: <a href="#state0">0</a>, <a href="#state4">4</a>, <a href="#state7">7</a>, <a href="#state11">11</a>, <a href="#state14">14</a>, <a href="#state16">16</a>, <a href="#state18">18</a>, <a href="#state20">20</a>, <a href="#state24">24</a>, <a href="#state29">29</a>, <a href="#state31">31</a>, <a href="#state33">33</a>, <a href="#state35">35</a>, <a href="#state37">37</a>, <a href="#state39">39</a>, <a href="#state43">43</a>, 
+                  <a href="#state45">45</a>, <a href="#state47">47</a>, <a href="#state49">49</a>, <a href="#state51">51</a>, <a href="#state53">53</a>, <a href="#state55">55</a>, <a href="#state57">57</a>, <a href="#state59">59</a>, <a href="#state61">61</a>, <a href="#state63">63</a>, <a href="#state65">65</a>, <a href="#state68">68</a>, <a href="#state72">72</a>, <a href="#state77">77</a>, <a href="#state84">84</a>, <a href="#state95">95</a>, 
+                  <a href="#state103">103</a>, <a href="#state108">108</a>
+
+  <b>Kernel Items</b>
+    70 term: MAX . term
+
+  <b>Parser Actions</b>
+    NAME           shift, and go to state <a href="#state41">41</a>
+    NUMBER         shift, and go to state <a href="#state42">42</a>
+    LPAR           shift, and go to state <a href="#state43">43</a>
+    MIN            shift, and go to state <a href="#state45">45</a>
+    MAX            shift, and go to state <a href="#state47">47</a>
+
+  <b>Transitions</b>
+    term           go to state <a href="#state48">48</a>
+
+
+<b><a name="state48">State</a> <a href="#state48">48</a></b>
+    Shortest prefix: MAX term
+    Shortest path: <a href="#state0">0</a>-><a href="#state47">47</a>-><a href="#state48">48</a>
+    Predecessors: <a href="#state47">47</a>
+
+  <b>Kernel Items</b>
+    70 term: MAX term .
+	-lookahead: { EQ, PLUS, MINUS, TIMES, DIV, MOD, NE, GT, GE, LT, LE, IN, NOTIN, 
+                SUBSET, RPAR, AND, OR, IMPLIES, EQUIV, SEMICOLON, COMMA, 
+                COLON }
+    64 term: term . PLUS term
+    65 term: term . MINUS term
+    66 term: term . TIMES term
+    67 term: term . DIV term
+    68 term: term . MOD term
+
+  <b>Parser Actions</b>
+    PLUS           shift, and go to state <a href="#state31">31</a>
+    MINUS          shift, and go to state <a href="#state33">33</a>
+    TIMES          shift, and go to state <a href="#state35">35</a>
+    DIV            shift, and go to state <a href="#state37">37</a>
+    MOD            shift, and go to state <a href="#state39">39</a>
+    EQ             reduce using <a href="#prod70">rule 70</a> (term)
+    NE             reduce using <a href="#prod70">rule 70</a> (term)
+    GT             reduce using <a href="#prod70">rule 70</a> (term)
+    GE             reduce using <a href="#prod70">rule 70</a> (term)
+    LT             reduce using <a href="#prod70">rule 70</a> (term)
+    LE             reduce using <a href="#prod70">rule 70</a> (term)
+    IN             reduce using <a href="#prod70">rule 70</a> (term)
+    NOTIN          reduce using <a href="#prod70">rule 70</a> (term)
+    SUBSET         reduce using <a href="#prod70">rule 70</a> (term)
+    RPAR           reduce using <a href="#prod70">rule 70</a> (term)
+    AND            reduce using <a href="#prod70">rule 70</a> (term)
+    OR             reduce using <a href="#prod70">rule 70</a> (term)
+    IMPLIES        reduce using <a href="#prod70">rule 70</a> (term)
+    EQUIV          reduce using <a href="#prod70">rule 70</a> (term)
+    SEMICOLON      reduce using <a href="#prod70">rule 70</a> (term)
+    COMMA          reduce using <a href="#prod70">rule 70</a> (term)
+    COLON          reduce using <a href="#prod70">rule 70</a> (term)
+
+
+
+<b><a name="state49">State</a> <a href="#state49">49</a></b>
+    Shortest prefix: term NE
+    Shortest path: <a href="#state0">0</a>-><a href="#state90">90</a>-><a href="#state49">49</a>
+    Predecessors: <a href="#state27">27</a>, <a href="#state90">90</a>, <a href="#state98">98</a>
+
+  <b>Kernel Items</b>
+    36 formula: term NE . term
+
+  <b>Parser Actions</b>
+    NAME           shift, and go to state <a href="#state41">41</a>
+    NUMBER         shift, and go to state <a href="#state42">42</a>
+    LPAR           shift, and go to state <a href="#state43">43</a>
+    MIN            shift, and go to state <a href="#state45">45</a>
+    MAX            shift, and go to state <a href="#state47">47</a>
+
+  <b>Transitions</b>
+    term           go to state <a href="#state50">50</a>
+
+
+<b><a name="state50">State</a> <a href="#state50">50</a></b>
+    Shortest prefix: term NE term
+    Shortest path: <a href="#state0">0</a>-><a href="#state90">90</a>-><a href="#state49">49</a>-><a href="#state50">50</a>
+    Predecessors: <a href="#state49">49</a>
+
+  <b>Kernel Items</b>
+    36 formula: term NE term .
+	-lookahead: { AND, OR, IMPLIES, EQUIV, SEMICOLON, RPAR, COMMA, COLON }
+    64 term: term . PLUS term
+    65 term: term . MINUS term
+    66 term: term . TIMES term
+    67 term: term . DIV term
+    68 term: term . MOD term
+
+  <b>Parser Actions</b>
+    PLUS           shift, and go to state <a href="#state31">31</a>
+    MINUS          shift, and go to state <a href="#state33">33</a>
+    TIMES          shift, and go to state <a href="#state35">35</a>
+    DIV            shift, and go to state <a href="#state37">37</a>
+    MOD            shift, and go to state <a href="#state39">39</a>
+    AND            reduce using <a href="#prod36">rule 36</a> (formula)
+    OR             reduce using <a href="#prod36">rule 36</a> (formula)
+    IMPLIES        reduce using <a href="#prod36">rule 36</a> (formula)
+    EQUIV          reduce using <a href="#prod36">rule 36</a> (formula)
+    SEMICOLON      reduce using <a href="#prod36">rule 36</a> (formula)
+    RPAR           reduce using <a href="#prod36">rule 36</a> (formula)
+    COMMA          reduce using <a href="#prod36">rule 36</a> (formula)
+    COLON          reduce using <a href="#prod36">rule 36</a> (formula)
+
+
+
+<b><a name="state51">State</a> <a href="#state51">51</a></b>
+    Shortest prefix: term GT
+    Shortest path: <a href="#state0">0</a>-><a href="#state90">90</a>-><a href="#state51">51</a>
+    Predecessors: <a href="#state27">27</a>, <a href="#state90">90</a>, <a href="#state98">98</a>
+
+  <b>Kernel Items</b>
+    37 formula: term GT . term
+
+  <b>Parser Actions</b>
+    NAME           shift, and go to state <a href="#state41">41</a>
+    NUMBER         shift, and go to state <a href="#state42">42</a>
+    LPAR           shift, and go to state <a href="#state43">43</a>
+    MIN            shift, and go to state <a href="#state45">45</a>
+    MAX            shift, and go to state <a href="#state47">47</a>
+
+  <b>Transitions</b>
+    term           go to state <a href="#state52">52</a>
+
+
+<b><a name="state52">State</a> <a href="#state52">52</a></b>
+    Shortest prefix: term GT term
+    Shortest path: <a href="#state0">0</a>-><a href="#state90">90</a>-><a href="#state51">51</a>-><a href="#state52">52</a>
+    Predecessors: <a href="#state51">51</a>
+
+  <b>Kernel Items</b>
+    37 formula: term GT term .
+	-lookahead: { AND, OR, IMPLIES, EQUIV, SEMICOLON, RPAR, COMMA, COLON }
+    64 term: term . PLUS term
+    65 term: term . MINUS term
+    66 term: term . TIMES term
+    67 term: term . DIV term
+    68 term: term . MOD term
+
+  <b>Parser Actions</b>
+    PLUS           shift, and go to state <a href="#state31">31</a>
+    MINUS          shift, and go to state <a href="#state33">33</a>
+    TIMES          shift, and go to state <a href="#state35">35</a>
+    DIV            shift, and go to state <a href="#state37">37</a>
+    MOD            shift, and go to state <a href="#state39">39</a>
+    AND            reduce using <a href="#prod37">rule 37</a> (formula)
+    OR             reduce using <a href="#prod37">rule 37</a> (formula)
+    IMPLIES        reduce using <a href="#prod37">rule 37</a> (formula)
+    EQUIV          reduce using <a href="#prod37">rule 37</a> (formula)
+    SEMICOLON      reduce using <a href="#prod37">rule 37</a> (formula)
+    RPAR           reduce using <a href="#prod37">rule 37</a> (formula)
+    COMMA          reduce using <a href="#prod37">rule 37</a> (formula)
+    COLON          reduce using <a href="#prod37">rule 37</a> (formula)
+
+
+
+<b><a name="state53">State</a> <a href="#state53">53</a></b>
+    Shortest prefix: term GE
+    Shortest path: <a href="#state0">0</a>-><a href="#state90">90</a>-><a href="#state53">53</a>
+    Predecessors: <a href="#state27">27</a>, <a href="#state90">90</a>, <a href="#state98">98</a>
+
+  <b>Kernel Items</b>
+    38 formula: term GE . term
+
+  <b>Parser Actions</b>
+    NAME           shift, and go to state <a href="#state41">41</a>
+    NUMBER         shift, and go to state <a href="#state42">42</a>
+    LPAR           shift, and go to state <a href="#state43">43</a>
+    MIN            shift, and go to state <a href="#state45">45</a>
+    MAX            shift, and go to state <a href="#state47">47</a>
+
+  <b>Transitions</b>
+    term           go to state <a href="#state54">54</a>
+
+
+<b><a name="state54">State</a> <a href="#state54">54</a></b>
+    Shortest prefix: term GE term
+    Shortest path: <a href="#state0">0</a>-><a href="#state90">90</a>-><a href="#state53">53</a>-><a href="#state54">54</a>
+    Predecessors: <a href="#state53">53</a>
+
+  <b>Kernel Items</b>
+    38 formula: term GE term .
+	-lookahead: { AND, OR, IMPLIES, EQUIV, SEMICOLON, RPAR, COMMA, COLON }
+    64 term: term . PLUS term
+    65 term: term . MINUS term
+    66 term: term . TIMES term
+    67 term: term . DIV term
+    68 term: term . MOD term
+
+  <b>Parser Actions</b>
+    PLUS           shift, and go to state <a href="#state31">31</a>
+    MINUS          shift, and go to state <a href="#state33">33</a>
+    TIMES          shift, and go to state <a href="#state35">35</a>
+    DIV            shift, and go to state <a href="#state37">37</a>
+    MOD            shift, and go to state <a href="#state39">39</a>
+    AND            reduce using <a href="#prod38">rule 38</a> (formula)
+    OR             reduce using <a href="#prod38">rule 38</a> (formula)
+    IMPLIES        reduce using <a href="#prod38">rule 38</a> (formula)
+    EQUIV          reduce using <a href="#prod38">rule 38</a> (formula)
+    SEMICOLON      reduce using <a href="#prod38">rule 38</a> (formula)
+    RPAR           reduce using <a href="#prod38">rule 38</a> (formula)
+    COMMA          reduce using <a href="#prod38">rule 38</a> (formula)
+    COLON          reduce using <a href="#prod38">rule 38</a> (formula)
+
+
+
+<b><a name="state55">State</a> <a href="#state55">55</a></b>
+    Shortest prefix: term LT
+    Shortest path: <a href="#state0">0</a>-><a href="#state90">90</a>-><a href="#state55">55</a>
+    Predecessors: <a href="#state27">27</a>, <a href="#state90">90</a>, <a href="#state98">98</a>
+
+  <b>Kernel Items</b>
+    39 formula: term LT . term
+
+  <b>Parser Actions</b>
+    NAME           shift, and go to state <a href="#state41">41</a>
+    NUMBER         shift, and go to state <a href="#state42">42</a>
+    LPAR           shift, and go to state <a href="#state43">43</a>
+    MIN            shift, and go to state <a href="#state45">45</a>
+    MAX            shift, and go to state <a href="#state47">47</a>
+
+  <b>Transitions</b>
+    term           go to state <a href="#state56">56</a>
+
+
+<b><a name="state56">State</a> <a href="#state56">56</a></b>
+    Shortest prefix: term LT term
+    Shortest path: <a href="#state0">0</a>-><a href="#state90">90</a>-><a href="#state55">55</a>-><a href="#state56">56</a>
+    Predecessors: <a href="#state55">55</a>
+
+  <b>Kernel Items</b>
+    39 formula: term LT term .
+	-lookahead: { AND, OR, IMPLIES, EQUIV, SEMICOLON, RPAR, COMMA, COLON }
+    64 term: term . PLUS term
+    65 term: term . MINUS term
+    66 term: term . TIMES term
+    67 term: term . DIV term
+    68 term: term . MOD term
+
+  <b>Parser Actions</b>
+    PLUS           shift, and go to state <a href="#state31">31</a>
+    MINUS          shift, and go to state <a href="#state33">33</a>
+    TIMES          shift, and go to state <a href="#state35">35</a>
+    DIV            shift, and go to state <a href="#state37">37</a>
+    MOD            shift, and go to state <a href="#state39">39</a>
+    AND            reduce using <a href="#prod39">rule 39</a> (formula)
+    OR             reduce using <a href="#prod39">rule 39</a> (formula)
+    IMPLIES        reduce using <a href="#prod39">rule 39</a> (formula)
+    EQUIV          reduce using <a href="#prod39">rule 39</a> (formula)
+    SEMICOLON      reduce using <a href="#prod39">rule 39</a> (formula)
+    RPAR           reduce using <a href="#prod39">rule 39</a> (formula)
+    COMMA          reduce using <a href="#prod39">rule 39</a> (formula)
+    COLON          reduce using <a href="#prod39">rule 39</a> (formula)
+
+
+
+<b><a name="state57">State</a> <a href="#state57">57</a></b>
+    Shortest prefix: term LE
+    Shortest path: <a href="#state0">0</a>-><a href="#state90">90</a>-><a href="#state57">57</a>
+    Predecessors: <a href="#state27">27</a>, <a href="#state90">90</a>, <a href="#state98">98</a>
+
+  <b>Kernel Items</b>
+    40 formula: term LE . term
+
+  <b>Parser Actions</b>
+    NAME           shift, and go to state <a href="#state41">41</a>
+    NUMBER         shift, and go to state <a href="#state42">42</a>
+    LPAR           shift, and go to state <a href="#state43">43</a>
+    MIN            shift, and go to state <a href="#state45">45</a>
+    MAX            shift, and go to state <a href="#state47">47</a>
+
+  <b>Transitions</b>
+    term           go to state <a href="#state58">58</a>
+
+
+<b><a name="state58">State</a> <a href="#state58">58</a></b>
+    Shortest prefix: term LE term
+    Shortest path: <a href="#state0">0</a>-><a href="#state90">90</a>-><a href="#state57">57</a>-><a href="#state58">58</a>
+    Predecessors: <a href="#state57">57</a>
+
+  <b>Kernel Items</b>
+    40 formula: term LE term .
+	-lookahead: { AND, OR, IMPLIES, EQUIV, SEMICOLON, RPAR, COMMA, COLON }
+    64 term: term . PLUS term
+    65 term: term . MINUS term
+    66 term: term . TIMES term
+    67 term: term . DIV term
+    68 term: term . MOD term
+
+  <b>Parser Actions</b>
+    PLUS           shift, and go to state <a href="#state31">31</a>
+    MINUS          shift, and go to state <a href="#state33">33</a>
+    TIMES          shift, and go to state <a href="#state35">35</a>
+    DIV            shift, and go to state <a href="#state37">37</a>
+    MOD            shift, and go to state <a href="#state39">39</a>
+    AND            reduce using <a href="#prod40">rule 40</a> (formula)
+    OR             reduce using <a href="#prod40">rule 40</a> (formula)
+    IMPLIES        reduce using <a href="#prod40">rule 40</a> (formula)
+    EQUIV          reduce using <a href="#prod40">rule 40</a> (formula)
+    SEMICOLON      reduce using <a href="#prod40">rule 40</a> (formula)
+    RPAR           reduce using <a href="#prod40">rule 40</a> (formula)
+    COMMA          reduce using <a href="#prod40">rule 40</a> (formula)
+    COLON          reduce using <a href="#prod40">rule 40</a> (formula)
+
+
+
+<b><a name="state59">State</a> <a href="#state59">59</a></b>
+    Shortest prefix: term IN
+    Shortest path: <a href="#state0">0</a>-><a href="#state90">90</a>-><a href="#state59">59</a>
+    Predecessors: <a href="#state27">27</a>, <a href="#state90">90</a>, <a href="#state98">98</a>
+
+  <b>Kernel Items</b>
+    41 formula: term IN . term
+
+  <b>Parser Actions</b>
+    NAME           shift, and go to state <a href="#state41">41</a>
+    NUMBER         shift, and go to state <a href="#state42">42</a>
+    LPAR           shift, and go to state <a href="#state43">43</a>
+    MIN            shift, and go to state <a href="#state45">45</a>
+    MAX            shift, and go to state <a href="#state47">47</a>
+
+  <b>Transitions</b>
+    term           go to state <a href="#state60">60</a>
+
+
+<b><a name="state60">State</a> <a href="#state60">60</a></b>
+    Shortest prefix: term IN term
+    Shortest path: <a href="#state0">0</a>-><a href="#state90">90</a>-><a href="#state59">59</a>-><a href="#state60">60</a>
+    Predecessors: <a href="#state59">59</a>
+
+  <b>Kernel Items</b>
+    41 formula: term IN term .
+	-lookahead: { AND, OR, IMPLIES, EQUIV, SEMICOLON, RPAR, COMMA, COLON }
+    64 term: term . PLUS term
+    65 term: term . MINUS term
+    66 term: term . TIMES term
+    67 term: term . DIV term
+    68 term: term . MOD term
+
+  <b>Parser Actions</b>
+    PLUS           shift, and go to state <a href="#state31">31</a>
+    MINUS          shift, and go to state <a href="#state33">33</a>
+    TIMES          shift, and go to state <a href="#state35">35</a>
+    DIV            shift, and go to state <a href="#state37">37</a>
+    MOD            shift, and go to state <a href="#state39">39</a>
+    AND            reduce using <a href="#prod41">rule 41</a> (formula)
+    OR             reduce using <a href="#prod41">rule 41</a> (formula)
+    IMPLIES        reduce using <a href="#prod41">rule 41</a> (formula)
+    EQUIV          reduce using <a href="#prod41">rule 41</a> (formula)
+    SEMICOLON      reduce using <a href="#prod41">rule 41</a> (formula)
+    RPAR           reduce using <a href="#prod41">rule 41</a> (formula)
+    COMMA          reduce using <a href="#prod41">rule 41</a> (formula)
+    COLON          reduce using <a href="#prod41">rule 41</a> (formula)
+
+
+
+<b><a name="state61">State</a> <a href="#state61">61</a></b>
+    Shortest prefix: term NOTIN
+    Shortest path: <a href="#state0">0</a>-><a href="#state90">90</a>-><a href="#state61">61</a>
+    Predecessors: <a href="#state27">27</a>, <a href="#state90">90</a>, <a href="#state98">98</a>
+
+  <b>Kernel Items</b>
+    42 formula: term NOTIN . term
+
+  <b>Parser Actions</b>
+    NAME           shift, and go to state <a href="#state41">41</a>
+    NUMBER         shift, and go to state <a href="#state42">42</a>
+    LPAR           shift, and go to state <a href="#state43">43</a>
+    MIN            shift, and go to state <a href="#state45">45</a>
+    MAX            shift, and go to state <a href="#state47">47</a>
+
+  <b>Transitions</b>
+    term           go to state <a href="#state62">62</a>
+
+
+<b><a name="state62">State</a> <a href="#state62">62</a></b>
+    Shortest prefix: term NOTIN term
+    Shortest path: <a href="#state0">0</a>-><a href="#state90">90</a>-><a href="#state61">61</a>-><a href="#state62">62</a>
+    Predecessors: <a href="#state61">61</a>
+
+  <b>Kernel Items</b>
+    42 formula: term NOTIN term .
+	-lookahead: { AND, OR, IMPLIES, EQUIV, SEMICOLON, RPAR, COMMA, COLON }
+    64 term: term . PLUS term
+    65 term: term . MINUS term
+    66 term: term . TIMES term
+    67 term: term . DIV term
+    68 term: term . MOD term
+
+  <b>Parser Actions</b>
+    PLUS           shift, and go to state <a href="#state31">31</a>
+    MINUS          shift, and go to state <a href="#state33">33</a>
+    TIMES          shift, and go to state <a href="#state35">35</a>
+    DIV            shift, and go to state <a href="#state37">37</a>
+    MOD            shift, and go to state <a href="#state39">39</a>
+    AND            reduce using <a href="#prod42">rule 42</a> (formula)
+    OR             reduce using <a href="#prod42">rule 42</a> (formula)
+    IMPLIES        reduce using <a href="#prod42">rule 42</a> (formula)
+    EQUIV          reduce using <a href="#prod42">rule 42</a> (formula)
+    SEMICOLON      reduce using <a href="#prod42">rule 42</a> (formula)
+    RPAR           reduce using <a href="#prod42">rule 42</a> (formula)
+    COMMA          reduce using <a href="#prod42">rule 42</a> (formula)
+    COLON          reduce using <a href="#prod42">rule 42</a> (formula)
+
+
+
+<b><a name="state63">State</a> <a href="#state63">63</a></b>
+    Shortest prefix: term SUBSET
+    Shortest path: <a href="#state0">0</a>-><a href="#state90">90</a>-><a href="#state63">63</a>
+    Predecessors: <a href="#state27">27</a>, <a href="#state90">90</a>, <a href="#state98">98</a>
+
+  <b>Kernel Items</b>
+    43 formula: term SUBSET . term
+
+  <b>Parser Actions</b>
+    NAME           shift, and go to state <a href="#state41">41</a>
+    NUMBER         shift, and go to state <a href="#state42">42</a>
+    LPAR           shift, and go to state <a href="#state43">43</a>
+    MIN            shift, and go to state <a href="#state45">45</a>
+    MAX            shift, and go to state <a href="#state47">47</a>
+
+  <b>Transitions</b>
+    term           go to state <a href="#state64">64</a>
+
+
+<b><a name="state64">State</a> <a href="#state64">64</a></b>
+    Shortest prefix: term SUBSET term
+    Shortest path: <a href="#state0">0</a>-><a href="#state90">90</a>-><a href="#state63">63</a>-><a href="#state64">64</a>
+    Predecessors: <a href="#state63">63</a>
+
+  <b>Kernel Items</b>
+    43 formula: term SUBSET term .
+	-lookahead: { AND, OR, IMPLIES, EQUIV, SEMICOLON, RPAR, COMMA, COLON }
+    64 term: term . PLUS term
+    65 term: term . MINUS term
+    66 term: term . TIMES term
+    67 term: term . DIV term
+    68 term: term . MOD term
+
+  <b>Parser Actions</b>
+    PLUS           shift, and go to state <a href="#state31">31</a>
+    MINUS          shift, and go to state <a href="#state33">33</a>
+    TIMES          shift, and go to state <a href="#state35">35</a>
+    DIV            shift, and go to state <a href="#state37">37</a>
+    MOD            shift, and go to state <a href="#state39">39</a>
+    AND            reduce using <a href="#prod43">rule 43</a> (formula)
+    OR             reduce using <a href="#prod43">rule 43</a> (formula)
+    IMPLIES        reduce using <a href="#prod43">rule 43</a> (formula)
+    EQUIV          reduce using <a href="#prod43">rule 43</a> (formula)
+    SEMICOLON      reduce using <a href="#prod43">rule 43</a> (formula)
+    RPAR           reduce using <a href="#prod43">rule 43</a> (formula)
+    COMMA          reduce using <a href="#prod43">rule 43</a> (formula)
+    COLON          reduce using <a href="#prod43">rule 43</a> (formula)
+
+
+
+<b><a name="state65">State</a> <a href="#state65">65</a></b>
+    Shortest prefix: NOT
+    Shortest path: <a href="#state0">0</a>-><a href="#state65">65</a>
+    Predecessors: <a href="#state0">0</a>, <a href="#state4">4</a>, <a href="#state7">7</a>, <a href="#state11">11</a>, <a href="#state14">14</a>, <a href="#state16">16</a>, <a href="#state18">18</a>, <a href="#state20">20</a>, <a href="#state24">24</a>, <a href="#state65">65</a>, <a href="#state68">68</a>, <a href="#state77">77</a>, <a href="#state84">84</a>, <a href="#state95">95</a>, <a href="#state103">103</a>, <a href="#state108">108</a>
+
+  <b>Kernel Items</b>
+    25 formula: NOT . formula
+
+  <b>Parser Actions</b>
+    TRUE           shift, and go to state <a href="#state22">22</a>
+    FALSE          shift, and go to state <a href="#state23">23</a>
+    LPAR           shift, and go to state <a href="#state24">24</a>
+    NOT            shift, and go to state <a href="#state65">65</a>
+    RESTRICT       shift, and go to state <a href="#state67">67</a>
+    EMPTY          shift, and go to state <a href="#state71">71</a>
+    EX0            shift, and go to state <a href="#state79">79</a>
+    ALL0           shift, and go to state <a href="#state80">80</a>
+    EX1            shift, and go to state <a href="#state86">86</a>
+    EX2            shift, and go to state <a href="#state87">87</a>
+    ALL1           shift, and go to state <a href="#state88">88</a>
+    ALL2           shift, and go to state <a href="#state89">89</a>
+    NAME           shift, and go to state <a href="#state91">91</a>
+    NUMBER         shift, and go to state <a href="#state42">42</a>
+    MIN            shift, and go to state <a href="#state45">45</a>
+    MAX            shift, and go to state <a href="#state47">47</a>
+
+  <b>Transitions</b>
+    formula        go to state <a href="#state66">66</a>
+    Q0             go to state <a href="#state75">75</a>
+    Q              go to state <a href="#state81">81</a>
+    term           go to state <a href="#state90">90</a>
+
+
+<b><a name="state66">State</a> <a href="#state66">66</a></b>
+    Shortest prefix: NOT formula
+    Shortest path: <a href="#state0">0</a>-><a href="#state65">65</a>-><a href="#state66">66</a>
+    Predecessors: <a href="#state65">65</a>
+
+  <b>Kernel Items</b>
+    25 formula: NOT formula .
+	-lookahead: { AND, OR, IMPLIES, EQUIV, SEMICOLON, RPAR, COMMA, COLON }
+    31 formula: formula . AND formula
+    32 formula: formula . OR formula
+    33 formula: formula . IMPLIES formula
+    34 formula: formula . EQUIV formula
+
+  <b>Parser Actions</b>
+    AND            reduce using <a href="#prod25">rule 25</a> (formula)
+    OR             reduce using <a href="#prod25">rule 25</a> (formula)
+    IMPLIES        reduce using <a href="#prod25">rule 25</a> (formula)
+    EQUIV          reduce using <a href="#prod25">rule 25</a> (formula)
+    SEMICOLON      reduce using <a href="#prod25">rule 25</a> (formula)
+    RPAR           reduce using <a href="#prod25">rule 25</a> (formula)
+    COMMA          reduce using <a href="#prod25">rule 25</a> (formula)
+    COLON          reduce using <a href="#prod25">rule 25</a> (formula)
+
+
+
+<b><a name="state67">State</a> <a href="#state67">67</a></b>
+    Shortest prefix: RESTRICT
+    Shortest path: <a href="#state0">0</a>-><a href="#state67">67</a>
+    Predecessors: <a href="#state0">0</a>, <a href="#state4">4</a>, <a href="#state7">7</a>, <a href="#state11">11</a>, <a href="#state14">14</a>, <a href="#state16">16</a>, <a href="#state18">18</a>, <a href="#state20">20</a>, <a href="#state24">24</a>, <a href="#state65">65</a>, <a href="#state68">68</a>, <a href="#state77">77</a>, <a href="#state84">84</a>, <a href="#state95">95</a>, <a href="#state103">103</a>, <a href="#state108">108</a>
+
+  <b>Kernel Items</b>
+    26 formula: RESTRICT . LPAR formula RPAR
+
+  <b>Parser Actions</b>
+    LPAR           shift, and go to state <a href="#state68">68</a>
+
+
+
+<b><a name="state68">State</a> <a href="#state68">68</a></b>
+    Shortest prefix: RESTRICT LPAR
+    Shortest path: <a href="#state0">0</a>-><a href="#state67">67</a>-><a href="#state68">68</a>
+    Predecessors: <a href="#state67">67</a>
+
+  <b>Kernel Items</b>
+    26 formula: RESTRICT LPAR . formula RPAR
+
+  <b>Parser Actions</b>
+    TRUE           shift, and go to state <a href="#state22">22</a>
+    FALSE          shift, and go to state <a href="#state23">23</a>
+    LPAR           shift, and go to state <a href="#state24">24</a>
+    NOT            shift, and go to state <a href="#state65">65</a>
+    RESTRICT       shift, and go to state <a href="#state67">67</a>
+    EMPTY          shift, and go to state <a href="#state71">71</a>
+    EX0            shift, and go to state <a href="#state79">79</a>
+    ALL0           shift, and go to state <a href="#state80">80</a>
+    EX1            shift, and go to state <a href="#state86">86</a>
+    EX2            shift, and go to state <a href="#state87">87</a>
+    ALL1           shift, and go to state <a href="#state88">88</a>
+    ALL2           shift, and go to state <a href="#state89">89</a>
+    NAME           shift, and go to state <a href="#state91">91</a>
+    NUMBER         shift, and go to state <a href="#state42">42</a>
+    MIN            shift, and go to state <a href="#state45">45</a>
+    MAX            shift, and go to state <a href="#state47">47</a>
+
+  <b>Transitions</b>
+    formula        go to state <a href="#state69">69</a>
+    Q0             go to state <a href="#state75">75</a>
+    Q              go to state <a href="#state81">81</a>
+    term           go to state <a href="#state90">90</a>
+
+
+<b><a name="state69">State</a> <a href="#state69">69</a></b>
+    Shortest prefix: RESTRICT LPAR formula
+    Shortest path: <a href="#state0">0</a>-><a href="#state67">67</a>-><a href="#state68">68</a>-><a href="#state69">69</a>
+    Predecessors: <a href="#state68">68</a>
+
+  <b>Kernel Items</b>
+    26 formula: RESTRICT LPAR formula . RPAR
+    31 formula: formula . AND formula
+    32 formula: formula . OR formula
+    33 formula: formula . IMPLIES formula
+    34 formula: formula . EQUIV formula
+
+  <b>Parser Actions</b>
+    RPAR           shift, and go to state <a href="#state70">70</a>
+    AND            shift, and go to state <a href="#state14">14</a>
+    OR             shift, and go to state <a href="#state16">16</a>
+    IMPLIES        shift, and go to state <a href="#state18">18</a>
+    EQUIV          shift, and go to state <a href="#state20">20</a>
+
+
+
+<b><a name="state70">State</a> <a href="#state70">70</a></b>
+    Shortest prefix: RESTRICT LPAR formula RPAR
+    Shortest path: <a href="#state0">0</a>-><a href="#state67">67</a>-><a href="#state68">68</a>-><a href="#state69">69</a>-><a href="#state70">70</a>
+    Predecessors: <a href="#state69">69</a>
+
+  <b>Kernel Items</b>
+    26 formula: RESTRICT LPAR formula RPAR .
+	-lookahead: { AND, OR, IMPLIES, EQUIV, SEMICOLON, RPAR, COMMA, COLON }
+
+  <b>Parser Actions</b>
+    AND            reduce using <a href="#prod26">rule 26</a> (formula)
+    OR             reduce using <a href="#prod26">rule 26</a> (formula)
+    IMPLIES        reduce using <a href="#prod26">rule 26</a> (formula)
+    EQUIV          reduce using <a href="#prod26">rule 26</a> (formula)
+    SEMICOLON      reduce using <a href="#prod26">rule 26</a> (formula)
+    RPAR           reduce using <a href="#prod26">rule 26</a> (formula)
+    COMMA          reduce using <a href="#prod26">rule 26</a> (formula)
+    COLON          reduce using <a href="#prod26">rule 26</a> (formula)
+
+
+
+<b><a name="state71">State</a> <a href="#state71">71</a></b>
+    Shortest prefix: EMPTY
+    Shortest path: <a href="#state0">0</a>-><a href="#state71">71</a>
+    Predecessors: <a href="#state0">0</a>, <a href="#state4">4</a>, <a href="#state7">7</a>, <a href="#state11">11</a>, <a href="#state14">14</a>, <a href="#state16">16</a>, <a href="#state18">18</a>, <a href="#state20">20</a>, <a href="#state24">24</a>, <a href="#state65">65</a>, <a href="#state68">68</a>, <a href="#state77">77</a>, <a href="#state84">84</a>, <a href="#state95">95</a>, <a href="#state103">103</a>, <a href="#state108">108</a>
+
+  <b>Kernel Items</b>
+    27 formula: EMPTY . LPAR term RPAR
+
+  <b>Parser Actions</b>
+    LPAR           shift, and go to state <a href="#state72">72</a>
+
+
+
+<b><a name="state72">State</a> <a href="#state72">72</a></b>
+    Shortest prefix: EMPTY LPAR
+    Shortest path: <a href="#state0">0</a>-><a href="#state71">71</a>-><a href="#state72">72</a>
+    Predecessors: <a href="#state71">71</a>
+
+  <b>Kernel Items</b>
+    27 formula: EMPTY LPAR . term RPAR
+
+  <b>Parser Actions</b>
+    NAME           shift, and go to state <a href="#state41">41</a>
+    NUMBER         shift, and go to state <a href="#state42">42</a>
+    LPAR           shift, and go to state <a href="#state43">43</a>
+    MIN            shift, and go to state <a href="#state45">45</a>
+    MAX            shift, and go to state <a href="#state47">47</a>
+
+  <b>Transitions</b>
+    term           go to state <a href="#state73">73</a>
+
+
+<b><a name="state73">State</a> <a href="#state73">73</a></b>
+    Shortest prefix: EMPTY LPAR term
+    Shortest path: <a href="#state0">0</a>-><a href="#state71">71</a>-><a href="#state72">72</a>-><a href="#state73">73</a>
+    Predecessors: <a href="#state72">72</a>
+
+  <b>Kernel Items</b>
+    27 formula: EMPTY LPAR term . RPAR
+    64 term: term . PLUS term
+    65 term: term . MINUS term
+    66 term: term . TIMES term
+    67 term: term . DIV term
+    68 term: term . MOD term
+
+  <b>Parser Actions</b>
+    RPAR           shift, and go to state <a href="#state74">74</a>
+    PLUS           shift, and go to state <a href="#state31">31</a>
+    MINUS          shift, and go to state <a href="#state33">33</a>
+    TIMES          shift, and go to state <a href="#state35">35</a>
+    DIV            shift, and go to state <a href="#state37">37</a>
+    MOD            shift, and go to state <a href="#state39">39</a>
+
+
+
+<b><a name="state74">State</a> <a href="#state74">74</a></b>
+    Shortest prefix: EMPTY LPAR term RPAR
+    Shortest path: <a href="#state0">0</a>-><a href="#state71">71</a>-><a href="#state72">72</a>-><a href="#state73">73</a>-><a href="#state74">74</a>
+    Predecessors: <a href="#state73">73</a>
+
+  <b>Kernel Items</b>
+    27 formula: EMPTY LPAR term RPAR .
+	-lookahead: { AND, OR, IMPLIES, EQUIV, SEMICOLON, RPAR, COMMA, COLON }
+
+  <b>Parser Actions</b>
+    AND            reduce using <a href="#prod27">rule 27</a> (formula)
+    OR             reduce using <a href="#prod27">rule 27</a> (formula)
+    IMPLIES        reduce using <a href="#prod27">rule 27</a> (formula)
+    EQUIV          reduce using <a href="#prod27">rule 27</a> (formula)
+    SEMICOLON      reduce using <a href="#prod27">rule 27</a> (formula)
+    RPAR           reduce using <a href="#prod27">rule 27</a> (formula)
+    COMMA          reduce using <a href="#prod27">rule 27</a> (formula)
+    COLON          reduce using <a href="#prod27">rule 27</a> (formula)
+
+
+
+<b><a name="state75">State</a> <a href="#state75">75</a></b>
+    Shortest prefix: Q0
+    Shortest path: <a href="#state0">0</a>-><a href="#state75">75</a>
+    Predecessors: <a href="#state0">0</a>, <a href="#state4">4</a>, <a href="#state7">7</a>, <a href="#state11">11</a>, <a href="#state14">14</a>, <a href="#state16">16</a>, <a href="#state18">18</a>, <a href="#state20">20</a>, <a href="#state24">24</a>, <a href="#state65">65</a>, <a href="#state68">68</a>, <a href="#state77">77</a>, <a href="#state84">84</a>, <a href="#state95">95</a>, <a href="#state103">103</a>, <a href="#state108">108</a>
+
+  <b>Kernel Items</b>
+    28 formula: Q0 . names COLON formula
+
+  <b>Parser Actions</b>
+    NAME           shift, and go to state <a href="#state117">117</a>
+
+  <b>Transitions</b>
+    names          go to state <a href="#state76">76</a>
+
+
+<b><a name="state76">State</a> <a href="#state76">76</a></b>
+    Shortest prefix: Q0 names
+    Shortest path: <a href="#state0">0</a>-><a href="#state75">75</a>-><a href="#state76">76</a>
+    Predecessors: <a href="#state75">75</a>
+
+  <b>Kernel Items</b>
+    28 formula: Q0 names . COLON formula
+
+  <b>Parser Actions</b>
+    COLON          shift, and go to state <a href="#state77">77</a>
+
+
+
+<b><a name="state77">State</a> <a href="#state77">77</a></b>
+    Shortest prefix: Q0 names COLON
+    Shortest path: <a href="#state0">0</a>-><a href="#state75">75</a>-><a href="#state76">76</a>-><a href="#state77">77</a>
+    Predecessors: <a href="#state76">76</a>
+
+  <b>Kernel Items</b>
+    28 formula: Q0 names COLON . formula
+
+  <b>Parser Actions</b>
+    TRUE           shift, and go to state <a href="#state22">22</a>
+    FALSE          shift, and go to state <a href="#state23">23</a>
+    LPAR           shift, and go to state <a href="#state24">24</a>
+    NOT            shift, and go to state <a href="#state65">65</a>
+    RESTRICT       shift, and go to state <a href="#state67">67</a>
+    EMPTY          shift, and go to state <a href="#state71">71</a>
+    EX0            shift, and go to state <a href="#state79">79</a>
+    ALL0           shift, and go to state <a href="#state80">80</a>
+    EX1            shift, and go to state <a href="#state86">86</a>
+    EX2            shift, and go to state <a href="#state87">87</a>
+    ALL1           shift, and go to state <a href="#state88">88</a>
+    ALL2           shift, and go to state <a href="#state89">89</a>
+    NAME           shift, and go to state <a href="#state91">91</a>
+    NUMBER         shift, and go to state <a href="#state42">42</a>
+    MIN            shift, and go to state <a href="#state45">45</a>
+    MAX            shift, and go to state <a href="#state47">47</a>
+
+  <b>Transitions</b>
+    formula        go to state <a href="#state78">78</a>
+    Q0             go to state <a href="#state75">75</a>
+    Q              go to state <a href="#state81">81</a>
+    term           go to state <a href="#state90">90</a>
+
+
+<b><a name="state78">State</a> <a href="#state78">78</a></b>
+    Shortest prefix: Q0 names COLON formula
+    Shortest path: <a href="#state0">0</a>-><a href="#state75">75</a>-><a href="#state76">76</a>-><a href="#state77">77</a>-><a href="#state78">78</a>
+    Predecessors: <a href="#state77">77</a>
+
+  <b>Kernel Items</b>
+    28 formula: Q0 names COLON formula .
+	-lookahead: { AND, OR, IMPLIES, EQUIV, SEMICOLON, RPAR, COMMA, COLON }
+    31 formula: formula . AND formula
+    32 formula: formula . OR formula
+    33 formula: formula . IMPLIES formula
+    34 formula: formula . EQUIV formula
+
+  <b>Parser Actions</b>
+    AND            shift, and go to state <a href="#state14">14</a>
+    OR             shift, and go to state <a href="#state16">16</a>
+    IMPLIES        shift, and go to state <a href="#state18">18</a>
+    EQUIV          shift, and go to state <a href="#state20">20</a>
+    SEMICOLON      reduce using <a href="#prod28">rule 28</a> (formula)
+    RPAR           reduce using <a href="#prod28">rule 28</a> (formula)
+    COMMA          reduce using <a href="#prod28">rule 28</a> (formula)
+    COLON          reduce using <a href="#prod28">rule 28</a> (formula)
+
+
+
+<b><a name="state79">State</a> <a href="#state79">79</a></b>
+    Shortest prefix: EX0
+    Shortest path: <a href="#state0">0</a>-><a href="#state79">79</a>
+    Predecessors: <a href="#state0">0</a>, <a href="#state4">4</a>, <a href="#state7">7</a>, <a href="#state11">11</a>, <a href="#state14">14</a>, <a href="#state16">16</a>, <a href="#state18">18</a>, <a href="#state20">20</a>, <a href="#state24">24</a>, <a href="#state65">65</a>, <a href="#state68">68</a>, <a href="#state77">77</a>, <a href="#state84">84</a>, <a href="#state95">95</a>, <a href="#state103">103</a>, <a href="#state108">108</a>
+
+  <b>Kernel Items</b>
+    50 Q0: EX0 .
+	-lookahead: { NAME }
+
+  <b>Parser Actions</b>
+    NAME           reduce using <a href="#prod50">rule 50</a> (Q0)
+
+
+
+<b><a name="state80">State</a> <a href="#state80">80</a></b>
+    Shortest prefix: ALL0
+    Shortest path: <a href="#state0">0</a>-><a href="#state80">80</a>
+    Predecessors: <a href="#state0">0</a>, <a href="#state4">4</a>, <a href="#state7">7</a>, <a href="#state11">11</a>, <a href="#state14">14</a>, <a href="#state16">16</a>, <a href="#state18">18</a>, <a href="#state20">20</a>, <a href="#state24">24</a>, <a href="#state65">65</a>, <a href="#state68">68</a>, <a href="#state77">77</a>, <a href="#state84">84</a>, <a href="#state95">95</a>, <a href="#state103">103</a>, <a href="#state108">108</a>
+
+  <b>Kernel Items</b>
+    51 Q0: ALL0 .
+	-lookahead: { NAME }
+
+  <b>Parser Actions</b>
+    NAME           reduce using <a href="#prod51">rule 51</a> (Q0)
+
+
+
+<b><a name="state81">State</a> <a href="#state81">81</a></b>
+    Shortest prefix: Q
+    Shortest path: <a href="#state0">0</a>-><a href="#state81">81</a>
+    Predecessors: <a href="#state0">0</a>, <a href="#state4">4</a>, <a href="#state7">7</a>, <a href="#state11">11</a>, <a href="#state14">14</a>, <a href="#state16">16</a>, <a href="#state18">18</a>, <a href="#state20">20</a>, <a href="#state24">24</a>, <a href="#state65">65</a>, <a href="#state68">68</a>, <a href="#state77">77</a>, <a href="#state84">84</a>, <a href="#state95">95</a>, <a href="#state103">103</a>, <a href="#state108">108</a>
+
+  <b>Kernel Items</b>
+    29 formula: Q . univs vws COLON formula
+    30 formula: Q . vws COLON formula
+
+  <b>Parser Actions</b>
+    LBRACKET       shift, and go to state <a href="#state110">110</a>
+    NAME           shift, and go to state <a href="#state100">100</a>
+
+  <b>Transitions</b>
+    univs          go to state <a href="#state82">82</a>
+    vws            go to state <a href="#state107">107</a>
+
+
+<b><a name="state82">State</a> <a href="#state82">82</a></b>
+    Shortest prefix: Q univs
+    Shortest path: <a href="#state0">0</a>-><a href="#state81">81</a>-><a href="#state82">82</a>
+    Predecessors: <a href="#state81">81</a>
+
+  <b>Kernel Items</b>
+    29 formula: Q univs . vws COLON formula
+
+  <b>Parser Actions</b>
+    NAME           shift, and go to state <a href="#state100">100</a>
+
+  <b>Transitions</b>
+    vws            go to state <a href="#state83">83</a>
+
+
+<b><a name="state83">State</a> <a href="#state83">83</a></b>
+    Shortest prefix: Q univs vws
+    Shortest path: <a href="#state0">0</a>-><a href="#state81">81</a>-><a href="#state82">82</a>-><a href="#state83">83</a>
+    Predecessors: <a href="#state82">82</a>
+
+  <b>Kernel Items</b>
+    29 formula: Q univs vws . COLON formula
+
+  <b>Parser Actions</b>
+    COLON          shift, and go to state <a href="#state84">84</a>
+
+
+
+<b><a name="state84">State</a> <a href="#state84">84</a></b>
+    Shortest prefix: Q univs vws COLON
+    Shortest path: <a href="#state0">0</a>-><a href="#state81">81</a>-><a href="#state82">82</a>-><a href="#state83">83</a>-><a href="#state84">84</a>
+    Predecessors: <a href="#state83">83</a>
+
+  <b>Kernel Items</b>
+    29 formula: Q univs vws COLON . formula
+
+  <b>Parser Actions</b>
+    TRUE           shift, and go to state <a href="#state22">22</a>
+    FALSE          shift, and go to state <a href="#state23">23</a>
+    LPAR           shift, and go to state <a href="#state24">24</a>
+    NOT            shift, and go to state <a href="#state65">65</a>
+    RESTRICT       shift, and go to state <a href="#state67">67</a>
+    EMPTY          shift, and go to state <a href="#state71">71</a>
+    EX0            shift, and go to state <a href="#state79">79</a>
+    ALL0           shift, and go to state <a href="#state80">80</a>
+    EX1            shift, and go to state <a href="#state86">86</a>
+    EX2            shift, and go to state <a href="#state87">87</a>
+    ALL1           shift, and go to state <a href="#state88">88</a>
+    ALL2           shift, and go to state <a href="#state89">89</a>
+    NAME           shift, and go to state <a href="#state91">91</a>
+    NUMBER         shift, and go to state <a href="#state42">42</a>
+    MIN            shift, and go to state <a href="#state45">45</a>
+    MAX            shift, and go to state <a href="#state47">47</a>
+
+  <b>Transitions</b>
+    formula        go to state <a href="#state85">85</a>
+    Q0             go to state <a href="#state75">75</a>
+    Q              go to state <a href="#state81">81</a>
+    term           go to state <a href="#state90">90</a>
+
+
+<b><a name="state85">State</a> <a href="#state85">85</a></b>
+    Shortest prefix: Q univs vws COLON formula
+    Shortest path: <a href="#state0">0</a>-><a href="#state81">81</a>-><a href="#state82">82</a>-><a href="#state83">83</a>-><a href="#state84">84</a>-><a href="#state85">85</a>
+    Predecessors: <a href="#state84">84</a>
+
+  <b>Kernel Items</b>
+    29 formula: Q univs vws COLON formula .
+	-lookahead: { AND, OR, IMPLIES, EQUIV, SEMICOLON, RPAR, COMMA, COLON }
+    31 formula: formula . AND formula
+    32 formula: formula . OR formula
+    33 formula: formula . IMPLIES formula
+    34 formula: formula . EQUIV formula
+
+  <b>Parser Actions</b>
+    AND            shift, and go to state <a href="#state14">14</a>
+    OR             shift, and go to state <a href="#state16">16</a>
+    IMPLIES        shift, and go to state <a href="#state18">18</a>
+    EQUIV          shift, and go to state <a href="#state20">20</a>
+    SEMICOLON      reduce using <a href="#prod29">rule 29</a> (formula)
+    RPAR           reduce using <a href="#prod29">rule 29</a> (formula)
+    COMMA          reduce using <a href="#prod29">rule 29</a> (formula)
+    COLON          reduce using <a href="#prod29">rule 29</a> (formula)
+
+
+
+<b><a name="state86">State</a> <a href="#state86">86</a></b>
+    Shortest prefix: EX1
+    Shortest path: <a href="#state0">0</a>-><a href="#state86">86</a>
+    Predecessors: <a href="#state0">0</a>, <a href="#state4">4</a>, <a href="#state7">7</a>, <a href="#state11">11</a>, <a href="#state14">14</a>, <a href="#state16">16</a>, <a href="#state18">18</a>, <a href="#state20">20</a>, <a href="#state24">24</a>, <a href="#state65">65</a>, <a href="#state68">68</a>, <a href="#state77">77</a>, <a href="#state84">84</a>, <a href="#state95">95</a>, <a href="#state103">103</a>, <a href="#state108">108</a>
+
+  <b>Kernel Items</b>
+    46 Q: EX1 .
+	-lookahead: { LBRACKET, NAME }
+
+  <b>Parser Actions</b>
+    LBRACKET       reduce using <a href="#prod46">rule 46</a> (Q)
+    NAME           reduce using <a href="#prod46">rule 46</a> (Q)
+
+
+
+<b><a name="state87">State</a> <a href="#state87">87</a></b>
+    Shortest prefix: EX2
+    Shortest path: <a href="#state0">0</a>-><a href="#state87">87</a>
+    Predecessors: <a href="#state0">0</a>, <a href="#state4">4</a>, <a href="#state7">7</a>, <a href="#state11">11</a>, <a href="#state14">14</a>, <a href="#state16">16</a>, <a href="#state18">18</a>, <a href="#state20">20</a>, <a href="#state24">24</a>, <a href="#state65">65</a>, <a href="#state68">68</a>, <a href="#state77">77</a>, <a href="#state84">84</a>, <a href="#state95">95</a>, <a href="#state103">103</a>, <a href="#state108">108</a>
+
+  <b>Kernel Items</b>
+    47 Q: EX2 .
+	-lookahead: { LBRACKET, NAME }
+
+  <b>Parser Actions</b>
+    LBRACKET       reduce using <a href="#prod47">rule 47</a> (Q)
+    NAME           reduce using <a href="#prod47">rule 47</a> (Q)
+
+
+
+<b><a name="state88">State</a> <a href="#state88">88</a></b>
+    Shortest prefix: ALL1
+    Shortest path: <a href="#state0">0</a>-><a href="#state88">88</a>
+    Predecessors: <a href="#state0">0</a>, <a href="#state4">4</a>, <a href="#state7">7</a>, <a href="#state11">11</a>, <a href="#state14">14</a>, <a href="#state16">16</a>, <a href="#state18">18</a>, <a href="#state20">20</a>, <a href="#state24">24</a>, <a href="#state65">65</a>, <a href="#state68">68</a>, <a href="#state77">77</a>, <a href="#state84">84</a>, <a href="#state95">95</a>, <a href="#state103">103</a>, <a href="#state108">108</a>
+
+  <b>Kernel Items</b>
+    48 Q: ALL1 .
+	-lookahead: { LBRACKET, NAME }
+
+  <b>Parser Actions</b>
+    LBRACKET       reduce using <a href="#prod48">rule 48</a> (Q)
+    NAME           reduce using <a href="#prod48">rule 48</a> (Q)
+
+
+
+<b><a name="state89">State</a> <a href="#state89">89</a></b>
+    Shortest prefix: ALL2
+    Shortest path: <a href="#state0">0</a>-><a href="#state89">89</a>
+    Predecessors: <a href="#state0">0</a>, <a href="#state4">4</a>, <a href="#state7">7</a>, <a href="#state11">11</a>, <a href="#state14">14</a>, <a href="#state16">16</a>, <a href="#state18">18</a>, <a href="#state20">20</a>, <a href="#state24">24</a>, <a href="#state65">65</a>, <a href="#state68">68</a>, <a href="#state77">77</a>, <a href="#state84">84</a>, <a href="#state95">95</a>, <a href="#state103">103</a>, <a href="#state108">108</a>
+
+  <b>Kernel Items</b>
+    49 Q: ALL2 .
+	-lookahead: { LBRACKET, NAME }
+
+  <b>Parser Actions</b>
+    LBRACKET       reduce using <a href="#prod49">rule 49</a> (Q)
+    NAME           reduce using <a href="#prod49">rule 49</a> (Q)
+
+
+
+<b><a name="state90">State</a> <a href="#state90">90</a></b>
+    Shortest prefix: term
+    Shortest path: <a href="#state0">0</a>-><a href="#state90">90</a>
+    Predecessors: <a href="#state0">0</a>, <a href="#state4">4</a>, <a href="#state7">7</a>, <a href="#state11">11</a>, <a href="#state14">14</a>, <a href="#state16">16</a>, <a href="#state18">18</a>, <a href="#state20">20</a>, <a href="#state65">65</a>, <a href="#state68">68</a>, <a href="#state77">77</a>, <a href="#state84">84</a>, <a href="#state103">103</a>, <a href="#state108">108</a>
+
+  <b>Kernel Items</b>
+    35 formula: term . EQ term
+    64 term: term . PLUS term
+    65 term: term . MINUS term
+    66 term: term . TIMES term
+    67 term: term . DIV term
+    68 term: term . MOD term
+    36 formula: term . NE term
+    37 formula: term . GT term
+    38 formula: term . GE term
+    39 formula: term . LT term
+    40 formula: term . LE term
+    41 formula: term . IN term
+    42 formula: term . NOTIN term
+    43 formula: term . SUBSET term
+
+  <b>Parser Actions</b>
+    EQ             shift, and go to state <a href="#state29">29</a>
+    PLUS           shift, and go to state <a href="#state31">31</a>
+    MINUS          shift, and go to state <a href="#state33">33</a>
+    TIMES          shift, and go to state <a href="#state35">35</a>
+    DIV            shift, and go to state <a href="#state37">37</a>
+    MOD            shift, and go to state <a href="#state39">39</a>
+    NE             shift, and go to state <a href="#state49">49</a>
+    GT             shift, and go to state <a href="#state51">51</a>
+    GE             shift, and go to state <a href="#state53">53</a>
+    LT             shift, and go to state <a href="#state55">55</a>
+    LE             shift, and go to state <a href="#state57">57</a>
+    IN             shift, and go to state <a href="#state59">59</a>
+    NOTIN          shift, and go to state <a href="#state61">61</a>
+    SUBSET         shift, and go to state <a href="#state63">63</a>
+
+
+
+<b><a name="state91">State</a> <a href="#state91">91</a></b>
+    Shortest prefix: NAME
+    Shortest path: <a href="#state0">0</a>-><a href="#state91">91</a>
+    Predecessors: <a href="#state0">0</a>, <a href="#state4">4</a>, <a href="#state7">7</a>, <a href="#state11">11</a>, <a href="#state14">14</a>, <a href="#state16">16</a>, <a href="#state18">18</a>, <a href="#state20">20</a>, <a href="#state24">24</a>, <a href="#state65">65</a>, <a href="#state68">68</a>, <a href="#state77">77</a>, <a href="#state84">84</a>, <a href="#state95">95</a>, <a href="#state103">103</a>, <a href="#state108">108</a>
+
+  <b>Kernel Items</b>
+    61 term: NAME .
+	-lookahead: { EQ, PLUS, MINUS, TIMES, DIV, MOD, NE, GT, GE, LT, LE, IN, NOTIN, 
+                SUBSET, RPAR, COMMA }
+    44 formula: NAME . LPAR exps
+    45 formula: NAME .
+	-lookahead: { AND, OR, IMPLIES, EQUIV, SEMICOLON, RPAR, COMMA, COLON }
+
+    <b>Conflicts in this state</b>
+      Reduce/Reduce conflict on symbol "RPAR", parser will reduce production 45
+       Reduce 61:	term -> NAME
+       Reduce 45:	formula -> NAME
+      ---------
+      Reduce/Reduce conflict on symbol "COMMA", parser will reduce production 45
+       Reduce 61:	term -> NAME
+       Reduce 45:	formula -> NAME
+      ---------
+
+  <b>Parser Actions</b>
+    LPAR           shift, and go to state <a href="#state92">92</a>
+    EQ             reduce using <a href="#prod61">rule 61</a> (term)
+    PLUS           reduce using <a href="#prod61">rule 61</a> (term)
+    MINUS          reduce using <a href="#prod61">rule 61</a> (term)
+    TIMES          reduce using <a href="#prod61">rule 61</a> (term)
+    DIV            reduce using <a href="#prod61">rule 61</a> (term)
+    MOD            reduce using <a href="#prod61">rule 61</a> (term)
+    NE             reduce using <a href="#prod61">rule 61</a> (term)
+    GT             reduce using <a href="#prod61">rule 61</a> (term)
+    GE             reduce using <a href="#prod61">rule 61</a> (term)
+    LT             reduce using <a href="#prod61">rule 61</a> (term)
+    LE             reduce using <a href="#prod61">rule 61</a> (term)
+    IN             reduce using <a href="#prod61">rule 61</a> (term)
+    NOTIN          reduce using <a href="#prod61">rule 61</a> (term)
+    SUBSET         reduce using <a href="#prod61">rule 61</a> (term)
+    RPAR           reduce using <a href="#prod45">rule 45</a> (formula)
+    COMMA          reduce using <a href="#prod45">rule 45</a> (formula)
+    AND            reduce using <a href="#prod45">rule 45</a> (formula)
+    OR             reduce using <a href="#prod45">rule 45</a> (formula)
+    IMPLIES        reduce using <a href="#prod45">rule 45</a> (formula)
+    EQUIV          reduce using <a href="#prod45">rule 45</a> (formula)
+    SEMICOLON      reduce using <a href="#prod45">rule 45</a> (formula)
+    COLON          reduce using <a href="#prod45">rule 45</a> (formula)
+
+
+
+<b><a name="state92">State</a> <a href="#state92">92</a></b>
+    Shortest prefix: NAME LPAR
+    Shortest path: <a href="#state0">0</a>-><a href="#state91">91</a>-><a href="#state92">92</a>
+    Predecessors: <a href="#state91">91</a>
+
+  <b>Kernel Items</b>
+    44 formula: NAME LPAR . exps
+
+  <b>Parser Actions</b>
+    RPAR           shift, and go to state <a href="#state94">94</a>
+    COMMA          shift, and go to state <a href="#state95">95</a>
+
+  <b>Transitions</b>
+    exps           go to state <a href="#state93">93</a>
+
+
+<b><a name="state93">State</a> <a href="#state93">93</a></b>
+    Shortest prefix: NAME LPAR exps
+    Shortest path: <a href="#state0">0</a>-><a href="#state91">91</a>-><a href="#state92">92</a>-><a href="#state93">93</a>
+    Predecessors: <a href="#state92">92</a>
+
+  <b>Kernel Items</b>
+    44 formula: NAME LPAR exps .
+	-lookahead: { AND, OR, IMPLIES, EQUIV, SEMICOLON, RPAR, COMMA, COLON }
+
+  <b>Parser Actions</b>
+    AND            reduce using <a href="#prod44">rule 44</a> (formula)
+    OR             reduce using <a href="#prod44">rule 44</a> (formula)
+    IMPLIES        reduce using <a href="#prod44">rule 44</a> (formula)
+    EQUIV          reduce using <a href="#prod44">rule 44</a> (formula)
+    SEMICOLON      reduce using <a href="#prod44">rule 44</a> (formula)
+    RPAR           reduce using <a href="#prod44">rule 44</a> (formula)
+    COMMA          reduce using <a href="#prod44">rule 44</a> (formula)
+    COLON          reduce using <a href="#prod44">rule 44</a> (formula)
+
+
+
+<b><a name="state94">State</a> <a href="#state94">94</a></b>
+    Shortest prefix: NAME LPAR RPAR
+    Shortest path: <a href="#state0">0</a>-><a href="#state91">91</a>-><a href="#state92">92</a>-><a href="#state94">94</a>
+    Predecessors: <a href="#state92">92</a>, <a href="#state96">96</a>
+
+  <b>Kernel Items</b>
+    52 exps: RPAR .
+	-lookahead: { AND, OR, IMPLIES, EQUIV, SEMICOLON, RPAR, COMMA, COLON }
+
+  <b>Parser Actions</b>
+    AND            reduce using <a href="#prod52">rule 52</a> (exps)
+    OR             reduce using <a href="#prod52">rule 52</a> (exps)
+    IMPLIES        reduce using <a href="#prod52">rule 52</a> (exps)
+    EQUIV          reduce using <a href="#prod52">rule 52</a> (exps)
+    SEMICOLON      reduce using <a href="#prod52">rule 52</a> (exps)
+    RPAR           reduce using <a href="#prod52">rule 52</a> (exps)
+    COMMA          reduce using <a href="#prod52">rule 52</a> (exps)
+    COLON          reduce using <a href="#prod52">rule 52</a> (exps)
+
+
+
+<b><a name="state95">State</a> <a href="#state95">95</a></b>
+    Shortest prefix: NAME LPAR COMMA
+    Shortest path: <a href="#state0">0</a>-><a href="#state91">91</a>-><a href="#state92">92</a>-><a href="#state95">95</a>
+    Predecessors: <a href="#state92">92</a>, <a href="#state96">96</a>
+
+  <b>Kernel Items</b>
+    53 exps: COMMA . exp exps
+
+  <b>Parser Actions</b>
+    NAME           shift, and go to state <a href="#state91">91</a>
+    NUMBER         shift, and go to state <a href="#state42">42</a>
+    LPAR           shift, and go to state <a href="#state24">24</a>
+    MIN            shift, and go to state <a href="#state45">45</a>
+    MAX            shift, and go to state <a href="#state47">47</a>
+    TRUE           shift, and go to state <a href="#state22">22</a>
+    FALSE          shift, and go to state <a href="#state23">23</a>
+    NOT            shift, and go to state <a href="#state65">65</a>
+    RESTRICT       shift, and go to state <a href="#state67">67</a>
+    EMPTY          shift, and go to state <a href="#state71">71</a>
+    EX0            shift, and go to state <a href="#state79">79</a>
+    ALL0           shift, and go to state <a href="#state80">80</a>
+    EX1            shift, and go to state <a href="#state86">86</a>
+    EX2            shift, and go to state <a href="#state87">87</a>
+    ALL1           shift, and go to state <a href="#state88">88</a>
+    ALL2           shift, and go to state <a href="#state89">89</a>
+
+  <b>Transitions</b>
+    exp            go to state <a href="#state96">96</a>
+    term           go to state <a href="#state98">98</a>
+    formula        go to state <a href="#state99">99</a>
+    Q0             go to state <a href="#state75">75</a>
+    Q              go to state <a href="#state81">81</a>
+
+
+<b><a name="state96">State</a> <a href="#state96">96</a></b>
+    Shortest prefix: NAME LPAR COMMA exp
+    Shortest path: <a href="#state0">0</a>-><a href="#state91">91</a>-><a href="#state92">92</a>-><a href="#state95">95</a>-><a href="#state96">96</a>
+    Predecessors: <a href="#state95">95</a>
+
+  <b>Kernel Items</b>
+    53 exps: COMMA exp . exps
+
+  <b>Parser Actions</b>
+    RPAR           shift, and go to state <a href="#state94">94</a>
+    COMMA          shift, and go to state <a href="#state95">95</a>
+
+  <b>Transitions</b>
+    exps           go to state <a href="#state97">97</a>
+
+
+<b><a name="state97">State</a> <a href="#state97">97</a></b>
+    Shortest prefix: NAME LPAR COMMA exp exps
+    Shortest path: <a href="#state0">0</a>-><a href="#state91">91</a>-><a href="#state92">92</a>-><a href="#state95">95</a>-><a href="#state96">96</a>-><a href="#state97">97</a>
+    Predecessors: <a href="#state96">96</a>
+
+  <b>Kernel Items</b>
+    53 exps: COMMA exp exps .
+	-lookahead: { AND, OR, IMPLIES, EQUIV, SEMICOLON, RPAR, COMMA, COLON }
+
+  <b>Parser Actions</b>
+    AND            reduce using <a href="#prod53">rule 53</a> (exps)
+    OR             reduce using <a href="#prod53">rule 53</a> (exps)
+    IMPLIES        reduce using <a href="#prod53">rule 53</a> (exps)
+    EQUIV          reduce using <a href="#prod53">rule 53</a> (exps)
+    SEMICOLON      reduce using <a href="#prod53">rule 53</a> (exps)
+    RPAR           reduce using <a href="#prod53">rule 53</a> (exps)
+    COMMA          reduce using <a href="#prod53">rule 53</a> (exps)
+    COLON          reduce using <a href="#prod53">rule 53</a> (exps)
+
+
+
+<b><a name="state98">State</a> <a href="#state98">98</a></b>
+    Shortest prefix: NAME LPAR COMMA term
+    Shortest path: <a href="#state0">0</a>-><a href="#state91">91</a>-><a href="#state92">92</a>-><a href="#state95">95</a>-><a href="#state98">98</a>
+    Predecessors: <a href="#state95">95</a>
+
+  <b>Kernel Items</b>
+    54 exp: term .
+	-lookahead: { RPAR, COMMA }
+    64 term: term . PLUS term
+    65 term: term . MINUS term
+    66 term: term . TIMES term
+    67 term: term . DIV term
+    68 term: term . MOD term
+    35 formula: term . EQ term
+    36 formula: term . NE term
+    37 formula: term . GT term
+    38 formula: term . GE term
+    39 formula: term . LT term
+    40 formula: term . LE term
+    41 formula: term . IN term
+    42 formula: term . NOTIN term
+    43 formula: term . SUBSET term
+
+  <b>Parser Actions</b>
+    PLUS           shift, and go to state <a href="#state31">31</a>
+    MINUS          shift, and go to state <a href="#state33">33</a>
+    TIMES          shift, and go to state <a href="#state35">35</a>
+    DIV            shift, and go to state <a href="#state37">37</a>
+    MOD            shift, and go to state <a href="#state39">39</a>
+    EQ             shift, and go to state <a href="#state29">29</a>
+    NE             shift, and go to state <a href="#state49">49</a>
+    GT             shift, and go to state <a href="#state51">51</a>
+    GE             shift, and go to state <a href="#state53">53</a>
+    LT             shift, and go to state <a href="#state55">55</a>
+    LE             shift, and go to state <a href="#state57">57</a>
+    IN             shift, and go to state <a href="#state59">59</a>
+    NOTIN          shift, and go to state <a href="#state61">61</a>
+    SUBSET         shift, and go to state <a href="#state63">63</a>
+    RPAR           reduce using <a href="#prod54">rule 54</a> (exp)
+    COMMA          reduce using <a href="#prod54">rule 54</a> (exp)
+
+
+
+<b><a name="state99">State</a> <a href="#state99">99</a></b>
+    Shortest prefix: NAME LPAR COMMA formula
+    Shortest path: <a href="#state0">0</a>-><a href="#state91">91</a>-><a href="#state92">92</a>-><a href="#state95">95</a>-><a href="#state99">99</a>
+    Predecessors: <a href="#state95">95</a>
+
+  <b>Kernel Items</b>
+    55 exp: formula .
+	-lookahead: { RPAR, COMMA }
+    31 formula: formula . AND formula
+    32 formula: formula . OR formula
+    33 formula: formula . IMPLIES formula
+    34 formula: formula . EQUIV formula
+
+  <b>Parser Actions</b>
+    AND            shift, and go to state <a href="#state14">14</a>
+    OR             shift, and go to state <a href="#state16">16</a>
+    IMPLIES        shift, and go to state <a href="#state18">18</a>
+    EQUIV          shift, and go to state <a href="#state20">20</a>
+    RPAR           reduce using <a href="#prod55">rule 55</a> (exp)
+    COMMA          reduce using <a href="#prod55">rule 55</a> (exp)
+
+
+
+<b><a name="state100">State</a> <a href="#state100">100</a></b>
+    Shortest prefix: Q NAME
+    Shortest path: <a href="#state0">0</a>-><a href="#state81">81</a>-><a href="#state100">100</a>
+    Predecessors: <a href="#state81">81</a>, <a href="#state82">82</a>, <a href="#state101">101</a>, <a href="#state105">105</a>, <a href="#state122">122</a>, <a href="#state123">123</a>
+
+  <b>Kernel Items</b>
+    18 vws: NAME . COMMA vws
+    19 vws: NAME . WHERE formula COMMA vws
+    20 vws: NAME . WHERE formula
+    21 vws: NAME .
+	-lookahead: { COLON, SEMICOLON }
+
+  <b>Parser Actions</b>
+    COMMA          shift, and go to state <a href="#state101">101</a>
+    WHERE          shift, and go to state <a href="#state103">103</a>
+    COLON          reduce using <a href="#prod21">rule 21</a> (vws)
+    SEMICOLON      reduce using <a href="#prod21">rule 21</a> (vws)
+
+
+
+<b><a name="state101">State</a> <a href="#state101">101</a></b>
+    Shortest prefix: Q NAME COMMA
+    Shortest path: <a href="#state0">0</a>-><a href="#state81">81</a>-><a href="#state100">100</a>-><a href="#state101">101</a>
+    Predecessors: <a href="#state100">100</a>
+
+  <b>Kernel Items</b>
+    18 vws: NAME COMMA . vws
+
+  <b>Parser Actions</b>
+    NAME           shift, and go to state <a href="#state100">100</a>
+
+  <b>Transitions</b>
+    vws            go to state <a href="#state102">102</a>
+
+
+<b><a name="state102">State</a> <a href="#state102">102</a></b>
+    Shortest prefix: Q NAME COMMA vws
+    Shortest path: <a href="#state0">0</a>-><a href="#state81">81</a>-><a href="#state100">100</a>-><a href="#state101">101</a>-><a href="#state102">102</a>
+    Predecessors: <a href="#state101">101</a>
+
+  <b>Kernel Items</b>
+    18 vws: NAME COMMA vws .
+	-lookahead: { COLON, SEMICOLON }
+
+  <b>Parser Actions</b>
+    COLON          reduce using <a href="#prod18">rule 18</a> (vws)
+    SEMICOLON      reduce using <a href="#prod18">rule 18</a> (vws)
+
+
+
+<b><a name="state103">State</a> <a href="#state103">103</a></b>
+    Shortest prefix: Q NAME WHERE
+    Shortest path: <a href="#state0">0</a>-><a href="#state81">81</a>-><a href="#state100">100</a>-><a href="#state103">103</a>
+    Predecessors: <a href="#state100">100</a>
+
+  <b>Kernel Items</b>
+    19 vws: NAME WHERE . formula COMMA vws
+    20 vws: NAME WHERE . formula
+
+  <b>Parser Actions</b>
+    TRUE           shift, and go to state <a href="#state22">22</a>
+    FALSE          shift, and go to state <a href="#state23">23</a>
+    LPAR           shift, and go to state <a href="#state24">24</a>
+    NOT            shift, and go to state <a href="#state65">65</a>
+    RESTRICT       shift, and go to state <a href="#state67">67</a>
+    EMPTY          shift, and go to state <a href="#state71">71</a>
+    EX0            shift, and go to state <a href="#state79">79</a>
+    ALL0           shift, and go to state <a href="#state80">80</a>
+    EX1            shift, and go to state <a href="#state86">86</a>
+    EX2            shift, and go to state <a href="#state87">87</a>
+    ALL1           shift, and go to state <a href="#state88">88</a>
+    ALL2           shift, and go to state <a href="#state89">89</a>
+    NAME           shift, and go to state <a href="#state91">91</a>
+    NUMBER         shift, and go to state <a href="#state42">42</a>
+    MIN            shift, and go to state <a href="#state45">45</a>
+    MAX            shift, and go to state <a href="#state47">47</a>
+
+  <b>Transitions</b>
+    formula        go to state <a href="#state104">104</a>
+    Q0             go to state <a href="#state75">75</a>
+    Q              go to state <a href="#state81">81</a>
+    term           go to state <a href="#state90">90</a>
+
+
+<b><a name="state104">State</a> <a href="#state104">104</a></b>
+    Shortest prefix: Q NAME WHERE formula
+    Shortest path: <a href="#state0">0</a>-><a href="#state81">81</a>-><a href="#state100">100</a>-><a href="#state103">103</a>-><a href="#state104">104</a>
+    Predecessors: <a href="#state103">103</a>
+
+  <b>Kernel Items</b>
+    19 vws: NAME WHERE formula . COMMA vws
+    20 vws: NAME WHERE formula .
+	-lookahead: { COLON, SEMICOLON }
+    31 formula: formula . AND formula
+    32 formula: formula . OR formula
+    33 formula: formula . IMPLIES formula
+    34 formula: formula . EQUIV formula
+
+  <b>Parser Actions</b>
+    COMMA          shift, and go to state <a href="#state105">105</a>
+    AND            shift, and go to state <a href="#state14">14</a>
+    OR             shift, and go to state <a href="#state16">16</a>
+    IMPLIES        shift, and go to state <a href="#state18">18</a>
+    EQUIV          shift, and go to state <a href="#state20">20</a>
+    COLON          reduce using <a href="#prod20">rule 20</a> (vws)
+    SEMICOLON      reduce using <a href="#prod20">rule 20</a> (vws)
+
+
+
+<b><a name="state105">State</a> <a href="#state105">105</a></b>
+    Shortest prefix: Q NAME WHERE formula COMMA
+    Shortest path: <a href="#state0">0</a>-><a href="#state81">81</a>-><a href="#state100">100</a>-><a href="#state103">103</a>-><a href="#state104">104</a>-><a href="#state105">105</a>
+    Predecessors: <a href="#state104">104</a>
+
+  <b>Kernel Items</b>
+    19 vws: NAME WHERE formula COMMA . vws
+
+  <b>Parser Actions</b>
+    NAME           shift, and go to state <a href="#state100">100</a>
+
+  <b>Transitions</b>
+    vws            go to state <a href="#state106">106</a>
+
+
+<b><a name="state106">State</a> <a href="#state106">106</a></b>
+    Shortest prefix: Q NAME WHERE formula COMMA vws
+    Shortest path: <a href="#state0">0</a>-><a href="#state81">81</a>-><a href="#state100">100</a>-><a href="#state103">103</a>-><a href="#state104">104</a>-><a href="#state105">105</a>-><a href="#state106">106</a>
+    Predecessors: <a href="#state105">105</a>
+
+  <b>Kernel Items</b>
+    19 vws: NAME WHERE formula COMMA vws .
+	-lookahead: { COLON, SEMICOLON }
+
+  <b>Parser Actions</b>
+    COLON          reduce using <a href="#prod19">rule 19</a> (vws)
+    SEMICOLON      reduce using <a href="#prod19">rule 19</a> (vws)
+
+
+
+<b><a name="state107">State</a> <a href="#state107">107</a></b>
+    Shortest prefix: Q vws
+    Shortest path: <a href="#state0">0</a>-><a href="#state81">81</a>-><a href="#state107">107</a>
+    Predecessors: <a href="#state81">81</a>
+
+  <b>Kernel Items</b>
+    30 formula: Q vws . COLON formula
+
+  <b>Parser Actions</b>
+    COLON          shift, and go to state <a href="#state108">108</a>
+
+
+
+<b><a name="state108">State</a> <a href="#state108">108</a></b>
+    Shortest prefix: Q vws COLON
+    Shortest path: <a href="#state0">0</a>-><a href="#state81">81</a>-><a href="#state107">107</a>-><a href="#state108">108</a>
+    Predecessors: <a href="#state107">107</a>
+
+  <b>Kernel Items</b>
+    30 formula: Q vws COLON . formula
+
+  <b>Parser Actions</b>
+    TRUE           shift, and go to state <a href="#state22">22</a>
+    FALSE          shift, and go to state <a href="#state23">23</a>
+    LPAR           shift, and go to state <a href="#state24">24</a>
+    NOT            shift, and go to state <a href="#state65">65</a>
+    RESTRICT       shift, and go to state <a href="#state67">67</a>
+    EMPTY          shift, and go to state <a href="#state71">71</a>
+    EX0            shift, and go to state <a href="#state79">79</a>
+    ALL0           shift, and go to state <a href="#state80">80</a>
+    EX1            shift, and go to state <a href="#state86">86</a>
+    EX2            shift, and go to state <a href="#state87">87</a>
+    ALL1           shift, and go to state <a href="#state88">88</a>
+    ALL2           shift, and go to state <a href="#state89">89</a>
+    NAME           shift, and go to state <a href="#state91">91</a>
+    NUMBER         shift, and go to state <a href="#state42">42</a>
+    MIN            shift, and go to state <a href="#state45">45</a>
+    MAX            shift, and go to state <a href="#state47">47</a>
+
+  <b>Transitions</b>
+    formula        go to state <a href="#state109">109</a>
+    Q0             go to state <a href="#state75">75</a>
+    Q              go to state <a href="#state81">81</a>
+    term           go to state <a href="#state90">90</a>
+
+
+<b><a name="state109">State</a> <a href="#state109">109</a></b>
+    Shortest prefix: Q vws COLON formula
+    Shortest path: <a href="#state0">0</a>-><a href="#state81">81</a>-><a href="#state107">107</a>-><a href="#state108">108</a>-><a href="#state109">109</a>
+    Predecessors: <a href="#state108">108</a>
+
+  <b>Kernel Items</b>
+    30 formula: Q vws COLON formula .
+	-lookahead: { AND, OR, IMPLIES, EQUIV, SEMICOLON, RPAR, COMMA, COLON }
+    31 formula: formula . AND formula
+    32 formula: formula . OR formula
+    33 formula: formula . IMPLIES formula
+    34 formula: formula . EQUIV formula
+
+  <b>Parser Actions</b>
+    AND            shift, and go to state <a href="#state14">14</a>
+    OR             shift, and go to state <a href="#state16">16</a>
+    IMPLIES        shift, and go to state <a href="#state18">18</a>
+    EQUIV          shift, and go to state <a href="#state20">20</a>
+    SEMICOLON      reduce using <a href="#prod30">rule 30</a> (formula)
+    RPAR           reduce using <a href="#prod30">rule 30</a> (formula)
+    COMMA          reduce using <a href="#prod30">rule 30</a> (formula)
+    COLON          reduce using <a href="#prod30">rule 30</a> (formula)
+
+
+
+<b><a name="state110">State</a> <a href="#state110">110</a></b>
+    Shortest prefix: Q LBRACKET
+    Shortest path: <a href="#state0">0</a>-><a href="#state81">81</a>-><a href="#state110">110</a>
+    Predecessors: <a href="#state81">81</a>, <a href="#state122">122</a>
+
+  <b>Kernel Items</b>
+    58 univs: LBRACKET . NAME univs_
+
+  <b>Parser Actions</b>
+    NAME           shift, and go to state <a href="#state111">111</a>
+
+
+
+<b><a name="state111">State</a> <a href="#state111">111</a></b>
+    Shortest prefix: Q LBRACKET NAME
+    Shortest path: <a href="#state0">0</a>-><a href="#state81">81</a>-><a href="#state110">110</a>-><a href="#state111">111</a>
+    Predecessors: <a href="#state110">110</a>
+
+  <b>Kernel Items</b>
+    58 univs: LBRACKET NAME . univs_
+
+  <b>Parser Actions</b>
+    RBRACKET       shift, and go to state <a href="#state113">113</a>
+    COMMA          shift, and go to state <a href="#state114">114</a>
+
+  <b>Transitions</b>
+    univs_         go to state <a href="#state112">112</a>
+
+
+<b><a name="state112">State</a> <a href="#state112">112</a></b>
+    Shortest prefix: Q LBRACKET NAME univs_
+    Shortest path: <a href="#state0">0</a>-><a href="#state81">81</a>-><a href="#state110">110</a>-><a href="#state111">111</a>-><a href="#state112">112</a>
+    Predecessors: <a href="#state111">111</a>
+
+  <b>Kernel Items</b>
+    58 univs: LBRACKET NAME univs_ .
+	-lookahead: { NAME }
+
+  <b>Parser Actions</b>
+    NAME           reduce using <a href="#prod58">rule 58</a> (univs)
+
+
+
+<b><a name="state113">State</a> <a href="#state113">113</a></b>
+    Shortest prefix: Q LBRACKET NAME RBRACKET
+    Shortest path: <a href="#state0">0</a>-><a href="#state81">81</a>-><a href="#state110">110</a>-><a href="#state111">111</a>-><a href="#state113">113</a>
+    Predecessors: <a href="#state111">111</a>, <a href="#state115">115</a>
+
+  <b>Kernel Items</b>
+    59 univs_: RBRACKET .
+	-lookahead: { NAME }
+
+  <b>Parser Actions</b>
+    NAME           reduce using <a href="#prod59">rule 59</a> (univs_)
+
+
+
+<b><a name="state114">State</a> <a href="#state114">114</a></b>
+    Shortest prefix: Q LBRACKET NAME COMMA
+    Shortest path: <a href="#state0">0</a>-><a href="#state81">81</a>-><a href="#state110">110</a>-><a href="#state111">111</a>-><a href="#state114">114</a>
+    Predecessors: <a href="#state111">111</a>, <a href="#state115">115</a>
+
+  <b>Kernel Items</b>
+    60 univs_: COMMA . NAME univs_
+
+  <b>Parser Actions</b>
+    NAME           shift, and go to state <a href="#state115">115</a>
+
+
+
+<b><a name="state115">State</a> <a href="#state115">115</a></b>
+    Shortest prefix: Q LBRACKET NAME COMMA NAME
+    Shortest path: <a href="#state0">0</a>-><a href="#state81">81</a>-><a href="#state110">110</a>-><a href="#state111">111</a>-><a href="#state114">114</a>-><a href="#state115">115</a>
+    Predecessors: <a href="#state114">114</a>
+
+  <b>Kernel Items</b>
+    60 univs_: COMMA NAME . univs_
+
+  <b>Parser Actions</b>
+    RBRACKET       shift, and go to state <a href="#state113">113</a>
+    COMMA          shift, and go to state <a href="#state114">114</a>
+
+  <b>Transitions</b>
+    univs_         go to state <a href="#state116">116</a>
+
+
+<b><a name="state116">State</a> <a href="#state116">116</a></b>
+    Shortest prefix: Q LBRACKET NAME COMMA NAME univs_
+    Shortest path: <a href="#state0">0</a>-><a href="#state81">81</a>-><a href="#state110">110</a>-><a href="#state111">111</a>-><a href="#state114">114</a>-><a href="#state115">115</a>-><a href="#state116">116</a>
+    Predecessors: <a href="#state115">115</a>
+
+  <b>Kernel Items</b>
+    60 univs_: COMMA NAME univs_ .
+	-lookahead: { NAME }
+
+  <b>Parser Actions</b>
+    NAME           reduce using <a href="#prod60">rule 60</a> (univs_)
+
+
+
+<b><a name="state117">State</a> <a href="#state117">117</a></b>
+    Shortest prefix: Q0 NAME
+    Shortest path: <a href="#state0">0</a>-><a href="#state75">75</a>-><a href="#state117">117</a>
+    Predecessors: <a href="#state75">75</a>, <a href="#state118">118</a>, <a href="#state120">120</a>
+
+  <b>Kernel Items</b>
+    56 names: NAME . COMMA names
+    57 names: NAME .
+	-lookahead: { COLON, SEMICOLON }
+
+  <b>Parser Actions</b>
+    COMMA          shift, and go to state <a href="#state118">118</a>
+    COLON          reduce using <a href="#prod57">rule 57</a> (names)
+    SEMICOLON      reduce using <a href="#prod57">rule 57</a> (names)
+
+
+
+<b><a name="state118">State</a> <a href="#state118">118</a></b>
+    Shortest prefix: Q0 NAME COMMA
+    Shortest path: <a href="#state0">0</a>-><a href="#state75">75</a>-><a href="#state117">117</a>-><a href="#state118">118</a>
+    Predecessors: <a href="#state117">117</a>
+
+  <b>Kernel Items</b>
+    56 names: NAME COMMA . names
+
+  <b>Parser Actions</b>
+    NAME           shift, and go to state <a href="#state117">117</a>
+
+  <b>Transitions</b>
+    names          go to state <a href="#state119">119</a>
+
+
+<b><a name="state119">State</a> <a href="#state119">119</a></b>
+    Shortest prefix: Q0 NAME COMMA names
+    Shortest path: <a href="#state0">0</a>-><a href="#state75">75</a>-><a href="#state117">117</a>-><a href="#state118">118</a>-><a href="#state119">119</a>
+    Predecessors: <a href="#state118">118</a>
+
+  <b>Kernel Items</b>
+    56 names: NAME COMMA names .
+	-lookahead: { COLON, SEMICOLON }
+
+  <b>Parser Actions</b>
+    COLON          reduce using <a href="#prod56">rule 56</a> (names)
+    SEMICOLON      reduce using <a href="#prod56">rule 56</a> (names)
+
+
+
+<b><a name="state120">State</a> <a href="#state120">120</a></b>
+    Shortest prefix: VAR0
+    Shortest path: <a href="#state0">0</a>-><a href="#state120">120</a>
+    Predecessors: <a href="#state0">0</a>, <a href="#state4">4</a>, <a href="#state7">7</a>, <a href="#state11">11</a>
+
+  <b>Kernel Items</b>
+    12 decl: VAR0 . names
+
+  <b>Parser Actions</b>
+    NAME           shift, and go to state <a href="#state117">117</a>
+
+  <b>Transitions</b>
+    names          go to state <a href="#state121">121</a>
+
+
+<b><a name="state121">State</a> <a href="#state121">121</a></b>
+    Shortest prefix: VAR0 names
+    Shortest path: <a href="#state0">0</a>-><a href="#state120">120</a>-><a href="#state121">121</a>
+    Predecessors: <a href="#state120">120</a>
+
+  <b>Kernel Items</b>
+    12 decl: VAR0 names .
+	-lookahead: { SEMICOLON }
+
+  <b>Parser Actions</b>
+    SEMICOLON      reduce using <a href="#prod12">rule 12</a> (decl)
+
+
+
+<b><a name="state122">State</a> <a href="#state122">122</a></b>
+    Shortest prefix: var_kind
+    Shortest path: <a href="#state0">0</a>-><a href="#state122">122</a>
+    Predecessors: <a href="#state0">0</a>, <a href="#state4">4</a>, <a href="#state7">7</a>, <a href="#state11">11</a>
+
+  <b>Kernel Items</b>
+    13 decl: var_kind . univs vws
+    14 decl: var_kind . vws
+
+  <b>Parser Actions</b>
+    LBRACKET       shift, and go to state <a href="#state110">110</a>
+    NAME           shift, and go to state <a href="#state100">100</a>
+
+  <b>Transitions</b>
+    univs          go to state <a href="#state123">123</a>
+    vws            go to state <a href="#state125">125</a>
+
+
+<b><a name="state123">State</a> <a href="#state123">123</a></b>
+    Shortest prefix: var_kind univs
+    Shortest path: <a href="#state0">0</a>-><a href="#state122">122</a>-><a href="#state123">123</a>
+    Predecessors: <a href="#state122">122</a>
+
+  <b>Kernel Items</b>
+    13 decl: var_kind univs . vws
+
+  <b>Parser Actions</b>
+    NAME           shift, and go to state <a href="#state100">100</a>
+
+  <b>Transitions</b>
+    vws            go to state <a href="#state124">124</a>
+
+
+<b><a name="state124">State</a> <a href="#state124">124</a></b>
+    Shortest prefix: var_kind univs vws
+    Shortest path: <a href="#state0">0</a>-><a href="#state122">122</a>-><a href="#state123">123</a>-><a href="#state124">124</a>
+    Predecessors: <a href="#state123">123</a>
+
+  <b>Kernel Items</b>
+    13 decl: var_kind univs vws .
+	-lookahead: { SEMICOLON }
+
+  <b>Parser Actions</b>
+    SEMICOLON      reduce using <a href="#prod13">rule 13</a> (decl)
+
+
+
+<b><a name="state125">State</a> <a href="#state125">125</a></b>
+    Shortest prefix: var_kind vws
+    Shortest path: <a href="#state0">0</a>-><a href="#state122">122</a>-><a href="#state125">125</a>
+    Predecessors: <a href="#state122">122</a>
+
+  <b>Kernel Items</b>
+    14 decl: var_kind vws .
+	-lookahead: { SEMICOLON }
+
+  <b>Parser Actions</b>
+    SEMICOLON      reduce using <a href="#prod14">rule 14</a> (decl)
+
+
+
+<b><a name="state126">State</a> <a href="#state126">126</a></b>
+    Shortest prefix: VAR1
+    Shortest path: <a href="#state0">0</a>-><a href="#state126">126</a>
+    Predecessors: <a href="#state0">0</a>, <a href="#state4">4</a>, <a href="#state7">7</a>, <a href="#state11">11</a>
+
+  <b>Kernel Items</b>
+    15 var_kind: VAR1 .
+	-lookahead: { LBRACKET, NAME }
+
+  <b>Parser Actions</b>
+    LBRACKET       reduce using <a href="#prod15">rule 15</a> (var_kind)
+    NAME           reduce using <a href="#prod15">rule 15</a> (var_kind)
+
+
+
+<b><a name="state127">State</a> <a href="#state127">127</a></b>
+    Shortest prefix: VAR2
+    Shortest path: <a href="#state0">0</a>-><a href="#state127">127</a>
+    Predecessors: <a href="#state0">0</a>, <a href="#state4">4</a>, <a href="#state7">7</a>, <a href="#state11">11</a>
+
+  <b>Kernel Items</b>
+    16 var_kind: VAR2 .
+	-lookahead: { LBRACKET, NAME }
+
+  <b>Parser Actions</b>
+    LBRACKET       reduce using <a href="#prod16">rule 16</a> (var_kind)
+    NAME           reduce using <a href="#prod16">rule 16</a> (var_kind)
+
+
+
+<b><a name="state128">State</a> <a href="#state128">128</a></b>
+    Shortest prefix: TREE
+    Shortest path: <a href="#state0">0</a>-><a href="#state128">128</a>
+    Predecessors: <a href="#state0">0</a>, <a href="#state4">4</a>, <a href="#state7">7</a>, <a href="#state11">11</a>
+
+  <b>Kernel Items</b>
+    17 var_kind: TREE .
+	-lookahead: { LBRACKET, NAME }
+
+  <b>Parser Actions</b>
+    LBRACKET       reduce using <a href="#prod17">rule 17</a> (var_kind)
+    NAME           reduce using <a href="#prod17">rule 17</a> (var_kind)
+
+
+
+<b><a name="state129">State</a> <a href="#state129">129</a></b>
+    Shortest prefix: WS1S
+    Shortest path: <a href="#state0">0</a>-><a href="#state129">129</a>
+    Predecessors: <a href="#state0">0</a>
+
+  <b>Kernel Items</b>
+    4 header: WS1S .
+	-lookahead: { SEMICOLON }
+
+  <b>Parser Actions</b>
+    SEMICOLON      reduce using <a href="#prod4">rule 4</a> (header)
+
+
+
+<b><a name="state130">State</a> <a href="#state130">130</a></b>
+    Shortest prefix: WS2S
+    Shortest path: <a href="#state0">0</a>-><a href="#state130">130</a>
+    Predecessors: <a href="#state0">0</a>
+
+  <b>Kernel Items</b>
+    5 header: WS2S .
+	-lookahead: { SEMICOLON }
+
+  <b>Parser Actions</b>
+    SEMICOLON      reduce using <a href="#prod5">rule 5</a> (header)
+
+
+
+<b><a name="state131">State</a> <a href="#state131">131</a></b>
+    Shortest prefix: M2LSTR
+    Shortest path: <a href="#state0">0</a>-><a href="#state131">131</a>
+    Predecessors: <a href="#state0">0</a>
+
+  <b>Kernel Items</b>
+    6 header: M2LSTR .
+	-lookahead: { SEMICOLON }
+
+  <b>Parser Actions</b>
+    SEMICOLON      reduce using <a href="#prod6">rule 6</a> (header)
+
+
+
+<b><a name="state132">State</a> <a href="#state132">132</a></b>
+    Shortest prefix: M2LTREE
+    Shortest path: <a href="#state0">0</a>-><a href="#state132">132</a>
+    Predecessors: <a href="#state0">0</a>
+
+  <b>Kernel Items</b>
+    7 header: M2LTREE .
+	-lookahead: { SEMICOLON }
+
+  <b>Parser Actions</b>
+    SEMICOLON      reduce using <a href="#prod7">rule 7</a> (header)
+
+
+
+<b><a name="state133">State</a> <a href="#state133">133</a></b>
+    Shortest prefix: decls
+    Shortest path: <a href="#state0">0</a>-><a href="#state133">133</a>
+    Predecessors: <a href="#state0">0</a>
+
+  <b>Kernel Items</b>
+    3 program: decls .
+	-lookahead: { EOF }
+
+  <b>Parser Actions</b>
+    EOF            reduce using <a href="#prod3">rule 3</a> (program)
+
+
+
+</pre></hr></body></html>

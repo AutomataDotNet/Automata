@@ -9,6 +9,47 @@ namespace Microsoft.Automata.MSO.Mona
 {
     public partial class MonaParser : ShiftReduceParser<object, LexLocation>
     {
+        internal static string DescribeTokens(Tokens t)
+        {
+            switch (t)
+            {
+                case Tokens.AND: return "&";
+                case Tokens.ARROW: return "->";
+                case Tokens.COLON: return ":";
+                case Tokens.COMMA: return ",";
+                case Tokens.DIV: return "/";
+                case Tokens.DOT: return ".";
+                case Tokens.EQ: return "=";
+                case Tokens.EQUIV: return "<=>";
+                case Tokens.GE: return ">=";
+                case Tokens.GT: return ">";
+                case Tokens.IMPLIES: return "=>";
+                case Tokens.LBRACE: return "{";
+                case Tokens.LBRACKET: return "[";
+                case Tokens.LE: return "<=";
+                case Tokens.LPAR: return "(";
+                case Tokens.LT: return "<";
+                case Tokens.M2LSTR: return "m2l-str";
+                case Tokens.M2LTREE: return "m2l-tree";
+                case Tokens.MINUS: return "-";
+                case Tokens.MOD: return "%";
+                case Tokens.NE: return "~=";
+                case Tokens.NOT: return "~";
+                case Tokens.OR: return "|";
+                case Tokens.PLUS: return "+";
+                case Tokens.RBRACE: return "}";
+                case Tokens.RBRACKET: return "]";
+                case Tokens.RPAR: return ")";
+                case Tokens.SEMICOLON: return ";";
+                case Tokens.SETMINUS: return @"\";
+                case Tokens.SUBSET: return "sub";
+                case Tokens.TIMES: return "*";
+                case Tokens.UP: return "^";
+                default: 
+                    return t.ToString().ToLower();
+            }
+        }
+
         internal MonaParser(Stream str, string file = null)
             : base(new Scanner(str))
         {
@@ -17,8 +58,7 @@ namespace Microsoft.Automata.MSO.Mona
                 ((Scanner)(this.Scanner)).sourcefile = file;
         }
 
-        Dictionary<string, Tuple<VarWhere, Tokens>> FV =
-            new Dictionary<string, Tuple<VarWhere, Tokens>>();
+        HashSet<string> FV = new HashSet<string>();
 
         /// <summary>
         /// Parses a Mona program from a given text string.
@@ -59,68 +99,8 @@ namespace Microsoft.Automata.MSO.Mona
             if (aliasses == null)
             {
                 aliasses = new Dictionary<int, string>();
-                aliasses[(int)Tokens.ALL0] = "'all0'";
-                aliasses[(int)Tokens.ALL1] = "'all1'";
-                aliasses[(int)Tokens.ALL2] = "'all2'";
-                aliasses[(int)Tokens.AND] = "'&'";
-                aliasses[(int)Tokens.ARROW] = "'->'";
-                aliasses[(int)Tokens.COLON] = "':'";
-                aliasses[(int)Tokens.COMMA] = "','";
-                aliasses[(int)Tokens.DIV] = "'/'";
-                aliasses[(int)Tokens.DOT] = "'.'";
-                aliasses[(int)Tokens.EMPTY] = "'empty'";
-                aliasses[(int)Tokens.EQ] = "'='";
-                aliasses[(int)Tokens.EQUIV] = "'<=>'";
-                aliasses[(int)Tokens.EX0] = "'ex0'";
-                aliasses[(int)Tokens.EX1] = "'ex1'";
-                aliasses[(int)Tokens.EX2] = "'ex2'";
-                aliasses[(int)Tokens.FALSE] = "'false'";
-                aliasses[(int)Tokens.GE] = "'>='";
-                aliasses[(int)Tokens.GT] = "'>'";
-                aliasses[(int)Tokens.IMPLIES] = "'=>'";
-                aliasses[(int)Tokens.IN] = "'in'";
-                aliasses[(int)Tokens.INTER] = "'inter'";
-                aliasses[(int)Tokens.LBRACE] = "'{'";
-                aliasses[(int)Tokens.LBRACKET] = "'['";
-                aliasses[(int)Tokens.LE] = "'<='";
-                aliasses[(int)Tokens.LET0] = "'let0'";
-                aliasses[(int)Tokens.LET1] = "'let1'";
-                aliasses[(int)Tokens.LET2] = "'let2'";
-                aliasses[(int)Tokens.LPAR] = "'('";
-                aliasses[(int)Tokens.LT] = "'<'";
-                aliasses[(int)Tokens.M2LSTR] = "'m2l-str'";
-                aliasses[(int)Tokens.M2LTREE] = "'m2l-tree'";
-                aliasses[(int)Tokens.MAX] = "'max'";
-                aliasses[(int)Tokens.MIN] = "'min'";
-                aliasses[(int)Tokens.MINUS] = "'-'";
-                aliasses[(int)Tokens.MOD] = "'%'";
-                aliasses[(int)Tokens.NAME] = "name";
-                aliasses[(int)Tokens.NE] = "'~='";
-                aliasses[(int)Tokens.NOT] = "'~'";
-                aliasses[(int)Tokens.NOTIN] = "'notin'";
-                aliasses[(int)Tokens.NUMBER] = "integer";
-                aliasses[(int)Tokens.OR] = "'|'";
-                aliasses[(int)Tokens.PCONST] = "'pconst'";
-                aliasses[(int)Tokens.PLUS] = "'+'";
-                aliasses[(int)Tokens.PREFIX] = "'prefix'";
-                aliasses[(int)Tokens.RBRACE] = "'}'";
-                aliasses[(int)Tokens.RBRACKET] = "']'";
-                aliasses[(int)Tokens.RESTRICT] = "'restrict'";
-                aliasses[(int)Tokens.RPAR] = "')'";
-                aliasses[(int)Tokens.SEMICOLON] = "';'";
-                aliasses[(int)Tokens.SETMINUS] = @"'\'";
-                aliasses[(int)Tokens.SUBSET] = "'subset'";
-                aliasses[(int)Tokens.TIMES] = "'*'";
-                aliasses[(int)Tokens.TRUE] = "'true'";
-                aliasses[(int)Tokens.UNION] = "'union'";
-                aliasses[(int)Tokens.UNIVERSE] = "'universe'";
-                aliasses[(int)Tokens.UP] = "'^'";
-                aliasses[(int)Tokens.VAR0] = "'var0'";
-                aliasses[(int)Tokens.VAR1] = "'var1'";
-                aliasses[(int)Tokens.VAR2] = "'var2'";
-                aliasses[(int)Tokens.WHERE] = "'where'";
-                aliasses[(int)Tokens.WS1S] = "'ws1s'";
-                aliasses[(int)Tokens.WS2S] = "'ws2s'";
+                for (int i = 0; i < (int)Tokens.maxParseToken; i++)
+                    aliasses[i] = "'" + DescribeTokens((Tokens)i) + "'";
             }
         }
 
@@ -180,36 +160,27 @@ namespace Microsoft.Automata.MSO.Mona
         Program program = null;
         Program MkProgram(object decls)
         {
-            var pgm = new Program(null, (Cons<Ast>)decls);
+            var pgm = new Program(null, (Cons<Decl>)decls);
             program = pgm;
             return pgm;
         }
         Program MkProgram(object header, object decls)
         {
-            var pgm = new Program((Token)header, (Cons<Ast>)decls);
+            var pgm = new Program((Token)header, (Cons<Decl>)decls);
             program = pgm;
             return pgm;
         }
         #endregion
 
         #region Cons<T> construction
-        Cons<Ast> MkDeclarations(object first, object rest)
-        {
-            return new Cons<Ast>((Ast)first, (Cons<Ast>)rest);
-        }
-        Cons<Ast> MkDeclarations()
-        {
-            return Cons<Ast>.Empty;
-        }
-
-        Cons<Expression> MkExpressions(object first, object rest)
-        {
-            return new Cons<Expression>((Expression)first, (Cons<Expression>)rest);
-        }
-        Cons<Expression> MkExpressions()
-        {
-            return Cons<Expression>.Empty;
-        }
+        //Cons<Expression> MkExpressions(object first, object rest)
+        //{
+        //    return new Cons<Expression>((Expression)first, (Cons<Expression>)rest);
+        //}
+        //Cons<Expression> MkExpressions()
+        //{
+        //    return Cons<Expression>.Empty;
+        //}
 
         Cons<T> MkList<T>(object first, object rest)
         {
@@ -222,16 +193,22 @@ namespace Microsoft.Automata.MSO.Mona
         #endregion
 
         #region Formula construction 
-        BooleanFormula MkBooleanFormula(object token, params object[] args)
+        Formula MkBooleanFormula(object token, object arg1, object arg2 = null)
         {
-            var subformulas = Array.ConvertAll(args, a => (Formula)a);
-            return new BooleanFormula((Token)token, subformulas);
+            if (arg2 == null)
+                return new NegatedFormula((Token)token, arg1 as Formula);
+            else
+                return new BinaryBooleanFormula((Token)token, arg1 as Formula, arg2 as Formula);
         }
 
-        Atom MkAtom(object token, params object[] terms)
+        BooleanConstant MkBooleanConstant(object token)
         {
-            var terms_ = Array.ConvertAll(terms, t => (Term)t);
-            return new Atom((Token)token, terms_);
+            return new BooleanConstant((Token)token);
+        }
+
+        BinaryAtom MkAtom2(object token, object term1, object term2)
+        {
+            return new BinaryAtom((Token)token, (Term)term1, (Term)term2);
         }
 
         PredApp MkPredApp(object token, object exprs)
@@ -239,9 +216,9 @@ namespace Microsoft.Automata.MSO.Mona
             return new PredApp((Token)token, (Cons<Expression>)exprs);
         }
 
-        Q0Formula MkQ0Formula(object quantifier, object vars, object formula)
+        QBFormula MkQ0Formula(object quantifier, object vars, object formula)
         {
-            return new Q0Formula((Token)quantifier, (Cons<Token>)vars, (Formula)formula);
+            return new QBFormula((Token)quantifier, (Cons<Token>)vars, (Formula)formula);
         }
 
         QFormula MkQFormula(object quantifier, object vars, object formula)
@@ -254,22 +231,26 @@ namespace Microsoft.Automata.MSO.Mona
             return new QFormula((Token)quantifier, (Cons<VarWhere>)vars, (Formula)formula, (Cons<Token>)univs);
         }
 
+        BooleanVariable MkBooleanVariable(object token)
+        {
+            return new BooleanVariable((Token)token);
+        }
+
         #endregion
 
-        VarWhere MkVar(object name, object where)
+        VarWhere MkVarWhere(object name, object where)
         {
             return new VarWhere((Token)name, (Formula)where);
         }
 
-        VarWhere MkVar(object name)
+        VarWhere MkVarWhere(object name)
         {
             return new VarWhere((Token)name, null);
         }
 
-        FuncApp MkFuncApp(object func, params object[] args)
+        ArithmFuncApp MkArithmFuncApp(object func, object arg1, object arg2)
         {
-            var terms = Array.ConvertAll(args, t => (Term)t);
-            return new FuncApp((Token)func, terms);
+            return new ArithmFuncApp((Token)func, (Term)arg1, (Term)arg2);
         }
 
         Int MkInt(object integer)
@@ -282,19 +263,144 @@ namespace Microsoft.Automata.MSO.Mona
             return new Name((Token)name);
         }
 
-        VarDecl MkVarDecl(object token, object vars, object univs = null)
+        VarDecl MkVar1Decl(object vars, object univs = null)
         {
             var vars_ = (Cons<VarWhere>)vars;
             var univs_ = (univs == null ? null : (Cons<Token>)univs);
-            var token_ = (Token)token;
             foreach (var v in vars_)
-            {
-                if (FV.ContainsKey(v.name.text))
-                    throw new MonaParseException(v.name.Location, string.Format("variable '{0}' declared twice", v.name.text));
-                else
-                    FV[v.name.text] = new Tuple<VarWhere, Tokens>(v, token_.Kind);
-            }
-            return new VarDecl(token_, univs_, vars_);
+                if (!FV.Add(v.name.text))
+                    throw new MonaParseException(v.name.Location, string.Format("name '{0}' is already in use", v.name.text));
+            return new VarDecl(DeclKind.var1, univs_, vars_);
+        }
+
+        VarDecl MkVar2Decl(object vars, object univs = null)
+        {
+            var vars_ = (Cons<VarWhere>)vars;
+            var univs_ = (univs == null ? null : (Cons<Token>)univs);
+            foreach (var v in vars_)
+                if (!FV.Add(v.name.text))
+                    throw new MonaParseException(v.name.Location, string.Format("name '{0}' is already in use", v.name.text));
+            return new VarDecl(DeclKind.var2, univs_, vars_);
+        }
+
+        VarDecl MkTreeDecl(object vars, object univs = null)
+        {
+            var vars_ = (Cons<VarWhere>)vars;
+            var univs_ = (univs == null ? null : (Cons<Token>)univs);
+            foreach (var v in vars_)
+                if (!FV.Add(v.name.text))
+                    throw new MonaParseException(v.name.Location, string.Format("name '{0}' is already in use", v.name.text));
+            return new VarDecl(DeclKind.tree, univs_, vars_);
+        }
+
+        Var0Decl MkVar0Decl(object names)
+        {
+            var names_ = (Cons<Token>)names;
+            foreach (var v in names_)
+                if (!FV.Add(v.text))
+                    throw new MonaParseException(v.Location, string.Format("name '{0}' is already in use", v.text));
+            return new Var0Decl(names_);
+        }
+
+        UnivDecl MkUnivDecl(object univargs)
+        {
+            var univargs_ = (Cons<UnivArg>)univargs;
+            return new UnivDecl(univargs_);
+        }
+
+        UnivArg MkUnivArg(object name)
+        {
+            var v = (Token)name;
+            if (!FV.Add(v.text))
+                throw new MonaParseException(v.Location, string.Format("name '{0}' is already in use", v.text));
+
+            return new UnivArg((Token)name);
+        }
+
+        UnivArgWithType MkUnivArgWithType(object name, object t)
+        {
+            var v = (Token)name;
+            if (!FV.Add(v.text))
+                throw new MonaParseException(v.Location, string.Format("name '{0}' is already in use", v.text));
+
+            return new UnivArgWithType((Token)name, (Token)t);
+        }
+
+        UnivArgWithSucc MkUnivArgWithSucc(object name, object succ)
+        {
+            var v = (Token)name;
+            if (!FV.Add(v.text))
+                throw new MonaParseException(v.Location, string.Format("name '{0}' is already in use", v.text));
+
+            Token i = (Token)succ;
+
+            if (!System.Text.RegularExpressions.Regex.IsMatch(i.text, "^(0|1)+$"))
+                throw new MonaParseException(i.Location, string.Format("'{0}' is out of range, must match ^(0|1)+$", i.text));
+
+            return new UnivArgWithSucc((Token)name, i.text);
+        }
+
+        AssertDecl MkAssertDecl(object formula)
+        {
+            return new AssertDecl((Formula)formula);
+        }
+
+        ExecuteDecl MkExecuteDecl(object formula)
+        {
+            return new ExecuteDecl((Formula)formula);
+        }
+
+
+        Dictionary<string, ConstDecl> constDecls = new Dictionary<string, ConstDecl>();
+
+        ConstDecl MkConstDecl(object name, object def)
+        {
+            var v = (Token)name;
+            var t = (Term)def; 
+            if (!FV.Add(v.text))
+                throw new MonaParseException(v.Location, string.Format("name '{0}' is already in use", v.text));
+            var d = new ConstDecl(v, t);
+            constDecls[v.text] = d;
+            return d;
+        }
+
+        Name MkConstRef(object name)
+        {
+            var v = (Token)name;
+            if (!constDecls.ContainsKey(v.text))
+                throw new MonaParseException(v.Location, string.Format("constant '{0}' is undeclared", v.text));
+
+            return new Name(v);
+        }
+
+        DefaultWhereDecl MkDefaultWhere1Decl(object param, object formula)
+        {
+            return new DefaultWhereDecl(false, (Token)param, (Formula)formula);
+        }
+
+        DefaultWhereDecl MkDefaultWhere2Decl(object param, object formula)
+        {
+            return new DefaultWhereDecl(true, (Token)param, (Formula)formula);
+        }
+
+        FormulaDecl MkFormulaDecl(object formula)
+        {
+            return new FormulaDecl((Formula)formula);
+        }
+
+        Formula MkIsEmpty(object token, object term)
+        {
+            return new IsEmpty((Token)token, (Term)term);
+        }
+
+        MinOrMax MkMinOrMax(object token, object term)
+        {
+            return new MinOrMax((Token)token, (Term)term);
+        }
+
+        Restrict MkRestrict(object token, object formula)
+        {
+            return new Restrict((Token)token, (Formula)formula);
         }
     }
 }
