@@ -81,7 +81,7 @@ namespace Microsoft.Automata.MSO
         }
     }
 
-    //Negation
+    //Negation 
     public class MSONot : MSOFormula
     {
         internal MSOFormula phi;

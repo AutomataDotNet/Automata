@@ -25,10 +25,10 @@ p in $ & q in $;         # both p an q are in $
 ";
             Program pgm = MonaParser.Parse(input);
             Assert.AreEqual<int>(5, pgm.declarations.Count);
-            Assert.AreEqual<Tokens>(Tokens.M2LSTR, pgm.header.Kind);
+            Assert.AreEqual<Tokens>(Tokens.M2LSTR, pgm.token.Kind);
         }
 
-        //[TestMethod]
+        [TestMethod]
         public void MonaTest2()
         {
             string input = @"
@@ -88,8 +88,25 @@ LooseOne(Qe, Q1, Q2, Qe', Q1', Q2'); # Q' is Q except for one element
 ex1 p: is3(p, Qe', Q1', Q2'); # Q' does contain the element 3      
 ";
             Program pgm = MonaParser.Parse(input);
+            string s = pgm.ToString();
             Assert.IsTrue(pgm.declarations.Count > 0);
         }
+
+
+        [TestMethod]
+        public void MonaTest3()
+        {
+            string input = @"
+pred is0(var1 p, var2 Qe, Q1, Q2) = p in Qe & p notin Q1 & p notin Q2;
+(is0(p, Qe, Q1, Q2) & ~is0(q, Qe, Q1, Q2));  
+3 in {1,2,3};
+X = {1};
+7 in {2,3,4} + 3;
+";
+            Program pgm = MonaParser.Parse(input);
+            Assert.IsTrue(pgm.declarations.Count > 0);
+        }
+
 
         [TestMethod]
         public void MonaTestVar0decl()
@@ -97,7 +114,7 @@ ex1 p: is3(p, Qe', Q1', Q2'); # Q' does contain the element 3
             string input = @"
 var0 a, b ; # Boolean vars a and b
 ";
-            Program pgm = MonaParser.Parse(input);
+            Program pgm = MonaParser.Parse(input);   
             Assert.AreEqual<int>(1, pgm.declarations.Count);
             Assert.AreEqual<string>("var0 a,b;", pgm.ToString().Trim());
         }
@@ -205,6 +222,83 @@ defaultwhere1(p) = p < 10;
             Assert.IsTrue(pgm.declarations[0] is DefaultWhereDecl);
             Assert.IsFalse((pgm.declarations[0] as DefaultWhereDecl).isSecondOrder);
             Assert.IsTrue((pgm.declarations[0] as DefaultWhereDecl).kind == DeclKind.defaultwhere1);
+        }
+
+
+        [TestMethod]
+        public void MonaTestPredDecl1()
+        {
+            string input = @"
+pred foo = 4 < 6;
+pred bar(var2 P) = p in P;
+";
+            Program pgm = MonaParser.Parse(input);
+            Assert.AreEqual<int>(2, pgm.declarations.Count);
+            Assert.IsTrue(pgm.declarations[0] is PredDecl);
+            Assert.IsTrue(pgm.declarations[1] is PredDecl);
+            var foo = pgm.declarations[0] as PredDecl;
+            var bar = pgm.declarations[1] as PredDecl; 
+            Assert.IsFalse(foo.isMacro);
+            Assert.IsFalse(bar.isMacro);
+            Assert.AreEqual<string>("foo", foo.name.text);
+            Assert.AreEqual<string>("bar", bar.name.text);
+            Assert.IsTrue(foo.parameters == null);
+            Assert.AreEqual<int>(1, bar.parameters.Count);
+            Assert.IsTrue(bar.parameters[0].kind == ParamKind.var2);
+        }
+
+        [TestMethod]
+        public void MonaTestMacroDecl1()
+        {
+            string input = @"
+macro bar(var2 P,Q) = p in P;
+";
+            Program pgm = MonaParser.Parse(input);
+            Assert.AreEqual<int>(1, pgm.declarations.Count);
+            Assert.IsTrue(pgm.declarations[0] is PredDecl);
+            var bar = pgm.declarations[0] as PredDecl;
+            Assert.IsTrue(bar.isMacro);
+            Assert.AreEqual<string>("bar", bar.name.text);
+            Assert.IsTrue(bar.parameters.Count == 2);
+            Assert.IsTrue(bar.parameters[0].kind == ParamKind.var2);
+            Assert.IsTrue(bar.parameters[1].kind == ParamKind.var2);
+        }
+
+        [TestMethod]
+        public void MonaTestMacroDecl2()
+        {
+            string input = @"
+macro bar(var2 P, R, Q, var1 q, var0 e) = q in P;
+";
+            Program pgm = MonaParser.Parse(input);
+            Assert.AreEqual<int>(1, pgm.declarations.Count);
+            Assert.IsTrue(pgm.declarations[0] is PredDecl);
+            var bar = pgm.declarations[0] as PredDecl;
+            Assert.IsTrue(bar.isMacro);
+            Assert.AreEqual<string>("bar", bar.name.text);
+            Assert.AreEqual<int>(5, bar.parameters.Count);
+            Assert.IsTrue(bar.parameters[0].kind == ParamKind.var2);
+            Assert.IsTrue(bar.parameters[1].kind == ParamKind.var2);
+            Assert.IsTrue(bar.parameters[2].kind == ParamKind.var2);
+            Assert.IsTrue(bar.parameters[3].kind == ParamKind.var1);
+            Assert.IsTrue(bar.parameters[4].kind == ParamKind.var0);
+        }
+
+        [TestMethod]
+        public void MonaTestMacroDecl2_error()
+        {
+            string input = @"
+macro bar(var2 P, R, Q, var1 Q, var0 e) = q in P;
+";
+            try
+            {
+                Program pgm = MonaParser.Parse(input);
+            }
+            catch (MonaParseException e)
+            {
+                return;
+            }
+            Assert.Fail("expected MonaParseException");
         }
 
     }

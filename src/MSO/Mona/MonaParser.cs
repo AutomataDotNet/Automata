@@ -44,6 +44,7 @@ namespace Microsoft.Automata.MSO.Mona
                 case Tokens.SETMINUS: return @"\";
                 case Tokens.SUBSET: return "sub";
                 case Tokens.TIMES: return "*";
+                case Tokens.RANGE: return ",...,";
                 case Tokens.UP: return "^";
                 default: 
                     return t.ToString().ToLower();
@@ -193,12 +194,12 @@ namespace Microsoft.Automata.MSO.Mona
         #endregion
 
         #region Formula construction 
-        Formula MkBooleanFormula(object token, object arg1, object arg2 = null)
+        Expr MkBooleanFormula(object token, object arg1, object arg2 = null)
         {
             if (arg2 == null)
-                return new NegatedFormula((Token)token, arg1 as Formula);
+                return new NegatedFormula((Token)token, arg1 as Expr);
             else
-                return new BinaryBooleanFormula((Token)token, arg1 as Formula, arg2 as Formula);
+                return new BinaryBooleanFormula((Token)token, arg1 as Expr, arg2 as Expr);
         }
 
         BooleanConstant MkBooleanConstant(object token)
@@ -208,39 +209,39 @@ namespace Microsoft.Automata.MSO.Mona
 
         BinaryAtom MkAtom2(object token, object term1, object term2)
         {
-            return new BinaryAtom((Token)token, (Term)term1, (Term)term2);
+            return new BinaryAtom((Token)token, (Expr)term1, (Expr)term2);
         }
 
         PredApp MkPredApp(object token, object exprs)
         {
-            return new PredApp((Token)token, (Cons<Expression>)exprs);
+            return new PredApp((Token)token, (Cons<Expr>)exprs);
         }
 
         QBFormula MkQ0Formula(object quantifier, object vars, object formula)
         {
-            return new QBFormula((Token)quantifier, (Cons<Token>)vars, (Formula)formula);
+            return new QBFormula((Token)quantifier, (Cons<Token>)vars, (Expr)formula);
         }
 
         QFormula MkQFormula(object quantifier, object vars, object formula)
         {
-            return new QFormula((Token)quantifier, (Cons<VarWhere>)vars, (Formula)formula);
+            return new QFormula((Token)quantifier, (Cons<VarWhere>)vars, (Expr)formula);
         }
 
         QFormula MkQFormula(object quantifier, object vars, object formula, object univs)
         {
-            return new QFormula((Token)quantifier, (Cons<VarWhere>)vars, (Formula)formula, (Cons<Token>)univs);
+            return new QFormula((Token)quantifier, (Cons<VarWhere>)vars, (Expr)formula, (Cons<Token>)univs);
         }
 
-        BooleanVariable MkBooleanVariable(object token)
+        Name MkBooleanVariable(object token)
         {
-            return new BooleanVariable((Token)token);
+            return new Name((Token)token, ExprType.BOOL);
         }
 
         #endregion
 
         VarWhere MkVarWhere(object name, object where)
         {
-            return new VarWhere((Token)name, (Formula)where);
+            return new VarWhere((Token)name, (Expr)where);
         }
 
         VarWhere MkVarWhere(object name)
@@ -250,7 +251,7 @@ namespace Microsoft.Automata.MSO.Mona
 
         ArithmFuncApp MkArithmFuncApp(object func, object arg1, object arg2)
         {
-            return new ArithmFuncApp((Token)func, (Term)arg1, (Term)arg2);
+            return new ArithmFuncApp((Token)func, (Expr)arg1, (Expr)arg2);
         }
 
         Int MkInt(object integer)
@@ -263,13 +264,23 @@ namespace Microsoft.Automata.MSO.Mona
             return new Name((Token)name);
         }
 
+        Name MkName1(object name)
+        {
+            return new Name((Token)name, ExprType.INT);
+        }
+
+        Name MkName2(object name)
+        {
+            return new Name((Token)name, ExprType.SET);
+        }
+
         VarDecl MkVar1Decl(object vars, object univs = null)
         {
             var vars_ = (Cons<VarWhere>)vars;
             var univs_ = (univs == null ? null : (Cons<Token>)univs);
             foreach (var v in vars_)
-                if (!FV.Add(v.name.text))
-                    throw new MonaParseException(v.name.Location, string.Format("name '{0}' is already in use", v.name.text));
+                if (!FV.Add(v.name))
+                    throw new MonaParseException(v.token.Location, string.Format("name '{0}' is already in use", v.name));
             return new VarDecl(DeclKind.var1, univs_, vars_);
         }
 
@@ -278,8 +289,8 @@ namespace Microsoft.Automata.MSO.Mona
             var vars_ = (Cons<VarWhere>)vars;
             var univs_ = (univs == null ? null : (Cons<Token>)univs);
             foreach (var v in vars_)
-                if (!FV.Add(v.name.text))
-                    throw new MonaParseException(v.name.Location, string.Format("name '{0}' is already in use", v.name.text));
+                if (!FV.Add(v.name))
+                    throw new MonaParseException(v.token.Location, string.Format("name '{0}' is already in use", v.name));
             return new VarDecl(DeclKind.var2, univs_, vars_);
         }
 
@@ -288,8 +299,8 @@ namespace Microsoft.Automata.MSO.Mona
             var vars_ = (Cons<VarWhere>)vars;
             var univs_ = (univs == null ? null : (Cons<Token>)univs);
             foreach (var v in vars_)
-                if (!FV.Add(v.name.text))
-                    throw new MonaParseException(v.name.Location, string.Format("name '{0}' is already in use", v.name.text));
+                if (!FV.Add(v.name))
+                    throw new MonaParseException(v.token.Location, string.Format("name '{0}' is already in use", v.name));
             return new VarDecl(DeclKind.tree, univs_, vars_);
         }
 
@@ -342,12 +353,12 @@ namespace Microsoft.Automata.MSO.Mona
 
         AssertDecl MkAssertDecl(object formula)
         {
-            return new AssertDecl((Formula)formula);
+            return new AssertDecl((Expr)formula);
         }
 
         ExecuteDecl MkExecuteDecl(object formula)
         {
-            return new ExecuteDecl((Formula)formula);
+            return new ExecuteDecl((Expr)formula);
         }
 
 
@@ -356,7 +367,7 @@ namespace Microsoft.Automata.MSO.Mona
         ConstDecl MkConstDecl(object name, object def)
         {
             var v = (Token)name;
-            var t = (Term)def; 
+            var t = (Expr)def; 
             if (!FV.Add(v.text))
                 throw new MonaParseException(v.Location, string.Format("name '{0}' is already in use", v.text));
             var d = new ConstDecl(v, t);
@@ -370,38 +381,96 @@ namespace Microsoft.Automata.MSO.Mona
             if (!constDecls.ContainsKey(v.text))
                 throw new MonaParseException(v.Location, string.Format("constant '{0}' is undeclared", v.text));
 
-            return new Name(v);
+            return new Name(v, ExprType.INT);
         }
 
         DefaultWhereDecl MkDefaultWhere1Decl(object param, object formula)
         {
-            return new DefaultWhereDecl(false, (Token)param, (Formula)formula);
+            return new DefaultWhereDecl(false, (Token)param, (Expr)formula);
         }
 
         DefaultWhereDecl MkDefaultWhere2Decl(object param, object formula)
         {
-            return new DefaultWhereDecl(true, (Token)param, (Formula)formula);
+            return new DefaultWhereDecl(true, (Token)param, (Expr)formula);
         }
 
         FormulaDecl MkFormulaDecl(object formula)
         {
-            return new FormulaDecl((Formula)formula);
+            return new FormulaDecl((Expr)formula);
         }
 
-        Formula MkIsEmpty(object token, object term)
+        Expr MkIsEmpty(object token, object term)
         {
-            return new IsEmpty((Token)token, (Term)term);
+            return new IsEmpty((Token)token, (Expr)term);
         }
 
         MinOrMax MkMinOrMax(object token, object term)
         {
-            return new MinOrMax((Token)token, (Term)term);
+            return new MinOrMax((Token)token, (Expr)term);
         }
 
         Restrict MkRestrict(object token, object formula)
         {
-            return new Restrict((Token)token, (Formula)formula);
+            return new Restrict((Token)token, (Expr)formula);
         }
+
+        PredDecl MkPredDecl(object name, object parameters, object formula, bool isMacro = false)
+        {
+            var v = (Token)name;
+            if (!FV.Add(v.text))
+                throw new MonaParseException(v.Location, string.Format("name '{0}' is already in use", v.text));
+            var params_ = parameters as Cons<Param>;
+            var pmap = new Dictionary<string,Param>();
+            if (params_ != null && !params_.IsEmpty)
+            {
+                foreach (var p in params_)
+                {
+                    if (pmap.ContainsKey(p.Token.text))
+                        throw new MonaParseException(p.Token.Location, string.Format("duplicate parameter name '{0}'", p.Token.text));
+                    pmap[p.Token.text] = p;
+                }
+            }
+            return new PredDecl((Token)name, params_, pmap, (Expr)formula, isMacro);
+        }
+
+        Var0Param MkVar0Param(object name)
+        {
+            return new Var0Param((Token)name);
+        }
+        Var1Param MkVar1Param(object varwhere)
+        {
+            return new Var1Param((VarWhere)varwhere);
+        }
+        Var2Param MkVar2Param(object varwhere)
+        {
+            return new Var2Param((VarWhere)varwhere);
+        }
+        UniverseParam MkUniverseParam(object universename)
+        {
+            return new UniverseParam((Token)universename);
+        }
+
+        Set MkSet(object empty, object elems = null)
+        {
+            return new Set((Token)empty, elems as Cons<Expr>);
+        }
+
+        SetOp MkSetOp(object op, object arg1, object arg2)
+        {
+            return new SetOp((Token)op, (Expr)arg1, (Expr)arg2);
+        }
+
+        Pconst MkPconst(object pconstToken, object i)
+        {
+            return new Pconst((Token)pconstToken, (Expr)i);
+        }
+
+        Range MkRange(object rangeToken, object from, object to)
+        {
+            return new Range((Token)rangeToken, (Expr)from, (Expr)to);
+        }
+
+
     }
 }
 

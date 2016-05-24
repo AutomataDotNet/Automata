@@ -27,6 +27,7 @@
 WS              [ \t\r\f\v\n]
 COMMENT         [\/]\*(.|\n)*\*[\/]|\x23.*
 
+RANGE           ,{WS}*\.\.\.{WS}*,
 
 WS1S            ws1s
 WS2S            ws2s
@@ -195,6 +196,7 @@ BADCHAR         [^ \t\r\f\v\n]
 {ALLPOS}          {return MakeMonaToken(Tokens.ALLPOS);}
 {TYPE}            {return MakeMonaToken(Tokens.TYPE);}
 
+{RANGE}           {return MakeMonaToken(Tokens.RANGE);}
 {DOT}             {return MakeMonaToken(Tokens.DOT);}
 {UP}              {return MakeMonaToken(Tokens.UP);}
 
