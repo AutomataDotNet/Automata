@@ -7,11 +7,42 @@ using QUT.Gppg;
 
 namespace Microsoft.Automata.MSO.Mona
 {
+    public enum MonaParseExceptionKind
+    {
+        SytaxError,
+        InternalError,
+        DuplicateDeclaration,
+        UndeclaredIdentifier,
+        InvalidIntegerFormat,
+        TypeMismatch,
+        UnknownArithmeticOperator,
+        UnexpectedCharacter,
+        UnexpectedToken,
+        InvalidUniverseDeclaration,
+        UndeclaredConstant,
+        IdentifierIsNotDeclaredConstant,
+        InvalidUseOfPredicateOrMacroName,
+        UndeclaredPredicate,
+        InvalidUseOfName,
+        InvalidNrOfParameters,
+        InvalidUniverseReference,
+        DuplicateAllpos,
+        UnexpectedDeclaration,
+    }
+
     [Serializable]
     public class MonaParseException : Exception
     {
         internal LexLocation location = null;
-        string _file = null;
+        MonaParseExceptionKind kind = MonaParseExceptionKind.SytaxError;
+
+        public MonaParseExceptionKind Kind
+        {
+            get
+            {
+                return kind;
+            }
+        }
 
         public int StartLine
         {
@@ -39,21 +70,16 @@ namespace Microsoft.Automata.MSO.Mona
             : base()
         {
         }
-        internal MonaParseException(string message, string file = null)
-            : base(message)
-        {
-            this._file = file;
-        }
-        internal MonaParseException(string message, System.Exception inner)
-            : base(message, inner)
+
+        internal MonaParseException(string message, Exception innerexception) : base(message, innerexception)
         {
         }
 
-        internal MonaParseException(LexLocation location, string message, string file = null)
-            : base(message)
+        internal MonaParseException(MonaParseExceptionKind kind, LexLocation location,  string message = "")
+            : base(kind.ToString() + (message== "" ? "" : ": " + message))
         {
             this.location = location;
-            this._file = file;
+            this.kind = kind;
         }
 
         public override string ToString()
@@ -63,7 +89,7 @@ namespace Microsoft.Automata.MSO.Mona
                 res += string.Format("({0},{1},{2},{3})", StartLine, StartColumn, EndLine, EndColumn);
             if (res != "")
                 res += ": ";
-            res += "error : " + Message;
+            res += Message;
             return res;
         }
     }

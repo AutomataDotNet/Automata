@@ -3,7 +3,7 @@
 %visibility public
 %partial
 %YYSTYPE object
-%YYLTYPE LexLocation
+%YYLTYPE LexLocationInFile
 
 %start program
 
@@ -40,9 +40,9 @@
 
 %% 
 
-program 
-   : header SEMICOLON decls                        { $$ = MkProgram($1, $3); }
-   | decls                                         { $$ = MkProgram($1); }
+program  
+   : header SEMICOLON decls                        { $$ = MkProgram($3, $1); }
+   | decls                                         { $$ = MkProgram($1, null); }
    ;
 
 header
@@ -50,13 +50,14 @@ header
    ;
 
 decls
-   : decl SEMICOLON EOF                            { $$ = MkList<Decl>($1, MkList<Decl>()); }
+   : decl SEMICOLON EOF                            { $$ = MkList<Decl>($1); }
    | decl SEMICOLON decls                          { $$ = MkList<Decl>($1, $3); }
    ;
 
 decl 
    : formula                                       { $$ = MkFormulaDecl($1); }
-   | UNIVERSE univargs                             { $$ = MkUnivDecl($2); }        
+   | UNIVERSE univargs                             { $$ = MkUnivDecl($2); }      
+   | ALLPOS NAME                                   { $$ = MkAllposDecl($2); }  
    | ASSERT formula                                { $$ = MkAssertDecl($2); }
    | EXECUTE formula                               { $$ = MkExecuteDecl($2); }
    | CONST NAME EQ intterm                         { $$ = MkConstDecl($2, $4); }
@@ -133,7 +134,7 @@ intterm
 
 univargs
    : univarg COMMA univargs                        { $$ = MkList<UnivArg>($1, $3); }
-   | univarg                                       { $$ = MkList<UnivArg>($1, MkList<UnivArg>()); }
+   | univarg                                       { $$ = MkList<UnivArg>($1); }
    ;
 
 univarg 
@@ -145,20 +146,21 @@ univarg
 vws
    : NAME COMMA vws                                { $$ = MkList<VarWhere>(MkVarWhere($1, null), $3); }
    | NAME WHERE formula COMMA vws                  { $$ = MkList<VarWhere>(MkVarWhere($1, $3), $4); }
-   | NAME WHERE formula                            { $$ = MkList<VarWhere>(MkVarWhere($1, $3), MkList<VarWhere>()); }
-   | NAME                                          { $$ = MkList<VarWhere>(MkVarWhere($1, null), MkList<VarWhere>()); }
+   | NAME WHERE formula                            { $$ = MkList<VarWhere>(MkVarWhere($1, $3)); }
+   | NAME                                          { $$ = MkList<VarWhere>(MkVarWhere($1, null)); }
    ;
    
 formula 
    : TRUE                                          { $$ = MkBooleanConstant($1) ; }
    | FALSE                                         { $$ = MkBooleanConstant($1) ; }
    | LPAR formula RPAR                             { $$ = $2; }
-   | NOT formula                                   { $$ = MkBooleanFormula($1, $2); }
+   | NOT formula                                   { $$ = MkNegatedFormula($1, $2); }
    | RESTRICT LPAR formula RPAR                    { $$ = MkRestrict($1, $3); }
    | EMPTY LPAR term2 RPAR                         { $$ = MkIsEmpty($1, $3); }
    | Q0 names COLON formula                        { $$ = MkQ0Formula($1, $2, $4); }
    | Q univs vws COLON formula                     { $$ = MkQFormula($1, $3, $5, $2); }
-   | Q vws COLON formula                           { $$ = MkQFormula($1, $2, $4); }
+   | Q vws COLON formula                           { $$ = MkQFormula($1, $2, $4, null); }
+   | NAME LPAR RPAR                                { $$ = MkPredApp($1, MkList<Expr>()); }
    | NAME LPAR exprs RPAR                          { $$ = MkPredApp($1, $3); }
    | formula AND formula                           { $$ = MkBooleanFormula($2, $1, $3); }
    | formula OR formula                            { $$ = MkBooleanFormula($2, $1, $3); }
@@ -173,7 +175,14 @@ formula
    | term1 IN term2                                { $$ = MkAtom2($2, $1, $3); }
    | term1 NOTIN term2                             { $$ = MkAtom2($2, $1, $3); }
    | term2 SUBSET term2                            { $$ = MkAtom2($2, $1, $3); } 
+   | letexpr
    | NAME                                          { $$ = MkName($1); }
+   ;
+
+letexpr
+   : LET0 letexprs0 IN formula                     { $$ = MkLet($1, $2, $4); }
+   | LET1 letexprs1 IN formula                     { $$ = MkLet($1, $2, $4); }
+   | LET2 letexprs2 IN formula                     { $$ = MkLet($1, $2, $4); }
    ;
 
 Q
@@ -186,7 +195,7 @@ Q0
 
 exprs 
    : expr COMMA exprs                              { $$ = MkList<Expr>($1, $3); }
-   | expr                                          { $$ = MkList<Expr>($1,  MkList<Expr>()); }
+   | expr                                          { $$ = MkList<Expr>($1); }
    ;
 
 expr
@@ -201,7 +210,7 @@ term
 
 names
    : NAME COMMA names                              { $$ = MkList<Token>($1, $3); }
-   | NAME                                          { $$ = MkList<Token>($1, MkList<Token>()); }
+   | NAME                                          { $$ = MkList<Token>($1); }
    ;
 
 univs
@@ -227,7 +236,8 @@ term1
 
 term2 
    : LPAR term2 RPAR                               { $$ = $2; }  
-   | LBRACE elemslist                              { $$ = MkSet($1, $2); }
+   | LBRACE RBRACE                                 { $$ = MkSet($1, MkList<Expr>()); }
+   | LBRACE elemslist RBRACE                       { $$ = MkSet($1, $2); }
    | EMPTY                                         { $$ = MkSet($1); }
    | PCONST LPAR intterm RPAR                      { $$ = MkPconst($1, $3); }
    | term2 UNION term2                             { $$ = MkSetOp($2, $1, $3); }
@@ -239,14 +249,32 @@ term2
    ;
 
 elemslist 
-   : RBRACE                                        { $$ = MkList<Expr>(); }
-   | elems RBRACE                                  { $$ = MkList<Expr>($1, MkList<Expr>()); }
-   | elems COMMA elemslist                         { $$ = MkList<Expr>($1, $3); }
+   : elems COMMA elemslist                         { $$ = MkList<Expr>($1, $3); }
+   | elems                                         { $$ = MkList<Expr>($1); }
    ;
 
 elems 
    : term1 RANGE term1                             { $$ = MkRange($2, $1, $3); }
    | term1    
-   ;                                     
-
+   ;      
+   
+letexprs0
+   : NAME EQ formula0 COMMA letexprs0              { $$ = MkList<Tuple<Token,Expr>>(new Tuple<Token,Expr>((Token)$1,(Expr)$3), $5); }
+   | NAME EQ formula0                              { $$ = MkList<Tuple<Token,Expr>>(new Tuple<Token,Expr>((Token)$1,(Expr)$3)); }  
+   ;    
+   
+letexprs1
+   : NAME EQ term1 COMMA letexprs1                 { $$ = MkList<Tuple<Token,Expr>>(new Tuple<Token,Expr>((Token)$1,(Expr)$3), $5); }
+   | NAME EQ term1                                 { $$ = MkList<Tuple<Token,Expr>>(new Tuple<Token,Expr>((Token)$1,(Expr)$3)); }  
+   ;     
+   
+letexprs2
+   : NAME EQ term2 COMMA letexprs2                 { $$ = MkList<Tuple<Token,Expr>>(new Tuple<Token,Expr>((Token)$1,(Expr)$3), $5); }
+   | NAME EQ term2                                 { $$ = MkList<Tuple<Token,Expr>>(new Tuple<Token,Expr>((Token)$1,(Expr)$3)); }  
+   ; 
+   
+formula0 
+   : LPAR formula RPAR                             { $$ = $2; }
+   ;
+              
 %%

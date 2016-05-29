@@ -242,16 +242,18 @@ namespace Microsoft.Automata.MSO.Mona
             return res;
         }
 
-        public string ToString(string sep)
+        public string ToString(string sep, Func<T, string> elemToString = null, string start = "", string end = "")
         {
-            string res = "";
+            string res = start;
+            bool nonmepty = false;
             foreach (T elem in this)
             {
-                if (res != "")
+                if (nonmepty)
                     res += sep;
-                res += elem.ToString();
+                res += (elemToString == null ? string.Format("{0}", elem) : elemToString(elem));
+                nonmepty = true;
             }
-            return res;
+            return res + end;
         }
 
         public Cons<S> Convert<S>(Func<T, S> f)

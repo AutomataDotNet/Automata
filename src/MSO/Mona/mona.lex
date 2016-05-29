@@ -8,9 +8,9 @@
   {
      int dummy = yytext.Length; //force evaluation of the string yytext
 	 string text = yytext;
-	 yylloc = new QUT.Gppg.LexLocation(tokLin, tokCol, tokELin, tokECol);
+	 yylloc = new QUT.Gppg.LexLocationInFile(tokLin, tokCol, tokELin, tokECol, sourcefile);
 	 if (kind == Tokens.BADCHAR)
-	   throw new MonaParseException(yylloc, string.Format("Syntax error, unexpected '{0}'",text));
+	   throw new MonaParseException(MonaParseExceptionKind.UnexpectedCharacter, yylloc, string.Format("unexpected '{0}'",text));
 
      yylval = new Token(text, yylloc, kind, sourcefile); 
      return (int)kind;  
@@ -19,7 +19,7 @@
   override public void yyerror(string message, params object[] args)
   {
 	  var token = (Token)yylval;
-	  throw new MonaParseException(token.Location, message);
+	  throw new MonaParseException(MonaParseExceptionKind.UnexpectedToken, token.Location, message);
   }
 
 %}

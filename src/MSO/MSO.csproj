@@ -53,6 +53,7 @@
   <ItemGroup>
     <Compile Include="Mona\AST.cs" />
     <Compile Include="Mona\Cons.cs" />
+    <Compile Include="Mona\MapStack.cs" />
     <Compile Include="Mona\mona.lex.cs" />
     <Compile Include="Mona\mona.y.cs" />
     <Compile Include="Mona\MonaParseException.cs" />

@@ -115,6 +115,7 @@
     <Compile Include="Internal\Utilities\HighTimer.cs" />
     <Compile Include="Internal\Utilities\IgnoreCaseRelationGenerator.cs" />
     <Compile Include="Internal\Utilities\IgnoreCaseTransformer.cs" />
+    <Compile Include="Internal\Utilities\LexLocationInFile.cs" />
     <Compile Include="Internal\Utilities\RegexToRangeAutomatonSerializer.cs" />
     <Compile Include="Internal\Utilities\ShiftReduceParser.cs" />
     <Compile Include="Internal\Utilities\UnicodeCategoryRangesGenerator.cs" />

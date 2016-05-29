@@ -3,11 +3,12 @@ using System.IO;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Automata.Internal.Utilities;
 using QUT.Gppg;
 
 namespace Microsoft.Automata.MSO.Mona
 {
-    public partial class MonaParser : ShiftReduceParser<object, LexLocation>
+    public partial class MonaParser : ShiftReduceParser<object, LexLocationInFile>
     {
         internal static string DescribeTokens(Tokens t)
         {
@@ -59,12 +60,33 @@ namespace Microsoft.Automata.MSO.Mona
                 ((Scanner)(this.Scanner)).sourcefile = file;
         }
 
-        HashSet<string> FV = new HashSet<string>();
+        Dictionary<string,Decl> GlobalDecls = new Dictionary<string,Decl>();
+
+
+        /// <summary>
+        /// Parses a Mona program from a given file.
+        /// </summary>
+        public static Program ParseFromFile(string filename)
+        {
+            Stream stream = null; 
+            Program pgm = null;
+            try
+            {
+                stream = File.OpenRead(filename);
+                pgm = Parse(stream, filename);
+            }
+            finally
+            {
+                if (stream != null)
+                    stream.Dispose();
+            }
+            return pgm;
+        }
 
         /// <summary>
         /// Parses a Mona program from a given text string.
         /// </summary>
-        public static Program Parse(string text, string filename = null)
+        public static Program Parse(string text)
         {
             MemoryStream mstr = null;
             Program pgm = null;
@@ -72,7 +94,7 @@ namespace Microsoft.Automata.MSO.Mona
             {
                 mstr = new MemoryStream(Encoding.UTF8.GetBytes(text));
                 mstr.Position = 0;
-                pgm = Parse(mstr, filename);
+                pgm = Parse(mstr, null);
             }
             finally
             {
@@ -87,12 +109,25 @@ namespace Microsoft.Automata.MSO.Mona
         /// </summary>
         public static Program Parse(Stream stream, string filename = null)
         {
-            var parser = new MonaParser(stream, filename);
-            bool ok = parser.Parse();
-            if (ok)
-                return parser.program;
-            else
-                throw new MonaParseException("Error: mona parser failed", filename);
+            try
+            {
+                var parser = new MonaParser(stream, filename);
+                bool ok = parser.Parse();
+                if (ok)
+                {
+                    parser.program.Typecheck();
+                    return parser.program;
+                }
+                else
+                    throw new MonaParseException();
+            }
+            catch (Exception e)
+            {
+                if (e is MonaParseException)
+                    throw e;
+                else
+                    throw new MonaParseException("unexpected error", e); 
+            }
         }
 
         private static void InitializeAliasses()
@@ -159,15 +194,9 @@ namespace Microsoft.Automata.MSO.Mona
 
         #region Program construction
         Program program = null;
-        Program MkProgram(object decls)
+        Program MkProgram(object decls, object header = null)
         {
-            var pgm = new Program(null, (Cons<Decl>)decls);
-            program = pgm;
-            return pgm;
-        }
-        Program MkProgram(object header, object decls)
-        {
-            var pgm = new Program((Token)header, (Cons<Decl>)decls);
+            var pgm = new Program(header as Token, (Cons<Decl>)decls, GlobalDecls);
             program = pgm;
             return pgm;
         }
@@ -183,9 +212,9 @@ namespace Microsoft.Automata.MSO.Mona
         //    return Cons<Expression>.Empty;
         //}
 
-        Cons<T> MkList<T>(object first, object rest)
+        Cons<T> MkList<T>(object first, object rest = null)
         {
-            return new Cons<T>((T)first, (Cons<T>)rest);
+            return new Cons<T>((T)first, (rest == null ? Cons<T>.Empty : (Cons<T>)rest));
         }
         Cons<T> MkList<T>()
         {
@@ -194,12 +223,14 @@ namespace Microsoft.Automata.MSO.Mona
         #endregion
 
         #region Formula construction 
-        Expr MkBooleanFormula(object token, object arg1, object arg2 = null)
+        Expr MkBooleanFormula(object token, object arg1, object arg2)
         {
-            if (arg2 == null)
-                return new NegatedFormula((Token)token, arg1 as Expr);
-            else
-                return new BinaryBooleanFormula((Token)token, arg1 as Expr, arg2 as Expr);
+            return new BinaryBooleanFormula((Token)token, arg1 as Expr, arg2 as Expr);
+        }
+
+        Expr MkNegatedFormula(object token, object arg1)
+        {
+            return new NegatedFormula((Token)token, arg1 as Expr);
         }
 
         BooleanConstant MkBooleanConstant(object token)
@@ -219,18 +250,46 @@ namespace Microsoft.Automata.MSO.Mona
 
         QBFormula MkQ0Formula(object quantifier, object vars, object formula)
         {
-            return new QBFormula((Token)quantifier, (Cons<Token>)vars, (Expr)formula);
-        }
+            var vars_ = (Cons<Token>)vars;
+            Dictionary<string, Param> varmap = new Dictionary<string, Param>();
+            foreach (var v in vars_)
+            {
+                if (varmap.ContainsKey(v.text))
+                    throw new MonaParseException(MonaParseExceptionKind.DuplicateDeclaration, v.Location);
 
-        QFormula MkQFormula(object quantifier, object vars, object formula)
-        {
-            return new QFormula((Token)quantifier, (Cons<VarWhere>)vars, (Expr)formula);
+                varmap[v.text] = new Var0Param(v);
+            }
+            return new QBFormula((Token)quantifier, vars_, (Expr)formula, varmap);
         }
 
         QFormula MkQFormula(object quantifier, object vars, object formula, object univs)
         {
-            return new QFormula((Token)quantifier, (Cons<VarWhere>)vars, (Expr)formula, (Cons<Token>)univs);
+            var vws = (Cons<VarWhere>)vars;
+            var Q = (Token)quantifier;
+            Dictionary<string, Param> varmap = new Dictionary<string, Param>();
+            if (Q.Kind == Tokens.EX1 || Q.Kind == Tokens.ALL1)
+            {
+                foreach (var vw in vws)
+                {
+                    if (varmap.ContainsKey(vw.name))
+                        throw new MonaParseException(MonaParseExceptionKind.DuplicateDeclaration, vw.token.Location);
+
+                    varmap[vw.name] = new VarParam(vw, ParamKind.var1);
+                }
+            }
+            else
+            {
+                foreach (var vw in vws)
+                {
+                    if (varmap.ContainsKey(vw.name))
+                        throw new MonaParseException(MonaParseExceptionKind.DuplicateDeclaration, vw.token.Location);
+
+                    varmap[vw.name] = new VarParam(vw, ParamKind.var2);
+                }
+            }
+            return new QFormula(Q, (Cons<VarWhere>)vars, (Expr)formula, null, varmap);
         }
+
 
         Name MkBooleanVariable(object token)
         {
@@ -264,91 +323,93 @@ namespace Microsoft.Automata.MSO.Mona
             return new Name((Token)name);
         }
 
-        Name MkName1(object name)
+        VarDecls MkVar1Decl(object vars, object univs)
         {
-            return new Name((Token)name, ExprType.INT);
+            var vws = (Cons<VarWhere>)vars;
+            var univs_ = (univs == null ? null : (Cons<Token>)univs);
+            foreach (var vw in vws)
+                if (GlobalDecls.ContainsKey(vw.name))
+                    throw new MonaParseException(MonaParseExceptionKind.DuplicateDeclaration, vw.token.Location, string.Format("name '{0}' is already declared", vw.name));
+                else
+                    GlobalDecls[vw.name] = new VarDecl(DeclKind.var1, univs_, vw);
+            return  new VarDecls(DeclKind.var1, univs_, vws);
         }
 
-        Name MkName2(object name)
-        {
-            return new Name((Token)name, ExprType.SET);
-        }
-
-        VarDecl MkVar1Decl(object vars, object univs = null)
+        VarDecls MkVar2Decl(object vars, object univs)
         {
             var vars_ = (Cons<VarWhere>)vars;
             var univs_ = (univs == null ? null : (Cons<Token>)univs);
-            foreach (var v in vars_)
-                if (!FV.Add(v.name))
-                    throw new MonaParseException(v.token.Location, string.Format("name '{0}' is already in use", v.name));
-            return new VarDecl(DeclKind.var1, univs_, vars_);
+            foreach (var vw in vars_)
+                if (GlobalDecls.ContainsKey(vw.name))
+                    throw new MonaParseException(MonaParseExceptionKind.DuplicateDeclaration, vw.token.Location, string.Format("name '{0}' is already declared", vw.name));
+                else
+                    GlobalDecls[vw.name] = new VarDecl(DeclKind.var2, univs_, vw);
+            return new VarDecls(DeclKind.var2, univs_, vars_);
         }
 
-        VarDecl MkVar2Decl(object vars, object univs = null)
+        VarDecls MkTreeDecl(object vars, object univs)
         {
             var vars_ = (Cons<VarWhere>)vars;
             var univs_ = (univs == null ? null : (Cons<Token>)univs);
-            foreach (var v in vars_)
-                if (!FV.Add(v.name))
-                    throw new MonaParseException(v.token.Location, string.Format("name '{0}' is already in use", v.name));
-            return new VarDecl(DeclKind.var2, univs_, vars_);
+            foreach (var vw in vars_)
+                if (GlobalDecls.ContainsKey(vw.name))
+                    throw new MonaParseException(MonaParseExceptionKind.DuplicateDeclaration, vw.token.Location, string.Format("name '{0}' is already declared", vw.name));
+                else
+                    GlobalDecls[vw.name] = new VarDecl(DeclKind.tree, univs_, vw);
+            return new VarDecls(DeclKind.tree, univs_, vars_);
         }
 
-        VarDecl MkTreeDecl(object vars, object univs = null)
-        {
-            var vars_ = (Cons<VarWhere>)vars;
-            var univs_ = (univs == null ? null : (Cons<Token>)univs);
-            foreach (var v in vars_)
-                if (!FV.Add(v.name))
-                    throw new MonaParseException(v.token.Location, string.Format("name '{0}' is already in use", v.name));
-            return new VarDecl(DeclKind.tree, univs_, vars_);
-        }
-
-        Var0Decl MkVar0Decl(object names)
+        Var0Decls MkVar0Decl(object names)
         {
             var names_ = (Cons<Token>)names;
             foreach (var v in names_)
-                if (!FV.Add(v.text))
-                    throw new MonaParseException(v.Location, string.Format("name '{0}' is already in use", v.text));
-            return new Var0Decl(names_);
+                if (GlobalDecls.ContainsKey(v.text))
+                    throw new MonaParseException(MonaParseExceptionKind.DuplicateDeclaration, v.Location, string.Format("name '{0}' is already declared", v.text));
+                else
+                    GlobalDecls[v.text] = new Var0Decl(v);
+            return new Var0Decls(names_);
         }
 
-        UnivDecl MkUnivDecl(object univargs)
+        UnivDecls MkUnivDecl(object univargs)
         {
             var univargs_ = (Cons<UnivArg>)univargs;
-            return new UnivDecl(univargs_);
+            return new UnivDecls(univargs_);
         }
 
         UnivArg MkUnivArg(object name)
         {
             var v = (Token)name;
-            if (!FV.Add(v.text))
-                throw new MonaParseException(v.Location, string.Format("name '{0}' is already in use", v.text));
-
-            return new UnivArg((Token)name);
+            if (GlobalDecls.ContainsKey(v.text))
+                throw new MonaParseException(MonaParseExceptionKind.DuplicateDeclaration, v.Location, string.Format("name '{0}' is already declared", v.text));
+            var u = new UnivArg((Token)name);
+            GlobalDecls[v.text] = new UnivDecl(u);
+            return u;
         }
 
         UnivArgWithType MkUnivArgWithType(object name, object t)
         {
             var v = (Token)name;
-            if (!FV.Add(v.text))
-                throw new MonaParseException(v.Location, string.Format("name '{0}' is already in use", v.text));
-
-            return new UnivArgWithType((Token)name, (Token)t);
+            if (GlobalDecls.ContainsKey(v.text))
+                throw new MonaParseException(MonaParseExceptionKind.DuplicateDeclaration, v.Location, string.Format("name '{0}' is already declared", v.text));
+            var u = new UnivArgWithType((Token)name, (Token)t);
+            GlobalDecls[v.text] = new UnivDecl(u);
+            return u;
         }
 
         UnivArgWithSucc MkUnivArgWithSucc(object name, object succ)
         {
             var v = (Token)name;
-            if (!FV.Add(v.text))
-                throw new MonaParseException(v.Location, string.Format("name '{0}' is already in use", v.text));
+            if (GlobalDecls.ContainsKey(v.text))
+                throw new MonaParseException(MonaParseExceptionKind.DuplicateDeclaration, v.Location, string.Format("name '{0}' is already declared", v.text));
 
             Token i = (Token)succ;
 
             if (!System.Text.RegularExpressions.Regex.IsMatch(i.text, "^(0|1)+$"))
-                throw new MonaParseException(i.Location, string.Format("'{0}' is out of range, must match ^(0|1)+$", i.text));
+                throw new MonaParseException(MonaParseExceptionKind.InvalidUniverseDeclaration, i.Location, string.Format("'{0}' is out of range, must match ^(0|1)+$", i.text));
 
-            return new UnivArgWithSucc((Token)name, i.text);
+            var u = new UnivArgWithSucc((Token)name, i.text);
+            GlobalDecls[v.text] = new UnivDecl(u);
+            return u;
         }
 
         AssertDecl MkAssertDecl(object formula)
@@ -361,37 +422,54 @@ namespace Microsoft.Automata.MSO.Mona
             return new ExecuteDecl((Expr)formula);
         }
 
-
-        Dictionary<string, ConstDecl> constDecls = new Dictionary<string, ConstDecl>();
-
         ConstDecl MkConstDecl(object name, object def)
         {
             var v = (Token)name;
-            var t = (Expr)def; 
-            if (!FV.Add(v.text))
-                throw new MonaParseException(v.Location, string.Format("name '{0}' is already in use", v.text));
+            var t = (Expr)def;
+            if (GlobalDecls.ContainsKey(v.text))
+                throw new MonaParseException(MonaParseExceptionKind.DuplicateDeclaration, v.Location, string.Format("name '{0}' is already declared", v.text));
+
             var d = new ConstDecl(v, t);
-            constDecls[v.text] = d;
+            GlobalDecls[v.text] = d;
             return d;
         }
 
         Name MkConstRef(object name)
         {
             var v = (Token)name;
-            if (!constDecls.ContainsKey(v.text))
-                throw new MonaParseException(v.Location, string.Format("constant '{0}' is undeclared", v.text));
+            if (!GlobalDecls.ContainsKey(v.text))
+                throw new MonaParseException(MonaParseExceptionKind.UndeclaredConstant, v.Location, string.Format("constant '{0}' is undeclared", v.text));
+
+            if (GlobalDecls.ContainsKey(v.text) && GlobalDecls[v.text].kind != DeclKind.constant)
+                throw new MonaParseException(MonaParseExceptionKind.IdentifierIsNotDeclaredConstant, v.Location, string.Format("'{0}' is not a constant", v.text));
 
             return new Name(v, ExprType.INT);
         }
 
+        bool macro_or_pred_decl_occurred = false;
+
+        bool MkDefaultWhere1DeclDone = false;
         DefaultWhereDecl MkDefaultWhere1Decl(object param, object formula)
         {
-            return new DefaultWhereDecl(false, (Token)param, (Expr)formula);
+            Token t = (Token)param;
+            if (MkDefaultWhere1DeclDone)
+                throw new MonaParseException(MonaParseExceptionKind.DuplicateDeclaration, t.Location, "defaultwhere1 can occur at most once");
+            if (macro_or_pred_decl_occurred)
+                throw new MonaParseException(MonaParseExceptionKind.UnexpectedDeclaration, t.Location, "defaultwhere1 must occur before all predicate and macro definitions");
+            MkDefaultWhere1DeclDone = true;
+            return new DefaultWhereDecl(false, t, (Expr)formula);
         }
 
+        bool MkDefaultWhere2DeclDone = false;
         DefaultWhereDecl MkDefaultWhere2Decl(object param, object formula)
         {
-            return new DefaultWhereDecl(true, (Token)param, (Expr)formula);
+            Token t = (Token)param;
+            if (MkDefaultWhere2DeclDone)
+                throw new MonaParseException(MonaParseExceptionKind.DuplicateDeclaration, t.Location, "defaultwhere2 can occur at most once");
+            if (macro_or_pred_decl_occurred)
+                throw new MonaParseException(MonaParseExceptionKind.UnexpectedDeclaration, t.Location, "defaultwhere2 must occur before all predicate and macro definitions");
+            MkDefaultWhere2DeclDone = true;
+            return new DefaultWhereDecl(true, t, (Expr)formula);
         }
 
         FormulaDecl MkFormulaDecl(object formula)
@@ -417,8 +495,8 @@ namespace Microsoft.Automata.MSO.Mona
         PredDecl MkPredDecl(object name, object parameters, object formula, bool isMacro = false)
         {
             var v = (Token)name;
-            if (!FV.Add(v.text))
-                throw new MonaParseException(v.Location, string.Format("name '{0}' is already in use", v.text));
+            if (GlobalDecls.ContainsKey(v.text))
+                throw new MonaParseException(MonaParseExceptionKind.DuplicateDeclaration, v.Location, string.Format("name '{0}' is already declared", v.text));
             var params_ = parameters as Cons<Param>;
             var pmap = new Dictionary<string,Param>();
             if (params_ != null && !params_.IsEmpty)
@@ -426,25 +504,31 @@ namespace Microsoft.Automata.MSO.Mona
                 foreach (var p in params_)
                 {
                     if (pmap.ContainsKey(p.Token.text))
-                        throw new MonaParseException(p.Token.Location, string.Format("duplicate parameter name '{0}'", p.Token.text));
+                        throw new MonaParseException(MonaParseExceptionKind.DuplicateDeclaration, p.Token.Location, string.Format("duplicate parameter name '{0}'", p.Token.text));
                     pmap[p.Token.text] = p;
                 }
             }
-            return new PredDecl((Token)name, params_, pmap, (Expr)formula, isMacro);
+            var P = new PredDecl(v, params_, pmap, (Expr)formula, isMacro);
+            GlobalDecls[v.text] = P;
+            macro_or_pred_decl_occurred = true;
+            return P; 
         }
 
         Var0Param MkVar0Param(object name)
         {
             return new Var0Param((Token)name);
         }
-        Var1Param MkVar1Param(object varwhere)
+
+        VarParam MkVar1Param(object varwhere)
         {
-            return new Var1Param((VarWhere)varwhere);
+            return new VarParam((VarWhere)varwhere, ParamKind.var1);
         }
-        Var2Param MkVar2Param(object varwhere)
+
+        VarParam MkVar2Param(object varwhere)
         {
-            return new Var2Param((VarWhere)varwhere);
+            return new VarParam((VarWhere)varwhere, ParamKind.var2);
         }
+
         UniverseParam MkUniverseParam(object universename)
         {
             return new UniverseParam((Token)universename);
@@ -470,7 +554,45 @@ namespace Microsoft.Automata.MSO.Mona
             return new Range((Token)rangeToken, (Expr)from, (Expr)to);
         }
 
+        bool MkAllposDeclDone = false;
+        AllposDecl MkAllposDecl(object name)
+        {
+            Token v = (Token)name;
+            if (MkAllposDeclDone)
+                throw new MonaParseException(MonaParseExceptionKind.DuplicateAllpos, v.Location, v.text);
+            Decl d;
+            if (!GlobalDecls.TryGetValue(v.text, out d))
+                throw new MonaParseException(MonaParseExceptionKind.UndeclaredIdentifier, v.Location, v.text);
+            if (d.kind != DeclKind.var2)
+                throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, v.Location, 
+                    string.Format("allpos parameter must be a secondorder variable"));
+            MkAllposDeclDone = true;
+            return new AllposDecl(v);
+        }
 
+        Let MkLet(object letkind, object lets, object formula)
+        {
+            Token letkind_ = (Token)letkind;
+            Cons<Tuple<Token, Expr>> lets_ = (Cons<Tuple<Token, Expr>>)lets;
+            Expr formula_ = (Expr)formula;
+            Dictionary<string, Param> letmap = new Dictionary<string, Param>();
+            Func<Token, Param> MkParam = x => 
+                {
+                    if (letkind_.Kind == Tokens.LET0)
+                        return new Var0Param(x);
+                    else if (letkind_.Kind == Tokens.LET1)
+                        return new VarParam(new VarWhere(x,null), ParamKind.var1);
+                    else
+                        return new VarParam(new VarWhere(x,null), ParamKind.var2);
+                };
+            foreach (var let in lets_)
+            {
+                if (letmap.ContainsKey(let.Item1.text))
+                    throw new MonaParseException(MonaParseExceptionKind.DuplicateDeclaration, let.Item1.Location, let.Item1.text);
+                letmap[let.Item1.text] = MkParam(let.Item1);
+            }
+            return new Let(letkind_, lets_, formula_, letmap);
+        }
     }
 }
 
