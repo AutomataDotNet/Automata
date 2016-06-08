@@ -50,8 +50,8 @@ header
    ;
 
 decls
-   : decl SEMICOLON EOF                            { $$ = MkList<Decl>($1); }
-   | decl SEMICOLON decls                          { $$ = MkList<Decl>($1, $3); }
+   : decl SEMICOLON EOF                            { $$ = MkList<MonaDecl>($1); }
+   | decl SEMICOLON decls                          { $$ = MkList<MonaDecl>($1, $3); }
    ;
 
 decl 
@@ -77,48 +77,48 @@ decl
    ;
 
 parameters 
-   : RPAR                                          { $$ = MkList<Param>(); }
-   | VAR0 NAME params0                             { $$ = MkList<Param>(MkVar0Param($2), $3); }
-   | UNIVERSE NAME parameters                      { $$ = MkList<Param>(MkUniverseParam($2), $3); }
-   | VAR1 NAME params1                             { $$ = MkList<Param>(MkVar1Param(MkVarWhere($2, null)), $3); }
-   | VAR1 NAME WHERE formula params1               { $$ = MkList<Param>(MkVar1Param(MkVarWhere($2, $4)), $5); }
-   | VAR2 NAME params2                             { $$ = MkList<Param>(MkVar2Param(MkVarWhere($2, null)), $3); }
-   | VAR2 NAME WHERE formula params2               { $$ = MkList<Param>(MkVar2Param(MkVarWhere($2, $4)), $5); }
+   : RPAR                                          { $$ = MkList<MonaParam>(); }
+   | VAR0 NAME params0                             { $$ = MkList<MonaParam>(MkVar0Param($2), $3); }
+   | UNIVERSE NAME parameters                      { $$ = MkList<MonaParam>(MkUniverseParam($2), $3); }
+   | VAR1 NAME params1                             { $$ = MkList<MonaParam>(MkVar1Param(MkVarWhere($2, null)), $3); }
+   | VAR1 NAME WHERE formula params1               { $$ = MkList<MonaParam>(MkVar1Param(MkVarWhere($2, $4)), $5); }
+   | VAR2 NAME params2                             { $$ = MkList<MonaParam>(MkVar2Param(MkVarWhere($2, null)), $3); }
+   | VAR2 NAME WHERE formula params2               { $$ = MkList<MonaParam>(MkVar2Param(MkVarWhere($2, $4)), $5); }
    ;
 
 params0
-   : RPAR                                          { $$ = MkList<Param>(); }
-   | COMMA VAR0 NAME params0                       { $$ = MkList<Param>(MkVar0Param($3), $4); }
-   | COMMA VAR1 NAME params1                       { $$ = MkList<Param>(MkVar1Param(MkVarWhere($3, null)), $4); }
-   | COMMA VAR1 NAME WHERE formula params1         { $$ = MkList<Param>(MkVar1Param(MkVarWhere($3, $5)), $6); }
-   | COMMA VAR2 NAME params2                       { $$ = MkList<Param>(MkVar2Param(MkVarWhere($3, null)), $4); }
-   | COMMA VAR2 NAME WHERE formula params2         { $$ = MkList<Param>(MkVar2Param(MkVarWhere($3, $5)), $6); }
-   | COMMA UNIVERSE NAME parameters                { $$ = MkList<Param>(MkUniverseParam($3), $4); }
-   | COMMA NAME params0                            { $$ = MkList<Param>(MkVar0Param($2), $3); }
+   : RPAR                                          { $$ = MkList<MonaParam>(); }
+   | COMMA VAR0 NAME params0                       { $$ = MkList<MonaParam>(MkVar0Param($3), $4); }
+   | COMMA VAR1 NAME params1                       { $$ = MkList<MonaParam>(MkVar1Param(MkVarWhere($3, null)), $4); }
+   | COMMA VAR1 NAME WHERE formula params1         { $$ = MkList<MonaParam>(MkVar1Param(MkVarWhere($3, $5)), $6); }
+   | COMMA VAR2 NAME params2                       { $$ = MkList<MonaParam>(MkVar2Param(MkVarWhere($3, null)), $4); }
+   | COMMA VAR2 NAME WHERE formula params2         { $$ = MkList<MonaParam>(MkVar2Param(MkVarWhere($3, $5)), $6); }
+   | COMMA UNIVERSE NAME parameters                { $$ = MkList<MonaParam>(MkUniverseParam($3), $4); }
+   | COMMA NAME params0                            { $$ = MkList<MonaParam>(MkVar0Param($2), $3); }
    ;
 
 params1
-   : RPAR                                          { $$ = MkList<Param>(); }
-   | COMMA VAR0 NAME params0                       { $$ = MkList<Param>(MkVar0Param($3), $4); }
-   | COMMA VAR1 NAME params1                       { $$ = MkList<Param>(MkVar1Param(MkVarWhere($3, null)), $4); }
-   | COMMA VAR1 NAME WHERE formula params1         { $$ = MkList<Param>(MkVar1Param(MkVarWhere($3, $5)), $6); }
-   | COMMA VAR2 NAME params2                       { $$ = MkList<Param>(MkVar2Param(MkVarWhere($3, null)), $4); }
-   | COMMA VAR2 NAME WHERE formula params2         { $$ = MkList<Param>(MkVar2Param(MkVarWhere($3, $5)), $6); }
-   | COMMA UNIVERSE NAME parameters                { $$ = MkList<Param>(MkUniverseParam($3), $4); }
-   | COMMA NAME params1                            { $$ = MkList<Param>(MkVar1Param(MkVarWhere($2, null)), $3); }
-   | COMMA NAME WHERE formula params1              { $$ = MkList<Param>(MkVar1Param(MkVarWhere($2, $4)), $5); }
+   : RPAR                                          { $$ = MkList<MonaParam>(); }
+   | COMMA VAR0 NAME params0                       { $$ = MkList<MonaParam>(MkVar0Param($3), $4); }
+   | COMMA VAR1 NAME params1                       { $$ = MkList<MonaParam>(MkVar1Param(MkVarWhere($3, null)), $4); }
+   | COMMA VAR1 NAME WHERE formula params1         { $$ = MkList<MonaParam>(MkVar1Param(MkVarWhere($3, $5)), $6); }
+   | COMMA VAR2 NAME params2                       { $$ = MkList<MonaParam>(MkVar2Param(MkVarWhere($3, null)), $4); }
+   | COMMA VAR2 NAME WHERE formula params2         { $$ = MkList<MonaParam>(MkVar2Param(MkVarWhere($3, $5)), $6); }
+   | COMMA UNIVERSE NAME parameters                { $$ = MkList<MonaParam>(MkUniverseParam($3), $4); }
+   | COMMA NAME params1                            { $$ = MkList<MonaParam>(MkVar1Param(MkVarWhere($2, null)), $3); }
+   | COMMA NAME WHERE formula params1              { $$ = MkList<MonaParam>(MkVar1Param(MkVarWhere($2, $4)), $5); }
    ;
 
 params2
-   : RPAR                                          { $$ = MkList<Param>(); }
-   | COMMA VAR0 NAME params0                       { $$ = MkList<Param>(MkVar0Param($3), $4); }
-   | COMMA VAR1 NAME params1                       { $$ = MkList<Param>(MkVar1Param(MkVarWhere($3, null)), $4); }
-   | COMMA VAR1 NAME WHERE formula params1         { $$ = MkList<Param>(MkVar1Param(MkVarWhere($3, $5)), $6); }
-   | COMMA VAR2 NAME params2                       { $$ = MkList<Param>(MkVar2Param(MkVarWhere($3, null)), $4); }
-   | COMMA VAR2 NAME WHERE formula params2         { $$ = MkList<Param>(MkVar2Param(MkVarWhere($3, $5)), $6); }
-   | COMMA UNIVERSE NAME parameters                { $$ = MkList<Param>(MkUniverseParam($3), $4); }
-   | COMMA NAME params2                            { $$ = MkList<Param>(MkVar2Param(MkVarWhere($2, null)), $3); }
-   | COMMA NAME WHERE formula params2              { $$ = MkList<Param>(MkVar2Param(MkVarWhere($2, $4)), $5); }
+   : RPAR                                          { $$ = MkList<MonaParam>(); }
+   | COMMA VAR0 NAME params0                       { $$ = MkList<MonaParam>(MkVar0Param($3), $4); }
+   | COMMA VAR1 NAME params1                       { $$ = MkList<MonaParam>(MkVar1Param(MkVarWhere($3, null)), $4); }
+   | COMMA VAR1 NAME WHERE formula params1         { $$ = MkList<MonaParam>(MkVar1Param(MkVarWhere($3, $5)), $6); }
+   | COMMA VAR2 NAME params2                       { $$ = MkList<MonaParam>(MkVar2Param(MkVarWhere($3, null)), $4); }
+   | COMMA VAR2 NAME WHERE formula params2         { $$ = MkList<MonaParam>(MkVar2Param(MkVarWhere($3, $5)), $6); }
+   | COMMA UNIVERSE NAME parameters                { $$ = MkList<MonaParam>(MkUniverseParam($3), $4); }
+   | COMMA NAME params2                            { $$ = MkList<MonaParam>(MkVar2Param(MkVarWhere($2, null)), $3); }
+   | COMMA NAME WHERE formula params2              { $$ = MkList<MonaParam>(MkVar2Param(MkVarWhere($2, $4)), $5); }
    ;
 
 intterm 
@@ -133,8 +133,8 @@ intterm
    ;
 
 univargs
-   : univarg COMMA univargs                        { $$ = MkList<UnivArg>($1, $3); }
-   | univarg                                       { $$ = MkList<UnivArg>($1); }
+   : univarg COMMA univargs                        { $$ = MkList<MonaUnivArg>($1, $3); }
+   | univarg                                       { $$ = MkList<MonaUnivArg>($1); }
    ;
 
 univarg 
@@ -144,10 +144,10 @@ univarg
    ;
 
 vws
-   : NAME COMMA vws                                { $$ = MkList<VarWhere>(MkVarWhere($1, null), $3); }
-   | NAME WHERE formula COMMA vws                  { $$ = MkList<VarWhere>(MkVarWhere($1, $3), $4); }
-   | NAME WHERE formula                            { $$ = MkList<VarWhere>(MkVarWhere($1, $3)); }
-   | NAME                                          { $$ = MkList<VarWhere>(MkVarWhere($1, null)); }
+   : NAME COMMA vws                                { $$ = MkList<MonaVarWhere>(MkVarWhere($1, null), $3); }
+   | NAME WHERE formula COMMA vws                  { $$ = MkList<MonaVarWhere>(MkVarWhere($1, $3), $4); }
+   | NAME WHERE formula                            { $$ = MkList<MonaVarWhere>(MkVarWhere($1, $3)); }
+   | NAME                                          { $$ = MkList<MonaVarWhere>(MkVarWhere($1, null)); }
    ;
    
 formula 
@@ -160,7 +160,7 @@ formula
    | Q0 names COLON formula                        { $$ = MkQ0Formula($1, $2, $4); }
    | Q univs vws COLON formula                     { $$ = MkQFormula($1, $3, $5, $2); }
    | Q vws COLON formula                           { $$ = MkQFormula($1, $2, $4, null); }
-   | NAME LPAR RPAR                                { $$ = MkPredApp($1, MkList<Expr>()); }
+   | NAME LPAR RPAR                                { $$ = MkPredApp($1, MkList<MonaExpr>()); }
    | NAME LPAR exprs RPAR                          { $$ = MkPredApp($1, $3); }
    | formula AND formula                           { $$ = MkBooleanFormula($2, $1, $3); }
    | formula OR formula                            { $$ = MkBooleanFormula($2, $1, $3); }
@@ -194,8 +194,8 @@ Q0
    ;
 
 exprs 
-   : expr COMMA exprs                              { $$ = MkList<Expr>($1, $3); }
-   | expr                                          { $$ = MkList<Expr>($1); }
+   : expr COMMA exprs                              { $$ = MkList<MonaExpr>($1, $3); }
+   | expr                                          { $$ = MkList<MonaExpr>($1); }
    ;
 
 expr
@@ -236,7 +236,7 @@ term1
 
 term2 
    : LPAR term2 RPAR                               { $$ = $2; }  
-   | LBRACE RBRACE                                 { $$ = MkSet($1, MkList<Expr>()); }
+   | LBRACE RBRACE                                 { $$ = MkSet($1, MkList<MonaExpr>()); }
    | LBRACE elemslist RBRACE                       { $$ = MkSet($1, $2); }
    | EMPTY                                         { $$ = MkSet($1); }
    | PCONST LPAR intterm RPAR                      { $$ = MkPconst($1, $3); }
@@ -249,8 +249,8 @@ term2
    ;
 
 elemslist 
-   : elems COMMA elemslist                         { $$ = MkList<Expr>($1, $3); }
-   | elems                                         { $$ = MkList<Expr>($1); }
+   : elems COMMA elemslist                         { $$ = MkList<MonaExpr>($1, $3); }
+   | elems                                         { $$ = MkList<MonaExpr>($1); }
    ;
 
 elems 
@@ -259,18 +259,18 @@ elems
    ;      
    
 letexprs0
-   : NAME EQ formula0 COMMA letexprs0              { $$ = MkList<Tuple<Token,Expr>>(new Tuple<Token,Expr>((Token)$1,(Expr)$3), $5); }
-   | NAME EQ formula0                              { $$ = MkList<Tuple<Token,Expr>>(new Tuple<Token,Expr>((Token)$1,(Expr)$3)); }  
+   : NAME EQ formula0 COMMA letexprs0              { $$ = MkList<Tuple<Token,MonaExpr>>(new Tuple<Token,MonaExpr>((Token)$1,(MonaExpr)$3), $5); }
+   | NAME EQ formula0                              { $$ = MkList<Tuple<Token,MonaExpr>>(new Tuple<Token,MonaExpr>((Token)$1,(MonaExpr)$3)); }  
    ;    
    
 letexprs1
-   : NAME EQ term1 COMMA letexprs1                 { $$ = MkList<Tuple<Token,Expr>>(new Tuple<Token,Expr>((Token)$1,(Expr)$3), $5); }
-   | NAME EQ term1                                 { $$ = MkList<Tuple<Token,Expr>>(new Tuple<Token,Expr>((Token)$1,(Expr)$3)); }  
+   : NAME EQ term1 COMMA letexprs1                 { $$ = MkList<Tuple<Token,MonaExpr>>(new Tuple<Token,MonaExpr>((Token)$1,(MonaExpr)$3), $5); }
+   | NAME EQ term1                                 { $$ = MkList<Tuple<Token,MonaExpr>>(new Tuple<Token,MonaExpr>((Token)$1,(MonaExpr)$3)); }  
    ;     
    
 letexprs2
-   : NAME EQ term2 COMMA letexprs2                 { $$ = MkList<Tuple<Token,Expr>>(new Tuple<Token,Expr>((Token)$1,(Expr)$3), $5); }
-   | NAME EQ term2                                 { $$ = MkList<Tuple<Token,Expr>>(new Tuple<Token,Expr>((Token)$1,(Expr)$3)); }  
+   : NAME EQ term2 COMMA letexprs2                 { $$ = MkList<Tuple<Token,MonaExpr>>(new Tuple<Token,MonaExpr>((Token)$1,(MonaExpr)$3), $5); }
+   | NAME EQ term2                                 { $$ = MkList<Tuple<Token,MonaExpr>>(new Tuple<Token,MonaExpr>((Token)$1,(MonaExpr)$3)); }  
    ; 
    
 formula0 

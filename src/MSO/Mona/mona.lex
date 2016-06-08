@@ -12,7 +12,7 @@
 	 if (kind == Tokens.BADCHAR)
 	   throw new MonaParseException(MonaParseExceptionKind.UnexpectedCharacter, yylloc, string.Format("unexpected '{0}'",text));
 
-     yylval = new Token(text, yylloc, kind, sourcefile); 
+     yylval = new Token(text, yylloc, kind); 
      return (int)kind;  
   }
 

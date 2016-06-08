@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 
 
-namespace Microsoft.Automata.MSO.Mona
+namespace Microsoft.Automata.MSO
 {
     /// <summary>
     /// Simply linked list of elements.
@@ -128,6 +128,21 @@ namespace Microsoft.Automata.MSO.Mona
             for (int i = elems.Length - 1; i >= 0; i--)
                 res = new Cons<T>(elems[i], res);
             return res;
+        }
+        
+        /// <summary>
+        /// Returns true if there exists an element that satisfies pred
+        /// </summary>
+        /// <param name="pred">given predicate</param>
+        public bool Exists(Predicate<T> pred)
+        {
+            var elems = this;
+            while (!elems.IsEmpty)
+                if (pred(elems.first))
+                    return true;
+                else
+                    elems = elems.rest;
+            return false;
         }
 
         /// <summary>
@@ -262,6 +277,19 @@ namespace Microsoft.Automata.MSO.Mona
                 return Cons<S>.Empty;
             else
                 return new Cons<S>(f(first), rest.Convert<S>(f));
+        }
+
+        public T[] ToArray()
+        {
+            T[] res = new T[Count];
+            var elems = this;
+            int i = 0;
+            while (!elems.IsEmpty)
+            {
+                res[i++] = elems.First;
+                elems = elems.Rest;
+            }
+            return res;
         }
     }
 }

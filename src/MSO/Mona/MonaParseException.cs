@@ -33,7 +33,7 @@ namespace Microsoft.Automata.MSO.Mona
     [Serializable]
     public class MonaParseException : Exception
     {
-        internal LexLocation location = null;
+        internal LexLocationInFile location = null;
         MonaParseExceptionKind kind = MonaParseExceptionKind.SytaxError;
 
         public MonaParseExceptionKind Kind
@@ -61,6 +61,11 @@ namespace Microsoft.Automata.MSO.Mona
             get { return (location == null ? 0 : location.EndColumn + 1); }
         }
 
+        public string File
+        {
+            get { return (location == null ? "" : location.File); }
+        }
+
         public bool HasLocationInfo
         {
             get { return location != null; }
@@ -75,7 +80,7 @@ namespace Microsoft.Automata.MSO.Mona
         {
         }
 
-        internal MonaParseException(MonaParseExceptionKind kind, LexLocation location,  string message = "")
+        internal MonaParseException(MonaParseExceptionKind kind, LexLocationInFile location,  string message = "")
             : base(kind.ToString() + (message== "" ? "" : ": " + message))
         {
             this.location = location;
@@ -86,7 +91,7 @@ namespace Microsoft.Automata.MSO.Mona
         {
             string res = "";
             if (location != null)
-                res += string.Format("({0},{1},{2},{3})", StartLine, StartColumn, EndLine, EndColumn);
+                res += string.Format("{5}({0},{1},{2},{3})", StartLine, StartColumn, EndLine, EndColumn, File);
             if (res != "")
                 res += ": ";
             res += Message;

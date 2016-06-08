@@ -22,11 +22,11 @@ namespace QUT.Gppg
         /// <summary>
         /// Source file of the location
         /// </summary>
-        internal string File
+        public string File
         {
             get
             {
-                return file;
+                return (file == null ? "" : file);
             }
         }
 

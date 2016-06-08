@@ -10,7 +10,6 @@ namespace Microsoft.Automata.MSO.Mona
     public class Token
     {
         public readonly string text;
-        public string file;
 
         /// <summary>
         /// The line at which the text span starts.
@@ -36,10 +35,10 @@ namespace Microsoft.Automata.MSO.Mona
         /// <summary>
         /// Source file name of the location or null.
         /// </summary>
-        public string File { get { return file; } }
+        public string File { get { return location.File; } }
 
-        LexLocation location;
-        internal LexLocation Location
+        LexLocationInFile location;
+        internal LexLocationInFile Location
         {
             get
             {
@@ -53,12 +52,11 @@ namespace Microsoft.Automata.MSO.Mona
             get { return kind; }
         }
 
-        internal Token(string text, LexLocation loc, Tokens kind, string file)
+        internal Token(string text, LexLocationInFile loc, Tokens kind)
         {
             this.text = text;
             this.location = loc;
             this.kind = kind;
-            this.file = file;
         }
 
         public override string ToString()
@@ -84,7 +82,7 @@ namespace Microsoft.Automata.MSO.Mona
         }
     }
 
-    public abstract class Ast 
+    public abstract class MonaAst 
     {
         public abstract void Print(StringBuilder sb);
 
@@ -96,17 +94,23 @@ namespace Microsoft.Automata.MSO.Mona
         }
     }
 
-    public enum Header { WS1S, WS2S, M2LSTR, M2LTREE, NOTHING } 
+    public enum MonaHeader { WS1S, WS2S, M2LSTR, M2LTREE, NOTHING } 
 
-    public partial class Program : Ast
+    public partial class MonaProgram : MonaAst
     {
         public Token token;
-        public Cons<Decl> declarations;
-        public AllposDecl allpos = null;
-        public DefaultWhereDecl defaultwhere1 = null;
-        public DefaultWhereDecl defaultwhere2 = null;
+        public Cons<MonaDecl> declarations;
+        public MonaAllposDecl allpos = null;
+        public MonaDefaultWhereDecl defaultwhere1 = null;
+        public MonaDefaultWhereDecl defaultwhere2 = null;
 
-        Dictionary<string, Decl> globals;
+        public List<MonaVarDecl> vars1 = new List<MonaVarDecl>();
+        public List<MonaVarDecl> vars2 = new List<MonaVarDecl>();
+        public List<MonaVarDecl> varsT = new List<MonaVarDecl>();
+        public List<MonaVar0Decl> vars0 = new List<MonaVar0Decl>();
+
+        Dictionary<string, MonaDecl> globals;
+
 
         public string Description
         {
@@ -116,36 +120,41 @@ namespace Microsoft.Automata.MSO.Mona
             }
         }
 
-        public Header header
+        public MonaHeader header
         {
             get
             {
                 if (token == null)
-                    return Header.NOTHING;
+                    return MonaHeader.NOTHING;
                 else 
                 {
                     switch (token.Kind)
                     {
-                        case Tokens.WS1S: return Header.WS1S;
-                        case Tokens.WS2S: return Header.WS2S;
-                        case Tokens.M2LSTR: return Header.M2LSTR;
-                        default: return Header.M2LTREE;
+                        case Tokens.WS1S: return MonaHeader.WS1S;
+                        case Tokens.WS2S: return MonaHeader.WS2S;
+                        case Tokens.M2LSTR: return MonaHeader.M2LSTR;
+                        default: return MonaHeader.M2LTREE;
                     }
                 }
             }
         }
 
-        internal Program(Token token, Cons<Decl> declarations, Dictionary<string, Decl> globals)
+        internal MonaProgram(Token token, Cons<MonaDecl> declarations, Dictionary<string, MonaDecl> globals,         
+             List<MonaVar0Decl> vars0, List<MonaVarDecl> vars1, List<MonaVarDecl> vars2, List<MonaVarDecl> varsT)
         {
             this.token = token;
             this.declarations = declarations;
             this.globals = globals;
+            this.vars0 = vars0;
+            this.vars1 = vars1;
+            this.vars2 = vars2;
+            this.varsT = varsT;
         }
 
         public void Typecheck()
         {
-            var glob = new Dictionary<string, Decl>();
-            var loc = MapStack<string, Param>.Empty;
+            var glob = new Dictionary<string, MonaDecl>();
+            var loc = MapStack<string, MonaParam>.Empty;
             var decls = declarations;
             while (!decls.IsEmpty)
             {
@@ -154,34 +163,34 @@ namespace Microsoft.Automata.MSO.Mona
                 decl.TypeCheck(glob, loc);
                 switch (decl.kind)
                 {
-                    case DeclKind.macro:
-                    case DeclKind.pred:
-                        glob[((PredDecl)decl).name.text] = decl;
+                    case MonaDeclKind.macro:
+                    case MonaDeclKind.pred:
+                        glob[((MonaPredDecl)decl).name.text] = decl;
                         break;
-                    case DeclKind.constant:
-                        glob[((ConstDecl)decl).name.text] = decl;
+                    case MonaDeclKind.constant:
+                        glob[((MonaConstDecl)decl).name.text] = decl;
                         break;
-                    case DeclKind.var0:
-                        foreach (var v in ((Var0Decls)decl).vars)
-                            glob[v.text] = new Var0Decl(v);
+                    case MonaDeclKind.var0:
+                        foreach (var v in ((MonaVar0Decls)decl).vars)
+                            glob[v.text] = new MonaVar0Decl(v);
                         break;
-                    case DeclKind.var1:
-                    case DeclKind.var2:
-                        foreach (var v in ((VarDecls)decl).vars)
-                            glob[v.name] = new VarDecl(((VarDecls)decl).kind, ((VarDecls)decl).univs, v);
+                    case MonaDeclKind.var1:
+                    case MonaDeclKind.var2:
+                        foreach (var v in ((MonaVarDecls)decl).vars)
+                            glob[v.name] = new MonaVarDecl(((MonaVarDecls)decl).kind, ((MonaVarDecls)decl).univs, v);
                         break;
-                    case DeclKind.universe:
-                        foreach (var v in ((UnivDecls)decl).args)
-                            glob[v.name] = new UnivDecl(v);
+                    case MonaDeclKind.universe:
+                        foreach (var v in ((MonaUnivDecls)decl).args)
+                            glob[v.name] = new MonaUnivDecl(v);
                         break;
-                    case DeclKind.allpos:
-                        allpos = (AllposDecl)decl;
+                    case MonaDeclKind.allpos:
+                        allpos = (MonaAllposDecl)decl;
                         break;
-                    case DeclKind.defaultwhere1:
-                        defaultwhere1 = (DefaultWhereDecl)decl;
+                    case MonaDeclKind.defaultwhere1:
+                        defaultwhere1 = (MonaDefaultWhereDecl)decl;
                         break;
-                    case DeclKind.defaultwhere2:
-                        defaultwhere2 = (DefaultWhereDecl)decl;
+                    case MonaDeclKind.defaultwhere2:
+                        defaultwhere2 = (MonaDefaultWhereDecl)decl;
                         break;
                     default:
                         break;
@@ -201,50 +210,109 @@ namespace Microsoft.Automata.MSO.Mona
         }
     }
 
-    public enum ExprType
+    public enum MonaExprType
     {
         BOOL, SET, INT, UNKNOWN,
         RANGE
     }
 
-    public abstract class Expr : Ast
+    public abstract class MonaExpr : MonaAst
     {
-        public ExprType type;
-        public Token token;
-        internal Expr(Token token, ExprType type)
+        public MonaExprType type;
+        Token token;
+        /// <summary>
+        /// gets the function symbol, relation symbol, variable, or quantifier
+        /// </summary>
+        public Token symbol
+        {
+            get
+            {
+                return token;
+            }
+        }
+        protected MonaExpr[] subexprs;
+
+        internal MonaExpr(Token token, MonaExprType type, MonaExpr[] subexprs)
         {
             this.token = token;
             this.type = type;
+            this.subexprs = subexprs;
         }
 
-        internal abstract void TypeCheck(Dictionary<string, Decl> globals, MapStack<string, Param> locals);
+        public MonaExpr this[int i]
+        {
+            get { return subexprs[i]; }
+        }
+
+        public int NrOfSubexprs
+        {
+            get
+            {
+                if (subexprs == null)
+                    return 0;
+                else
+                    return subexprs.Length;
+            }
+        }
+
+        internal abstract void TypeCheck(Dictionary<string, MonaDecl> globals, MapStack<string, MonaParam> locals);
+
+        public int ToInt(Dictionary<string,MonaDecl> globals)
+        {
+            switch (token.Kind)
+            {
+                case Tokens.NUMBER:
+                    return ((MonaInt)this).Value;
+                case Tokens.CONST:
+                    {
+                        MonaConstDecl cdecl = (MonaConstDecl)globals[token.text];
+                        return cdecl.def.ToInt(globals);
+                    }
+                case Tokens.PLUS:
+                    return subexprs[0].ToInt(globals) + subexprs[1].ToInt(globals);
+                case Tokens.MINUS:
+                    return Math.Max(0, subexprs[0].ToInt(globals) - subexprs[1].ToInt(globals));
+                case Tokens.TIMES:
+                    return subexprs[0].ToInt(globals) * subexprs[1].ToInt(globals);
+                case Tokens.DIV:
+                    return subexprs[0].ToInt(globals) / subexprs[1].ToInt(globals);
+                case Tokens.MOD:
+                    return subexprs[0].ToInt(globals) % subexprs[1].ToInt(globals);
+                default:
+                    throw new MonaParseException(MonaParseExceptionKind.UnexpectedToken, token.Location, string.Format("conversion to constant not possible or not supported for: {0}", this));
+            }
+        }
     }
 
     #region formulas
 
-    public enum BinaryBooleanOp { AND, OR, IMPLIES, EQUIV }
+    public enum MonaBinaryBooleanOp { AND, OR, IMPLIES, EQUIV }
 
-    public class BinaryBooleanFormula : Expr
+    public class MonaBinaryBooleanFormula : MonaExpr
     {
-        public BinaryBooleanOp op
+        public MonaBinaryBooleanOp op
         {
             get
             {
-                switch (token.Kind)
+                switch (symbol.Kind)
                 {
-                    case Tokens.AND: return BinaryBooleanOp.AND;
-                    case Tokens.OR: return BinaryBooleanOp.OR;
-                    case Tokens.IMPLIES: return BinaryBooleanOp.IMPLIES;
-                    default: return BinaryBooleanOp.EQUIV;                }
+                    case Tokens.AND: return MonaBinaryBooleanOp.AND;
+                    case Tokens.OR: return MonaBinaryBooleanOp.OR;
+                    case Tokens.IMPLIES: return MonaBinaryBooleanOp.IMPLIES;
+                    default: return MonaBinaryBooleanOp.EQUIV;                }
             }
         }
-        public Expr arg1;
-        public Expr arg2;
-        internal BinaryBooleanFormula(Token token, Expr formula1, Expr formula2)
-            : base(token, ExprType.BOOL)
+        public MonaExpr arg1
         {
-            this.arg1 = formula1;
-            this.arg2 = formula2;
+            get { return subexprs[0]; }
+        }
+        public MonaExpr arg2
+        {
+            get { return subexprs[1]; }
+        }
+        internal MonaBinaryBooleanFormula(Token token, MonaExpr formula1, MonaExpr formula2)
+            : base(token, MonaExprType.BOOL, new MonaExpr[]{formula1, formula2})
+        {
         }
 
         public override void Print(StringBuilder sb)
@@ -252,31 +320,36 @@ namespace Microsoft.Automata.MSO.Mona
             sb.Append("(");
             arg1.Print(sb);
             sb.Append(" ");
-            sb.Append(token.text);
+            sb.Append(symbol.text);
             sb.Append(" ");
             arg2.Print(sb);
             sb.Append(")");
         }
 
-        internal override void TypeCheck(Dictionary<string, Decl> globals, MapStack<string, Param> locals)
+        internal override void TypeCheck(Dictionary<string, MonaDecl> globals, MapStack<string, MonaParam> locals)
         {
             arg1.TypeCheck(globals, locals);
             arg2.TypeCheck(globals, locals);
-            if (arg1.type != ExprType.BOOL)
-                throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, arg1.token.Location, string.Format("expecting BOOL not {0}", arg1.type.ToString()));
-            if (arg2.type != ExprType.BOOL)
-                throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, arg2.token.Location, string.Format("expecting BOOL not {0}", arg2.type.ToString()));
+            if (arg1.type != MonaExprType.BOOL)
+                throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, arg1.symbol.Location, string.Format("expecting BOOL not {0}", arg1.type.ToString()));
+            if (arg2.type != MonaExprType.BOOL)
+                throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, arg2.symbol.Location, string.Format("expecting BOOL not {0}", arg2.type.ToString()));
             return;
         }
     }
 
-    public class Restrict : Expr
+    public class MonaRestrict : MonaExpr
     {
-        Expr formula;
-        internal Restrict(Token token, Expr formula)
-            : base(token, ExprType.BOOL)
+        public MonaExpr formula
         {
-            this.formula = formula;
+            get
+            {
+                return subexprs[0];
+            }
+        }
+        internal MonaRestrict(Token token, MonaExpr formula)
+            : base(token, MonaExprType.BOOL, new MonaExpr[]{formula})
+        {
         }
 
         public override void Print(StringBuilder sb)
@@ -286,22 +359,24 @@ namespace Microsoft.Automata.MSO.Mona
             sb.Append(")");
         }
 
-        internal override void TypeCheck(Dictionary<string, Decl> globals, MapStack<string, Param> locals)
+        internal override void TypeCheck(Dictionary<string, MonaDecl> globals, MapStack<string, MonaParam> locals)
         {
             formula.TypeCheck(globals, locals);
-            if (formula.type != ExprType.BOOL)
-                throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, formula.token.Location, string.Format("expecting BOOL not {0}", formula.type.ToString()));
+            if (formula.type != MonaExprType.BOOL)
+                throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, formula.symbol.Location, string.Format("expecting BOOL not {0}", formula.type.ToString()));
 
         }
     }
 
-    public class NegatedFormula : Expr
+    public class MonaNegatedFormula : MonaExpr
     {
-        public Expr formula;
-        internal NegatedFormula(Token token, Expr formula)
-            : base(token, ExprType.BOOL)
+        public MonaExpr formula
         {
-            this.formula = formula;
+            get { return subexprs[0]; }
+        }
+        internal MonaNegatedFormula(Token token, MonaExpr formula)
+            : base(token, MonaExprType.BOOL, new MonaExpr[]{formula})
+        {
         }
 
         public override void Print(StringBuilder sb)
@@ -310,46 +385,50 @@ namespace Microsoft.Automata.MSO.Mona
             formula.Print(sb);
         }
 
-        internal override void TypeCheck(Dictionary<string, Decl> globals, MapStack<string, Param> locals)
+        internal override void TypeCheck(Dictionary<string, MonaDecl> globals, MapStack<string, MonaParam> locals)
         {
             formula.TypeCheck(globals, locals);
-            if (formula.type != ExprType.BOOL)
-                throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, formula.token.Location, string.Format("expecting BOOL not {0}", formula.type.ToString()));
+            if (formula.type != MonaExprType.BOOL)
+                throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, formula.symbol.Location, string.Format("expecting BOOL not {0}", formula.type.ToString()));
         }
     }
 
-    public class BooleanConstant : Expr
+    public class MonaBooleanConstant : MonaExpr
     {
         public bool isTrue
         {
-            get { return token.Kind == Tokens.TRUE; }
+            get { return symbol.Kind == Tokens.TRUE; }
         }
 
-        internal BooleanConstant(Token token)
-            : base(token, ExprType.BOOL)
+        internal MonaBooleanConstant(Token token)
+            : base(token, MonaExprType.BOOL, null)
         {
         }
 
         public override void Print(StringBuilder sb)
         {
-            sb.Append(token.text);
+            sb.Append(symbol.text);
         }
 
-        internal override void TypeCheck(Dictionary<string, Decl> globals, MapStack<string, Param> locals)
+        internal override void TypeCheck(Dictionary<string, MonaDecl> globals, MapStack<string, MonaParam> locals)
         {
             return;
         }
     }
 
-    public class BinaryAtom : Expr
+    public class MonaBinaryAtom : MonaExpr
     {
-        public Expr term1;
-        public Expr term2;
-        internal BinaryAtom(Token token, Expr term1, Expr term2)
-            : base(token, ExprType.BOOL)
+        public MonaExpr term1
         {
-            this.term1 = term1;
-            this.term2 = term2;
+            get { return subexprs[0]; }
+        }
+        public MonaExpr term2
+        {
+            get { return subexprs[1]; }
+        }
+        internal MonaBinaryAtom(Token token, MonaExpr term1, MonaExpr term2)
+            : base(token, MonaExprType.BOOL, new MonaExpr[]{term1, term2})
+        {
         }
 
         public override void Print(StringBuilder sb)
@@ -357,150 +436,154 @@ namespace Microsoft.Automata.MSO.Mona
             sb.Append("(");
             term1.Print(sb);
             sb.Append(" ");
-            sb.Append(token.text);
+            sb.Append(symbol.text);
             sb.Append(" ");
             term2.Print(sb);
             sb.Append(")");
         }
 
-        internal override void TypeCheck(Dictionary<string, Decl> globals, MapStack<string, Param> locals)
+        internal override void TypeCheck(Dictionary<string, MonaDecl> globals, MapStack<string, MonaParam> locals)
         {
             term1.TypeCheck(globals, locals);
             term2.TypeCheck(globals, locals);
-            switch (token.Kind)
+            switch (symbol.Kind)
             {
                 case Tokens.GE:
                 case Tokens.LE:
                 case Tokens.LT:
                 case Tokens.GT:
                     {
-                        if (term1.type != ExprType.INT)
-                            throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, term1.token.Location, string.Format("expecting INT not {0}", term1.type.ToString()));
-                        if (term2.type != ExprType.INT)
-                            throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, term2.token.Location, string.Format("expecting INT not {0}", term2.type.ToString()));
+                        if (term1.type != MonaExprType.INT)
+                            throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, term1.symbol.Location, string.Format("expecting INT not {0}", term1.type.ToString()));
+                        if (term2.type != MonaExprType.INT)
+                            throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, term2.symbol.Location, string.Format("expecting INT not {0}", term2.type.ToString()));
                         return;
                     }
                 case Tokens.EQ:
                 case Tokens.NE:
                     {
                         if (term1.type != term2.type)
-                            throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, term2.token.Location, string.Format("expecting {0} not {1}", term1.type.ToString(), term2.type.ToString()));
+                            throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, term2.symbol.Location, string.Format("expecting {0} not {1}", term1.type.ToString(), term2.type.ToString()));
                         return;
                     }
                 case Tokens.IN:
                 case Tokens.NOTIN:
                     {
-                        if (term1.type != ExprType.INT)
-                            throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, term1.token.Location, string.Format("expecting INT not {0}", term1.type.ToString()));
-                        if (term2.type != ExprType.SET)
-                            throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, term2.token.Location, string.Format("expecting SET not {0}", term2.type.ToString()));
+                        if (term1.type != MonaExprType.INT)
+                            throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, term1.symbol.Location, string.Format("expecting INT not {0}", term1.type.ToString()));
+                        if (term2.type != MonaExprType.SET)
+                            throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, term2.symbol.Location, string.Format("expecting SET not {0}", term2.type.ToString()));
                         return;
                     }
                 case Tokens.SUBSET:
                     {
-                        if (term1.type != ExprType.SET)
-                            throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, term1.token.Location, string.Format("expecting SET not {0}", term1.type.ToString()));
-                        if (term2.type != ExprType.SET)
-                            throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, term2.token.Location, string.Format("expecting SET not {0}", term2.type.ToString()));
+                        if (term1.type != MonaExprType.SET)
+                            throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, term1.symbol.Location, string.Format("expecting SET not {0}", term1.type.ToString()));
+                        if (term2.type != MonaExprType.SET)
+                            throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, term2.symbol.Location, string.Format("expecting SET not {0}", term2.type.ToString()));
                         return;
                     }
                 default:
-                    throw new MonaParseException(MonaParseExceptionKind.InternalError, token.Location, string.Format("unexpected token '{0}'", token.text));
+                    throw new MonaParseException(MonaParseExceptionKind.InternalError, symbol.Location, string.Format("unexpected token '{0}'", symbol.text));
 
         }
         }
     }
 
-    public class PredApp : Expr
+    public class MonaPredApp : MonaExpr
     {
-        public Cons<Expr> expressions;
-        internal PredApp(Token token, Cons<Expr> expressions)
-            : base(token, ExprType.BOOL)
+        public Cons<MonaExpr> expressions;
+        internal MonaPredApp(Token token, Cons<MonaExpr> expressions)
+            : base(token, MonaExprType.BOOL, expressions.ToArray())
         {
             this.expressions = expressions;
         }
 
         public override void Print(StringBuilder sb)
         {
-            sb.Append(token.text);
+            sb.Append(symbol.text);
             sb.Append("(");
             sb.Append(expressions.ToString(","));
             sb.Append(")");
         }
 
-        internal override void TypeCheck(Dictionary<string, Decl> globals, MapStack<string, Param> locals)
+        internal override void TypeCheck(Dictionary<string, MonaDecl> globals, MapStack<string, MonaParam> locals)
         {
-            if (!globals.ContainsKey(token.text))
-                throw new MonaParseException(MonaParseExceptionKind.UndeclaredPredicate, token.Location, token.text);
+            if (!globals.ContainsKey(symbol.text))
+                throw new MonaParseException(MonaParseExceptionKind.UndeclaredPredicate, symbol.Location, symbol.text);
 
-            Decl decl = globals[token.text];
-            PredDecl pdecl = decl as PredDecl;
+            MonaDecl decl = globals[symbol.text];
+            MonaPredDecl pdecl = decl as MonaPredDecl;
             if (pdecl == null)
             {
-                throw new MonaParseException(MonaParseExceptionKind.InvalidUseOfName, token.Location, token.text);
+                throw new MonaParseException(MonaParseExceptionKind.InvalidUseOfName, symbol.Location, symbol.text);
             }
             if (pdecl.parameters.Count != expressions.Count)
             {
-                throw new MonaParseException(MonaParseExceptionKind.InvalidNrOfParameters, token.Location, token.text);
+                throw new MonaParseException(MonaParseExceptionKind.InvalidNrOfParameters, symbol.Location, symbol.text);
             }
             for (int i = 0; i < expressions.Count; i++)
             {
                 expressions[i].TypeCheck(globals, locals);
                 if (pdecl.parameters[i].type != expressions[i].type)
-                    throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, expressions[i].token.Location,
+                    throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, expressions[i].symbol.Location,
                         string.Format("parameter {0} of {1} must be of type {2} not {3}", pdecl.parameters[i].Token.text, pdecl.name.text, pdecl.parameters[i].type, expressions[i].type));
             }
         }
     }
 
-    public class QBFormula : Expr
+    public class MonaQBFormula : MonaExpr
     {
-        Dictionary<string, Param> varmap;
+        Dictionary<string, MonaParam> varmap;
         public Cons<Token> vars;
-        public Expr formula;
-        internal QBFormula(Token quantifier, Cons<Token> vars, Expr formula, Dictionary<string, Param> varmap) :
-            base(quantifier, ExprType.BOOL)
+        public MonaExpr formula
+        {
+            get { return subexprs[0]; }
+        }
+        internal MonaQBFormula(Token quantifier, Cons<Token> vars, MonaExpr formula, Dictionary<string, MonaParam> varmap) :
+            base(quantifier, MonaExprType.BOOL, new MonaExpr[]{formula})
         {
             this.varmap = varmap;
             this.vars = vars;
-            this.formula = formula;
         }
 
         public override void Print(StringBuilder sb)
         {
-            sb.Append(token.text);
+            sb.Append(symbol.text);
             sb.Append(" ");
             sb.Append(vars.ToString(","));
             sb.Append(":");
             formula.Print(sb);
         }
 
-        internal override void TypeCheck(Dictionary<string, Decl> globals, MapStack<string, Param> locals)
+        internal override void TypeCheck(Dictionary<string, MonaDecl> globals, MapStack<string, MonaParam> locals)
         {
             formula.TypeCheck(globals, locals.Push(varmap));
-            if (formula.type != ExprType.BOOL)
-                throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, formula.token.Location, string.Format("expecting BOOL not {0}", formula.type.ToString()));
+            if (formula.type != MonaExprType.BOOL)
+                throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, formula.symbol.Location, string.Format("expecting BOOL not {0}", formula.type.ToString()));
         }
     }
 
-    public class QFormula : Expr
+    public class MonaQFormula : MonaExpr
     {
-        public Dictionary<string, Param> varmap;
+        public Dictionary<string, MonaParam> varmap;
         public Cons<Token> universes;
-        public Cons<VarWhere> vars;
-        public Expr formula;
-        internal QFormula(Token quantifier, Cons<VarWhere> vars, Expr formula, Cons<Token> universes, Dictionary<string, Param> varmap) :
-            base(quantifier, ExprType.BOOL)
+        public Cons<MonaVarWhere> vars;
+        public MonaExpr formula
+        {
+            get { return subexprs[0]; }
+        }
+        internal MonaQFormula(Token quantifier, Cons<MonaVarWhere> vars, MonaExpr formula, Cons<Token> universes, Dictionary<string, MonaParam> varmap) :
+            base(quantifier, MonaExprType.BOOL, new MonaExpr[] { formula })
         {
             this.varmap = varmap;
             this.universes = universes;
             this.vars = vars;
-            this.formula = formula;
         }
 
         public override void Print(StringBuilder sb)
         {
-            sb.Append(token.text);
+            sb.Append(symbol.text);
             if (universes != null)
             {
                 sb.Append(" [");
@@ -513,23 +596,25 @@ namespace Microsoft.Automata.MSO.Mona
             formula.Print(sb);
         }
 
-        internal override void TypeCheck(Dictionary<string, Decl> globals, MapStack<string, Param> locals)
+        internal override void TypeCheck(Dictionary<string, MonaDecl> globals, MapStack<string, MonaParam> locals)
         {
             //TBD: check where-expressions
             var locals1 = locals.Push(varmap);
             formula.TypeCheck(globals, locals1);
-            if (formula.type != ExprType.BOOL)
-                throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, formula.token.Location, string.Format("expecting BOOL not {0}", formula.type.ToString()));
+            if (formula.type != MonaExprType.BOOL)
+                throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, formula.symbol.Location, string.Format("expecting BOOL not {0}", formula.type.ToString()));
         }
     }
 
-    public class IsEmpty : Expr
+    public class MonaIsEmpty : MonaExpr
     {
-        Expr set;
-        public IsEmpty(Token token, Expr term)
-            : base(token, ExprType.BOOL)
+        MonaExpr set
         {
-            this.set = term;
+            get { return subexprs[0]; }
+        }
+        public MonaIsEmpty(Token token, MonaExpr term)
+            : base(token, MonaExprType.BOOL, new MonaExpr[]{term})
+        {
         }
 
         public override void Print(StringBuilder sb)
@@ -539,68 +624,70 @@ namespace Microsoft.Automata.MSO.Mona
             sb.Append(")");
         }
 
-        internal override void TypeCheck(Dictionary<string, Decl> globals, MapStack<string, Param> locals)
+        internal override void TypeCheck(Dictionary<string, MonaDecl> globals, MapStack<string, MonaParam> locals)
         {
             set.TypeCheck(globals, locals);
-            if (set.type != ExprType.SET)
-                throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, set.token.Location, string.Format("expecting SET not {0}", set.type.ToString()));
+            if (set.type != MonaExprType.SET)
+                throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, set.symbol.Location, string.Format("expecting SET not {0}", set.type.ToString()));
 
         }
     }
 
-    public enum LetKind { let0, let1, let2 }
+    public enum MonaLetKind { let0, let1, let2 }
 
-    public class Let : Expr
+    public class MonaLet : MonaExpr
     {
-        public Cons<Tuple<Token, Expr>> lets;
-        public Dictionary<string, Param> let_vars;
-        public Expr formula;
+        public Cons<Tuple<Token, MonaExpr>> lets;
+        public Dictionary<string, MonaParam> let_vars;
+        public MonaExpr formula
+        {
+            get { return subexprs[0]; }
+        }
 
-        public ExprType letType
+        public MonaExprType letType
         {
             get
             {
-                ExprType lettype = (token.Kind == Tokens.LET0 ? ExprType.BOOL :
-                                      (token.Kind == Tokens.LET1 ? ExprType.INT : ExprType.SET));
+                MonaExprType lettype = (symbol.Kind == Tokens.LET0 ? MonaExprType.BOOL :
+                                      (symbol.Kind == Tokens.LET1 ? MonaExprType.INT : MonaExprType.SET));
                 return lettype;
             }
         }
 
-        internal Let(Token letkind, Cons<Tuple<Token, Expr>> lets, Expr formula, Dictionary<string, Param> let_vars)
-            : base(letkind, ExprType.BOOL)
+        internal MonaLet(Token letkind, Cons<Tuple<Token, MonaExpr>> lets, MonaExpr formula, Dictionary<string, MonaParam> let_vars)
+            : base(letkind, MonaExprType.BOOL, new MonaExpr[]{formula})
         {
             this.lets = lets;
             this.let_vars = let_vars;
-            this.formula = formula;
         }
 
-        public LetKind Kind
+        public MonaLetKind Kind
         {
             get
             {
-                switch (token.Kind)
+                switch (symbol.Kind)
                 {
-                    case Tokens.LET1: return LetKind.let1;
-                    case Tokens.LET2: return LetKind.let2;
-                    default: return LetKind.let0;
+                    case Tokens.LET1: return MonaLetKind.let1;
+                    case Tokens.LET2: return MonaLetKind.let2;
+                    default: return MonaLetKind.let0;
                 }
             }
         }
 
-        internal override void TypeCheck(Dictionary<string, Decl> globals, MapStack<string, Param> locals)
+        internal override void TypeCheck(Dictionary<string, MonaDecl> globals, MapStack<string, MonaParam> locals)
         {
             foreach (var let in lets)
             {
                 let.Item2.TypeCheck(globals, locals);
                 if (let.Item2.type != letType)
-                    throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, let.Item2.token.Location, let.Item2.token.text);
+                    throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, let.Item2.symbol.Location, let.Item2.symbol.text);
             }
             formula.TypeCheck(globals, locals.Push(let_vars));
         }
 
         public override void Print(StringBuilder sb)
         {
-            sb.Append(token.text);
+            sb.Append(symbol.text);
             sb.Append(" ");
             sb.Append(lets.ToString(",", PrintLet));
             sb.Append(" in (");
@@ -608,7 +695,7 @@ namespace Microsoft.Automata.MSO.Mona
             sb.Append(")");
         }
 
-        static string PrintLet(Tuple<Token, Expr> t)
+        static string PrintLet(Tuple<Token, MonaExpr> t)
         {
             return string.Format("{0} = ({1})", t.Item1.text, t.Item2.ToString());
         }
@@ -616,17 +703,17 @@ namespace Microsoft.Automata.MSO.Mona
 
     #endregion
 
-    public class Name : Expr
+    public class MonaName : MonaExpr
     {
         public string name
         {
             get
             {
-                return token.text;
+                return symbol.text;
             }
         }
-        internal Name(Token token, ExprType type = ExprType.UNKNOWN)
-            : base(token, type)
+        internal MonaName(Token token, MonaExprType type)
+            : base(token, type, null)
         {
         }
 
@@ -635,40 +722,40 @@ namespace Microsoft.Automata.MSO.Mona
             sb.Append(name);
         }
 
-        internal override void TypeCheck(Dictionary<string, Decl> globals, MapStack<string, Param> locals)
+        internal override void TypeCheck(Dictionary<string, MonaDecl> globals, MapStack<string, MonaParam> locals)
         {
             var t = GetExprType(globals, locals);
-            if (type == ExprType.UNKNOWN)
+            if (type == MonaExprType.UNKNOWN)
                 type = t;
             else if (type != t)
-                throw new MonaParseException(MonaParseExceptionKind.InternalError, token.Location,
+                throw new MonaParseException(MonaParseExceptionKind.InternalError, symbol.Location,
                     string.Format("inconsistent types {0} and {1} for '{2}'", type.ToString(), t.ToString(), name));
         }
 
-        ExprType GetExprType(Dictionary<string, Decl> globals, MapStack<string, Param> locals)
+        MonaExprType GetExprType(Dictionary<string, MonaDecl> globals, MapStack<string, MonaParam> locals)
         {
-            var x = token;
-            Param xp = null;
-            Decl xd = null;
+            var x = symbol;
+            MonaParam xp = null;
+            MonaDecl xd = null;
             if (locals.TryGetValue(x.text, out xp))
             {
-                if (xp.kind == ParamKind.universe || xp.kind == ParamKind.var2)
-                    return ExprType.SET;
-                else if (xp.kind == ParamKind.var1)
-                    return ExprType.INT;
+                if (xp.kind == MonaParamKind.universe || xp.kind == MonaParamKind.var2)
+                    return MonaExprType.SET;
+                else if (xp.kind == MonaParamKind.var1)
+                    return MonaExprType.INT;
                 else
-                    return ExprType.BOOL;
+                    return MonaExprType.BOOL;
             }
             else if (globals.TryGetValue(x.text, out xd))
             {
-                if (xd.kind == DeclKind.constant || xd.kind == DeclKind.var1)
-                    return ExprType.INT;
-                else if (xd.kind == DeclKind.universe || xd.kind == DeclKind.var2)
-                    return ExprType.SET;
-                else if (xd.kind == DeclKind.var0 || ((xd.kind == DeclKind.macro || xd.kind == DeclKind.pred)
-                                                      && ((PredDecl)xd).IsNullary))
-                    return ExprType.BOOL;
-                else if (xd.kind == DeclKind.macro || xd.kind == DeclKind.pred)
+                if (xd.kind == MonaDeclKind.constant || xd.kind == MonaDeclKind.var1)
+                    return MonaExprType.INT;
+                else if (xd.kind == MonaDeclKind.universe || xd.kind == MonaDeclKind.var2)
+                    return MonaExprType.SET;
+                else if (xd.kind == MonaDeclKind.var0 || ((xd.kind == MonaDeclKind.macro || xd.kind == MonaDeclKind.pred)
+                                                      && ((MonaPredDecl)xd).IsNullary))
+                    return MonaExprType.BOOL;
+                else if (xd.kind == MonaDeclKind.macro || xd.kind == MonaDeclKind.pred)
                     throw new MonaParseException(MonaParseExceptionKind.InvalidUseOfPredicateOrMacroName, x.Location);
             }
             throw new MonaParseException(MonaParseExceptionKind.UndeclaredIdentifier, x.Location, x.text);
@@ -677,11 +764,11 @@ namespace Microsoft.Automata.MSO.Mona
 
     #region terms
 
-    public class Int : Expr
+    public class MonaInt : MonaExpr
     {
         int i;
-        internal Int(Token val)
-            : base(val, ExprType.INT)
+        internal MonaInt(Token val)
+            : base(val, MonaExprType.INT, null)
         {
             if (!val.TryGetInt(out i))
                 throw new MonaParseException(MonaParseExceptionKind.InvalidIntegerFormat, val.Location);
@@ -697,42 +784,46 @@ namespace Microsoft.Automata.MSO.Mona
 
         public override void Print(StringBuilder sb)
         {
-            sb.Append(token.text);
+            sb.Append(symbol.text);
         }
 
-        internal override void TypeCheck(Dictionary<string, Decl> globals, MapStack<string, Param> locals)
+        internal override void TypeCheck(Dictionary<string, MonaDecl> globals, MapStack<string, MonaParam> locals)
         {
             return;
         }
     }
 
-    public enum ArithmOp { PLUS, MINUS, TIMES, DIV, MOD }
+    public enum MonaArithmOp { PLUS, MINUS, TIMES, DIV, MOD }
 
-    public class ArithmFuncApp : Expr
+    public class MonaArithmFuncApp : MonaExpr
     {
-        public ArithmOp op
+        public MonaArithmOp op
         {
             get
             {
-                switch (token.Kind)
+                switch (symbol.Kind)
                 {
-                    case Tokens.PLUS: return ArithmOp.PLUS;
-                    case Tokens.MINUS: return ArithmOp.MINUS;
-                    case Tokens.TIMES: return ArithmOp.TIMES;
-                    case Tokens.DIV: return ArithmOp.DIV;
-                    case Tokens.MOD: return ArithmOp.MOD;
+                    case Tokens.PLUS: return MonaArithmOp.PLUS;
+                    case Tokens.MINUS: return MonaArithmOp.MINUS;
+                    case Tokens.TIMES: return MonaArithmOp.TIMES;
+                    case Tokens.DIV: return MonaArithmOp.DIV;
+                    case Tokens.MOD: return MonaArithmOp.MOD;
                     default:
-                        throw new MonaParseException(MonaParseExceptionKind.UnknownArithmeticOperator, token.Location, string.Format("unknown operator '{0}'", token.text));
+                        throw new MonaParseException(MonaParseExceptionKind.UnknownArithmeticOperator, symbol.Location, string.Format("unknown operator '{0}'", symbol.text));
                 }
             }
         }
-        public Expr arg1;
-        public Expr arg2;
-        internal ArithmFuncApp(Token func, Expr arg1, Expr arg2)
-            : base(func, ExprType.INT)
+        public MonaExpr arg1
         {
-            this.arg1 = arg1;
-            this.arg2 = arg2;
+            get { return subexprs[0]; }
+        }
+        public MonaExpr arg2
+        {
+            get { return subexprs[1]; }
+        }
+        internal MonaArithmFuncApp(Token func, MonaExpr arg1, MonaExpr arg2)
+            : base(func, MonaExprType.INT, new MonaExpr[]{arg1, arg2})
+        {
         }
 
         public override void Print(StringBuilder sb)
@@ -740,28 +831,29 @@ namespace Microsoft.Automata.MSO.Mona
             sb.Append("(");
             arg1.Print(sb);
             sb.Append(" ");
-            sb.Append(token.text);
+            sb.Append(symbol.text);
             sb.Append(" ");
             arg2.Print(sb);
             sb.Append(")");
         }
 
-        internal override void TypeCheck(Dictionary<string, Decl> globals, MapStack<string, Param> locals)
+        internal override void TypeCheck(Dictionary<string, MonaDecl> globals, MapStack<string, MonaParam> locals)
         {
             arg1.TypeCheck(globals, locals);
             arg2.TypeCheck(globals, locals);
-            if (arg1.type != ExprType.INT)
-                throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, arg1.token.Location, string.Format("expecting INT not {0}", arg1.type.ToString()));
-            if (arg2.type != ExprType.INT)
-                throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, arg2.token.Location, string.Format("expecting INT not {0}", arg2.type.ToString()));
+            if (arg1.type != MonaExprType.INT)
+                throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, arg1.symbol.Location, string.Format("expecting INT not {0}", arg1.type.ToString()));
+            if (arg2.type != MonaExprType.INT)
+                throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, arg2.symbol.Location, string.Format("expecting INT not {0}", arg2.type.ToString()));
         }
+
     }
 
-    public class Set : Expr
+    public class MonaSet : MonaExpr
     {
-        public Cons<Expr> elems;
-        internal Set(Token set, Cons<Expr> elems = null)
-            : base(set, ExprType.SET)
+        public Cons<MonaExpr> elems;
+        internal MonaSet(Token set, Cons<MonaExpr> elems)
+            : base(set, MonaExprType.SET, elems.ToArray())
         {
             this.elems = elems;
         }
@@ -769,7 +861,7 @@ namespace Microsoft.Automata.MSO.Mona
         public override void Print(StringBuilder sb)
         {
             if (elems == null)
-                sb.Append(token.text);
+                sb.Append(symbol.text);
             else
             {
                 sb.Append("{");
@@ -778,7 +870,7 @@ namespace Microsoft.Automata.MSO.Mona
             }
         }
 
-        internal override void TypeCheck(Dictionary<string, Decl> globals, MapStack<string, Param> locals)
+        internal override void TypeCheck(Dictionary<string, MonaDecl> globals, MapStack<string, MonaParam> locals)
         {
             foreach (var e in elems)
             {
@@ -788,67 +880,75 @@ namespace Microsoft.Automata.MSO.Mona
         }
     }
 
-    public class MinOrMax : Expr
+    public class MonaMinOrMax : MonaExpr
     {
         public bool isMin
         {
-            get { return token.Kind == Tokens.MIN; }
+            get { return symbol.Kind == Tokens.MIN; }
         }
-        public Expr set;
-        public MinOrMax(Token minormax, Expr set)
-            : base(minormax, ExprType.INT)
+        public MonaExpr set
         {
-            this.set = set;
+            get { return subexprs[0]; }
+        }
+        public MonaMinOrMax(Token minormax, MonaExpr set)
+            : base(minormax, MonaExprType.INT, new MonaExpr[]{set})
+        {
         }
 
         public override void Print(StringBuilder sb)
         {
-            sb.Append(token.text);
+            sb.Append(symbol.text);
             sb.Append(" ");
             set.Print(sb);
         }
 
-        internal override void TypeCheck(Dictionary<string, Decl> globals, MapStack<string, Param> locals)
+        internal override void TypeCheck(Dictionary<string, MonaDecl> globals, MapStack<string, MonaParam> locals)
         {
-            if (set.type != ExprType.SET)
-                throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, set.token.Location, string.Format("expecting SET not {0}", set.type.ToString()));
+            if (set.type != MonaExprType.SET)
+                throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, set.symbol.Location, string.Format("expecting SET not {0}", set.type.ToString()));
 
         }
     }
 
-    public class Pconst : Expr
+    public class MonaPconst : MonaExpr
     {
-        public Expr elem;
-        internal Pconst(Token pconst, Expr elem)
-            : base(pconst, ExprType.SET)
+        public MonaExpr elem
         {
-            this.elem = elem;
+            get { return subexprs[0]; }
+        }
+        internal MonaPconst(Token pconst, MonaExpr elem)
+            : base(pconst, MonaExprType.SET, new MonaExpr[]{elem})
+        {
         }
 
         public override void Print(StringBuilder sb)
         {
-            sb.Append(token.text);
+            sb.Append(symbol.text);
             sb.Append("(");
             elem.Print(sb);
             sb.Append(")");
         }
-        internal override void TypeCheck(Dictionary<string, Decl> globals, MapStack<string, Param> locals)
+        internal override void TypeCheck(Dictionary<string, MonaDecl> globals, MapStack<string, MonaParam> locals)
         {
             elem.TypeCheck(globals, locals);
-            if (elem.type != ExprType.INT)
-                throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, elem.token.Location, string.Format("expecting INT not {0}", elem.type.ToString()));
+            if (elem.type != MonaExprType.INT)
+                throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, elem.symbol.Location, string.Format("expecting INT not {0}", elem.type.ToString()));
         }
     }
 
-    public class Range : Expr
+    public class MonaRange : MonaExpr
     {
-        public Expr from;
-        public Expr to;
-        internal Range(Token dots, Expr from, Expr to)
-            : base(dots, ExprType.SET)
+        public MonaExpr from
         {
-            this.from = from;
-            this.to = to;
+            get { return subexprs[0]; }
+        }
+        public MonaExpr to
+        {
+            get { return subexprs[1]; }
+        }
+        internal MonaRange(Token dots, MonaExpr from, MonaExpr to)
+            : base(dots, MonaExprType.SET, new MonaExpr[]{from, to})
+        {
         }
 
         public override void Print(StringBuilder sb)
@@ -858,43 +958,47 @@ namespace Microsoft.Automata.MSO.Mona
             to.Print(sb);
         }
 
-        internal override void TypeCheck(Dictionary<string, Decl> globals, MapStack<string, Param> locals)
+        internal override void TypeCheck(Dictionary<string, MonaDecl> globals, MapStack<string, MonaParam> locals)
         {
             from.TypeCheck(globals, locals);
-            if (from.type != ExprType.INT)
-                throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, from.token.Location, string.Format("expecting INT not {0}", from.type.ToString()));
-            if (to.type != ExprType.INT)
-                throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, to.token.Location, string.Format("expecting INT not {0}", to.type.ToString()));
+            if (from.type != MonaExprType.INT)
+                throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, from.symbol.Location, string.Format("expecting INT not {0}", from.type.ToString()));
+            if (to.type != MonaExprType.INT)
+                throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, to.symbol.Location, string.Format("expecting INT not {0}", to.type.ToString()));
         }
     }
 
-    public enum SetOpKind { UNION, INTER, SETMINUS, PLUS, MINUS }
+    public enum MonaSetOpKind { UNION, INTER, SETMINUS, PLUS, MINUS }
 
-    public class SetOp : Expr
+    public class MonaSetOp : MonaExpr
     {
-        public Expr arg1;
-        public Expr arg2;
+        public MonaExpr arg1
+        {
+            get { return subexprs[0]; }
+        }
+        public MonaExpr arg2
+        {
+            get { return subexprs[1]; }
+        }
 
-        public SetOpKind kind
+        public MonaSetOpKind kind
         {
             get
             {
-                switch (token.Kind)
+                switch (symbol.Kind)
                 {
-                    case Tokens.UNION: return SetOpKind.UNION;
-                    case Tokens.INTER: return SetOpKind.INTER;
-                    case Tokens.PLUS: return SetOpKind.PLUS;
-                    case Tokens.MINUS: return SetOpKind.MINUS;
-                    default: return SetOpKind.SETMINUS;
+                    case Tokens.UNION: return MonaSetOpKind.UNION;
+                    case Tokens.INTER: return MonaSetOpKind.INTER;
+                    case Tokens.PLUS: return MonaSetOpKind.PLUS;
+                    case Tokens.MINUS: return MonaSetOpKind.MINUS;
+                    default: return MonaSetOpKind.SETMINUS;
                 }
             }
         }
 
-        internal SetOp(Token op, Expr arg1, Expr arg2)
-            : base(op, ExprType.SET)
+        internal MonaSetOp(Token op, MonaExpr arg1, MonaExpr arg2)
+            : base(op, MonaExprType.SET, new MonaExpr[]{arg1, arg2})
         {
-            this.arg1 = arg1;
-            this.arg2 = arg2;
         }
 
         public override void Print(StringBuilder sb)
@@ -902,34 +1006,34 @@ namespace Microsoft.Automata.MSO.Mona
             sb.Append("(");
             arg1.Print(sb);
             sb.Append(" ");
-            sb.Append(MonaParser.DescribeTokens(token.Kind));
+            sb.Append(MonaParser.DescribeTokens(symbol.Kind));
             sb.Append(" ");
             arg2.Print(sb);
             sb.Append(")");
         }
 
-        internal override void TypeCheck(Dictionary<string, Decl> globals, MapStack<string, Param> locals)
+        internal override void TypeCheck(Dictionary<string, MonaDecl> globals, MapStack<string, MonaParam> locals)
         {
             arg1.TypeCheck(globals, locals);
             arg2.TypeCheck(globals, locals);
             switch (kind)
             {
-                case SetOpKind.INTER:
-                case SetOpKind.SETMINUS:
-                case SetOpKind.UNION:
+                case MonaSetOpKind.INTER:
+                case MonaSetOpKind.SETMINUS:
+                case MonaSetOpKind.UNION:
                     {
-                        if (arg1.type != ExprType.SET)
-                            throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, arg1.token.Location, string.Format("expecting SET not {0}", arg1.type.ToString()));
-                        if (arg2.type != ExprType.SET)
-                            throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, arg2.token.Location, string.Format("expecting SET not {0}", arg2.type.ToString()));
+                        if (arg1.type != MonaExprType.SET)
+                            throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, arg1.symbol.Location, string.Format("expecting SET not {0}", arg1.type.ToString()));
+                        if (arg2.type != MonaExprType.SET)
+                            throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, arg2.symbol.Location, string.Format("expecting SET not {0}", arg2.type.ToString()));
                         return;
                     }
                 default:
                     {
-                        if (arg1.type != ExprType.SET)
-                            throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, arg1.token.Location, string.Format("expecting SET not {0}", arg1.type.ToString()));
-                        if (arg2.type != ExprType.INT)
-                            throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, arg2.token.Location, string.Format("expecting INT not {0}", arg2.type.ToString()));
+                        if (arg1.type != MonaExprType.SET)
+                            throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, arg1.symbol.Location, string.Format("expecting SET not {0}", arg1.type.ToString()));
+                        if (arg2.type != MonaExprType.INT)
+                            throw new MonaParseException(MonaParseExceptionKind.TypeMismatch, arg2.symbol.Location, string.Format("expecting INT not {0}", arg2.type.ToString()));
                         return;
                     }
 
@@ -941,29 +1045,29 @@ namespace Microsoft.Automata.MSO.Mona
 
     #region declarations
 
-    public enum DeclKind
+    public enum MonaDeclKind
     {
         formula, guide, universe, include, assert, execute, constant, 
         defaultwhere1, defaultwhere2,
         var0, var1, var2, tree, macro, pred, allpos, type
     };
 
-    public abstract class Decl : Ast
+    public abstract class MonaDecl : MonaAst
     {
-        public DeclKind kind;
-        internal Decl(DeclKind kind)
+        public MonaDeclKind kind;
+        internal MonaDecl(MonaDeclKind kind)
         {
             this.kind = kind;
         }
 
-        internal abstract void TypeCheck(Dictionary<string, Decl> glob, MapStack<string, Param> loc);
+        internal abstract void TypeCheck(Dictionary<string, MonaDecl> glob, MapStack<string, MonaParam> loc);
     }
 
-    public class VarDecls : Decl
+    public class MonaVarDecls : MonaDecl
     {
         public Cons<Token> univs;
-        public Cons<VarWhere> vars;
-        internal VarDecls(DeclKind kind, Cons<Token> univs, Cons<VarWhere> vars)
+        public Cons<MonaVarWhere> vars;
+        internal MonaVarDecls(MonaDeclKind kind, Cons<Token> univs, Cons<MonaVarWhere> vars)
             : base(kind)
         {
             this.univs = univs;
@@ -975,62 +1079,62 @@ namespace Microsoft.Automata.MSO.Mona
             sb.Append(kind.ToString() + " " + (univs == null ? "" : "[" + univs.ToString(",") + "]") + vars.ToString(","));
         }
 
-        internal override void TypeCheck(Dictionary<string, Decl> glob, MapStack<string, Param> loc)
+        internal override void TypeCheck(Dictionary<string, MonaDecl> glob, MapStack<string, MonaParam> loc)
         {
             if (univs != null)
                 foreach (var u in univs)
                 {
-                    Decl d;
+                    MonaDecl d;
                     if (!glob.TryGetValue(u.text, out d))
                         throw new MonaParseException(MonaParseExceptionKind.UndeclaredIdentifier, u.Location, u.text);
-                    if (d.kind != DeclKind.universe)
+                    if (d.kind != MonaDeclKind.universe)
                         throw new MonaParseException(MonaParseExceptionKind.InvalidUniverseReference, u.Location, u.text);
                 }
-            ParamKind paramkind = (this.kind == DeclKind.var1 ? ParamKind.var1 : ParamKind.var2);
+            MonaParamKind paramkind = (this.kind == MonaDeclKind.var1 ? MonaParamKind.var1 : MonaParamKind.var2);
             foreach (var vw in vars)
                 if (vw.where != null)
-                    vw.where.TypeCheck(glob, loc.Push(vw.name, new VarParam(vw, paramkind)));
+                    vw.where.TypeCheck(glob, loc.Push(vw.name, new MonaVarParam(vw, paramkind)));
         }
     }
 
-    public class VarDecl : Decl
+    public class MonaVarDecl : MonaDecl
     {
         public Cons<Token> univs;
-        public VarWhere vw;
-        internal VarDecl(DeclKind kind, Cons<Token> univs, VarWhere vw)
+        public MonaVarWhere varwhere;
+        internal MonaVarDecl(MonaDeclKind kind, Cons<Token> univs, MonaVarWhere vw)
             : base(kind)
         {
             this.univs = univs;
-            this.vw = vw;
+            this.varwhere = vw;
         }
 
         public override void Print(StringBuilder sb)
         {
-            sb.Append(kind.ToString() + " " + (univs == null ? "" : "[" + univs.ToString(",") + "]") + vw.ToString());
+            sb.Append(kind.ToString() + " " + (univs == null ? "" : "[" + univs.ToString(",") + "]") + varwhere.ToString());
         }
 
-        internal override void TypeCheck(Dictionary<string, Decl> glob, MapStack<string, Param> loc)
+        internal override void TypeCheck(Dictionary<string, MonaDecl> glob, MapStack<string, MonaParam> loc)
         {
             if (univs != null)
                 foreach (var u in univs)
                 {
-                    Decl d;
+                    MonaDecl d;
                     if (!glob.TryGetValue(u.text, out d))
                         throw new MonaParseException(MonaParseExceptionKind.UndeclaredIdentifier, u.Location, u.text);
-                    if (d.kind != DeclKind.universe)
+                    if (d.kind != MonaDeclKind.universe)
                         throw new MonaParseException(MonaParseExceptionKind.InvalidUniverseReference, u.Location, u.text);
                 }
-            ParamKind paramkind = (this.kind == DeclKind.var1 ? ParamKind.var1 : ParamKind.var2);
-            if (vw.where != null)
-                vw.where.TypeCheck(glob, loc.Push(vw.name, new VarParam(new VarWhere(vw.token, null), paramkind)));
+            MonaParamKind paramkind = (this.kind == MonaDeclKind.var1 ? MonaParamKind.var1 : MonaParamKind.var2);
+            if (varwhere.where != null)
+                varwhere.where.TypeCheck(glob, loc.Push(varwhere.name, new MonaVarParam(new MonaVarWhere(varwhere.token, null), paramkind)));
         }
     }
 
-    public class Var0Decls : Decl
+    public class MonaVar0Decls : MonaDecl
     {
         public Cons<Token> vars;
-        internal Var0Decls(Cons<Token> vars)
-            : base(DeclKind.var0)
+        internal MonaVar0Decls(Cons<Token> vars)
+            : base(MonaDeclKind.var0)
         {
             this.vars = vars;
         }
@@ -1040,17 +1144,17 @@ namespace Microsoft.Automata.MSO.Mona
             sb.Append(kind.ToString() + " " + vars.ToString(","));
         }
 
-        internal override void TypeCheck(Dictionary<string, Decl> glob, MapStack<string, Param> loc)
+        internal override void TypeCheck(Dictionary<string, MonaDecl> glob, MapStack<string, MonaParam> loc)
         {
             return;
         }
     }
 
-    public class Var0Decl : Decl
+    public class MonaVar0Decl : MonaDecl
     {
         public Token var;
-        internal Var0Decl(Token var)
-            : base(DeclKind.var0)
+        internal MonaVar0Decl(Token var)
+            : base(MonaDeclKind.var0)
         {
             this.var = var;
         }
@@ -1060,19 +1164,19 @@ namespace Microsoft.Automata.MSO.Mona
             sb.Append(kind.ToString() + " " + var.text);
         }
 
-        internal override void TypeCheck(Dictionary<string, Decl> glob, MapStack<string, Param> loc)
+        internal override void TypeCheck(Dictionary<string, MonaDecl> glob, MapStack<string, MonaParam> loc)
         {
             return;
         }
     }
 
-    public class ConstDecl : Decl
+    public class MonaConstDecl : MonaDecl
     {
         public Token name;
-        public Expr def;
+        public MonaExpr def;
 
-        internal ConstDecl(Token name, Expr def)
-            : base(DeclKind.constant)
+        internal MonaConstDecl(Token name, MonaExpr def)
+            : base(MonaDeclKind.constant)
         {
             this.name = name;
             this.def = def;
@@ -1086,20 +1190,20 @@ namespace Microsoft.Automata.MSO.Mona
             def.Print(sb);
         }
 
-        internal override void TypeCheck(Dictionary<string, Decl> glob, MapStack<string, Param> loc)
+        internal override void TypeCheck(Dictionary<string, MonaDecl> glob, MapStack<string, MonaParam> loc)
         {
             def.TypeCheck(glob, loc);
         }
     }
 
-    public class DefaultWhereDecl : Decl
+    public class MonaDefaultWhereDecl : MonaDecl
     {
         public bool isSecondOrder;
         public Token param;
-        public Expr formula;
+        public MonaExpr formula;
 
-        internal DefaultWhereDecl(bool isSecondOrder, Token param, Expr formula) : 
-            base(isSecondOrder ? DeclKind.defaultwhere2 : DeclKind.defaultwhere1)
+        internal MonaDefaultWhereDecl(bool isSecondOrder, Token param, MonaExpr formula) : 
+            base(isSecondOrder ? MonaDeclKind.defaultwhere2 : MonaDeclKind.defaultwhere1)
         {
             this.isSecondOrder = isSecondOrder;
             this.param = param;
@@ -1115,17 +1219,17 @@ namespace Microsoft.Automata.MSO.Mona
             formula.Print(sb);
         }
 
-        internal override void TypeCheck(Dictionary<string, Decl> glob, MapStack<string, Param> loc)
+        internal override void TypeCheck(Dictionary<string, MonaDecl> glob, MapStack<string, MonaParam> loc)
         {
-            ParamKind paramkind = (isSecondOrder ? ParamKind.var2 : ParamKind.var1);
-            formula.TypeCheck(glob, loc.Push(param.text, new VarParam(new VarWhere(param,null), paramkind)));
+            MonaParamKind paramkind = (isSecondOrder ? MonaParamKind.var2 : MonaParamKind.var1);
+            formula.TypeCheck(glob, loc.Push(param.text, new MonaVarParam(new MonaVarWhere(param,null), paramkind)));
         }
     }
 
-    public class FormulaDecl : Decl
+    public class MonaFormulaDecl : MonaDecl
     {
-        public Expr formula;
-        internal FormulaDecl(Expr formula) : base(DeclKind.formula)
+        public MonaExpr formula;
+        internal MonaFormulaDecl(MonaExpr formula) : base(MonaDeclKind.formula)
         {
             this.formula = formula;
         }
@@ -1135,17 +1239,17 @@ namespace Microsoft.Automata.MSO.Mona
             formula.Print(sb);
         }
 
-        internal override void TypeCheck(Dictionary<string, Decl> glob, MapStack<string, Param> loc)
+        internal override void TypeCheck(Dictionary<string, MonaDecl> glob, MapStack<string, MonaParam> loc)
         {
             formula.TypeCheck(glob, loc);
         }
     }
 
-    public class AssertDecl : Decl
+    public class MonaAssertDecl : MonaDecl
     {
-        public Expr psi;
-        internal AssertDecl(Expr psi)
-            : base(DeclKind.assert)
+        public MonaExpr psi;
+        internal MonaAssertDecl(MonaExpr psi)
+            : base(MonaDeclKind.assert)
         {
             this.psi = psi;
         }
@@ -1156,17 +1260,17 @@ namespace Microsoft.Automata.MSO.Mona
             psi.Print(sb);
         }
 
-        internal override void TypeCheck(Dictionary<string, Decl> glob, MapStack<string, Param> loc)
+        internal override void TypeCheck(Dictionary<string, MonaDecl> glob, MapStack<string, MonaParam> loc)
         {
             psi.TypeCheck(glob, loc);
         }
     }
 
-    public class ExecuteDecl : Decl
+    public class MonaExecuteDecl : MonaDecl
     {
-        public Expr psi;
-        internal ExecuteDecl(Expr psi)
-            : base(DeclKind.execute)
+        public MonaExpr psi;
+        internal MonaExecuteDecl(MonaExpr psi)
+            : base(MonaDeclKind.execute)
         {
             this.psi = psi;
         }
@@ -1177,17 +1281,17 @@ namespace Microsoft.Automata.MSO.Mona
             psi.Print(sb);
         }
 
-        internal override void TypeCheck(Dictionary<string, Decl> glob, MapStack<string, Param> loc)
+        internal override void TypeCheck(Dictionary<string, MonaDecl> glob, MapStack<string, MonaParam> loc)
         {
             psi.TypeCheck(glob, loc);
         }
     }
 
-    public class UnivDecls : Decl
+    public class MonaUnivDecls : MonaDecl
     {
-        public Cons<UnivArg> args;
-        internal UnivDecls(Cons<UnivArg> args)
-            : base(DeclKind.universe)
+        public Cons<MonaUnivArg> args;
+        internal MonaUnivDecls(Cons<MonaUnivArg> args)
+            : base(MonaDeclKind.universe)
         {
             this.args = args;
         }
@@ -1197,16 +1301,16 @@ namespace Microsoft.Automata.MSO.Mona
             sb.Append("universe " + args.ToString(","));
         }
 
-        internal override void TypeCheck(Dictionary<string, Decl> glob, MapStack<string, Param> loc)
+        internal override void TypeCheck(Dictionary<string, MonaDecl> glob, MapStack<string, MonaParam> loc)
         {
         }
     }
 
-    public class UnivDecl : Decl
+    public class MonaUnivDecl : MonaDecl
     {
-        public UnivArg universe;
-        internal UnivDecl(UnivArg universe)
-            : base(DeclKind.universe)
+        public MonaUnivArg universe;
+        internal MonaUnivDecl(MonaUnivArg universe)
+            : base(MonaDeclKind.universe)
         {
             this.universe = universe;
         }
@@ -1216,18 +1320,18 @@ namespace Microsoft.Automata.MSO.Mona
             sb.Append("universe " + universe.ToString());
         }
 
-        internal override void TypeCheck(Dictionary<string, Decl> glob, MapStack<string, Param> loc)
+        internal override void TypeCheck(Dictionary<string, MonaDecl> glob, MapStack<string, MonaParam> loc)
         {
         }
     }
 
-    public class PredDecl : Decl
+    public class MonaPredDecl : MonaDecl
     {
         public bool isMacro;
         public Token name;
-        public Cons<Param> parameters;
-        public Expr formula;
-        public Dictionary<string, Param> pmap;
+        public Cons<MonaParam> parameters;
+        public MonaExpr formula;
+        public Dictionary<string, MonaParam> pmap;
         public bool IsNullary
         {
             get
@@ -1236,8 +1340,8 @@ namespace Microsoft.Automata.MSO.Mona
             }
         }
 
-        internal PredDecl(Token name, Cons<Param> parameters, Dictionary<string,Param> pmap, Expr formula, bool isMacro = false)
-            : base(isMacro ? DeclKind.macro : DeclKind.pred)
+        internal MonaPredDecl(Token name, Cons<MonaParam> parameters, Dictionary<string,MonaParam> pmap, MonaExpr formula, bool isMacro = false)
+            : base(isMacro ? MonaDeclKind.macro : MonaDeclKind.pred)
         {
             this.pmap = pmap;
             this.isMacro = isMacro;
@@ -1263,22 +1367,22 @@ namespace Microsoft.Automata.MSO.Mona
             formula.Print(sb);
         }
 
-        internal override void TypeCheck(Dictionary<string, Decl> glob, MapStack<string, Param> loc)
+        internal override void TypeCheck(Dictionary<string, MonaDecl> glob, MapStack<string, MonaParam> loc)
         {
             formula.TypeCheck(glob, loc.Push(pmap));
         }
     }
 
-    public class AllposDecl : Decl
+    public class MonaAllposDecl : MonaDecl
     {
         Token v;
-        internal AllposDecl(Token v)
-            : base(DeclKind.allpos)
+        internal MonaAllposDecl(Token v)
+            : base(MonaDeclKind.allpos)
         {
             this.v = v;
         }
 
-        internal override void TypeCheck(Dictionary<string, Decl> glob, MapStack<string, Param> loc)
+        internal override void TypeCheck(Dictionary<string, MonaDecl> glob, MapStack<string, MonaParam> loc)
         {
             return;
         }
@@ -1290,31 +1394,31 @@ namespace Microsoft.Automata.MSO.Mona
         }
     }
 
-    public enum ParamKind { var0, var1, var2, universe }
+    public enum MonaParamKind { var0, var1, var2, universe }
 
-    public abstract class Param : Ast
+    public abstract class MonaParam : MonaAst
     {
-        public ParamKind kind;
-        internal Param(ParamKind kind)
+        public MonaParamKind kind;
+        internal MonaParam(MonaParamKind kind)
         {
             this.kind = kind;
         }
-        public ExprType type
+        public MonaExprType type
         {
             get
             {
-                if (kind == ParamKind.universe || kind ==  ParamKind.var2)
-                    return ExprType.SET;
-                else if (kind == ParamKind.var1)
-                    return ExprType.INT;
+                if (kind == MonaParamKind.universe || kind ==  MonaParamKind.var2)
+                    return MonaExprType.SET;
+                else if (kind == MonaParamKind.var1)
+                    return MonaExprType.INT;
                 else
-                    return ExprType.BOOL;
+                    return MonaExprType.BOOL;
             }
         }
         public abstract Token Token { get; }
     }
 
-    public class Var0Param : Param
+    public class MonaVar0Param : MonaParam
     {
         public Token name;
 
@@ -1324,7 +1428,7 @@ namespace Microsoft.Automata.MSO.Mona
             sb.Append(name.text);
         }
 
-        internal Var0Param(Token name) : base(ParamKind.var0)
+        internal MonaVar0Param(Token name) : base(MonaParamKind.var0)
         {
             this.name = name;
         }
@@ -1335,9 +1439,9 @@ namespace Microsoft.Automata.MSO.Mona
         }
     }
 
-    public class VarParam : Param
+    public class MonaVarParam : MonaParam
     {
-        public VarWhere varwhere;
+        public MonaVarWhere varwhere;
 
         public override void Print(StringBuilder sb)
         {
@@ -1346,7 +1450,7 @@ namespace Microsoft.Automata.MSO.Mona
             varwhere.Print(sb);
         }
 
-        internal VarParam(VarWhere name, ParamKind kind)
+        internal MonaVarParam(MonaVarWhere name, MonaParamKind kind)
             : base(kind)
         {
             this.varwhere = name;
@@ -1358,7 +1462,7 @@ namespace Microsoft.Automata.MSO.Mona
         }
     }
 
-    public class UniverseParam : Param
+    public class MonaUniverseParam : MonaParam
     {
         public Token name;
 
@@ -1368,8 +1472,8 @@ namespace Microsoft.Automata.MSO.Mona
             sb.Append(name.text);
         }
 
-        internal UniverseParam(Token name)
-            : base(ParamKind.universe)
+        internal MonaUniverseParam(Token name)
+            : base(MonaParamKind.universe)
         {
             this.name = name;
         }
@@ -1382,7 +1486,7 @@ namespace Microsoft.Automata.MSO.Mona
 
     #endregion
 
-    public class VarWhere : Ast
+    public class MonaVarWhere : MonaAst
     {
         public Token token;
         public string name
@@ -1392,8 +1496,8 @@ namespace Microsoft.Automata.MSO.Mona
                 return token.text;
             }
         }
-        public Expr where;
-        internal VarWhere(Token token, Expr where)
+        public MonaExpr where;
+        internal MonaVarWhere(Token token, MonaExpr where)
         {
             this.token = token;
             this.where = where;
@@ -1418,7 +1522,7 @@ namespace Microsoft.Automata.MSO.Mona
         }
     }
 
-    public class UnivArg : Ast
+    public class MonaUnivArg : MonaAst
     {
         public Token token;
         public string name 
@@ -1428,7 +1532,7 @@ namespace Microsoft.Automata.MSO.Mona
                 return token.text;
             }
         }
-        internal UnivArg(Token token)
+        internal MonaUnivArg(Token token)
         {
             this.token = token;
         }
@@ -1439,7 +1543,7 @@ namespace Microsoft.Automata.MSO.Mona
         }
     }
 
-    public class UnivArgWithType : UnivArg
+    public class MonaUnivArgWithType : MonaUnivArg
     {
         public Token E;
 
@@ -1450,7 +1554,7 @@ namespace Microsoft.Automata.MSO.Mona
             }
         }
 
-        internal UnivArgWithType(Token token, Token E)
+        internal MonaUnivArgWithType(Token token, Token E)
             : base(token)
         {
             this.E = E;
@@ -1462,14 +1566,14 @@ namespace Microsoft.Automata.MSO.Mona
         }
     }
 
-    public class UnivArgWithSucc : UnivArg
+    public class MonaUnivArgWithSucc : MonaUnivArg
     {
         /// <summary>
         /// matches (0|1)+
         /// </summary>
         public string succ;
 
-        internal UnivArgWithSucc(Token token, string succ)
+        internal MonaUnivArgWithSucc(Token token, string succ)
             : base(token)
         {
             this.succ = succ;

@@ -40,7 +40,7 @@ p = q + 1;               # p is the successor of q
 p < r;                   # r is after p
 p notin $ & q in $;     
 ";
-            Program pgm = MonaParser.Parse(input);
+            MonaProgram pgm = MonaParser.Parse(input);
             Assert.IsTrue(pgm.declarations.Count > 0);
             Assert.AreEqual<Tokens>(Tokens.M2LSTR, pgm.token.Kind);
         }
@@ -104,7 +104,7 @@ Queue(Qe, Q1, Q2, 4);   # the queue Q is a queue of length 3
 LooseOne(Qe, Q1, Q2, Qe', Q1', Q2'); # Q' is Q except for one element
 ex1 p: is3(p, Qe', Q1', Q2'); # Q' does contain the element 3      
 ";
-            Program pgm = MonaParser.Parse(input);
+            MonaProgram pgm = MonaParser.Parse(input);
             string s = pgm.ToString();
             Assert.IsTrue(pgm.declarations.Count > 0);
         }
@@ -117,7 +117,7 @@ ex1 p: is3(p, Qe', Q1', Q2'); # Q' does contain the element 3
 0x3 in {1,2,3};
 4 notin {1,...,3,6};
 "; 
-            Program pgm = MonaParser.Parse(input);
+            MonaProgram pgm = MonaParser.Parse(input);
             Assert.IsTrue(pgm.declarations.Count == 2);
         }
 
@@ -130,7 +130,7 @@ var2 Qe, Q1, Q2;
 pred is0(var1 p, var2 Qe, Q1, Q2) = p in Qe & p notin Q1 & p notin Q2;
 is0(p, Qe, Q1, Q2) & ~is0(q, Qe, Q1, Q2);  
 ";
-            Program pgm = MonaParser.Parse(input);
+            MonaProgram pgm = MonaParser.Parse(input);
             Assert.IsTrue(pgm.declarations.Count == 4);
         }
         [TestMethod]
@@ -144,7 +144,7 @@ is0(p, Qe, Q1, Q2) & ~is0(Q2, Qe, Q1, Q2);
 ";
             try
             {
-                Program pgm = MonaParser.Parse(input);
+                MonaProgram pgm = MonaParser.Parse(input);
             }
             catch (MonaParseException e)
             {
@@ -165,7 +165,7 @@ is0(p, Qe, Q1, Q2) & ~is0(q, Qe, Q1, Q2);
 ";
             try
             {
-                Program pgm = MonaParser.Parse(input);
+                MonaProgram pgm = MonaParser.Parse(input);
             }
             catch (MonaParseException e)
             {
@@ -182,7 +182,7 @@ is0(p, Qe, Q1, Q2) & ~is0(q, Qe, Q1, Q2);
 var2 q;
 allpos q; 
 ";
-            Program pgm = MonaParser.Parse(input);
+            MonaProgram pgm = MonaParser.Parse(input);
             Assert.IsTrue(pgm.declarations.Count == 2);
         }
 
@@ -194,7 +194,7 @@ allpos q;
 ";
             try
             {
-                Program pgm = MonaParser.Parse(input);
+                MonaProgram pgm = MonaParser.Parse(input);
             }
             catch (MonaParseException e)
             {
@@ -213,7 +213,7 @@ allpos q;
 ";
             try
             {
-                Program pgm = MonaParser.Parse(input);
+                MonaProgram pgm = MonaParser.Parse(input);
             }
             catch (MonaParseException e)
             {
@@ -229,7 +229,7 @@ allpos q;
             string input = @"
 var0 a, b ; # Boolean vars a and b
 ";
-            Program pgm = MonaParser.Parse(input);   
+            MonaProgram pgm = MonaParser.Parse(input);   
             Assert.AreEqual<int>(1, pgm.declarations.Count);
             Assert.AreEqual<string>("var0 a,b;", pgm.ToString().Trim());
         }
@@ -243,7 +243,7 @@ var0 a; # variable a again
 ";
             try
             {
-                Program pgm = MonaParser.Parse(input);
+                MonaProgram pgm = MonaParser.Parse(input);
             }
             catch (MonaParseException e)
             {
@@ -260,13 +260,13 @@ var0 a; # variable a again
 m2l-tree;
 universe U1, U2:110101, U3:foo; # sample universes
 ";
-            Program pgm = MonaParser.Parse(input);
+            MonaProgram pgm = MonaParser.Parse(input);
             Assert.AreEqual<int>(1, pgm.declarations.Count);
-            Assert.IsTrue(pgm.declarations[0] is UnivDecls);
-            var univdecl = pgm.declarations[0] as UnivDecls;
+            Assert.IsTrue(pgm.declarations[0] is MonaUnivDecls);
+            var univdecl = pgm.declarations[0] as MonaUnivDecls;
             Assert.IsTrue(univdecl.args.Count == 3);
-            Assert.IsTrue(univdecl.args[1] is UnivArgWithSucc);
-            Assert.IsTrue(univdecl.args[2] is UnivArgWithType);
+            Assert.IsTrue(univdecl.args[1] is MonaUnivArgWithSucc);
+            Assert.IsTrue(univdecl.args[2] is MonaUnivArgWithType);
         }
 
         [TestMethod]
@@ -278,7 +278,7 @@ universe U1, U2:110201, U3:foo; # sample universes
 ";
             try
             {
-                Program pgm = MonaParser.Parse(input);
+                MonaProgram pgm = MonaParser.Parse(input);
             }
             catch (MonaParseException e)
             {
@@ -295,13 +295,13 @@ universe U1, U2:110201, U3:foo; # sample universes
 const a = 23 + 2;
 const b = a + (2 - a);
 ";
-            Program pgm = MonaParser.Parse(input);
+            MonaProgram pgm = MonaParser.Parse(input);
             Assert.AreEqual<int>(2, pgm.declarations.Count);
-            Assert.IsTrue(pgm.declarations[0] is ConstDecl);
-            Assert.IsTrue(pgm.declarations[1] is ConstDecl);
-            var a = pgm.declarations[0] as ConstDecl;
+            Assert.IsTrue(pgm.declarations[0] is MonaConstDecl);
+            Assert.IsTrue(pgm.declarations[1] is MonaConstDecl);
+            var a = pgm.declarations[0] as MonaConstDecl;
             Assert.IsTrue(a.name.text == "a");
-            var b = pgm.declarations[1] as ConstDecl;
+            var b = pgm.declarations[1] as MonaConstDecl;
             Assert.IsTrue(b.name.text == "b");
         }
 
@@ -314,7 +314,7 @@ const b = a + (2 - c);
 ";
             try
             {
-                Program pgm = MonaParser.Parse(input);
+                MonaProgram pgm = MonaParser.Parse(input);
             }
             catch (MonaParseException e)
             {
@@ -330,11 +330,11 @@ const b = a + (2 - c);
             string input = @"
 defaultwhere1(p) = p < 10;
 ";
-            Program pgm = MonaParser.Parse(input);
+            MonaProgram pgm = MonaParser.Parse(input);
             Assert.AreEqual<int>(1, pgm.declarations.Count);
-            Assert.IsTrue(pgm.declarations[0] is DefaultWhereDecl);
-            Assert.IsFalse((pgm.declarations[0] as DefaultWhereDecl).isSecondOrder);
-            Assert.IsTrue((pgm.declarations[0] as DefaultWhereDecl).kind == DeclKind.defaultwhere1);
+            Assert.IsTrue(pgm.declarations[0] is MonaDefaultWhereDecl);
+            Assert.IsFalse((pgm.declarations[0] as MonaDefaultWhereDecl).isSecondOrder);
+            Assert.IsTrue((pgm.declarations[0] as MonaDefaultWhereDecl).kind == MonaDeclKind.defaultwhere1);
         }
 
 
@@ -345,20 +345,20 @@ defaultwhere1(p) = p < 10;
 pred foo() = 4 < 6;
 pred bar(var2 P, var1 p) = p in P & foo();
 ";
-            Program pgm = MonaParser.Parse(input);
+            MonaProgram pgm = MonaParser.Parse(input);
             Assert.AreEqual<int>(2, pgm.declarations.Count);
-            Assert.IsTrue(pgm.declarations[0] is PredDecl);
-            Assert.IsTrue(pgm.declarations[1] is PredDecl);
-            var foo = pgm.declarations[0] as PredDecl;
-            var bar = pgm.declarations[1] as PredDecl; 
+            Assert.IsTrue(pgm.declarations[0] is MonaPredDecl);
+            Assert.IsTrue(pgm.declarations[1] is MonaPredDecl);
+            var foo = pgm.declarations[0] as MonaPredDecl;
+            var bar = pgm.declarations[1] as MonaPredDecl; 
             Assert.IsFalse(foo.isMacro);
             Assert.IsFalse(bar.isMacro);
             Assert.AreEqual<string>("foo", foo.name.text);
             Assert.AreEqual<string>("bar", bar.name.text);
             Assert.IsTrue(foo.parameters.Count == 0);
             Assert.AreEqual<int>(2, bar.parameters.Count);
-            Assert.IsTrue(bar.parameters[0].kind == ParamKind.var2);
-            Assert.IsTrue(bar.parameters[1].kind == ParamKind.var1);
+            Assert.IsTrue(bar.parameters[0].kind == MonaParamKind.var2);
+            Assert.IsTrue(bar.parameters[1].kind == MonaParamKind.var1);
         }
 
         [TestMethod]
@@ -367,15 +367,15 @@ pred bar(var2 P, var1 p) = p in P & foo();
             string input = @"
 macro bar(var2 P,Q) = 1 in P;
 ";
-            Program pgm = MonaParser.Parse(input);
+            MonaProgram pgm = MonaParser.Parse(input);
             Assert.AreEqual<int>(1, pgm.declarations.Count);
-            Assert.IsTrue(pgm.declarations[0] is PredDecl);
-            var bar = pgm.declarations[0] as PredDecl;
+            Assert.IsTrue(pgm.declarations[0] is MonaPredDecl);
+            var bar = pgm.declarations[0] as MonaPredDecl;
             Assert.IsTrue(bar.isMacro);
             Assert.AreEqual<string>("bar", bar.name.text);
             Assert.IsTrue(bar.parameters.Count == 2);
-            Assert.IsTrue(bar.parameters[0].kind == ParamKind.var2);
-            Assert.IsTrue(bar.parameters[1].kind == ParamKind.var2);
+            Assert.IsTrue(bar.parameters[0].kind == MonaParamKind.var2);
+            Assert.IsTrue(bar.parameters[1].kind == MonaParamKind.var2);
         }
 
         [TestMethod]
@@ -384,18 +384,18 @@ macro bar(var2 P,Q) = 1 in P;
             string input = @"
 macro bar(var2 P, R, Q, var1 q, var0 e) = q in P;
 ";
-            Program pgm = MonaParser.Parse(input);
+            MonaProgram pgm = MonaParser.Parse(input);
             Assert.AreEqual<int>(1, pgm.declarations.Count);
-            Assert.IsTrue(pgm.declarations[0] is PredDecl);
-            var bar = pgm.declarations[0] as PredDecl;
+            Assert.IsTrue(pgm.declarations[0] is MonaPredDecl);
+            var bar = pgm.declarations[0] as MonaPredDecl;
             Assert.IsTrue(bar.isMacro);
             Assert.AreEqual<string>("bar", bar.name.text);
             Assert.AreEqual<int>(5, bar.parameters.Count);
-            Assert.IsTrue(bar.parameters[0].kind == ParamKind.var2);
-            Assert.IsTrue(bar.parameters[1].kind == ParamKind.var2);
-            Assert.IsTrue(bar.parameters[2].kind == ParamKind.var2);
-            Assert.IsTrue(bar.parameters[3].kind == ParamKind.var1);
-            Assert.IsTrue(bar.parameters[4].kind == ParamKind.var0);
+            Assert.IsTrue(bar.parameters[0].kind == MonaParamKind.var2);
+            Assert.IsTrue(bar.parameters[1].kind == MonaParamKind.var2);
+            Assert.IsTrue(bar.parameters[2].kind == MonaParamKind.var2);
+            Assert.IsTrue(bar.parameters[3].kind == MonaParamKind.var1);
+            Assert.IsTrue(bar.parameters[4].kind == MonaParamKind.var0);
         }
 
         [TestMethod]
@@ -406,7 +406,7 @@ macro bar(var2 P, R, Q, var1 Q, var0 e) = q in P;
 ";
             try
             {
-                Program pgm = MonaParser.Parse(input);
+                MonaProgram pgm = MonaParser.Parse(input);
             }
             catch (MonaParseException e)
             {
@@ -424,16 +424,16 @@ const a = 23 + 2;
 pred P = 1 = 1;
 const b = a + 2*a;
 ";
-            Program pgm = MonaParser.Parse(input);
+            MonaProgram pgm = MonaParser.Parse(input);
             Assert.AreEqual<int>(3, pgm.declarations.Count);
-            Assert.IsTrue(pgm.declarations[0] is ConstDecl);
-            Assert.IsTrue(pgm.declarations[2] is ConstDecl);
-            Assert.IsTrue(pgm.declarations[1] is PredDecl);
-            var a = pgm.declarations[0] as ConstDecl;
+            Assert.IsTrue(pgm.declarations[0] is MonaConstDecl);
+            Assert.IsTrue(pgm.declarations[2] is MonaConstDecl);
+            Assert.IsTrue(pgm.declarations[1] is MonaPredDecl);
+            var a = pgm.declarations[0] as MonaConstDecl;
             Assert.IsTrue(a.name.text == "a");
-            var b = pgm.declarations[2] as ConstDecl;
+            var b = pgm.declarations[2] as MonaConstDecl;
             Assert.IsTrue(b.name.text == "b");
-            var P = pgm.declarations[1] as PredDecl;
+            var P = pgm.declarations[1] as MonaPredDecl;
             Assert.IsTrue(P.name.text == "P");
         }
 
@@ -447,7 +447,7 @@ const b = a + (2 - P);
 ";
             try
             {
-                Program pgm = MonaParser.Parse(input);
+                MonaProgram pgm = MonaParser.Parse(input);
             }
             catch (MonaParseException e)
             {
@@ -466,40 +466,40 @@ const zero = 0;
 pred lt(var1 x,y) = x < y + zero;
 macro psi(var2 Y, var1 x,y) = (ex1 z: lt(x,z) & lt(z,y)) & (all2 X: X sub Y => X = Y); 
 ";
-            Program pgm = MonaParser.Parse(input);
+            MonaProgram pgm = MonaParser.Parse(input);
             Assert.AreEqual<int>(3, pgm.declarations.Count);
-            Assert.IsTrue(pgm.declarations[0] is ConstDecl);
-            Assert.IsTrue(pgm.declarations[1] is PredDecl);
-            Assert.IsTrue(pgm.declarations[2] is PredDecl);
-            var zero = pgm.declarations[0] as ConstDecl;
+            Assert.IsTrue(pgm.declarations[0] is MonaConstDecl);
+            Assert.IsTrue(pgm.declarations[1] is MonaPredDecl);
+            Assert.IsTrue(pgm.declarations[2] is MonaPredDecl);
+            var zero = pgm.declarations[0] as MonaConstDecl;
             Assert.IsTrue(zero.name.text == "zero");
-            var lt = pgm.declarations[1] as PredDecl;
+            var lt = pgm.declarations[1] as MonaPredDecl;
             Assert.IsFalse(lt.isMacro);
             Assert.IsTrue(lt.name.text == "lt");
-            var pred = pgm.declarations[2] as PredDecl;
+            var pred = pgm.declarations[2] as MonaPredDecl;
             Assert.IsTrue(pred.isMacro);
             Assert.IsTrue(pred.name.text == "psi");
-            Assert.IsTrue(pred.formula.type == ExprType.BOOL);
-            Assert.IsTrue(pred.formula is BinaryBooleanFormula);
-            BinaryBooleanFormula phi = pred.formula as BinaryBooleanFormula;
-            Assert.IsTrue(phi.op == BinaryBooleanOp.AND);
-            Assert.IsTrue(phi.arg1.type == ExprType.BOOL);
-            Assert.IsTrue(phi.arg2.type == ExprType.BOOL);
-            Assert.IsTrue(phi.arg1 is QFormula);
-            Assert.IsTrue(phi.arg2 is QFormula);
-            var psi1 = phi.arg1 as QFormula;
-            var psi2 = phi.arg2 as QFormula;
-            Assert.IsTrue(psi1.token.Kind == Tokens.EX1);
-            Assert.IsTrue(psi2.token.Kind == Tokens.ALL2);
-            Assert.IsTrue(psi2.formula.type == ExprType.BOOL);
-            Assert.IsTrue(psi2.formula is BinaryBooleanFormula);
-            var psi3 = psi2.formula as BinaryBooleanFormula;
-            Assert.IsTrue(psi3.op == BinaryBooleanOp.IMPLIES);
-            Assert.IsTrue(psi3.arg1 is BinaryAtom);
-            var lhs = psi3.arg1 as BinaryAtom;
-            Assert.IsTrue(lhs.token.Kind == Tokens.SUBSET);
-            var rhs = psi3.arg2 as BinaryAtom;
-            Assert.IsTrue(rhs.token.Kind == Tokens.EQ);
+            Assert.IsTrue(pred.formula.type == MonaExprType.BOOL);
+            Assert.IsTrue(pred.formula is MonaBinaryBooleanFormula);
+            MonaBinaryBooleanFormula phi = pred.formula as MonaBinaryBooleanFormula;
+            Assert.IsTrue(phi.op == MonaBinaryBooleanOp.AND);
+            Assert.IsTrue(phi.arg1.type == MonaExprType.BOOL);
+            Assert.IsTrue(phi.arg2.type == MonaExprType.BOOL);
+            Assert.IsTrue(phi.arg1 is MonaQFormula);
+            Assert.IsTrue(phi.arg2 is MonaQFormula);
+            var psi1 = phi.arg1 as MonaQFormula;
+            var psi2 = phi.arg2 as MonaQFormula;
+            Assert.IsTrue(psi1.symbol.Kind == Tokens.EX1);
+            Assert.IsTrue(psi2.symbol.Kind == Tokens.ALL2);
+            Assert.IsTrue(psi2.formula.type == MonaExprType.BOOL);
+            Assert.IsTrue(psi2.formula is MonaBinaryBooleanFormula);
+            var psi3 = psi2.formula as MonaBinaryBooleanFormula;
+            Assert.IsTrue(psi3.op == MonaBinaryBooleanOp.IMPLIES);
+            Assert.IsTrue(psi3.arg1 is MonaBinaryAtom);
+            var lhs = psi3.arg1 as MonaBinaryAtom;
+            Assert.IsTrue(lhs.symbol.Kind == Tokens.SUBSET);
+            var rhs = psi3.arg2 as MonaBinaryAtom;
+            Assert.IsTrue(rhs.symbol.Kind == Tokens.EQ);
         }
 
         [TestMethod]
@@ -509,16 +509,16 @@ macro psi(var2 Y, var1 x,y) = (ex1 z: lt(x,z) & lt(z,y)) & (all2 X: X sub Y => X
 const c = 42;
 let1 x=3,y=c in x < y;
 ";
-            Program pgm = MonaParser.Parse(input);
+            MonaProgram pgm = MonaParser.Parse(input);
             Assert.AreEqual<int>(2, pgm.declarations.Count);
-            Assert.IsTrue(pgm.declarations[0] is ConstDecl);
-            Assert.IsTrue(pgm.declarations[1] is FormulaDecl);
-            var let = (pgm.declarations[1] as FormulaDecl).formula as Let;
-            Assert.IsTrue(let != null && let.Kind == LetKind.let1);
+            Assert.IsTrue(pgm.declarations[0] is MonaConstDecl);
+            Assert.IsTrue(pgm.declarations[1] is MonaFormulaDecl);
+            var let = (pgm.declarations[1] as MonaFormulaDecl).formula as MonaLet;
+            Assert.IsTrue(let != null && let.Kind == MonaLetKind.let1);
             Assert.IsTrue(let.let_vars.Count == 2);
             foreach (var kv in let.let_vars)
             {
-                Assert.IsTrue(kv.Value.kind == ParamKind.var1);
+                Assert.IsTrue(kv.Value.kind == MonaParamKind.var1);
             }
         }
 
@@ -529,16 +529,16 @@ let1 x=3,y=c in x < y;
 const t = 42;
 let0 x=(t=t),y=(true) in (x <=> y);
 ";
-            Program pgm = MonaParser.Parse(input);
+            MonaProgram pgm = MonaParser.Parse(input);
             Assert.AreEqual<int>(2, pgm.declarations.Count);
-            Assert.IsTrue(pgm.declarations[0] is ConstDecl);
-            Assert.IsTrue(pgm.declarations[1] is FormulaDecl);
-            var let = (pgm.declarations[1] as FormulaDecl).formula as Let;
-            Assert.IsTrue(let != null && let.Kind == LetKind.let0);
+            Assert.IsTrue(pgm.declarations[0] is MonaConstDecl);
+            Assert.IsTrue(pgm.declarations[1] is MonaFormulaDecl);
+            var let = (pgm.declarations[1] as MonaFormulaDecl).formula as MonaLet;
+            Assert.IsTrue(let != null && let.Kind == MonaLetKind.let0);
             Assert.IsTrue(let.let_vars.Count == 2);
             foreach (var kv in let.let_vars)
             {
-                Assert.IsTrue(kv.Value.kind == ParamKind.var0);
+                Assert.IsTrue(kv.Value.kind == MonaParamKind.var0);
             }
         }
 
@@ -551,7 +551,7 @@ let1 x=3,y=c in x < y;
 ";
             try
             {
-                Program pgm = MonaParser.Parse(input);
+                MonaProgram pgm = MonaParser.Parse(input);
             }
             catch (MonaParseException e)
             {

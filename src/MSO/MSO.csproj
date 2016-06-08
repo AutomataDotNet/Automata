@@ -51,19 +51,19 @@
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BasicAutomata.cs" />
+    <Compile Include="Cons.cs" />
     <Compile Include="Mona\AST.cs" />
-    <Compile Include="Mona\Cons.cs" />
     <Compile Include="Mona\MapStack.cs" />
     <Compile Include="Mona\mona.lex.cs" />
     <Compile Include="Mona\mona.y.cs" />
     <Compile Include="Mona\MonaParseException.cs" />
     <Compile Include="Mona\MonaParser.cs" />
+    <Compile Include="Mona\Program.ToMSO.cs" />
     <Compile Include="MSO.cs" />
-    <Compile Include="MSOT.cs" />
     <Compile Include="MSOAlgebra.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="WS1S.cs" />
-    <Compile Include="WS1ST.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Automata\Automata.csproj">
@@ -86,8 +86,8 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PreBuildEvent>cd ../../Mona/
-genparser.bat</PreBuildEvent>
+    <PreBuildEvent>
+    </PreBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

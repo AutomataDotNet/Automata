@@ -4,9 +4,9 @@
 
 // GPPG version 1.5.0
 // Machine:  MARGUS-X1
-// DateTime: 5/29/2016 11:16:53 AM
+// DateTime: 6/8/2016 1:05:14 AM
 // UserName: margus
-// Input file <mona.y - 5/29/2016 10:30:33 AM>
+// Input file <mona.y - 6/8/2016 12:58:40 AM>
 
 // options: babel conflicts lines diagnose & report gplex conflicts
 
@@ -619,11 +619,11 @@ public partial class MonaParser: ShiftReduceParser<object, LexLocationInFile>
         break;
       case 8: // decls -> decl, SEMICOLON, EOF
 #line 53 "mona.y"
-{ CurrentSemanticValue = MkList<Decl>(ValueStack[ValueStack.Depth-3]); }
+{ CurrentSemanticValue = MkList<MonaDecl>(ValueStack[ValueStack.Depth-3]); }
         break;
       case 9: // decls -> decl, SEMICOLON, decls
 #line 54 "mona.y"
-{ CurrentSemanticValue = MkList<Decl>(ValueStack[ValueStack.Depth-3], ValueStack[ValueStack.Depth-1]); }
+{ CurrentSemanticValue = MkList<MonaDecl>(ValueStack[ValueStack.Depth-3], ValueStack[ValueStack.Depth-1]); }
         break;
       case 10: // decl -> formula
 #line 58 "mona.y"
@@ -703,135 +703,135 @@ public partial class MonaParser: ShiftReduceParser<object, LexLocationInFile>
         break;
       case 29: // parameters -> RPAR
 #line 80 "mona.y"
-{ CurrentSemanticValue = MkList<Param>(); }
+{ CurrentSemanticValue = MkList<MonaParam>(); }
         break;
       case 30: // parameters -> VAR0, NAME, params0
 #line 81 "mona.y"
-{ CurrentSemanticValue = MkList<Param>(MkVar0Param(ValueStack[ValueStack.Depth-2]), ValueStack[ValueStack.Depth-1]); }
+{ CurrentSemanticValue = MkList<MonaParam>(MkVar0Param(ValueStack[ValueStack.Depth-2]), ValueStack[ValueStack.Depth-1]); }
         break;
       case 31: // parameters -> UNIVERSE, NAME, parameters
 #line 82 "mona.y"
-{ CurrentSemanticValue = MkList<Param>(MkUniverseParam(ValueStack[ValueStack.Depth-2]), ValueStack[ValueStack.Depth-1]); }
+{ CurrentSemanticValue = MkList<MonaParam>(MkUniverseParam(ValueStack[ValueStack.Depth-2]), ValueStack[ValueStack.Depth-1]); }
         break;
       case 32: // parameters -> VAR1, NAME, params1
 #line 83 "mona.y"
-{ CurrentSemanticValue = MkList<Param>(MkVar1Param(MkVarWhere(ValueStack[ValueStack.Depth-2], null)), ValueStack[ValueStack.Depth-1]); }
+{ CurrentSemanticValue = MkList<MonaParam>(MkVar1Param(MkVarWhere(ValueStack[ValueStack.Depth-2], null)), ValueStack[ValueStack.Depth-1]); }
         break;
       case 33: // parameters -> VAR1, NAME, WHERE, formula, params1
 #line 84 "mona.y"
-{ CurrentSemanticValue = MkList<Param>(MkVar1Param(MkVarWhere(ValueStack[ValueStack.Depth-4], ValueStack[ValueStack.Depth-2])), ValueStack[ValueStack.Depth-1]); }
+{ CurrentSemanticValue = MkList<MonaParam>(MkVar1Param(MkVarWhere(ValueStack[ValueStack.Depth-4], ValueStack[ValueStack.Depth-2])), ValueStack[ValueStack.Depth-1]); }
         break;
       case 34: // parameters -> VAR2, NAME, params2
 #line 85 "mona.y"
-{ CurrentSemanticValue = MkList<Param>(MkVar2Param(MkVarWhere(ValueStack[ValueStack.Depth-2], null)), ValueStack[ValueStack.Depth-1]); }
+{ CurrentSemanticValue = MkList<MonaParam>(MkVar2Param(MkVarWhere(ValueStack[ValueStack.Depth-2], null)), ValueStack[ValueStack.Depth-1]); }
         break;
       case 35: // parameters -> VAR2, NAME, WHERE, formula, params2
 #line 86 "mona.y"
-{ CurrentSemanticValue = MkList<Param>(MkVar2Param(MkVarWhere(ValueStack[ValueStack.Depth-4], ValueStack[ValueStack.Depth-2])), ValueStack[ValueStack.Depth-1]); }
+{ CurrentSemanticValue = MkList<MonaParam>(MkVar2Param(MkVarWhere(ValueStack[ValueStack.Depth-4], ValueStack[ValueStack.Depth-2])), ValueStack[ValueStack.Depth-1]); }
         break;
       case 36: // params0 -> RPAR
 #line 90 "mona.y"
-{ CurrentSemanticValue = MkList<Param>(); }
+{ CurrentSemanticValue = MkList<MonaParam>(); }
         break;
       case 37: // params0 -> COMMA, VAR0, NAME, params0
 #line 91 "mona.y"
-{ CurrentSemanticValue = MkList<Param>(MkVar0Param(ValueStack[ValueStack.Depth-2]), ValueStack[ValueStack.Depth-1]); }
+{ CurrentSemanticValue = MkList<MonaParam>(MkVar0Param(ValueStack[ValueStack.Depth-2]), ValueStack[ValueStack.Depth-1]); }
         break;
       case 38: // params0 -> COMMA, VAR1, NAME, params1
 #line 92 "mona.y"
-{ CurrentSemanticValue = MkList<Param>(MkVar1Param(MkVarWhere(ValueStack[ValueStack.Depth-2], null)), ValueStack[ValueStack.Depth-1]); }
+{ CurrentSemanticValue = MkList<MonaParam>(MkVar1Param(MkVarWhere(ValueStack[ValueStack.Depth-2], null)), ValueStack[ValueStack.Depth-1]); }
         break;
       case 39: // params0 -> COMMA, VAR1, NAME, WHERE, formula, params1
 #line 93 "mona.y"
-{ CurrentSemanticValue = MkList<Param>(MkVar1Param(MkVarWhere(ValueStack[ValueStack.Depth-4], ValueStack[ValueStack.Depth-2])), ValueStack[ValueStack.Depth-1]); }
+{ CurrentSemanticValue = MkList<MonaParam>(MkVar1Param(MkVarWhere(ValueStack[ValueStack.Depth-4], ValueStack[ValueStack.Depth-2])), ValueStack[ValueStack.Depth-1]); }
         break;
       case 40: // params0 -> COMMA, VAR2, NAME, params2
 #line 94 "mona.y"
-{ CurrentSemanticValue = MkList<Param>(MkVar2Param(MkVarWhere(ValueStack[ValueStack.Depth-2], null)), ValueStack[ValueStack.Depth-1]); }
+{ CurrentSemanticValue = MkList<MonaParam>(MkVar2Param(MkVarWhere(ValueStack[ValueStack.Depth-2], null)), ValueStack[ValueStack.Depth-1]); }
         break;
       case 41: // params0 -> COMMA, VAR2, NAME, WHERE, formula, params2
 #line 95 "mona.y"
-{ CurrentSemanticValue = MkList<Param>(MkVar2Param(MkVarWhere(ValueStack[ValueStack.Depth-4], ValueStack[ValueStack.Depth-2])), ValueStack[ValueStack.Depth-1]); }
+{ CurrentSemanticValue = MkList<MonaParam>(MkVar2Param(MkVarWhere(ValueStack[ValueStack.Depth-4], ValueStack[ValueStack.Depth-2])), ValueStack[ValueStack.Depth-1]); }
         break;
       case 42: // params0 -> COMMA, UNIVERSE, NAME, parameters
 #line 96 "mona.y"
-{ CurrentSemanticValue = MkList<Param>(MkUniverseParam(ValueStack[ValueStack.Depth-2]), ValueStack[ValueStack.Depth-1]); }
+{ CurrentSemanticValue = MkList<MonaParam>(MkUniverseParam(ValueStack[ValueStack.Depth-2]), ValueStack[ValueStack.Depth-1]); }
         break;
       case 43: // params0 -> COMMA, NAME, params0
 #line 97 "mona.y"
-{ CurrentSemanticValue = MkList<Param>(MkVar0Param(ValueStack[ValueStack.Depth-2]), ValueStack[ValueStack.Depth-1]); }
+{ CurrentSemanticValue = MkList<MonaParam>(MkVar0Param(ValueStack[ValueStack.Depth-2]), ValueStack[ValueStack.Depth-1]); }
         break;
       case 44: // params1 -> RPAR
 #line 101 "mona.y"
-{ CurrentSemanticValue = MkList<Param>(); }
+{ CurrentSemanticValue = MkList<MonaParam>(); }
         break;
       case 45: // params1 -> COMMA, VAR0, NAME, params0
 #line 102 "mona.y"
-{ CurrentSemanticValue = MkList<Param>(MkVar0Param(ValueStack[ValueStack.Depth-2]), ValueStack[ValueStack.Depth-1]); }
+{ CurrentSemanticValue = MkList<MonaParam>(MkVar0Param(ValueStack[ValueStack.Depth-2]), ValueStack[ValueStack.Depth-1]); }
         break;
       case 46: // params1 -> COMMA, VAR1, NAME, params1
 #line 103 "mona.y"
-{ CurrentSemanticValue = MkList<Param>(MkVar1Param(MkVarWhere(ValueStack[ValueStack.Depth-2], null)), ValueStack[ValueStack.Depth-1]); }
+{ CurrentSemanticValue = MkList<MonaParam>(MkVar1Param(MkVarWhere(ValueStack[ValueStack.Depth-2], null)), ValueStack[ValueStack.Depth-1]); }
         break;
       case 47: // params1 -> COMMA, VAR1, NAME, WHERE, formula, params1
 #line 104 "mona.y"
-{ CurrentSemanticValue = MkList<Param>(MkVar1Param(MkVarWhere(ValueStack[ValueStack.Depth-4], ValueStack[ValueStack.Depth-2])), ValueStack[ValueStack.Depth-1]); }
+{ CurrentSemanticValue = MkList<MonaParam>(MkVar1Param(MkVarWhere(ValueStack[ValueStack.Depth-4], ValueStack[ValueStack.Depth-2])), ValueStack[ValueStack.Depth-1]); }
         break;
       case 48: // params1 -> COMMA, VAR2, NAME, params2
 #line 105 "mona.y"
-{ CurrentSemanticValue = MkList<Param>(MkVar2Param(MkVarWhere(ValueStack[ValueStack.Depth-2], null)), ValueStack[ValueStack.Depth-1]); }
+{ CurrentSemanticValue = MkList<MonaParam>(MkVar2Param(MkVarWhere(ValueStack[ValueStack.Depth-2], null)), ValueStack[ValueStack.Depth-1]); }
         break;
       case 49: // params1 -> COMMA, VAR2, NAME, WHERE, formula, params2
 #line 106 "mona.y"
-{ CurrentSemanticValue = MkList<Param>(MkVar2Param(MkVarWhere(ValueStack[ValueStack.Depth-4], ValueStack[ValueStack.Depth-2])), ValueStack[ValueStack.Depth-1]); }
+{ CurrentSemanticValue = MkList<MonaParam>(MkVar2Param(MkVarWhere(ValueStack[ValueStack.Depth-4], ValueStack[ValueStack.Depth-2])), ValueStack[ValueStack.Depth-1]); }
         break;
       case 50: // params1 -> COMMA, UNIVERSE, NAME, parameters
 #line 107 "mona.y"
-{ CurrentSemanticValue = MkList<Param>(MkUniverseParam(ValueStack[ValueStack.Depth-2]), ValueStack[ValueStack.Depth-1]); }
+{ CurrentSemanticValue = MkList<MonaParam>(MkUniverseParam(ValueStack[ValueStack.Depth-2]), ValueStack[ValueStack.Depth-1]); }
         break;
       case 51: // params1 -> COMMA, NAME, params1
 #line 108 "mona.y"
-{ CurrentSemanticValue = MkList<Param>(MkVar1Param(MkVarWhere(ValueStack[ValueStack.Depth-2], null)), ValueStack[ValueStack.Depth-1]); }
+{ CurrentSemanticValue = MkList<MonaParam>(MkVar1Param(MkVarWhere(ValueStack[ValueStack.Depth-2], null)), ValueStack[ValueStack.Depth-1]); }
         break;
       case 52: // params1 -> COMMA, NAME, WHERE, formula, params1
 #line 109 "mona.y"
-{ CurrentSemanticValue = MkList<Param>(MkVar1Param(MkVarWhere(ValueStack[ValueStack.Depth-4], ValueStack[ValueStack.Depth-2])), ValueStack[ValueStack.Depth-1]); }
+{ CurrentSemanticValue = MkList<MonaParam>(MkVar1Param(MkVarWhere(ValueStack[ValueStack.Depth-4], ValueStack[ValueStack.Depth-2])), ValueStack[ValueStack.Depth-1]); }
         break;
       case 53: // params2 -> RPAR
 #line 113 "mona.y"
-{ CurrentSemanticValue = MkList<Param>(); }
+{ CurrentSemanticValue = MkList<MonaParam>(); }
         break;
       case 54: // params2 -> COMMA, VAR0, NAME, params0
 #line 114 "mona.y"
-{ CurrentSemanticValue = MkList<Param>(MkVar0Param(ValueStack[ValueStack.Depth-2]), ValueStack[ValueStack.Depth-1]); }
+{ CurrentSemanticValue = MkList<MonaParam>(MkVar0Param(ValueStack[ValueStack.Depth-2]), ValueStack[ValueStack.Depth-1]); }
         break;
       case 55: // params2 -> COMMA, VAR1, NAME, params1
 #line 115 "mona.y"
-{ CurrentSemanticValue = MkList<Param>(MkVar1Param(MkVarWhere(ValueStack[ValueStack.Depth-2], null)), ValueStack[ValueStack.Depth-1]); }
+{ CurrentSemanticValue = MkList<MonaParam>(MkVar1Param(MkVarWhere(ValueStack[ValueStack.Depth-2], null)), ValueStack[ValueStack.Depth-1]); }
         break;
       case 56: // params2 -> COMMA, VAR1, NAME, WHERE, formula, params1
 #line 116 "mona.y"
-{ CurrentSemanticValue = MkList<Param>(MkVar1Param(MkVarWhere(ValueStack[ValueStack.Depth-4], ValueStack[ValueStack.Depth-2])), ValueStack[ValueStack.Depth-1]); }
+{ CurrentSemanticValue = MkList<MonaParam>(MkVar1Param(MkVarWhere(ValueStack[ValueStack.Depth-4], ValueStack[ValueStack.Depth-2])), ValueStack[ValueStack.Depth-1]); }
         break;
       case 57: // params2 -> COMMA, VAR2, NAME, params2
 #line 117 "mona.y"
-{ CurrentSemanticValue = MkList<Param>(MkVar2Param(MkVarWhere(ValueStack[ValueStack.Depth-2], null)), ValueStack[ValueStack.Depth-1]); }
+{ CurrentSemanticValue = MkList<MonaParam>(MkVar2Param(MkVarWhere(ValueStack[ValueStack.Depth-2], null)), ValueStack[ValueStack.Depth-1]); }
         break;
       case 58: // params2 -> COMMA, VAR2, NAME, WHERE, formula, params2
 #line 118 "mona.y"
-{ CurrentSemanticValue = MkList<Param>(MkVar2Param(MkVarWhere(ValueStack[ValueStack.Depth-4], ValueStack[ValueStack.Depth-2])), ValueStack[ValueStack.Depth-1]); }
+{ CurrentSemanticValue = MkList<MonaParam>(MkVar2Param(MkVarWhere(ValueStack[ValueStack.Depth-4], ValueStack[ValueStack.Depth-2])), ValueStack[ValueStack.Depth-1]); }
         break;
       case 59: // params2 -> COMMA, UNIVERSE, NAME, parameters
 #line 119 "mona.y"
-{ CurrentSemanticValue = MkList<Param>(MkUniverseParam(ValueStack[ValueStack.Depth-2]), ValueStack[ValueStack.Depth-1]); }
+{ CurrentSemanticValue = MkList<MonaParam>(MkUniverseParam(ValueStack[ValueStack.Depth-2]), ValueStack[ValueStack.Depth-1]); }
         break;
       case 60: // params2 -> COMMA, NAME, params2
 #line 120 "mona.y"
-{ CurrentSemanticValue = MkList<Param>(MkVar2Param(MkVarWhere(ValueStack[ValueStack.Depth-2], null)), ValueStack[ValueStack.Depth-1]); }
+{ CurrentSemanticValue = MkList<MonaParam>(MkVar2Param(MkVarWhere(ValueStack[ValueStack.Depth-2], null)), ValueStack[ValueStack.Depth-1]); }
         break;
       case 61: // params2 -> COMMA, NAME, WHERE, formula, params2
 #line 121 "mona.y"
-{ CurrentSemanticValue = MkList<Param>(MkVar2Param(MkVarWhere(ValueStack[ValueStack.Depth-4], ValueStack[ValueStack.Depth-2])), ValueStack[ValueStack.Depth-1]); }
+{ CurrentSemanticValue = MkList<MonaParam>(MkVar2Param(MkVarWhere(ValueStack[ValueStack.Depth-4], ValueStack[ValueStack.Depth-2])), ValueStack[ValueStack.Depth-1]); }
         break;
       case 62: // intterm -> LPAR, intterm, RPAR
 #line 125 "mona.y"
@@ -867,11 +867,11 @@ public partial class MonaParser: ShiftReduceParser<object, LexLocationInFile>
         break;
       case 70: // univargs -> univarg, COMMA, univargs
 #line 136 "mona.y"
-{ CurrentSemanticValue = MkList<UnivArg>(ValueStack[ValueStack.Depth-3], ValueStack[ValueStack.Depth-1]); }
+{ CurrentSemanticValue = MkList<MonaUnivArg>(ValueStack[ValueStack.Depth-3], ValueStack[ValueStack.Depth-1]); }
         break;
       case 71: // univargs -> univarg
 #line 137 "mona.y"
-{ CurrentSemanticValue = MkList<UnivArg>(ValueStack[ValueStack.Depth-1]); }
+{ CurrentSemanticValue = MkList<MonaUnivArg>(ValueStack[ValueStack.Depth-1]); }
         break;
       case 72: // univarg -> NAME, COLON, NAME
 #line 141 "mona.y"
@@ -887,19 +887,19 @@ public partial class MonaParser: ShiftReduceParser<object, LexLocationInFile>
         break;
       case 75: // vws -> NAME, COMMA, vws
 #line 147 "mona.y"
-{ CurrentSemanticValue = MkList<VarWhere>(MkVarWhere(ValueStack[ValueStack.Depth-3], null), ValueStack[ValueStack.Depth-1]); }
+{ CurrentSemanticValue = MkList<MonaVarWhere>(MkVarWhere(ValueStack[ValueStack.Depth-3], null), ValueStack[ValueStack.Depth-1]); }
         break;
       case 76: // vws -> NAME, WHERE, formula, COMMA, vws
 #line 148 "mona.y"
-{ CurrentSemanticValue = MkList<VarWhere>(MkVarWhere(ValueStack[ValueStack.Depth-5], ValueStack[ValueStack.Depth-3]), ValueStack[ValueStack.Depth-2]); }
+{ CurrentSemanticValue = MkList<MonaVarWhere>(MkVarWhere(ValueStack[ValueStack.Depth-5], ValueStack[ValueStack.Depth-3]), ValueStack[ValueStack.Depth-2]); }
         break;
       case 77: // vws -> NAME, WHERE, formula
 #line 149 "mona.y"
-{ CurrentSemanticValue = MkList<VarWhere>(MkVarWhere(ValueStack[ValueStack.Depth-3], ValueStack[ValueStack.Depth-1])); }
+{ CurrentSemanticValue = MkList<MonaVarWhere>(MkVarWhere(ValueStack[ValueStack.Depth-3], ValueStack[ValueStack.Depth-1])); }
         break;
       case 78: // vws -> NAME
 #line 150 "mona.y"
-{ CurrentSemanticValue = MkList<VarWhere>(MkVarWhere(ValueStack[ValueStack.Depth-1], null)); }
+{ CurrentSemanticValue = MkList<MonaVarWhere>(MkVarWhere(ValueStack[ValueStack.Depth-1], null)); }
         break;
       case 79: // formula -> TRUE
 #line 154 "mona.y"
@@ -939,7 +939,7 @@ public partial class MonaParser: ShiftReduceParser<object, LexLocationInFile>
         break;
       case 88: // formula -> NAME, LPAR, RPAR
 #line 163 "mona.y"
-{ CurrentSemanticValue = MkPredApp(ValueStack[ValueStack.Depth-3], MkList<Expr>()); }
+{ CurrentSemanticValue = MkPredApp(ValueStack[ValueStack.Depth-3], MkList<MonaExpr>()); }
         break;
       case 89: // formula -> NAME, LPAR, exprs, RPAR
 #line 164 "mona.y"
@@ -1015,11 +1015,11 @@ public partial class MonaParser: ShiftReduceParser<object, LexLocationInFile>
         break;
       case 114: // exprs -> expr, COMMA, exprs
 #line 197 "mona.y"
-{ CurrentSemanticValue = MkList<Expr>(ValueStack[ValueStack.Depth-3], ValueStack[ValueStack.Depth-1]); }
+{ CurrentSemanticValue = MkList<MonaExpr>(ValueStack[ValueStack.Depth-3], ValueStack[ValueStack.Depth-1]); }
         break;
       case 115: // exprs -> expr
 #line 198 "mona.y"
-{ CurrentSemanticValue = MkList<Expr>(ValueStack[ValueStack.Depth-1]); }
+{ CurrentSemanticValue = MkList<MonaExpr>(ValueStack[ValueStack.Depth-1]); }
         break;
       case 120: // names -> NAME, COMMA, names
 #line 212 "mona.y"
@@ -1087,7 +1087,7 @@ public partial class MonaParser: ShiftReduceParser<object, LexLocationInFile>
         break;
       case 136: // term2 -> LBRACE, RBRACE
 #line 239 "mona.y"
-{ CurrentSemanticValue = MkSet(ValueStack[ValueStack.Depth-2], MkList<Expr>()); }
+{ CurrentSemanticValue = MkSet(ValueStack[ValueStack.Depth-2], MkList<MonaExpr>()); }
         break;
       case 137: // term2 -> LBRACE, elemslist, RBRACE
 #line 240 "mona.y"
@@ -1127,11 +1127,11 @@ public partial class MonaParser: ShiftReduceParser<object, LexLocationInFile>
         break;
       case 146: // elemslist -> elems, COMMA, elemslist
 #line 252 "mona.y"
-{ CurrentSemanticValue = MkList<Expr>(ValueStack[ValueStack.Depth-3], ValueStack[ValueStack.Depth-1]); }
+{ CurrentSemanticValue = MkList<MonaExpr>(ValueStack[ValueStack.Depth-3], ValueStack[ValueStack.Depth-1]); }
         break;
       case 147: // elemslist -> elems
 #line 253 "mona.y"
-{ CurrentSemanticValue = MkList<Expr>(ValueStack[ValueStack.Depth-1]); }
+{ CurrentSemanticValue = MkList<MonaExpr>(ValueStack[ValueStack.Depth-1]); }
         break;
       case 148: // elems -> term1, RANGE, term1
 #line 257 "mona.y"
@@ -1139,27 +1139,27 @@ public partial class MonaParser: ShiftReduceParser<object, LexLocationInFile>
         break;
       case 150: // letexprs0 -> NAME, EQ, formula0, COMMA, letexprs0
 #line 262 "mona.y"
-{ CurrentSemanticValue = MkList<Tuple<Token,Expr>>(new Tuple<Token,Expr>((Token)ValueStack[ValueStack.Depth-5],(Expr)ValueStack[ValueStack.Depth-3]), ValueStack[ValueStack.Depth-1]); }
+{ CurrentSemanticValue = MkList<Tuple<Token,MonaExpr>>(new Tuple<Token,MonaExpr>((Token)ValueStack[ValueStack.Depth-5],(MonaExpr)ValueStack[ValueStack.Depth-3]), ValueStack[ValueStack.Depth-1]); }
         break;
       case 151: // letexprs0 -> NAME, EQ, formula0
 #line 263 "mona.y"
-{ CurrentSemanticValue = MkList<Tuple<Token,Expr>>(new Tuple<Token,Expr>((Token)ValueStack[ValueStack.Depth-3],(Expr)ValueStack[ValueStack.Depth-1])); }
+{ CurrentSemanticValue = MkList<Tuple<Token,MonaExpr>>(new Tuple<Token,MonaExpr>((Token)ValueStack[ValueStack.Depth-3],(MonaExpr)ValueStack[ValueStack.Depth-1])); }
         break;
       case 152: // letexprs1 -> NAME, EQ, term1, COMMA, letexprs1
 #line 267 "mona.y"
-{ CurrentSemanticValue = MkList<Tuple<Token,Expr>>(new Tuple<Token,Expr>((Token)ValueStack[ValueStack.Depth-5],(Expr)ValueStack[ValueStack.Depth-3]), ValueStack[ValueStack.Depth-1]); }
+{ CurrentSemanticValue = MkList<Tuple<Token,MonaExpr>>(new Tuple<Token,MonaExpr>((Token)ValueStack[ValueStack.Depth-5],(MonaExpr)ValueStack[ValueStack.Depth-3]), ValueStack[ValueStack.Depth-1]); }
         break;
       case 153: // letexprs1 -> NAME, EQ, term1
 #line 268 "mona.y"
-{ CurrentSemanticValue = MkList<Tuple<Token,Expr>>(new Tuple<Token,Expr>((Token)ValueStack[ValueStack.Depth-3],(Expr)ValueStack[ValueStack.Depth-1])); }
+{ CurrentSemanticValue = MkList<Tuple<Token,MonaExpr>>(new Tuple<Token,MonaExpr>((Token)ValueStack[ValueStack.Depth-3],(MonaExpr)ValueStack[ValueStack.Depth-1])); }
         break;
       case 154: // letexprs2 -> NAME, EQ, term2, COMMA, letexprs2
 #line 272 "mona.y"
-{ CurrentSemanticValue = MkList<Tuple<Token,Expr>>(new Tuple<Token,Expr>((Token)ValueStack[ValueStack.Depth-5],(Expr)ValueStack[ValueStack.Depth-3]), ValueStack[ValueStack.Depth-1]); }
+{ CurrentSemanticValue = MkList<Tuple<Token,MonaExpr>>(new Tuple<Token,MonaExpr>((Token)ValueStack[ValueStack.Depth-5],(MonaExpr)ValueStack[ValueStack.Depth-3]), ValueStack[ValueStack.Depth-1]); }
         break;
       case 155: // letexprs2 -> NAME, EQ, term2
 #line 273 "mona.y"
-{ CurrentSemanticValue = MkList<Tuple<Token,Expr>>(new Tuple<Token,Expr>((Token)ValueStack[ValueStack.Depth-3],(Expr)ValueStack[ValueStack.Depth-1])); }
+{ CurrentSemanticValue = MkList<Tuple<Token,MonaExpr>>(new Tuple<Token,MonaExpr>((Token)ValueStack[ValueStack.Depth-3],(MonaExpr)ValueStack[ValueStack.Depth-1])); }
         break;
       case 156: // formula0 -> LPAR, formula, RPAR
 #line 277 "mona.y"

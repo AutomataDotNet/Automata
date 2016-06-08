@@ -59,13 +59,13 @@ namespace MSOEvaluation
 
                     for (int k = 1; k < to; k++)
                     {
-                        var leq = new WS1SLt<BDD>(new WS1SVariable<BDD>("x" + (k - 1)), new WS1SVariable<BDD>("x" + k));
+                        var leq = new WS1SLt<BDD>(new Variable<BDD>("x" + (k - 1)), new Variable<BDD>("x" + k));
                         phi = new WS1SAnd<BDD>(phi, leq);
 
                     }
                     for (int k = to - 1; k >= 0; k--)
                     {
-                        phi = new WS1SExists<BDD>(new WS1SVariable<BDD>("x" + k), phi);
+                        phi = new WS1SExists<BDD>(new Variable<BDD>("x" + k), phi);
                     }
 
                     sw.Restart();
@@ -84,20 +84,20 @@ namespace MSOEvaluation
 
                     for (int k = 1; k < to; k++)
                     {
-                        var leq = new WS1SLt<BDD>(new WS1SVariable<BDD>("x" + (k - 1)), new WS1SVariable<BDD>("x" + k));
+                        var leq = new WS1SLt<BDD>(new Variable<BDD>("x" + (k - 1)), new Variable<BDD>("x" + k));
                         phi = new WS1SAnd<BDD>(phi, leq);
 
                     }
                     for (int k = 0; k < to; k++)
                     {
                         var axk = new WS1SPred<BDD>(
-                            s1.MkCharConstraint('a', false), new WS1SVariable<BDD>("x" + k));
+                            s1.MkCharConstraint('a', false), new Variable<BDD>("x" + k));
                         phi = new WS1SAnd<BDD>(phi, axk);
 
                     }
                     for (int k = to - 1; k >= 0; k--)
                     {
-                        phi = new WS1SExists<BDD>(new WS1SVariable<BDD>("x" + k), phi);
+                        phi = new WS1SExists<BDD>(new Variable<BDD>("x" + k), phi);
                     }
 
                     sw.Restart();
@@ -116,22 +116,22 @@ namespace MSOEvaluation
 
                     for (int k = 1; k < to; k++)
                     {
-                        var leq = new WS1SLt<BDD>(new WS1SVariable<BDD>("x" + (k - 1)), new WS1SVariable<BDD>("x" + k));
+                        var leq = new WS1SLt<BDD>(new Variable<BDD>("x" + (k - 1)), new Variable<BDD>("x" + k));
                         phi = new WS1SAnd<BDD>(phi, leq);
 
                     }
                     for (int k = 0; k < to; k++)
                     {
-                        var axk = new WS1SPred<BDD>(s1.MkCharConstraint('a', false), new WS1SVariable<BDD>("x" + k));
+                        var axk = new WS1SPred<BDD>(s1.MkCharConstraint('a', false), new Variable<BDD>("x" + k));
                         phi = new WS1SAnd<BDD>(phi, axk);
 
                     }
                     for (int k = to - 1; k >= 0; k--)
                     {
-                        phi = new WS1SExists<BDD>(new WS1SVariable<BDD>("x" + k), phi);
+                        phi = new WS1SExists<BDD>(new Variable<BDD>("x" + k), phi);
                     }
 
-                    var exycy = new WS1SExists<BDD>(new WS1SVariable<BDD>("y"), new WS1SPred<BDD>(s1.MkCharConstraint('c', false), new WS1SVariable<BDD>("y")));
+                    var exycy = new WS1SExists<BDD>(new Variable<BDD>("y"), new WS1SPred<BDD>(s1.MkCharConstraint('c', false), new Variable<BDD>("y")));
                     phi = new WS1SAnd<BDD>(phi, exycy);
 
                     sw.Restart();
@@ -150,19 +150,19 @@ namespace MSOEvaluation
 
                     for (int k = 1; k < to; k++)
                     {
-                        var leq = new WS1SLt<BDD>(new WS1SVariable<BDD>("x" + (k - 1)), new WS1SVariable<BDD>("x" + k));
-                        var axk = new WS1SPred<BDD>(s1.MkCharConstraint('a', false), new WS1SVariable<BDD>("x" + (k - 1)));
-                        var cxk = new WS1SPred<BDD>(s1.MkCharConstraint('c', false), new WS1SVariable<BDD>("x" + (k - 1)));
+                        var leq = new WS1SLt<BDD>(new Variable<BDD>("x" + (k - 1)), new Variable<BDD>("x" + k));
+                        var axk = new WS1SPred<BDD>(s1.MkCharConstraint('a', false), new Variable<BDD>("x" + (k - 1)));
+                        var cxk = new WS1SPred<BDD>(s1.MkCharConstraint('c', false), new Variable<BDD>("x" + (k - 1)));
                         var inter = new WS1SOr<BDD>(new WS1SAnd<BDD>(leq, axk), cxk);
                         phi = new WS1SAnd<BDD>(phi, inter);
 
                     }
                     for (int k = to - 1; k >= 0; k--)
                     {
-                        phi = new WS1SExists<BDD>(new WS1SVariable<BDD>("x" + k), phi);
+                        phi = new WS1SExists<BDD>(new Variable<BDD>("x" + k), phi);
                     }
 
-                    exycy = new WS1SExists<BDD>(new WS1SVariable<BDD>("y"), new WS1SPred<BDD>(s1.MkCharConstraint('c', false), new WS1SVariable<BDD>("y")));
+                    exycy = new WS1SExists<BDD>(new Variable<BDD>("y"), new WS1SPred<BDD>(s1.MkCharConstraint('c', false), new Variable<BDD>("y")));
                     phi = new WS1SAnd<BDD>(phi, exycy);
 
                     var t4 = 60000L*numTests;
@@ -203,13 +203,13 @@ namespace MSOEvaluation
 
                     for (int k = 1; k < to; k++)
                     {
-                        var leq = new WS1SLt<BDD>(new WS1SVariable<BDD>("x" + (k - 1)), new WS1SVariable<BDD>("x" + k));
+                        var leq = new WS1SLt<BDD>(new Variable<BDD>("x" + (k - 1)), new Variable<BDD>("x" + k));
                         phi = new WS1SAnd<BDD>(phi, leq);
 
                     }
                     for (int k = to - 1; k >= 0; k--)
                     {
-                        phi = new WS1SExists<BDD>(new WS1SVariable<BDD>("x" + k), phi);
+                        phi = new WS1SExists<BDD>(new Variable<BDD>("x" + k), phi);
                     }
 
                     sw.Restart();
@@ -228,19 +228,19 @@ namespace MSOEvaluation
 
                     for (int k = 1; k < to; k++)
                     {
-                        var leq = new WS1SLt<BDD>(new WS1SVariable<BDD>("x" + (k - 1)), new WS1SVariable<BDD>("x" + k));
+                        var leq = new WS1SLt<BDD>(new Variable<BDD>("x" + (k - 1)), new Variable<BDD>("x" + k));
                         phi = new WS1SAnd<BDD>(phi, leq);
 
                     }
                     for (int k = 0; k < to; k++)
                     {
-                        var axk = new WS1SPred<BDD>(s1.MkCharConstraint('a', false), new WS1SVariable<BDD>("x" + k));
+                        var axk = new WS1SPred<BDD>(s1.MkCharConstraint('a', false), new Variable<BDD>("x" + k));
                         phi = new WS1SAnd<BDD>(phi, axk);
 
                     }
                     for (int k = to - 1; k >= 0; k--)
                     {
-                        phi = new WS1SExists<BDD>(new WS1SVariable<BDD>("x" + k), phi);
+                        phi = new WS1SExists<BDD>(new Variable<BDD>("x" + k), phi);
                     }
 
                     sw.Restart();
@@ -259,22 +259,22 @@ namespace MSOEvaluation
 
                     for (int k = 1; k < to; k++)
                     {
-                        var leq = new WS1SLt<BDD>(new WS1SVariable<BDD>("x" + (k - 1)), new WS1SVariable<BDD>("x" + k));
+                        var leq = new WS1SLt<BDD>(new Variable<BDD>("x" + (k - 1)), new Variable<BDD>("x" + k));
                         phi = new WS1SAnd<BDD>(phi, leq);
 
                     }
                     for (int k = 0; k < to; k++)
                     {
-                        var axk = new WS1SPred<BDD>(s1.MkCharConstraint('a', false), new WS1SVariable<BDD>("x" + k));
+                        var axk = new WS1SPred<BDD>(s1.MkCharConstraint('a', false), new Variable<BDD>("x" + k));
                         phi = new WS1SAnd<BDD>(phi, axk);
 
                     }
                     for (int k = to - 1; k >= 0; k--)
                     {
-                        phi = new WS1SExists<BDD>(new WS1SVariable<BDD>("x" + k), phi);
+                        phi = new WS1SExists<BDD>(new Variable<BDD>("x" + k), phi);
                     }
 
-                    var exycy = new WS1SExists<BDD>(new WS1SVariable<BDD>("y"), new WS1SPred<BDD>(s1.MkCharConstraint('c', false), new WS1SVariable<BDD>("y")));
+                    var exycy = new WS1SExists<BDD>(new Variable<BDD>("y"), new WS1SPred<BDD>(s1.MkCharConstraint('c', false), new Variable<BDD>("y")));
                     phi = new WS1SAnd<BDD>(phi, exycy);
 
                     sw.Restart();
@@ -293,19 +293,19 @@ namespace MSOEvaluation
 
                     for (int k = 1; k < to; k++)
                     {
-                        var leq = new WS1SLt<BDD>(new WS1SVariable<BDD>("x" + (k - 1)), new WS1SVariable<BDD>("x" + k));
-                        var axk = new WS1SPred<BDD>(s1.MkCharConstraint('a', false), new WS1SVariable<BDD>("x" + (k - 1)));
-                        var cxk = new WS1SPred<BDD>(s1.MkCharConstraint('c', false), new WS1SVariable<BDD>("x" + (k - 1)));
+                        var leq = new WS1SLt<BDD>(new Variable<BDD>("x" + (k - 1)), new Variable<BDD>("x" + k));
+                        var axk = new WS1SPred<BDD>(s1.MkCharConstraint('a', false), new Variable<BDD>("x" + (k - 1)));
+                        var cxk = new WS1SPred<BDD>(s1.MkCharConstraint('c', false), new Variable<BDD>("x" + (k - 1)));
                         var inter = new WS1SOr<BDD>(new WS1SAnd<BDD>(leq, axk), cxk);
                         phi = new WS1SAnd<BDD>(phi, inter);
 
                     }
                     for (int k = to - 1; k >= 0; k--)
                     {
-                        phi = new WS1SExists<BDD>(new WS1SVariable<BDD>("x" + k), phi);
+                        phi = new WS1SExists<BDD>(new Variable<BDD>("x" + k), phi);
                     }
 
-                    exycy = new WS1SExists<BDD>(new WS1SVariable<BDD>("y"), new WS1SPred<BDD>(s1.MkCharConstraint('c', false), new WS1SVariable<BDD>("y")));
+                    exycy = new WS1SExists<BDD>(new Variable<BDD>("y"), new WS1SPred<BDD>(s1.MkCharConstraint('c', false), new Variable<BDD>("y")));
                     phi = new WS1SAnd<BDD>(phi, exycy);
 
                     var t4 = 60000L * numTests;
@@ -349,13 +349,13 @@ namespace MSOEvaluation
 
         //            for (int k = 1; k < to; k++)
         //            {
-        //                var leq = new WS1SLt<BoolExpr>(new WS1SVariable<BDD>("x" + (k - 1)), new WS1SVariable<BDD>("x" + k));
+        //                var leq = new WS1SLt<BoolExpr>(new Variable<BDD>("x" + (k - 1)), new Variable<BDD>("x" + k));
         //                phi = new WS1SAnd<BoolExpr>(phi, leq);
 
         //            }
         //            for (int k = to - 1; k >= 0; k--)
         //            {
-        //                phi = new WS1SExists<BoolExpr>(new WS1SVariable<BDD>("x" + k), phi);
+        //                phi = new WS1SExists<BoolExpr>(new Variable<BDD>("x" + k), phi);
         //            }
 
         //            sw.Restart();
@@ -378,7 +378,7 @@ namespace MSOEvaluation
 
         //            for (int k = 1; k < to; k++)
         //            {
-        //                var leq = new WS1SLt<BoolExpr>(new WS1SVariable<BDD>("x" + (k - 1)), new WS1SVariable<BDD>("x" + k));
+        //                var leq = new WS1SLt<BoolExpr>(new Variable<BDD>("x" + (k - 1)), new Variable<BDD>("x" + k));
         //                phi = new WS1SAnd<BoolExpr>(phi, leq);
 
         //            }
@@ -392,7 +392,7 @@ namespace MSOEvaluation
         //            }
         //            for (int k = to - 1; k >= 0; k--)
         //            {
-        //                phi = new WS1SExists<BoolExpr>(new WS1SVariable<BDD>("x" + k), phi);
+        //                phi = new WS1SExists<BoolExpr>(new Variable<BDD>("x" + k), phi);
         //            }
 
         //            sw.Restart();
@@ -415,23 +415,23 @@ namespace MSOEvaluation
 
         //            for (int k = 1; k < to; k++)
         //            {
-        //                var leq = new WS1SLt<BoolExpr>(new WS1SVariable<BDD>("x" + (k - 1)), new WS1SVariable<BDD>("x" + k));
+        //                var leq = new WS1SLt<BoolExpr>(new Variable<BDD>("x" + (k - 1)), new Variable<BDD>("x" + k));
         //                phi = new WS1SAnd<BoolExpr>(phi, leq);
 
         //            }
         //            for (int k = 0; k < to; k++)
         //            {
-        //                var axk = new WS1SPred<BoolExpr>(ctx.MkLe((IntExpr)solver.x, (IntExpr)ctx.MkNumeral(42+k, sort)), new WS1SVariable<BDD>("x" + k));
+        //                var axk = new WS1SPred<BoolExpr>(ctx.MkLe((IntExpr)solver.x, (IntExpr)ctx.MkNumeral(42+k, sort)), new Variable<BDD>("x" + k));
         //                phi = new WS1SAnd<BoolExpr>(phi, axk);
 
         //            }
         //            for (int k = to - 1; k >= 0; k--)
         //            {
-        //                phi = new WS1SExists<BoolExpr>(new WS1SVariable<BDD>("x" + k), phi);
+        //                phi = new WS1SExists<BoolExpr>(new Variable<BDD>("x" + k), phi);
         //            }
 
-        //            var exycy = new WS1SExists<BoolExpr>(new WS1SVariable<BDD>("y"), new WS1SPred<BoolExpr>(
-        //                ctx.MkLe((IntExpr)solver.x, (IntExpr)ctx.MkNumeral(1000, sort)), new WS1SVariable<BDD>("y")));
+        //            var exycy = new WS1SExists<BoolExpr>(new Variable<BDD>("y"), new WS1SPred<BoolExpr>(
+        //                ctx.MkLe((IntExpr)solver.x, (IntExpr)ctx.MkNumeral(1000, sort)), new Variable<BDD>("y")));
         //            phi = new WS1SAnd<BoolExpr>(phi, exycy);
 
         //            sw.Restart();
@@ -454,19 +454,19 @@ namespace MSOEvaluation
 
         //            for (int k = 1; k < to; k++)
         //            {
-        //                var leq = new WS1SLt<BoolExpr>(new WS1SVariable<BDD>("x" + (k - 1)), new WS1SVariable<BDD>("x" + k));
-        //                var axk = new WS1SPred<BoolExpr>(ctx.MkLe((IntExpr)solver.x, (IntExpr)ctx.MkNumeral(42+k, sort)), new WS1SVariable<BDD>("x" + (k - 1)));
-        //                var cxk = new WS1SPred<BoolExpr>(ctx.MkLe((IntExpr)solver.x, (IntExpr)ctx.MkNumeral(1000, sort)), new WS1SVariable<BDD>("x" + (k - 1)));
+        //                var leq = new WS1SLt<BoolExpr>(new Variable<BDD>("x" + (k - 1)), new Variable<BDD>("x" + k));
+        //                var axk = new WS1SPred<BoolExpr>(ctx.MkLe((IntExpr)solver.x, (IntExpr)ctx.MkNumeral(42+k, sort)), new Variable<BDD>("x" + (k - 1)));
+        //                var cxk = new WS1SPred<BoolExpr>(ctx.MkLe((IntExpr)solver.x, (IntExpr)ctx.MkNumeral(1000, sort)), new Variable<BDD>("x" + (k - 1)));
         //                var inter = new WS1SOr<BoolExpr>(new WS1SAnd<BoolExpr>(leq, axk), cxk);
         //                phi = new WS1SAnd<BoolExpr>(phi, inter);
 
         //            }
         //            for (int k = to - 1; k >= 0; k--)
         //            {
-        //                phi = new WS1SExists<BoolExpr>(new WS1SVariable<BDD>("x" + k), phi);
+        //                phi = new WS1SExists<BoolExpr>(new Variable<BDD>("x" + k), phi);
         //            }
 
-        //            exycy = new WS1SExists<BoolExpr>(new WS1SVariable<BDD>("y"), new WS1SPred<BoolExpr>(
+        //            exycy = new WS1SExists<BoolExpr>(new Variable<BDD>("y"), new WS1SPred<BoolExpr>(
         //                ctx.MkLe((IntExpr)solver.x, (IntExpr)ctx.MkNumeral(1000, sort)),
         //                "y"));
         //            phi = new WS1SAnd<BoolExpr>(phi, exycy);
@@ -647,19 +647,19 @@ namespace MSOEvaluation
 
                     for (int k = 1; k < size; k++)
                     {
-                        var leq = new WS1SLt<BDD>(new WS1SVariable<BDD>("x" + (k - 1)), new WS1SVariable<BDD>("x" + k));
+                        var leq = new WS1SLt<BDD>(new Variable<BDD>("x" + (k - 1)), new Variable<BDD>("x" + k));
                         phi = new WS1SAnd<BDD>(phi, leq);
 
                     }
                     for (int k = 0; k < size; k++)
                     {
-                        var axk = new WS1SPred<BDD>(s1.MkBitTrue(k), new WS1SVariable<BDD>("x" + k));
+                        var axk = new WS1SPred<BDD>(s1.MkBitTrue(k), new Variable<BDD>("x" + k));
                         phi = new WS1SAnd<BDD>(phi, axk);
 
                     }
                     for (int k = size - 1; k >= 0; k--)
                     {
-                        phi = new WS1SExists<BDD>(new WS1SVariable<BDD>("x" + k), phi);
+                        phi = new WS1SExists<BDD>(new Variable<BDD>("x" + k), phi);
                     }
 
                     sw.Restart();
@@ -689,13 +689,13 @@ namespace MSOEvaluation
 
                     for (int k = 0; k < size; k++)
                     {
-                        var axk = new WS1SPred<BDD>(s1.MkBitTrue(k), new WS1SVariable<BDD>("x" + k));
+                        var axk = new WS1SPred<BDD>(s1.MkBitTrue(k), new Variable<BDD>("x" + k));
                         phi = new WS1SAnd<BDD>(phi, axk);
 
                     }
                     for (int k = size - 1; k >= 0; k--)
                     {
-                        phi = new WS1SExists<BDD>(new WS1SVariable<BDD>("x" + k), phi);
+                        phi = new WS1SExists<BDD>(new Variable<BDD>("x" + k), phi);
                     }
 
                     var t1 = 60000L;
@@ -728,19 +728,19 @@ namespace MSOEvaluation
 
                     for (int k = 1; k < size; k++)
                     {
-                        var leq = new WS1SLt<BDD>(new WS1SVariable<BDD>("x" + (k - 1)), new WS1SVariable<BDD>("x" + k));
+                        var leq = new WS1SLt<BDD>(new Variable<BDD>("x" + (k - 1)), new Variable<BDD>("x" + k));
                         phi = new WS1SAnd<BDD>(phi, leq);
 
                     }
                     for (int k = 0; k < size; k++)
                     {
-                        var axk = new WS1SPred<BDD>(solver.MkBitTrue(k), new WS1SVariable<BDD>("x" + k));
+                        var axk = new WS1SPred<BDD>(solver.MkBitTrue(k), new Variable<BDD>("x" + k));
                         phi = new WS1SAnd<BDD>(phi, axk);
 
                     }
                     for (int k = size - 1; k >= 0; k--)
                     {
-                        phi = new WS1SExists<BDD>(new WS1SVariable<BDD>("x" + k), phi);
+                        phi = new WS1SExists<BDD>(new Variable<BDD>("x" + k), phi);
                     }
 
                     var t1 = 60000L;
@@ -774,13 +774,13 @@ namespace MSOEvaluation
 
                     for (int k = 0; k < size; k++)
                     {
-                        var axk = new WS1SPred<BDD>(solver.MkBitTrue(k), new WS1SVariable<BDD>("x" + k));
+                        var axk = new WS1SPred<BDD>(solver.MkBitTrue(k), new Variable<BDD>("x" + k));
                         phi = new WS1SAnd<BDD>(phi, axk);
 
                     }
                     for (int k = size - 1; k >= 0; k--)
                     {
-                        phi = new WS1SExists<BDD>(new WS1SVariable<BDD>("x" + k), phi);
+                        phi = new WS1SExists<BDD>(new Variable<BDD>("x" + k), phi);
                     }
 
                     var t1 = 60000L;
@@ -883,7 +883,7 @@ namespace MSOEvaluation
                 phi = new MSOOr<T>(phi, phi1);
             }
 
-            phi = new MSOExistsFo<T>("var", phi);
+            phi = new MSOExists<T>("var", phi);
 
             var aut = phi.GetAutomaton(Z);
 
@@ -900,11 +900,11 @@ namespace MSOEvaluation
             for (int index = 0; index < bitWidth; index++)
             {
                 MSOFormula<T> phi1 = pred(index, "var");
-                phi1 = new MSOExistsFo<T>("var", phi1);
+                phi1 = new MSOExists<T>("var", phi1);
                 phi = new MSOOr<T>(phi, phi1);
             }
 
-            phi = new MSOExistsFo<T>("var", phi);
+            phi = new MSOExists<T>("var", phi);
 
             var aut = phi.GetAutomaton(Z);
 
@@ -936,9 +936,9 @@ namespace MSOEvaluation
             for (int index = 0; index < bitWidth; index++)
             {
                 if (index % 2 == 0)
-                    phi = new MSOExistsFo<T>("x" + index, phi);
+                    phi = new MSOExists<T>("x" + index, phi);
                 else
-                    phi = new MSOForallFo<T>("x" + index, phi);
+                    phi = new MSOForall<T>("x" + index, phi);
             }
 
             var aut = phi.GetAutomaton(Z);
