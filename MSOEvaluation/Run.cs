@@ -10,6 +10,8 @@ using Microsoft.Automata;
 using Microsoft.Automata.Z3;
 using Microsoft.Automata.Z3.Internal;
 using Microsoft.Z3;
+using System.IO;
+using Microsoft.Automata.MSO.Mona;
 
 namespace MSOEvaluation
 {
@@ -28,15 +30,61 @@ namespace MSOEvaluation
         /// </summary>
         public static void Main()
         {
+            LTLTest();
+
+
             //POPLTestsNew();
             //POPLTestsOld();
             //POPLTestsNewSolver2();
             //POPLTestsInt();
 
-            MintermTest();
-
+            //MintermTest();
 
             //Console.Read();
+        }
+
+        //LTL over finite traces
+        public static void LTLTest()
+        {
+            using (System.IO.StreamWriter file =
+               new System.IO.StreamWriter(@"..\ltltest.txt"))
+            {
+                foreach (string fileName in Directory.EnumerateFiles(@"C:\Users\Loris\Desktop\automatark\m2l-str\LTL-finite", "*.mona", SearchOption.AllDirectories))
+                {
+                    string contents = File.ReadAllText(fileName);
+                    MonaProgram pgm1 = MonaParser.Parse(contents);
+                    var phi = pgm1.ToMSO();
+
+                    //Cartesian Algebra
+                    var s1 = new CharSetSolver(BitWidth.BV64);
+                    var solver = new CartesianAlgebraBDD<BDD>(s1);
+                    var sw = new Stopwatch();
+                    sw.Restart();
+                    for (int t = 0; t < numTests; t++)
+                    {
+                        phi.GetAutomaton(solver);
+                    }
+                    sw.Stop();
+
+                    var t1 = sw.ElapsedMilliseconds;
+
+                    //BDD algebra
+                    s1 = new CharSetSolver(BitWidth.BV64);
+                    BDDAlgebra<BDD> newSolver = new BDDAlgebra<BDD>(s1);
+
+                    //sw.Restart();
+                    //for (int t = 0; t < numTests; t++)
+                    //{
+                    //    phi.GetAutomaton(newSolver);
+                    //}
+                    //sw.Stop();
+
+                    var t2 = sw.ElapsedMilliseconds;
+
+                    file.WriteLine(fileName + "," + (double)t1 / numTests + "," + (double)t2 / numTests);
+                    Console.WriteLine(fileName + "," + (double)t1 / numTests + "," + (double)t2 / numTests);
+                }
+            }
         }
 
         public static void POPLTestsNew()
@@ -942,5 +990,8 @@ namespace MSOEvaluation
             var aut = phi.GetAutomaton(Z);
             return aut;
         }
+
+        
+
     }
 }
