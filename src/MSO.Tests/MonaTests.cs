@@ -1,12 +1,14 @@
 ﻿using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Microsoft.Automata.MSO.Mona;
+using Microsoft.Automata.MSO;
+using Microsoft.Automata;
 using System.IO;
 
 namespace MSO.Tests
 {
     [TestClass]
-    public class MonaTests
+    public class MonaParserTests
     {
         //[TestMethod]
         //public void MonaTest_parse_ltl() 
@@ -25,7 +27,7 @@ namespace MSO.Tests
         //}
 
         [TestMethod]
-        public void MonaTest1()
+        public void MonaParserTest1()
         {
             string input = @"
 /*
@@ -46,7 +48,7 @@ p notin $ & q in $;
         }
 
         [TestMethod]
-        public void MonaTest2()
+        public void MonaParserTest2()
         {
             string input = @"
 # Qe describes the valid indices of a queue
@@ -111,18 +113,18 @@ ex1 p: is3(p, Qe', Q1', Q2'); # Q' does contain the element 3
 
 
         [TestMethod]
-        public void MonaTestIn()
+        public void MonaParserTestIn()
         {
             string input = @"
 0x3 in {1,2,3};
 4 notin {1,...,3,6};
-"; 
+";
             MonaProgram pgm = MonaParser.Parse(input);
             Assert.IsTrue(pgm.declarations.Count == 2);
         }
 
         [TestMethod]
-        public void MonaTestPred()
+        public void MonaParserTestPred()
         {
             string input = @"
 var1 p, q;
@@ -134,7 +136,7 @@ is0(p, Qe, Q1, Q2) & ~is0(q, Qe, Q1, Q2);
             Assert.IsTrue(pgm.declarations.Count == 4);
         }
         [TestMethod]
-        public void MonaTestPred_error1()
+        public void MonaParserTestPred_error1()
         {
             string input = @"
 var1 p, q;
@@ -155,7 +157,7 @@ is0(p, Qe, Q1, Q2) & ~is0(Q2, Qe, Q1, Q2);
         }
 
         [TestMethod]
-        public void MonaTestPred_error2()
+        public void MonaParserTestPred_error2()
         {
             string input = @"
 var1 p;
@@ -176,7 +178,7 @@ is0(p, Qe, Q1, Q2) & ~is0(q, Qe, Q1, Q2);
         }
 
         [TestMethod]
-        public void MonaTestAllpos()
+        public void MonaParserTestAllpos()
         {
             string input = @"
 var2 q;
@@ -187,7 +189,7 @@ allpos q;
         }
 
         [TestMethod]
-        public void MonaTestAllpos_error1()
+        public void MonaParserTestAllpos_error1()
         {
             string input = @"
 allpos q; 
@@ -205,7 +207,7 @@ allpos q;
         }
 
         [TestMethod]
-        public void MonaTestAllpos_error2()
+        public void MonaParserTestAllpos_error2()
         {
             string input = @"
 var1 q;
@@ -224,18 +226,18 @@ allpos q;
         }
 
         [TestMethod]
-        public void MonaTestVar0decl()
+        public void MonaParserTestVar0decl()
         {
             string input = @"
 var0 a, b ; # Boolean vars a and b
 ";
-            MonaProgram pgm = MonaParser.Parse(input);   
+            MonaProgram pgm = MonaParser.Parse(input);
             Assert.AreEqual<int>(1, pgm.declarations.Count);
             Assert.AreEqual<string>("var0 a,b;", pgm.ToString().Trim());
         }
 
         [TestMethod]
-        public void MonaTestVar0decl_error()
+        public void MonaParserTestVar0decl_error()
         {
             string input = @"
 var1 a; # variable a 
@@ -254,7 +256,7 @@ var0 a; # variable a again
         }
 
         [TestMethod]
-        public void MonaTestUnivDecl()
+        public void MonaParserTestUnivDecl()
         {
             string input = @"
 m2l-tree;
@@ -270,7 +272,7 @@ universe U1, U2:110101, U3:foo; # sample universes
         }
 
         [TestMethod]
-        public void MonaTestUnivDecl_error()
+        public void MonaParserTestUnivDecl_error()
         {
             string input = @"
 m2l-tree;
@@ -289,7 +291,7 @@ universe U1, U2:110201, U3:foo; # sample universes
         }
 
         [TestMethod]
-        public void MonaTestConstDecl()
+        public void MonaParserTestConstDecl()
         {
             string input = @"
 const a = 23 + 2;
@@ -306,7 +308,7 @@ const b = a + (2 - a);
         }
 
         [TestMethod]
-        public void MonaTestConstDecl_error()
+        public void MonaParserTestConstDecl_error()
         {
             string input = @"
 const a = 23 + 2;
@@ -325,7 +327,7 @@ const b = a + (2 - c);
         }
 
         [TestMethod]
-        public void MonaTestDefaultWhereDecl()
+        public void MonaParserTestDefaultWhereDecl()
         {
             string input = @"
 defaultwhere1(p) = p < 10;
@@ -339,7 +341,7 @@ defaultwhere1(p) = p < 10;
 
 
         [TestMethod]
-        public void MonaTestPredDecl1()
+        public void MonaParserTestPredDecl1()
         {
             string input = @"
 pred foo() = 4 < 6;
@@ -350,7 +352,7 @@ pred bar(var2 P, var1 p) = p in P & foo();
             Assert.IsTrue(pgm.declarations[0] is MonaPredDecl);
             Assert.IsTrue(pgm.declarations[1] is MonaPredDecl);
             var foo = pgm.declarations[0] as MonaPredDecl;
-            var bar = pgm.declarations[1] as MonaPredDecl; 
+            var bar = pgm.declarations[1] as MonaPredDecl;
             Assert.IsFalse(foo.isMacro);
             Assert.IsFalse(bar.isMacro);
             Assert.AreEqual<string>("foo", foo.name.text);
@@ -362,7 +364,7 @@ pred bar(var2 P, var1 p) = p in P & foo();
         }
 
         [TestMethod]
-        public void MonaTestMacroDecl1()
+        public void MonaParserTestMacroDecl1()
         {
             string input = @"
 macro bar(var2 P,Q) = 1 in P;
@@ -379,7 +381,7 @@ macro bar(var2 P,Q) = 1 in P;
         }
 
         [TestMethod]
-        public void MonaTestMacroDecl2()
+        public void MonaParserTestMacroDecl2()
         {
             string input = @"
 macro bar(var2 P, R, Q, var1 q, var0 e) = q in P;
@@ -399,7 +401,7 @@ macro bar(var2 P, R, Q, var1 q, var0 e) = q in P;
         }
 
         [TestMethod]
-        public void MonaTestMacroDecl2_error()
+        public void MonaParserTestMacroDecl2_error()
         {
             string input = @"
 macro bar(var2 P, R, Q, var1 Q, var0 e) = q in P;
@@ -417,7 +419,7 @@ macro bar(var2 P, R, Q, var1 Q, var0 e) = q in P;
         }
 
         [TestMethod]
-        public void MonaTestDecl()
+        public void MonaParserTestDecl()
         {
             string input = @"
 const a = 23 + 2;
@@ -438,7 +440,7 @@ const b = a + 2*a;
         }
 
         [TestMethod]
-        public void MonaTestDecl_error()
+        public void MonaParserTestDecl_error()
         {
             string input = @"
 const a = 23 + 2;
@@ -459,7 +461,7 @@ const b = a + (2 - P);
         }
 
         [TestMethod]
-        public void MonaTestQ1()
+        public void MonaParserTestQ1()
         {
             string input = @"
 const zero = 0;
@@ -503,7 +505,7 @@ macro psi(var2 Y, var1 x,y) = (ex1 z: lt(x,z) & lt(z,y)) & (all2 X: X sub Y => X
         }
 
         [TestMethod]
-        public void MonaTestLet1()
+        public void MonaParserTestLet1()
         {
             string input = @"
 const c = 42;
@@ -523,7 +525,7 @@ let1 x=3,y=c in x < y;
         }
 
         [TestMethod]
-        public void MonaTestLet0()
+        public void MonaParserTestLet0()
         {
             string input = @"
 const t = 42;
@@ -543,7 +545,7 @@ let0 x=(t=t),y=(true) in (x <=> y);
         }
 
         [TestMethod]
-        public void MonaTestLet1_error()
+        public void MonaParserTestLet1_error()
         {
             string input = @"
 var2 c;
@@ -559,7 +561,150 @@ let1 x=3,y=c in x < y;
                 return;
             }
             Assert.Fail("expecting " + MonaParseExceptionKind.TypeMismatch.ToString());
-        
+
         }
+    }
+
+    [TestClass]
+    public class MonaCompilerTests
+    {
+        static Variable V1(string name)
+        {
+            return new Variable(name, true);
+        }
+        static Variable V2(string name)
+        {
+            return new Variable(name, true);
+        }
+
+        [TestMethod]
+        public void Mona2AutomatonTest1()
+        {
+            string source = @"
+m2l-str;
+var1 x,y;
+x < y;
+";
+            MonaProgram pgm = MonaParser.Parse(source);
+            var mso = pgm.ToMSO();
+            BDDAlgebra solver = new BDDAlgebra();
+            var aut = mso.GetAutomaton(solver, 0, new Variable[]{V1("x"), V1("y")});
+            //aut.ShowGraph();
+            Assert.IsTrue(aut.StateCount == 3);
+        }
+
+        [TestMethod]
+        public void Mona2AutomatonTest2()
+        {
+            BDDAlgebra solver = new BDDAlgebra();
+
+            string source1 = @"
+m2l-str;
+var1 x,y;
+y = x + 1;
+";
+            string source2 = @"
+m2l-str;
+var1 x,y;
+x < y & ~ex1 z: x<z & z<y;
+";
+            MonaProgram pgm1 = MonaParser.Parse(source1);
+            var mso1 = pgm1.ToMSO();
+            var aut1 = mso1.GetAutomaton(solver, 0);
+
+            //aut1.ShowGraph("aut1");
+
+            MonaProgram pgm2 = MonaParser.Parse(source2);
+            var mso2 = pgm2.ToMSO();
+            var aut2 = mso2.GetAutomaton(solver, 0);
+
+            //aut2.ShowGraph("aut2");
+
+            Assert.IsTrue(aut1.IsEquivalentWith(aut2, solver));
+        }
+
+        [TestMethod]
+        public void Mona2AutomatonTest3()
+        {
+            BDDAlgebra solver = new BDDAlgebra();
+
+            string source1 = @"
+m2l-str;
+var1 x,y;
+y = x + 2;
+";
+            string source2 = @"
+m2l-str;
+var1 x,y;
+ex1 z: x<z & z<y;
+x < y & ~ex1 z1,z2: x<z1 & z1<y & x<z2 & z2<y & z1 ~= z2;
+";
+            MonaProgram pgm1 = MonaParser.Parse(source1);
+            var mso1 = pgm1.ToMSO();
+            var aut1 = mso1.GetAutomaton(solver, 0, new Variable[]{V1("x"), V1("y")});
+
+            //aut1.ShowGraph("aut1");
+
+            MonaProgram pgm2 = MonaParser.Parse(source2);
+            var mso2 = pgm2.ToMSO();
+            var aut2 = mso2.GetAutomaton(solver, 0, new Variable[]{V1("x"), V1("y")});
+
+            //aut2.ShowGraph("aut2");
+
+            Assert.IsTrue(aut1.IsEquivalentWith(aut2, solver));
+        }
+
+        [TestMethod]
+        public void Mona2AutomatonTest4()
+        {
+            BDDAlgebra solver = new BDDAlgebra();
+
+            string source1 = @"
+m2l-str;
+var2 X,Y;
+Y = X;
+";
+            string source2 = @"
+m2l-str;
+var2 X,Y;
+all1 z: z in X <=> z in Y;
+";
+
+            string source3 = @"
+m2l-str;
+var2 X,Y;
+Y sub X & X sub Y;
+";
+
+            string source4 = @"
+m2l-str;
+var2 X,Y;
+Y\X = empty & X\Y = empty;
+";
+            MonaProgram pgm1 = MonaParser.Parse(source1);
+            var mso1 = pgm1.ToMSO();
+            var aut1 = mso1.GetAutomaton(solver, 0, new Variable[]{V2("X"), V2("Y")});
+
+            //aut1.ShowGraph("aut1");
+
+            MonaProgram pgm2 = MonaParser.Parse(source2);
+            var mso2 = pgm2.ToMSO();
+            var aut2 = mso2.GetAutomaton(solver, 0, new Variable[]{V2("X"), V2("Y")});
+
+            //aut2.ShowGraph("aut2");
+
+            MonaProgram pgm3 = MonaParser.Parse(source3);
+            var mso3 = pgm3.ToMSO();
+            var aut3 = mso3.GetAutomaton(solver, 0, new Variable[]{V2("X"), V2("Y")});
+
+            MonaProgram pgm4 = MonaParser.Parse(source4);
+            var mso4 = pgm4.ToMSO();
+            var aut4 = mso4.GetAutomaton(solver, 0, new Variable[]{V2("X"), V2("Y")});
+
+            Assert.IsTrue(aut1.IsEquivalentWith(aut2, solver));
+            Assert.IsTrue(aut1.IsEquivalentWith(aut3, solver));
+            Assert.IsTrue(aut1.IsEquivalentWith(aut4, solver));
+        }
+
     }
 }

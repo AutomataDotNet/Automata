@@ -399,7 +399,7 @@ namespace MSOZ3Test
             var x = new Variable("x", true);
             MSOFormula<BDD> phi = new MSOExists<BDD>(x, new MSOAnd<BDD>(new MSOeqN<BDD>(x,0), new MSOLast<BDD>(x)));
 
-            var aut = phi.GetAutomaton(solver);
+            var aut = phi.GetAutomaton(solver, 16);
 
             var res = solver.Convert("^[\0-\uFFFF]$");
             //solver.ShowGraph(res,"res");
@@ -424,7 +424,7 @@ namespace MSOZ3Test
             ))); 
 
 
-            var aut = phi.GetAutomaton(solver);
+            var aut = phi.GetAutomaton(solver, 16);
 
             var aut2 = solver.RegexConverter.Convert(".{3,}", System.Text.RegularExpressions.RegexOptions.Singleline);
             Assert.IsTrue(aut.IsEquivalentWith(aut2, solver));
@@ -450,7 +450,7 @@ namespace MSOZ3Test
                     new MSOLt<BDD>(V1("x"), V1("y"))));
 
 
-            var aut = phi.GetAutomaton(solver);
+            var aut = phi.GetAutomaton(solver, 16);
 
             var aut2 = solver.RegexConverter.Convert(".{2,}", System.Text.RegularExpressions.RegexOptions.Singleline);
             Assert.IsTrue(aut.IsEquivalentWith(aut2, solver));
@@ -465,7 +465,7 @@ namespace MSOZ3Test
             //var phi = new MSOTrue();
             MSOFormula<BDD> phi = new MSOExists<BDD>(V1("x"), new MSOExists<BDD>(V1("y"), new MSONot<BDD>(new MSOEq<BDD>(V1("x"), V1("y")))));
 
-            var aut = phi.GetAutomaton(solver);
+            var aut = phi.GetAutomaton(solver, 16);
 
             var aut2 = solver.RegexConverter.Convert(".{2,}", System.Text.RegularExpressions.RegexOptions.Singleline);
             Assert.IsTrue(aut.IsEquivalentWith(aut2, solver));
@@ -478,7 +478,7 @@ namespace MSOZ3Test
             var x = new Variable("x", true);
             MSOFormula<BDD> phi = new MSOForall<BDD>(x, new MSOPredicate<BDD>(solver.MkCharConstraint('c',true), x));
 
-            var aut = phi.GetAutomaton(solver);
+            var aut = phi.GetAutomaton(solver, 16);
             //aut.ShowGraph("aut");
             for (int i = 0; i < 10; i++)
             {
@@ -501,7 +501,7 @@ namespace MSOZ3Test
             var pred_aut = pred.GetAutomaton(ca, x);
             //pred_aut.ShowGraph("pred_aut");
 
-            var aut = phi.GetAutomaton(solver);
+            var aut = phi.GetAutomaton(solver, 16);
             for (int i = 0; i < 10; i++)
             {
                 var s = solver.GenerateMember(aut);
@@ -522,7 +522,7 @@ namespace MSOZ3Test
             MSOFormula<BDD> phi = new MSOExists<BDD>(x, 
                 new MSOAnd<BDD>(new MSOPredicate<BDD>(solver.MkCharConstraint('C'), x), new MSOeqN<BDD>(x,0)));
 
-            var aut = phi.GetAutomaton(solver);
+            var aut = phi.GetAutomaton(solver, 16);
             var aut2 = solver.RegexConverter.Convert("^C");
             Assert.IsTrue(aut2.IsEquivalentWith(aut, solver));
         }
@@ -534,7 +534,7 @@ namespace MSOZ3Test
             //var phi = new MSOTrue();
             MSOFormula<BDD> phi = new MSONot<BDD>(new MSOExists<BDD>(V1("x"), new MSOPredicate<BDD>(solver.MkCharConstraint( 'c'), V1("x"))));
 
-            var aut = phi.GetAutomaton(solver);
+            var aut = phi.GetAutomaton(solver, 7);
             for (int i = 0; i < 10; i++)
             {
                 var s = solver.GenerateMember(aut);
@@ -555,7 +555,7 @@ namespace MSOZ3Test
                     )
                 );
 
-            var aut = phi.GetAutomaton(solver);
+            var aut = phi.GetAutomaton(solver, 32);
             for (int i = 0; i < 10; i++)
             {
                 var s = solver.GenerateMember(aut);
@@ -583,7 +583,7 @@ namespace MSOZ3Test
                     )
                 );
 
-            var aut = phi.GetAutomaton(solver);
+            var aut = phi.GetAutomaton(solver, 32);
             for (int i = 0; i < 10; i++)
             {
                 var s = solver.GenerateMember(aut);
@@ -733,7 +733,7 @@ namespace MSOZ3Test
 
                     sw.Restart();
                     //var aut1 = phi.GetAutomaton(new CartesianAlgebraBDD<BDD>(solver));
-                    var aut1 = phi.GetAutomaton(solver);
+                    var aut1 = phi.GetAutomaton(solver, 16);
                     //aut1.ShowGraph();
                     sw.Stop();
                     times[vars - 2] += sw.ElapsedMilliseconds;
@@ -820,7 +820,7 @@ namespace MSOZ3Test
 
                     sw.Restart();
                     //var aut1 = phi.GetAutomaton(new CartesianAlgebraBDD<BDD>(solver));
-                    var aut1 = phi.GetAutomaton(solver);
+                    var aut1 = phi.GetAutomaton(solver, 7);
                     sw.Stop();
                     times[vars - 2] += sw.ElapsedMilliseconds;
                     //Console.WriteLine("States {0} Trans {1}",aut1.StateCount,aut1.MoveCount);

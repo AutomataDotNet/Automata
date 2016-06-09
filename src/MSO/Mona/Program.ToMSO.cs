@@ -21,7 +21,7 @@ namespace Microsoft.Automata.MSO.Mona
             if (header != MonaHeader.M2LSTR)
                 throw new NotSupportedException("unsopprted header " + header);
 
-            if (declarations.Exists(d => (d.kind != Mona.MonaDeclKind.formula || d.kind != Mona.MonaDeclKind.var1 || d.kind != Mona.MonaDeclKind.var2)))
+            if (declarations.Exists(d => (d.kind != Mona.MonaDeclKind.formula && d.kind != Mona.MonaDeclKind.var1 && d.kind != Mona.MonaDeclKind.var2)))
                 throw new NotSupportedException("unsopprted declaration (other than formula or var1 or var2)");
 
             if (vars1.Exists(d => (d.univs != null || d.varwhere.where != null)))
@@ -37,8 +37,8 @@ namespace Microsoft.Automata.MSO.Mona
                     var phi = ConvertFormula(((MonaFormulaDecl)decl).formula, MapStack<string,MonaParam>.Empty);
                     psi = (psi == null ? phi : new MSOAnd<BDD>(psi, phi));
                 }
-            
-            throw new NotImplementedException();
+
+            return psi;
         }
 
         private MSOFormula<BDD> ConvertFormula(MonaExpr expr, MapStack<string,MonaParam> locals)
@@ -238,6 +238,11 @@ namespace Microsoft.Automata.MSO.Mona
                                     var pred = new MSOeqN<BDD>(x, n);
                                     psi = pred;
                                     return x;
+                                }
+                                else if (d.kind == MonaDeclKind.var1)
+                                {
+                                    psi = null;
+                                    return new Variable(t.symbol.text, true);
                                 }
                                 else
                                     throw new NotImplementedException(t.ToString());

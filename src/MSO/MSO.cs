@@ -61,10 +61,17 @@ namespace Microsoft.Automata.MSO
         /// Gets the automaton over alg where BDDs are extended with new bit positions for the variables. 
         /// All the free variables in the formula must occur among fv.
         /// The type T must be BDD.
-        /// </summary>
-        public Automaton<BDD> GetAutomaton(CharSetSolver alg, params Variable[] fvs)
+        public Automaton<BDD> GetAutomaton(IBDDAlgebra alg, int nrOfReservedBits, Variable[] fvs)
         {
-            return ToWS1S().GetAutomatonBDD(alg, (int)alg.Encoding, fvs);
+            return GetAutomatonBDD(SimpleList<Variable>.Empty.Append(fvs), alg, nrOfReservedBits);
+        }
+
+        /// <summary>
+        /// Gets the automaton over alg where BDDs are extended with new bit positions for the variables. 
+        /// The type T must be BDD.
+        public Automaton<BDD> GetAutomaton(IBDDAlgebra alg, int nrOfReservedBits)
+        {
+            return GetAutomatonBDD(SimpleList<Variable>.Empty.Append(FreeVariables.ToArray()), alg, nrOfReservedBits);
         }
 
         /// <summary>
@@ -90,6 +97,25 @@ namespace Microsoft.Automata.MSO
                 throw new ArgumentException(string.Format("list does not contain variable {0}", x), "xs");
             return i;
         }
+
+        List<Variable> fvs = null;
+        /// <summary>
+        /// Gets the list of all free variables sorted alphabetically.
+        /// </summary>
+        public List<Variable> FreeVariables
+        {
+            get
+            {
+                if (fvs == null)
+                {
+                    fvs = new List<Variable>(EnumerateFreeVariables(SimpleList<Variable>.Empty, new HashSet<Variable>()));
+                    fvs.Sort();
+                }
+                return fvs;
+            }
+        }
+
+        internal abstract IEnumerable<Variable> EnumerateFreeVariables(SimpleList<Variable> bound, HashSet<Variable> free);  
     }
 
     /// <summary>
@@ -105,6 +131,16 @@ namespace Microsoft.Automata.MSO
             this.var1 = var1;
             this.var2 = var2;
         }
+
+        internal override IEnumerable<Variable> EnumerateFreeVariables(SimpleList<Variable> bound, HashSet<Variable> free)
+        {
+            if (!bound.Contains(var1))
+                if (free.Add(var1))
+                    yield return var1;
+            if (!bound.Contains(var2))
+                if (free.Add(var2))
+                    yield return var2;
+        }
     }
 
     /// <summary>
@@ -117,6 +153,13 @@ namespace Microsoft.Automata.MSO
         public MSOUnaryAtom(Variable var)
         {
             this.var = var;
+        }
+
+        internal override IEnumerable<Variable> EnumerateFreeVariables(SimpleList<Variable> bound, HashSet<Variable> free)
+        {
+            if (!bound.Contains(var))
+                if (free.Add(var))
+                    yield return var;
         }
     }
 
@@ -132,6 +175,14 @@ namespace Microsoft.Automata.MSO
         {
             this.phi1 = phi1;
             this.phi2 = phi2;
+        }
+
+        internal override IEnumerable<Variable> EnumerateFreeVariables(SimpleList<Variable> bound, HashSet<Variable> free)
+        {
+            foreach (var x in phi1.EnumerateFreeVariables(bound, free))
+                yield return x;
+            foreach (var x in phi2.EnumerateFreeVariables(bound, free))
+                yield return x;
         }
 
     }
@@ -158,12 +209,44 @@ namespace Microsoft.Automata.MSO
             this.phi = phi;
         }
 
+
+        public override WS1SFormula<T> ToWS1S()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override MSOFormula<T> ToCore()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void Print(StringBuilder sb)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override MSOFormulaKind Kind
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        internal override Automaton<BDD> GetAutomatonBDD(SimpleList<Variable> variables, IBDDAlgebra alg, int nrOfFreeBits)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal override IEnumerable<Variable> EnumerateFreeVariables(SimpleList<Variable> bound, HashSet<Variable> free)
+        {
+            foreach (var x in phi.EnumerateFreeVariables(bound.Append(var), free))
+                yield return x;
+        }
+
     }
 
     /// <summary>
     /// First-order or second-order variable
     /// </summary>
-    public class Variable
+    public class Variable : IComparable
     {
         bool isfo;
         string name;
@@ -201,6 +284,14 @@ namespace Microsoft.Automata.MSO
         {
             return name.GetHashCode();
         }
+
+        public int CompareTo(object obj)
+        {
+            var v = obj as Variable;
+            if (v == null)
+                return -1;
+            return name.CompareTo(v.name);
+        }
     }
 
 
@@ -236,6 +327,11 @@ namespace Microsoft.Automata.MSO
         {
             return BasicAutomata.MkTrue(alg);
         }
+
+        internal override IEnumerable<Variable> EnumerateFreeVariables(SimpleList<Variable> bound, HashSet<Variable> free)
+        {
+            yield break;
+        }
     }
 
     /// <summary>
@@ -267,6 +363,11 @@ namespace Microsoft.Automata.MSO
         internal override Automaton<BDD> GetAutomatonBDD(SimpleList<Variable> variables, IBDDAlgebra alg, int nrOfLabelBits)
         {
             return BasicAutomata.MkFalse(alg);
+        }
+
+        internal override IEnumerable<Variable> EnumerateFreeVariables(SimpleList<Variable> bound, HashSet<Variable> free)
+        {
+            yield break;
         }
     }
 
@@ -304,25 +405,13 @@ namespace Microsoft.Automata.MSO
 
         internal override Automaton<BDD> GetAutomatonBDD(SimpleList<Variable> variables, IBDDAlgebra alg, int nrOfLabelBits)
         {
-            var pos1 = variables.IndexOf(var1); 
-            var pos2 = variables.IndexOf(var2);
-
-            if (pos1 < 0)
-                throw new ArgumentOutOfRangeException("variables", string.Format("does not contain {0}", var1));
-            if (pos2 < 0)
-                throw new ArgumentOutOfRangeException("variables", string.Format("does not contain {0}", var2));
-
-            pos1 = pos1 + nrOfLabelBits;
-            pos2 = pos2 + nrOfLabelBits;
+            var pos1 = GetVarIndex(var1, variables) + nrOfLabelBits;
+            var pos2 = GetVarIndex(var2, variables) + nrOfLabelBits;
 
             if (var1.IsFirstOrder)
-            {
                 return BasicAutomata.MkEqualPositions2(pos1, pos2, alg);
-            }
             else
-            {
                 return BasicAutomata.MkEqualSets(pos1, pos2, alg);
-            }
         }
     }
 
@@ -604,6 +693,12 @@ namespace Microsoft.Automata.MSO
             var aut = phi.GetAutomatonBDD(variables, alg, nrOfLabelBits);
             var res = aut.Determinize(alg).Complement(alg).Minimize(alg);
             return res;
+        }
+
+        internal override IEnumerable<Variable> EnumerateFreeVariables(SimpleList<Variable> bound, HashSet<Variable> free)
+        {
+            foreach (var x in phi.EnumerateFreeVariables(bound, free))
+                yield return x;
         }
     }
 
