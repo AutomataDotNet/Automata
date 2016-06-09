@@ -10,21 +10,27 @@ namespace MSO.Tests
     [TestClass]
     public class MonaParserTests
     {
-        //[TestMethod]
-        //public void MonaTest_parse_ltl() 
-        //{
-        //    DirectoryInfo di = new DirectoryInfo(@"C:\tmp\automatark-master\automatark-master\m2l-str\LTL-finite");
-        //    foreach (var subdir in di.EnumerateDirectories())    
-        //    {
-        //        foreach (var fi in subdir.EnumerateFiles())
-        //        {
-        //            Program pgm = MonaParser.ParseFromFile(fi.FullName);
-        //            var pgmstr = pgm.Description;
-        //            Assert.IsTrue(pgm.header == Header.M2LSTR);
-        //            Assert.IsTrue(pgm.declarations.Count > 0);
-        //        }
-        //    }
-        //}
+        [TestMethod]
+        public void MonaTest_parse_ltl()
+        {
+            foreach (string fileName in Directory.EnumerateFiles(@"C:\github\automatark\m2l-str\", "*.mona", SearchOption.AllDirectories))
+            {
+                MonaProgram pgm = MonaParser.ParseFromFile(fileName);
+                    var pgmstr = pgm.Description;
+                    Assert.IsTrue(pgm.declarations.Count > 0);                
+            }
+        }
+
+        [TestMethod]
+        public void MonaTest_parse_mona()
+        {
+            foreach (string fileName in Directory.EnumerateFiles(@"C:\github\automatark\ws1s\", "*.mona", SearchOption.AllDirectories))
+            {
+                MonaProgram pgm = MonaParser.ParseFromFile(fileName);
+                var pgmstr = pgm.Description;
+                Assert.IsTrue(pgm.declarations.Count > 0);
+            }
+        }
 
         [TestMethod]
         public void MonaParserTest1()
