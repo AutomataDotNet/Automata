@@ -49,7 +49,7 @@ namespace MSOEvaluation
             using (System.IO.StreamWriter file =
                new System.IO.StreamWriter(@"..\ltltest.txt"))
             {
-                foreach (string fileName in Directory.EnumerateFiles(@"C:\Users\Loris\Desktop\automatark\m2l-str\LTL-finite", "*.mona", SearchOption.AllDirectories))
+                foreach (string fileName in Directory.EnumerateFiles(@"C:\github\automatark\m2l-str\LTL-finite", "*.mona", SearchOption.AllDirectories))
                 {
                     string contents = File.ReadAllText(fileName);
                     MonaProgram pgm1 = MonaParser.Parse(contents);

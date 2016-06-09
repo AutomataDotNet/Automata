@@ -290,6 +290,13 @@ namespace Microsoft.Automata.MSO.Mona
                         return x;
                     }
 
+                case Tokens.NUMBER:
+                    {
+                        Variable x = MkNewVar1();
+                        int num = t.symbol.ToInt();
+                        psi = new MSOeqN<BDD>(x,num);
+                        return x;
+                    }
                 default:
                     throw new NotImplementedException(t.ToString());
             }
