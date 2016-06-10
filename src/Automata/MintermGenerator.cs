@@ -11,7 +11,7 @@ namespace Microsoft.Automata
     /// Provides a generic implementation for minterm generation over a given Boolean Algebra.
     /// </summary>
     /// <typeparam name="PRED">type of predicates</typeparam>
-    public class MintermGenerator<PRED>
+    public class MintermGenerator<PRED> 
     {
         IBooleanAlgebra<PRED> ba;
 

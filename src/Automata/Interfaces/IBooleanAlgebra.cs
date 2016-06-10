@@ -121,14 +121,7 @@ namespace Microsoft.Automata
         /// <param name="psi">some predicate</param>
         /// <returns></returns>
         bool EvaluateAtom(S atom, S psi);
-    }
 
-    /// <summary>
-    /// Extends the Boolean algebra interface with minterm generation.
-    /// </summary>
-    /// <typeparam name="PRED">predicates</typeparam>
-    public interface IBoolAlgMinterm<PRED> : IBooleanAlgebra<PRED>
-    {
         /// <summary>
         /// Given an array of constraints {c_1, c_2, ..., c_n} where n&gt;=0.
         /// Enumerate all satisfiable Boolean combinations Pair({b_1, b_2, ..., b_n}, c)
@@ -138,8 +131,9 @@ namespace Microsoft.Automata
         /// </summary>
         /// <param name="constraints">array of constraints</param>
         /// <returns>Booolean combinations that are satisfiable</returns>
-        IEnumerable<Pair<bool[], PRED>> GenerateMinterms(params PRED[] constraints);
+        IEnumerable<Pair<bool[], S>> GenerateMinterms(params S[] constraints);
     }
+
     /*
 //sample 
 public class A32 : IBooleanAlgebra<UInt32>

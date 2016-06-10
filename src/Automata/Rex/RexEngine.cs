@@ -219,7 +219,7 @@ namespace Microsoft.Automata.Rex
         /// </summary>
         public bool AreEquivalent(Automaton<BDD> aut1, Automaton<BDD> aut2)
         {
-            return aut1.IsEquivalentWith(aut2, solver);
+            return aut1.IsEquivalentWith(aut2);
         }
 
 

@@ -84,7 +84,7 @@ namespace Microsoft.Automata
         /// Return the approx of the min SFA accepting only the strings accepted by the 3SFA
         /// </summary>
         /// <returns></returns>
-        public Automaton<S> GetApproxMinimalConsistentSFA(IBoolAlgMinterm<S> solver, int numAttempts)
+        public Automaton<S> GetApproxMinimalConsistentSFA(IBooleanAlgebra<S> solver, int numAttempts)
         {
             var min = this.Minimize(solver);
             Automaton<S> minDfa = min.GetBiggestLanguageSFA().Minimize(solver);
@@ -480,14 +480,14 @@ namespace Microsoft.Automata
         #endregion
 
 
-        public bool IsSound(Automaton<S> l1, Automaton<S> l2, IBoolAlgMinterm<S> solver)
+        public bool IsSound(Automaton<S> l1, Automaton<S> l2, IBooleanAlgebra<S> solver)
         {
             if (!l1.Minus(GetSmallestLanguageSFA(), solver).IsEmpty)
                 return false;
             return GetBiggestLanguageSFA().Minus(l2.Complement(solver), solver).IsEmpty;
         }
 
-        public bool IsComplete(Automaton<S> l1, Automaton<S> l2, IBoolAlgMinterm<S> solver)
+        public bool IsComplete(Automaton<S> l1, Automaton<S> l2, IBooleanAlgebra<S> solver)
         {
             if (!GetSmallestLanguageSFA().Minus(l1, solver).IsEmpty)
                 return false;
@@ -527,16 +527,16 @@ namespace Microsoft.Automata
         /// Returns true iff this automaton and another automaton B are equivalent
         /// </summary>
         /// <param name="B">another autonmaton</param>
-        public bool IsEquivalentWith(ThreeAutomaton<S> B, IBoolAlgMinterm<S> solver)
+        public bool IsEquivalentWith(ThreeAutomaton<S> B, IBooleanAlgebra<S> solver)
         {
             Automaton<S> accA = Automaton<S>.Create(algebra, this.initialState, this.acceptingStateSet, this.GetMoves());
             Automaton<S> accB = Automaton<S>.Create(algebra, B.initialState, B.acceptingStateSet, B.GetMoves());
-            if (!accA.IsEquivalentWith(accB, solver))
+            if (!accA.IsEquivalentWith(accB))
                 return false;
 
             Automaton<S> rejA = Automaton<S>.Create(algebra, this.initialState, this.rejectingStateSet, this.GetMoves());
             Automaton<S> rejB = Automaton<S>.Create(algebra,  B.initialState, B.rejectingStateSet, B.GetMoves());
-            return rejA.IsEquivalentWith(rejB, solver);
+            return rejA.IsEquivalentWith(rejB);
         }       
 
         /// <summary>
@@ -642,7 +642,7 @@ namespace Microsoft.Automata
         /// Minimization of FAs using a symbolic generalization of Moore's algorithm.
         /// This is a quadratic algorithm.
         /// </summary>
-        public ThreeAutomaton<S> Minimize(IBoolAlgMinterm<S> solver)
+        public ThreeAutomaton<S> Minimize(IBooleanAlgebra<S> solver)
         {
             return MinimizeClassical(solver, 0);
         }

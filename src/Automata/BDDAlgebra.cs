@@ -7,7 +7,7 @@ using BvSetKey = System.Tuple<int, Microsoft.Automata.BDD, Microsoft.Automata.BD
 namespace Microsoft.Automata
 {
 
-    public interface IBDDAlgebra : IBoolAlgMinterm<BDD>
+    public interface IBDDAlgebra : IBooleanAlgebra<BDD>
     {
         BDD MkBitTrue(int bit);
         BDD MkBitFalse(int bit);
@@ -2203,7 +2203,7 @@ namespace Microsoft.Automata
     /// <summary>
     /// Boolean algebra over an atomic universe.
     /// </summary>
-    public class TrivialBooleanAlgebra : IBoolAlgMinterm<bool>
+    public class TrivialBooleanAlgebra : IBooleanAlgebra<bool>
     {
         public TrivialBooleanAlgebra()
         {

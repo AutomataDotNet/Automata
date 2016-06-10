@@ -11,7 +11,7 @@ namespace Microsoft.Automata
     /// </summary>
     /// <typeparam name="S">type of the first Boolean algebra</typeparam>
     /// <typeparam name="T">type of the second Boolean algebra</typeparam>
-    public class PairBoolAlg<S,T> : IBoolAlgMinterm<Pair<S,T>>
+    public class PairBoolAlg<S,T> : IBooleanAlgebra<Pair<S,T>>
     {
         IBooleanAlgebra<S> first;
         IBooleanAlgebra<T> second;

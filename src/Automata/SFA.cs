@@ -128,7 +128,7 @@ namespace Microsoft.Automata
             CheckCompatibiltyWith(B);
 
             string diffName = string.Format("[{0}_-_{1}]", name, B.Name);
-            var AmB = Automaton<TERM>.MkDifference(automaton, B.automaton, 0, solver);
+            var AmB = Automaton<TERM>.MkDifference(automaton, B.automaton, 0);
             return new SFA<FUNC, TERM, SORT>(solver, inpSort, diffName, AmB);
         }
 
@@ -168,7 +168,7 @@ namespace Microsoft.Automata
             CheckCompatibiltyWith(A);
 
             List<TERM> w;
-            bool res = Automaton<TERM>.CheckDifference(this.automaton, A.automaton, 0, solver, out w);
+            bool res = Automaton<TERM>.CheckDifference(this.automaton, A.automaton, 0, out w);
             return !res;
         }
 
@@ -319,7 +319,7 @@ namespace Microsoft.Automata
         public SFA<FUNC, TERM, SORT> Complement()
         {
             Automaton<TERM> full = Automaton<TERM>.MkFull(this.automaton.Algebra);
-            var compl = Automaton<TERM>.MkDifference(full, automaton.MakeTotal(solver), 0, solver);
+            var compl = Automaton<TERM>.MkDifference(full, automaton.MakeTotal(solver), 0);
             return new SFA<FUNC, TERM, SORT>(solver, inpSort, string.Format("Compl[{0}]", name), compl);
         }
 

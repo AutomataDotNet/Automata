@@ -11,7 +11,7 @@ namespace MSO.Tests
     public class MonaParserTests
     {
         [TestMethod]
-        public void MonaTest_parse_ltl()
+        public void MonaParserTest_parse_ltl()
         {
             foreach (string fileName in Directory.EnumerateFiles(@"C:\github\automatark\m2l-str\", "*.mona", SearchOption.AllDirectories))
             {
@@ -22,7 +22,7 @@ namespace MSO.Tests
         }
 
         [TestMethod]
-        public void MonaTest_parse_mona()
+        public void MonaParserTest_parse_mona()
         {
             foreach (string fileName in Directory.EnumerateFiles(@"C:\github\automatark\ws1s\", "*.mona", SearchOption.AllDirectories))
             {
@@ -626,7 +626,7 @@ x < y & ~ex1 z: x<z & z<y;
 
             //aut2.ShowGraph("aut2");
 
-            Assert.IsTrue(aut1.IsEquivalentWith(aut2, solver));
+            Assert.IsTrue(aut1.IsEquivalentWith(aut2));
         }
 
         [TestMethod]
@@ -657,7 +657,7 @@ x < y & ~ex1 z1,z2: x<z1 & z1<y & x<z2 & z2<y & z1 ~= z2;
 
             //aut2.ShowGraph("aut2");
 
-            Assert.IsTrue(aut1.IsEquivalentWith(aut2, solver));
+            Assert.IsTrue(aut1.IsEquivalentWith(aut2));
         }
 
         [TestMethod]
@@ -707,9 +707,9 @@ Y\X = empty & X\Y = empty;
             var mso4 = pgm4.ToMSO();
             var aut4 = mso4.GetAutomaton(solver, 0, new Variable[]{V2("X"), V2("Y")});
 
-            Assert.IsTrue(aut1.IsEquivalentWith(aut2, solver));
-            Assert.IsTrue(aut1.IsEquivalentWith(aut3, solver));
-            Assert.IsTrue(aut1.IsEquivalentWith(aut4, solver));
+            Assert.IsTrue(aut1.IsEquivalentWith(aut2));
+            Assert.IsTrue(aut1.IsEquivalentWith(aut3));
+            Assert.IsTrue(aut1.IsEquivalentWith(aut4));
         }
 
     }

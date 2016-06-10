@@ -322,7 +322,7 @@ namespace Microsoft.Automata.Z3.Tests
                     var C = Automaton<Expr>.MkProduct(A, B, z3p);
                     var C2 = new SFAz3(z3p, z3p.CharSort, C.Determinize(z3p).Minimize(z3p)).Concretize(200);
 
-                    var equiv = C1.IsEquivalentWith(C1, z3p.CharSetProvider);
+                    var equiv = C1.IsEquivalentWith(C1);
                     Assert.IsTrue(equiv);
 
 
@@ -446,7 +446,7 @@ namespace Microsoft.Automata.Z3.Tests
                         var B = z3p.RegexConverter.Convert(regexB, System.Text.RegularExpressions.RegexOptions.None);
                         try
                         {
-                            var C = Automaton<Expr>.MkDifference(A, B, (int)timeout, z3p);
+                            var C = Automaton<Expr>.MkDifference(A, B, (int)timeout);
                             if (!C.IsEmpty)
                             {
                                 string s = GetMember(z3p, C);
@@ -486,9 +486,9 @@ namespace Microsoft.Automata.Z3.Tests
                     try
                     {
                         List<Expr> witness;
-                        var AmB = Automaton<Expr>.MkDifference(A, B, (int)timeout, z3p).Determinize(z3p).Minimize(z3p);
+                        var AmB = Automaton<Expr>.MkDifference(A, B, (int)timeout).Determinize(z3p).Minimize(z3p);
                         //AmB.ShowGraph();
-                        bool isNonempty = Automaton<Expr>.CheckDifference(A, B, (int)timeout, z3p, out witness);
+                        bool isNonempty = Automaton<Expr>.CheckDifference(A, B, (int)timeout, out witness);
                         if (isNonempty)
                         {
                             string s = new String(Array.ConvertAll(witness.ToArray(), c => z3p.GetCharValue(z3p.MainSolver.FindOneMember(c).Value)));
@@ -642,7 +642,7 @@ namespace Microsoft.Automata.Z3.Tests
             string ser = solver.SerializeAutomaton(dfa);
             var dfaback = solver.DeserializeAutomaton(ser);
 
-            Assert.IsTrue(dfa.IsEquivalentWith(dfaback, solver));
+            Assert.IsTrue(dfa.IsEquivalentWith(dfaback));
         }
 
         //[TestMethod]

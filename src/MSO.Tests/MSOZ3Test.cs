@@ -136,7 +136,7 @@ namespace MSOZ3Test
             //aut_not_xLTy.ShowGraph("aut_not_xLTy");
             //B.ShowGraph("x_geq_y");
             //c_aut_xLTy.ShowGraph("c_aut_xLTy");
-            var equiv1 = aut_not_xLTy.IsEquivalentWith(B, ca);
+            var equiv1 = aut_not_xLTy.IsEquivalentWith(B);
             //var equiv2 = aut_not_xLTy.IsEquivalentWith(c_aut_xLTy, ca);
             Assert.IsTrue(equiv1);
             //Assert.IsTrue(equiv2);
@@ -250,7 +250,7 @@ namespace MSOZ3Test
 
             var xSyPrim = new WS1SSuccN<BDD>(x,y, 1);
             var aut_xSyPrim = xSyPrim.GetAutomaton(ca, x,y);
-            var equiv = aut_xSyPrim.IsEquivalentWith(aut_xSyDef, ca);
+            var equiv = aut_xSyPrim.IsEquivalentWith(aut_xSyDef);
             Assert.IsTrue(equiv);
         }
 
@@ -281,7 +281,7 @@ namespace MSOZ3Test
 
             var xSyPrim = new WS1SSuccN<BDD>(x,y, 1);
             var aut_xSyPrim = xSyPrim.GetAutomatonBDD(solver, nrOfLabelBits, x, y);
-            var equiv = aut_xSyPrim.IsEquivalentWith(aut_xSyDef, solver);
+            var equiv = aut_xSyPrim.IsEquivalentWith(aut_xSyDef);
             Assert.IsTrue(equiv);
         }
 
@@ -313,7 +313,7 @@ namespace MSOZ3Test
         //    return res;
         //}
 
-        public void TestWS1S_UseOfCharRangePreds<T>(IBoolAlgMinterm<T> solver, T isDigit, T isWordLetter, IRegexConverter<T> regexConverter)
+        public void TestWS1S_UseOfCharRangePreds<T>(IBooleanAlgebra<T> solver, T isDigit, T isWordLetter, IRegexConverter<T> regexConverter)
         {
             var ca = new CartesianAlgebraBDD<T>(solver);
             var x = new Variable("x",false);
@@ -344,7 +344,7 @@ namespace MSOZ3Test
             //aut1.ShowGraph("aut1");
             //aut2.ShowGraph("aut2");
 
-            bool equiv = aut2.IsEquivalentWith(BasicAutomata.Restrict(aut1), solver);
+            bool equiv = aut2.IsEquivalentWith(BasicAutomata.Restrict(aut1));
             Assert.IsTrue(equiv);
 
             //solver.ShowGraph(aut_atLeast1d, "aut_atLeast1d");
@@ -389,7 +389,7 @@ namespace MSOZ3Test
             var aut_atLeast2wEE2 = atLeast2wEE.GetAutomatonBDD(solver, nrOfLabelBits);
             //aut_atLeast2wEE1.ShowGraph("aut_atLeast2wEE1");
             //aut_atLeast2wEE2.ShowGraph("aut_atLeast2wEE2");
-            Assert.IsTrue(aut_atLeast2wEE1.IsEquivalentWith(aut_atLeast2wEE2, solver));
+            Assert.IsTrue(aut_atLeast2wEE1.IsEquivalentWith(aut_atLeast2wEE2));
         }
 
         [TestMethod]
@@ -404,7 +404,7 @@ namespace MSOZ3Test
             var res = solver.Convert("^[\0-\uFFFF]$");
             //solver.ShowGraph(res,"res");
             //solver.SaveAsDgml(res, "res");
-            var eq = aut.IsEquivalentWith(res, solver);
+            var eq = aut.IsEquivalentWith(res);
             Assert.IsTrue(eq);
         }
 
@@ -427,7 +427,7 @@ namespace MSOZ3Test
             var aut = phi.GetAutomaton(solver, 16);
 
             var aut2 = solver.RegexConverter.Convert(".{3,}", System.Text.RegularExpressions.RegexOptions.Singleline);
-            Assert.IsTrue(aut.IsEquivalentWith(aut2, solver));
+            Assert.IsTrue(aut.IsEquivalentWith(aut2));
 
             //solver.ShowGraph(aut, "SFA");
         }
@@ -453,7 +453,7 @@ namespace MSOZ3Test
             var aut = phi.GetAutomaton(solver, 16);
 
             var aut2 = solver.RegexConverter.Convert(".{2,}", System.Text.RegularExpressions.RegexOptions.Singleline);
-            Assert.IsTrue(aut.IsEquivalentWith(aut2, solver));
+            Assert.IsTrue(aut.IsEquivalentWith(aut2));
 
             //new MSOLt<BDD>("x", "y").GetAutomaton(solver,"x","y").ShowGraph("");
         }
@@ -468,7 +468,7 @@ namespace MSOZ3Test
             var aut = phi.GetAutomaton(solver, 16);
 
             var aut2 = solver.RegexConverter.Convert(".{2,}", System.Text.RegularExpressions.RegexOptions.Singleline);
-            Assert.IsTrue(aut.IsEquivalentWith(aut2, solver));
+            Assert.IsTrue(aut.IsEquivalentWith(aut2));
         }
 
         [TestMethod]
@@ -486,7 +486,7 @@ namespace MSOZ3Test
             }
             var aut2 = solver.RegexConverter.Convert("^(c|C)*$");
             //aut2.ShowGraph("aut2");
-            Assert.IsTrue(aut2.IsEquivalentWith(aut, solver));
+            Assert.IsTrue(aut2.IsEquivalentWith(aut));
         }
 
         [TestMethod]
@@ -510,7 +510,7 @@ namespace MSOZ3Test
             var aut2 = solver.RegexConverter.Convert("c", System.Text.RegularExpressions.RegexOptions.Singleline);
             //aut2.ShowGraph("aut2");
             //aut.ShowGraph("aut");
-            Assert.IsTrue(aut2.IsEquivalentWith(aut, solver), "automata not equialent");
+            Assert.IsTrue(aut2.IsEquivalentWith(aut), "automata not equialent");
         }
 
         [TestMethod]
@@ -524,7 +524,7 @@ namespace MSOZ3Test
 
             var aut = phi.GetAutomaton(solver, 16);
             var aut2 = solver.RegexConverter.Convert("^C");
-            Assert.IsTrue(aut2.IsEquivalentWith(aut, solver));
+            Assert.IsTrue(aut2.IsEquivalentWith(aut));
         }
 
         [TestMethod]
@@ -541,7 +541,7 @@ namespace MSOZ3Test
                 Assert.IsTrue(System.Text.RegularExpressions.Regex.IsMatch(s, "^[^c]*$"));
             }
             var aut2 = solver.RegexConverter.Convert("^[^c]*$");
-            Assert.IsTrue(aut2.IsEquivalentWith(aut, solver));
+            Assert.IsTrue(aut2.IsEquivalentWith(aut));
         }
 
         [TestMethod]
@@ -562,7 +562,7 @@ namespace MSOZ3Test
                 Assert.IsTrue(System.Text.RegularExpressions.Regex.IsMatch(s, "^[ac]*$"));
             }
             var aut2 = solver.RegexConverter.Convert("^[ac]*$");
-            Assert.IsTrue(aut2.IsEquivalentWith(aut, solver));
+            Assert.IsTrue(aut2.IsEquivalentWith(aut));
         }
 
         [TestMethod]
@@ -590,7 +590,7 @@ namespace MSOZ3Test
                 Assert.IsTrue(System.Text.RegularExpressions.Regex.IsMatch(s, "^(ca|[^c])*$"));
             }
             var aut2 = solver.RegexConverter.Convert("^(ca|[^c])*$");
-            Assert.IsTrue(aut2.IsEquivalentWith(aut, solver));
+            Assert.IsTrue(aut2.IsEquivalentWith(aut));
         }
 
 
@@ -647,7 +647,7 @@ namespace MSOZ3Test
                 Move<BoolExpr>.Create(0,1, IsInt(0)),
                  Move<BoolExpr>.Create(1,0, IsInt(1))});
 
-            bool equiv = aut.IsEquivalentWith(expected_automaton, solver);
+            bool equiv = aut.IsEquivalentWith(expected_automaton);
             Assert.IsTrue(equiv, "the automata must be equivalent");
         }
 
@@ -684,8 +684,8 @@ namespace MSOZ3Test
 
             var sfa_det_min = sfa_det.Minimize(solver);
 
-            bool equiv1 = sfa.IsEquivalentWith(sfa_min, solver);
-            bool equiv2 = sfa.IsEquivalentWith(sfa_det, solver);
+            bool equiv1 = sfa.IsEquivalentWith(sfa_min);
+            bool equiv2 = sfa.IsEquivalentWith(sfa_det);
 
 
             Assert.IsTrue(equiv1);
@@ -698,7 +698,7 @@ namespace MSOZ3Test
             var sfa_min2 = sfa.Minimize(solver);
 
             //the result is incorrect
-            bool equiv3 = sfa_min.IsEquivalentWith(sfa_min2, solver);
+            bool equiv3 = sfa_min.IsEquivalentWith(sfa_min2);
 
             Assert.IsFalse(equiv3);
         }
@@ -1045,7 +1045,7 @@ namespace MSOZ3Test
 
             var xSyPrim = new WS1SSuccN<BoolExpr>(x,y, 1);
             var aut_xSyPrim = xSyPrim.GetAutomaton(alg, x,y);
-            var equiv = aut_xSyPrim.IsEquivalentWith(aut_xSyDef, alg);
+            var equiv = aut_xSyPrim.IsEquivalentWith(aut_xSyDef);
             Assert.IsTrue(equiv);
         }
     }

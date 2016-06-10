@@ -12,7 +12,7 @@ namespace Microsoft.Automata
         ICartesianAlgebra<T1, T2> Algebra { get; }
     }
 
-    public interface ICartesianAlgebra<T1, T2> : IBoolAlgMinterm<IMonadicPredicate<T1, T2>>
+    public interface ICartesianAlgebra<T1, T2> : IBooleanAlgebra<IMonadicPredicate<T1, T2>>
     {
         IMonadicPredicate<T1, T2> MkCartesianProduct(T1 first, T2 second);
         IBooleanAlgebra<T2> Second { get; }   
@@ -136,7 +136,7 @@ namespace Microsoft.Automata
         }
 
 
-        #region IBoolAlgMinterm members
+        #region IBooleanAlgebra members
 
         public IEnumerable<Pair<bool[], IMonadicPredicate<T, S>>> GenerateMinterms(params IMonadicPredicate<T, S>[] constraints)
         {

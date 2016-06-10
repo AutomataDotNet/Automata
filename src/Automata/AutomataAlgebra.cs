@@ -5,15 +5,15 @@ using System.Text;
 
 namespace Microsoft.Automata
 {
-    public class AutomataAlgebra<S> : IBoolAlgMinterm<Automaton<S>>
+    public class AutomataAlgebra<S> : IBooleanAlgebra<Automaton<S>>
     {
-        IBoolAlgMinterm<S> solver;
+        IBooleanAlgebra<S> solver;
         MintermGenerator<Automaton<S>> mtg;
 
         Automaton<S> empty;
         Automaton<S> full;
 
-        public AutomataAlgebra(IBoolAlgMinterm<S> solver)
+        public AutomataAlgebra(IBooleanAlgebra<S> solver)
         {
             this.solver = solver;
             mtg = new MintermGenerator<Automaton<S>>(this);
@@ -62,7 +62,7 @@ namespace Microsoft.Automata
 
         public bool AreEquivalent(Automaton<S> aut1, Automaton<S> aut2)
         {
-            return aut1.IsEquivalentWith(aut2, solver);
+            return aut1.IsEquivalentWith(aut2);
         }
 
         public Automaton<S> MkOr(Automaton<S> aut1, Automaton<S> aut2) 

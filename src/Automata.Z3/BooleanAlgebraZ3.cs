@@ -5,7 +5,7 @@ using Microsoft.Z3;
 
 namespace Microsoft.Automata.Z3
 {
-    public class Z3BoolAlg : IBoolAlgMinterm<BoolExpr>
+    public class Z3BoolAlg : IBooleanAlgebra<BoolExpr>
     {
         Context context;
         Solver solver;

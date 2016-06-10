@@ -177,7 +177,7 @@ namespace Microsoft.Automata.Tests
             string regex = solver.ConvertToRegex(aut).Replace("[ad]", "(a|d)").Replace("[b]", "b").Replace("[c]", "c");
             var aut2 = solver.Convert(regex).Determinize(solver).MinimizeHopcroft(solver);
           // solver.ShowGraph(aut2, "div3b");
-            bool equiv = aut.IsEquivalentWith(aut2, solver);
+            bool equiv = aut.IsEquivalentWith(aut2);
             Assert.IsTrue(equiv);
             //binary version of the regex
             string regex01 = regex.Replace("a","00").Replace("b","01").Replace("c","10").Replace("d","11");
@@ -214,7 +214,7 @@ namespace Microsoft.Automata.Tests
             //this will be a pretty large regex where the classes have been expanded
             var regex2 = solver.ConvertToRegex(aut1);
             var aut2 = solver.Convert(regex2);
-            bool equiv = aut1.IsEquivalentWith(aut2, solver);
+            bool equiv = aut1.IsEquivalentWith(aut2);
             Assert.IsTrue(equiv);
         }
 
@@ -232,7 +232,7 @@ namespace Microsoft.Automata.Tests
             //solver.ShowGraph(A, "A");
             //solver.ShowGraph(B, "B");
 
-            bool equiv = A.IsEquivalentWith(B, solver);
+            bool equiv = A.IsEquivalentWith(B);
             Assert.IsTrue(equiv);
         }
 
@@ -250,7 +250,7 @@ namespace Microsoft.Automata.Tests
             //solver.ShowGraph(A, "A");
             //solver.ShowGraph(B, "B");
 
-            bool equiv = A.IsEquivalentWith(B, solver);
+            bool equiv = A.IsEquivalentWith(B);
             Assert.IsTrue(equiv);
         }
 
@@ -287,7 +287,7 @@ namespace Microsoft.Automata.Tests
             var B = solver.Convert(regexB, System.Text.RegularExpressions.RegexOptions.None);
             //solver.ShowGraph(B, "B.dgml");
 
-            var C = Automaton<BDD>.MkDifference(A, B, 0, solver);
+            var C = Automaton<BDD>.MkDifference(A, B, 0);
             //solver.ShowGraph(C, "C.dgml");
 
             string s = solver.GenerateMember(C);
@@ -351,7 +351,7 @@ namespace Microsoft.Automata.Tests
             //ShowAsGraph(converter, B, "B.dgml");
 
             List<BDD> witness;
-            var res = Automaton<BDD>.CheckDifference(A, B, 0, converter, out witness);
+            var res = Automaton<BDD>.CheckDifference(A, B, 0, out witness);
             //ShowAsGraph(converter, C, "C.dgml");
 
             Console.Write(":");
@@ -493,7 +493,7 @@ namespace Microsoft.Automata.Tests
                     {
                         List<BDD> witness;
                         bool isNonempty;
-                        isNonempty = Automaton<BDD>.CheckDifference(A, B, (int)timeout, converter, out witness);
+                        isNonempty = Automaton<BDD>.CheckDifference(A, B, (int)timeout, out witness);
                         if (isNonempty)
                         {
                             nonemptyCnt += 1;
@@ -565,7 +565,7 @@ namespace Microsoft.Automata.Tests
             var dfa2 = solver.Convert("^(b*a)$").Determinize(solver).MinimizeHopcroft(solver);
             var dfa3 = dfa1.Union(dfa2).Determinize(solver).MinimizeHopcroft(solver);
             var dfa4 = solver.Convert("^((a*b)|(b*a))$").Determinize(solver).MinimizeHopcroft(solver);
-            Assert.IsTrue(dfa3.IsEquivalentWith(dfa4, solver));
+            Assert.IsTrue(dfa3.IsEquivalentWith(dfa4));
 
             //solver.ShowGraph(dfa, "TestUnion");
         }

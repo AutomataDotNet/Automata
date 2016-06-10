@@ -604,7 +604,7 @@ namespace Microsoft.Automata.Tests
             var automM3 = autom.Minimize(rex.Solver);
             //rex.Solver.ShowGraph(automM3, "automM3");
             Assert.AreEqual<int>(automM.StateCount, automM3.StateCount);
-            Assert.IsTrue(automM3.IsEquivalentWith(automM, rex.Solver));
+            Assert.IsTrue(automM3.IsEquivalentWith(automM));
         }
 
         [TestMethod]
@@ -619,7 +619,7 @@ namespace Microsoft.Automata.Tests
             var automM3 = autom.Minimize(rex.Solver);
             //rex.Solver.ShowGraph(automM3, "automM3");
             var automM = autom.MinimizeHopcroft(rex.Solver);
-            var same = automM3.IsEquivalentWith(automM, rex.Solver) && automM3.StateCount == automM.StateCount;
+            var same = automM3.IsEquivalentWith(automM) && automM3.StateCount == automM.StateCount;
             Assert.IsTrue(same);
         }
 
@@ -824,7 +824,7 @@ namespace Microsoft.Automata.Tests
             //solver.ShowGraph(fat1, "fat1");
             var fat2 = fat1.Minimize(solver);
             //solver.ShowGraph(fat2, "fat2");
-            Assert.IsTrue(fat1.IsEquivalentWith(fat2, solver));
+            Assert.IsTrue(fat1.IsEquivalentWith(fat2));
         }
 
         [TestMethod]
@@ -838,7 +838,7 @@ namespace Microsoft.Automata.Tests
             //solver.ShowGraph(fat1, "fat1");
             var fat2 = fat1.Minimize(solver);
             //solver.ShowGraph(fat2, "fat2");
-            Assert.IsTrue(fat1.IsEquivalentWith(fat2, solver));
+            Assert.IsTrue(fat1.IsEquivalentWith(fat2));
         }
     }
 }

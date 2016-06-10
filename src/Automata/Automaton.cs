@@ -233,7 +233,8 @@ namespace Microsoft.Automata
             }
             else
                 return null;
-        }           
+        }
+
 
         public static Automaton<T> MkEmpty(IBooleanAlgebra<T> algebra){            
             var fsa = new Automaton<T>();
@@ -1462,18 +1463,18 @@ namespace Microsoft.Automata
         /// </summary>
         /// <param name="B">another automaton</param>
         /// <param name="solver">boolean algebra solver over S</param>
-        public Automaton<T> Minus(Automaton<T> B, IBoolAlgMinterm<T> solver)
+        public Automaton<T> Minus(Automaton<T> B, IBooleanAlgebra<T> solver)
         {
-            return MkDifference(this, B, -1, solver);
+            return MkDifference(this, B, -1);
         }
 
         /// <summary>
         /// Creates the automaton that accepts the complement of L(this).
         /// </summary>
         /// <param name="solver">boolean algebra solver over S</param>
-        public Automaton<T> Complement(IBoolAlgMinterm<T> solver)
+        public Automaton<T> Complement(IBooleanAlgebra<T> solver)
         {
-            return MkDifference(MkFull(algebra), this, -1, solver);
+            return MkDifference(MkFull(algebra), this, -1);
         }
 
         /// <summary>
@@ -1543,17 +1544,24 @@ namespace Microsoft.Automata
             return Create(this.algebra, initialState, new int[] { newFinalState }, newMoves);
         }
 
+        internal static void CheckIdentityOfAlgebras(IBooleanAlgebra<T> solver1, IBooleanAlgebra<T> solver2) 
+        {
+            if (solver1 != solver2)
+                throw new AutomataException(AutomataExceptionKind.IncompatibleAlgebras);
+        }
+
         /// <summary>
         /// Returns true iff this automaton and another automaton B are equivalent
         /// </summary>
-        /// <param name="B">another autonmaton</param>
-        public bool IsEquivalentWith(Automaton<T> B, IBoolAlgMinterm<T> solver)
-        { 
+        /// <param name="B">another automaton</param>
+        public bool IsEquivalentWith(Automaton<T> B)
+        {
+            CheckIdentityOfAlgebras(algebra, B.algebra);
             List<T> witness = null;
-            bool diff = Automaton<T>.CheckDifference(this, B, -1, solver, out witness);
+            bool diff = Automaton<T>.CheckDifference(this, B, -1,  out witness);
             if (diff)
                 return false;
-            diff = Automaton<T>.CheckDifference(B, this, -1, solver, out witness);
+            diff = Automaton<T>.CheckDifference(B, this, -1,  out witness);
             return !diff;
         }
 
@@ -1565,9 +1573,10 @@ namespace Microsoft.Automata
         /// <param name="B">superset automaton</param>
         /// <param name="timeout">timeout in milliseconds (0 or a negative number means no timeout)</param>
         /// <returns>automaton accepting L(A x Complement(B))</returns>
-        static public Automaton<T> MkDifference(Automaton<T> A, Automaton<T> B, int timeout,
-            IBoolAlgMinterm<T> solver)
+        static public Automaton<T> MkDifference(Automaton<T> A, Automaton<T> B, int timeout)
         {
+            CheckIdentityOfAlgebras(A.algebra, B.algebra);
+            var solver = A.algebra;
             long timeout1 = Microsoft.Automata.Internal.Utilities.HighTimer.Frequency * ((long)timeout/(long)1000);
             long timeoutLimit;
             if (timeout > 0)
@@ -1766,9 +1775,10 @@ namespace Microsoft.Automata
         /// If true, outputs a witness that is a symbolic trace in A but not in B.
         /// </summary>
         static public bool CheckDifference(Automaton<T> A, Automaton<T> B, int timeout,
-                                           IBoolAlgMinterm<T> solver,
                                            out List<T> witness)
         {
+            CheckIdentityOfAlgebras(A.algebra, B.algebra);
+            IBooleanAlgebra<T> solver = A.algebra;
             long timeout1 = Microsoft.Automata.Internal.Utilities.HighTimer.Frequency * ((long)timeout / (long)1000);
             long timeoutLimit;
             if (timeout > 0)
@@ -2221,7 +2231,7 @@ namespace Microsoft.Automata
 
         #region Determinization
 
-        public Automaton<T> Determinize(IBoolAlgMinterm<T> solver, int timeout = 0)
+        public Automaton<T> Determinize(IBooleanAlgebra<T> solver, int timeout = 0)
         {
             if (IsDeterministic)
                 return this;
@@ -2237,7 +2247,7 @@ namespace Microsoft.Automata
             }
 
             var full = Automaton<T>.MkFull(algebra);
-            var compl = Automaton<T>.MkDifference(full, this, timeout, solver); //make complement
+            var compl = Automaton<T>.MkDifference(full, this, timeout); //make complement
             var totCompl = compl.MakeTotal(solver); //make total
             //the above algo guarantees that totCompl is deterministic
             //so just switch final states with nonfinal states
@@ -3664,7 +3674,7 @@ namespace Microsoft.Automata
             return res;
         }
 
-        //public Automaton<S> MinimizeBrzozowski(IBoolAlgMinterm<S> solver)
+        //public Automaton<S> MinimizeBrzozowski(IBooleanAlgebra<S> solver)
         //{
         //    var minReversed = this.Determinize(solver).Reverse().RemoveEpsilons(solver.MkOr).Determinize(solver);
         //    var res = minReversed.Reverse().RemoveEpsilons(solver.MkOr).Determinize(solver);

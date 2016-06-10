@@ -6,10 +6,10 @@ using System.Text;
 namespace Microsoft.Automata
 {
     /// <summary>
-    /// Extends IBoolAlgMinterm with character predicate solving and predicate pretty printing.
+    /// Extends IBooleanAlgebra with character predicate solving and predicate pretty printing.
     /// </summary>
     /// <typeparam name="PRED">predicates</typeparam>
-    public interface ICharAlgebra<PRED> : IBoolAlgMinterm<PRED>, IPrettyPrinter<PRED>
+    public interface ICharAlgebra<PRED> : IBooleanAlgebra<PRED>, IPrettyPrinter<PRED>
     {
         BitWidth Encoding { get; }
 

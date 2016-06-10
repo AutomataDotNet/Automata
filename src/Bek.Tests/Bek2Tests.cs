@@ -449,7 +449,7 @@ namespace Microsoft.Bek.Tests
             var sfa = new SFAModel(solver, solver.CharacterSort, aut);
             //sfa.ShowGraph();
 
-            bool equiv = aut.IsEquivalentWith(decDom.Automaton, solver);
+            bool equiv = aut.IsEquivalentWith(decDom.Automaton);
             Assert.IsTrue(equiv);
 
         }
@@ -555,14 +555,14 @@ namespace Microsoft.Bek.Tests
 
             int timeDEdom = System.Environment.TickCount;
             var deDom = de.ToSFA();
-            bool equivDomDE = UTF_8.Automaton.IsEquivalentWith(deDom.Automaton, solver);
+            bool equivDomDE = UTF_8.Automaton.IsEquivalentWith(deDom.Automaton);
             timeDEdom = System.Environment.TickCount - timeDEdom;
             Console.WriteLine(timeDEdom);
             
 
-            bool equivDom = UTF_16.IsEquivalentWith(edDom.Automaton, solver);
+            bool equivDom = UTF_16.IsEquivalentWith(edDom.Automaton);
             Assert.IsTrue(equivDom);
-            bool equivDom2 = UTF_16.IsEquivalentWith(eDom.Automaton, solver);
+            bool equivDom2 = UTF_16.IsEquivalentWith(eDom.Automaton);
             Assert.IsTrue(equivDom2);
 
             int time0 = System.Environment.TickCount;

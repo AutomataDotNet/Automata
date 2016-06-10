@@ -2939,7 +2939,7 @@ namespace Microsoft.Automata.Z3
 
         #endregion
 
-        #region IBoolAlgMinterm<Expr> Members
+        #region IBooleanAlgebra<Expr> Members
 
         /// <summary>
         /// Given an array of satisfiable Boolean terms {c_1, c_2, ..., c_n} where n>0.

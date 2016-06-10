@@ -7,11 +7,11 @@ using Microsoft.Automata;
 
 namespace Microsoft.Automata.MSO
 {
-    public class MSOAlgebra<S> : IBoolAlgMinterm<MSOFormula<S>>
+    public class MSOAlgebra<S> : IBooleanAlgebra<MSOFormula<S>>
     {
-        IBoolAlgMinterm<S> solver;
+        IBooleanAlgebra<S> solver;
         MintermGenerator<MSOFormula<S>> mtg;
-        public MSOAlgebra(IBoolAlgMinterm<S> solver)
+        public MSOAlgebra(IBooleanAlgebra<S> solver)
         {
             this.solver = solver;
             mtg = new MintermGenerator<MSOFormula<S>>(this);
@@ -60,7 +60,7 @@ namespace Microsoft.Automata.MSO
         {
             var aut1 = phi1.GetAutomaton(solver);
             var aut2 = phi2.GetAutomaton(solver);
-            return aut1.IsEquivalentWith(aut2, solver);
+            return aut1.IsEquivalentWith(aut2);
         }
 
         public MSOFormula<S> MkOr(MSOFormula<S> phi1, MSOFormula<S> phi2) 

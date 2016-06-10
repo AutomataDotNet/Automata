@@ -812,7 +812,7 @@ namespace Microsoft.Bek.Query
             var aut1 = subexpressions[0].GetSFA(ec);
             var aut2 = subexpressions[1].GetSFA(ec);
             List<Expr> witness;
-            bool diff = Automaton<Expr>.CheckDifference(aut1.Automaton, aut2.Automaton, -1, ec.solver,
+            bool diff = Automaton<Expr>.CheckDifference(aut1.Automaton, aut2.Automaton, -1,
                 out witness);
 
             if (diff)
