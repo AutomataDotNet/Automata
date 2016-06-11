@@ -35,7 +35,7 @@ namespace Microsoft.Automata
         {
             var res = False;
             foreach (var aut in automata)
-                res = Automaton<S>.MkSum(res, aut, solver);
+                res = Automaton<S>.MkSum(res, aut);
             return res;
         }
 
@@ -43,7 +43,7 @@ namespace Microsoft.Automata
         {
             var res = True;
             foreach (var aut in automata)
-                res = Automaton<S>.MkProduct(res, aut, solver);
+                res = Automaton<S>.MkProduct(res, aut);
             return res;
         }
 
@@ -51,13 +51,13 @@ namespace Microsoft.Automata
         {
             var res = True;
             foreach (var aut in automata)
-                res = Automaton<S>.MkProduct(res, aut, solver);
+                res = Automaton<S>.MkProduct(res, aut);
             return res;
         }
 
         public Automaton<S> MkNot(Automaton<S> aut)
         {
-            return aut.Complement(solver);
+            return aut.Complement();
         }
 
         public bool AreEquivalent(Automaton<S> aut1, Automaton<S> aut2)
@@ -67,13 +67,13 @@ namespace Microsoft.Automata
 
         public Automaton<S> MkOr(Automaton<S> aut1, Automaton<S> aut2) 
         {
-            var res = Automaton<S>.MkSum(aut1, aut2, solver);
+            var res = Automaton<S>.MkSum(aut1, aut2);
             return res;
         }
 
         public Automaton<S> MkAnd(Automaton<S> aut1, Automaton<S> aut2)
         {
-            var res = Automaton<S>.MkProduct(aut1, aut2, solver);
+            var res = Automaton<S>.MkProduct(aut1, aut2);
             return res;
         }
 
@@ -89,7 +89,7 @@ namespace Microsoft.Automata
 
         public Automaton<S> Simplify(Automaton<S> aut)
         {            
-            return aut.Determinize(solver).Minimize(solver);
+            return aut.Determinize().Minimize();
         }
 
         public bool IsExtensional

@@ -16,7 +16,7 @@ namespace Microsoft.Automata.Tests
             CharSetSolver solver = new CharSetSolver();
             string a = "aaaaaa";
 
-            var aut = solver.Convert("^(ab)*$").Determinize(solver).Minimize(solver);
+            var aut = solver.Convert("^(ab)*$").Determinize().Minimize();
 
             int dist;
             var output = EditDistance.GetClosestElement(a, aut, solver, out dist);
@@ -35,7 +35,7 @@ namespace Microsoft.Automata.Tests
             CharSetSolver solver = new CharSetSolver();
             string a = "aa";
 
-            var aut = solver.Convert("^(a|b){3}$").Determinize(solver).Minimize(solver);
+            var aut = solver.Convert("^(a|b){3}$").Determinize().Minimize();
 
             int dist;
             var output = EditDistance.GetClosestElement(a, aut, solver, out dist);
@@ -54,7 +54,7 @@ namespace Microsoft.Automata.Tests
             CharSetSolver solver = new CharSetSolver();
             string a = "absabaasd";
 
-            var aut = solver.Convert("^((ab|b){1,2}cc)*$").Determinize(solver).Minimize(solver);
+            var aut = solver.Convert("^((ab|b){1,2}cc)*$").Determinize().Minimize();
 
             int dist;
             var output = EditDistance.GetClosestElement(a, aut, solver, out dist);

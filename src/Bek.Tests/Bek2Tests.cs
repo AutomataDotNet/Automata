@@ -135,7 +135,7 @@ namespace Microsoft.Bek.Tests
             var st = A.Compose(A);
             //st.ShowGraph();
             var sfa1 = st.ToSFA().Automaton;
-            var sfa = ConvertToAutomatonOverBvSet(solver, sfa1).Determinize(solver.CharSetProvider).MinimizeHopcroft(solver.CharSetProvider);
+            var sfa = ConvertToAutomatonOverBvSet(solver, sfa1).Determinize().MinimizeHopcroft();
             //solver.CharSetProvider.ShowGraph(sfa, "test");
         }
 
@@ -164,7 +164,7 @@ namespace Microsoft.Bek.Tests
             Z3Provider solver = new Z3Provider();
             var st = BekConverter.BekFileToST(solver, sampleDir + "bek/UTF8Encode.bek");
 
-            var aut2 = solver.CharSetProvider.Convert(regex).Determinize(solver.CharSetProvider).MinimizeHopcroft(solver.CharSetProvider);
+            var aut2 = solver.CharSetProvider.Convert(regex).Determinize().MinimizeHopcroft();
             //solver.CharSetProvider.ShowGraph(aut2, "Utf8_1");
 
             var aut = new SFAModel(solver, solver.CharSort, solver.RegexConverter.Convert(regex)).Complement();
@@ -188,8 +188,8 @@ namespace Microsoft.Bek.Tests
             var st = BekConverter.BekFileToST(solver, sampleDir + "bek/UTF8Encode.bek");
 
             var aut2 = solver.CharSetProvider.Convert(regex);
-            aut2 = aut2.Determinize(solver.CharSetProvider);
-            aut2 = aut2.MinimizeHopcroft(solver.CharSetProvider);
+            aut2 = aut2.Determinize();
+            aut2 = aut2.MinimizeHopcroft();
             //solver.CharSetProvider.ShowGraph(aut2, "Utf8_2");
 
             var aut = new SFAModel(solver, solver.CharSort, solver.RegexConverter.Convert(regex)).Complement();
@@ -210,7 +210,7 @@ namespace Microsoft.Bek.Tests
             Z3Provider solver = new Z3Provider();
             var st = BekConverter.BekFileToST(solver, sampleDir + "bek/UTF8Encode.bek");
 
-            var aut2 = solver.CharSetProvider.Convert(regex).Determinize(solver.CharSetProvider).Minimize(solver.CharSetProvider);
+            var aut2 = solver.CharSetProvider.Convert(regex).Determinize().Minimize();
             //solver.CharSetProvider.ShowGraph(aut2, "Utf8_3");
 
             //solver.CharSetProvider.ShowGraph(st.ToSFA().Concretize(), "test");
@@ -311,7 +311,7 @@ namespace Microsoft.Bek.Tests
             //var utf16 = css.Convert(@"^([\0-\uD7FF\uE000-\uFFFD]|([\uD800-\uDBFF][\uDC00-\uDFFF]))*$");
             //var utf16 = css.Convert(@"^([\uD800-\uDBFF][\uDC00-\uDFFF])*$");
             var utf16 = css.Convert(@"^([\0-\uD7FF\uE000-\uFFFD])*$");
-            A = Automaton<BDD>.MkProduct(A, utf16, css);
+            A = Automaton<BDD>.MkProduct(A, utf16);
 
             //css.Chooser.RandomSeed = 123;
 
@@ -517,7 +517,7 @@ namespace Microsoft.Bek.Tests
             var fou = @"(\xF0[\x90-\xBF]|[\xF1-\xF3][\x80-\xBF]|\xF4[\x80-\x8F])[\x80-\xBF]{2}";
             var utf8 = string.Format("^(({0})|({1})|({2})|({3}))*$", one, two, thr, fou);
 
-            var UTF_8 = new SFAModel(solver, solver.CharacterSort, solver.RegexConverter.Convert(utf8).Determinize(solver).MinimizeHopcroft(solver));
+            var UTF_8 = new SFAModel(solver, solver.CharacterSort, solver.RegexConverter.Convert(utf8).Determinize().MinimizeHopcroft());
 
             //UTF_8.ShowGraph();
 
@@ -777,7 +777,7 @@ namespace Microsoft.Bek.Tests
             CharSetSolver css = new CharSetSolver(BitWidth.BV16);
             var A = css.Convert(".{50,}"); //at least 100 characters
             var utf16 = css.Convert(@"^([\0-\uD7FF\uE000-\uFFFD]|([\uD800-\uDBFF][\uDC00-\uDFFF]))*$");
-            A = A.Intersect(utf16, css);
+            A = A.Intersect(utf16);
             //css.Chooser.RandomSeed = 123;
             int okCnt = 0;
             int error1Cnt = 0;
@@ -997,7 +997,7 @@ namespace Microsoft.Bek.Tests
             CharSetSolver css = new CharSetSolver(BitWidth.BV16);
             var A = css.Convert("^.{100,}$"); //at least 50 chars
             var utf16 = css.Convert(@"^([\0-\uD7FF\uE000-\uFFFD]|([\uD800-\uDBFF][\uDC00-\uDFFF]))*$");
-            A = A.Intersect(utf16, css);
+            A = A.Intersect(utf16);
             //css.Chooser.RandomSeed = 123;
             List<string> samples = new List<string>();
             //construct a sample set of 100000 strings of length >= 50 that are valid inputs

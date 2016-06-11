@@ -131,7 +131,7 @@ namespace MSOZ3Test
             var xEQy_or_yGTx = new WS1SAnd<BDD>(new WS1SOr<BDD>(xEQy, yGTx), fo);
             var aut_not_xLTy = not_xLTy.GetAutomaton(ca, x, y);
             var B = xEQy_or_yGTx.GetAutomaton(ca, x, y);
-            var c_aut_xLTy = (new WS1SLt<BDD>(x,y)).GetAutomaton(ca, x, y).Complement(ca).Determinize(ca).Minimize(ca);
+            var c_aut_xLTy = (new WS1SLt<BDD>(x,y)).GetAutomaton(ca, x, y).Complement().Determinize().Minimize();
             //c_aut_xLTy = c_aut_xLTy.Intersect(aut_fo, ca).Determinize(ca).Minimize(ca); //*
             //aut_not_xLTy.ShowGraph("aut_not_xLTy");
             //B.ShowGraph("x_geq_y");
@@ -217,7 +217,7 @@ namespace MSOZ3Test
             var not_lab_actual = new WS1SAnd<BDD>(not_lab, fo_x);
             var aut_not_lab = not_lab_actual.GetAutomaton(ca, x);
             var aut_not_lab_prelim = not_lab.GetAutomaton(ca, x);
-            var c_aut_lab = lab.GetAutomaton(ca, x).Complement(ca).Minimize(ca);
+            var c_aut_lab = lab.GetAutomaton(ca, x).Complement().Minimize();
             //c_aut_lab.ShowGraph("c_aut_lab");
             //aut_not_lab.ShowGraph("aut_not_lab");
             //aut_not_lab_prelim.ShowGraph("aut_not_lab_prelim");
@@ -270,7 +270,7 @@ namespace MSOZ3Test
 
             var aut_xSyDef = xSyDef.GetAutomatonBDD(solver, nrOfLabelBits, x,y);
             var aut_xLTzLTy = xLTzLTy.GetAutomatonBDD(solver, nrOfLabelBits, x, y, z);
-            var aut_Ez = Ez.GetAutomatonBDD(solver, nrOfLabelBits, x, y).Determinize(solver).Minimize(solver);
+            var aut_Ez = Ez.GetAutomatonBDD(solver, nrOfLabelBits, x, y).Determinize().Minimize();
             var aut_notEz = notEz.GetAutomatonBDD(solver, nrOfLabelBits, x, y);
             var aut_xLTy = xLTy.GetAutomatonBDD(solver, nrOfLabelBits, x, y);
 
@@ -339,7 +339,7 @@ namespace MSOZ3Test
             var aut1 = psi.GetAutomaton(ca);
             //var aut_atLeast1d = atLeast1d.GetAutomaton(solver); 
 
-            var aut2 = regexConverter.Convert(@"\w.*\w", System.Text.RegularExpressions.RegexOptions.Singleline).Intersect(regexConverter.Convert(@"\d"), solver);
+            var aut2 = regexConverter.Convert(@"\w.*\w", System.Text.RegularExpressions.RegexOptions.Singleline).Intersect(regexConverter.Convert(@"\d"));
 
             //aut1.ShowGraph("aut1");
             //aut2.ShowGraph("aut2");
@@ -678,11 +678,11 @@ namespace MSOZ3Test
                 //Move<BoolExpr>.Create(6, 6, solver.True)
                 });
 
-            var sfa_min = sfa.Minimize(solver);
+            var sfa_min = sfa.Minimize();
 
-            var sfa_det = sfa_min.Determinize(solver);
+            var sfa_det = sfa_min.Determinize();
 
-            var sfa_det_min = sfa_det.Minimize(solver);
+            var sfa_det_min = sfa_det.Minimize();
 
             bool equiv1 = sfa.IsEquivalentWith(sfa_min);
             bool equiv2 = sfa.IsEquivalentWith(sfa_det);
@@ -695,7 +695,7 @@ namespace MSOZ3Test
             sfa.isDeterministic = true;
 
             //only the smaller half of a split set is pushed 
-            var sfa_min2 = sfa.Minimize(solver);
+            var sfa_min2 = sfa.Minimize();
 
             //the result is incorrect
             bool equiv3 = sfa_min.IsEquivalentWith(sfa_min2);
@@ -856,8 +856,8 @@ namespace MSOZ3Test
             //all negative labels are immediately followed by a positive label
             MSOFormula<Expr> phi = new MSOForall<Expr>(x, psi);
             var ca = new CartesianAlgebraBDD<Expr>(solver);
-            var aut_psi = psi.GetAutomaton(ca,x).Determinize(ca).Minimize(ca);
-            var aut_phi = phi.GetAutomaton(solver).Determinize(solver).Minimize(solver);
+            var aut_psi = psi.GetAutomaton(ca,x).Determinize().Minimize();
+            var aut_phi = phi.GetAutomaton(solver).Determinize().Minimize();
             Assert.IsFalse(aut_phi.IsEmpty);
             //aut_phi.ShowGraph("aut_phi");
             //aut_psi.ShowGraph("aut_psi");

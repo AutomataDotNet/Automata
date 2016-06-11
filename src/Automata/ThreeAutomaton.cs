@@ -87,10 +87,10 @@ namespace Microsoft.Automata
         public Automaton<S> GetApproxMinimalConsistentSFA(IBooleanAlgebra<S> solver, int numAttempts)
         {
             var min = this.Minimize(solver);
-            Automaton<S> minDfa = min.GetBiggestLanguageSFA().Minimize(solver);
+            Automaton<S> minDfa = min.GetBiggestLanguageSFA().Minimize();
             var minSt = minDfa.StateCount;
 
-            Automaton<S> tmp = min.GetSmallestLanguageSFA().Minimize(solver);
+            Automaton<S> tmp = min.GetSmallestLanguageSFA().Minimize();
             if (tmp.StateCount < minSt)
                 minDfa = tmp;
 
@@ -482,16 +482,16 @@ namespace Microsoft.Automata
 
         public bool IsSound(Automaton<S> l1, Automaton<S> l2, IBooleanAlgebra<S> solver)
         {
-            if (!l1.Minus(GetSmallestLanguageSFA(), solver).IsEmpty)
+            if (!l1.Minus(GetSmallestLanguageSFA()).IsEmpty)
                 return false;
-            return GetBiggestLanguageSFA().Minus(l2.Complement(solver), solver).IsEmpty;
+            return GetBiggestLanguageSFA().Minus(l2.Complement()).IsEmpty;
         }
 
         public bool IsComplete(Automaton<S> l1, Automaton<S> l2, IBooleanAlgebra<S> solver)
         {
-            if (!GetSmallestLanguageSFA().Minus(l1, solver).IsEmpty)
+            if (!GetSmallestLanguageSFA().Minus(l1).IsEmpty)
                 return false;
-            return l2.Complement(solver).Minus(GetBiggestLanguageSFA(), solver).IsEmpty;
+            return l2.Complement().Minus(GetBiggestLanguageSFA()).IsEmpty;
         }
 
         /// <summary>

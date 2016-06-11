@@ -131,7 +131,7 @@ namespace Microsoft.Automata.Z3.Tests
                 Move<Expr>.Epsilon(2, 0),
                 Move<Expr>.Epsilon(0, 3)});
 
-            var nfa = fa.RemoveEpsilonLoops(z3p.MkOr);
+            var nfa = fa.RemoveEpsilonLoops();
             Assert.AreEqual<int>(3, nfa.StateCount, "unexpected number of states");
             Assert.AreEqual<int>(3, nfa.MoveCount, "unexpected number of moves");
             foreach (var m in nfa.GetMoves())
@@ -273,7 +273,7 @@ namespace Microsoft.Automata.Z3.Tests
                     var A = z3p.RegexConverter.Convert(regexA, System.Text.RegularExpressions.RegexOptions.None);
                     var B = z3p.RegexConverter.Convert(regexB, System.Text.RegularExpressions.RegexOptions.None);
 
-                    var C = Automaton<Expr>.MkProduct(A, B, z3p);
+                    var C = Automaton<Expr>.MkProduct(A, B);
 
                     if (i == j)
                         Assert.IsFalse(C.IsEmpty);
@@ -317,10 +317,10 @@ namespace Microsoft.Automata.Z3.Tests
                     var A1 = z3p.CharSetProvider.Convert(regexA);
                     var B1 = z3p.CharSetProvider.Convert(regexB);
 
-                    var C1 = Automaton<BDD>.MkProduct(A1, B1, z3p.CharSetProvider).Determinize(z3p.CharSetProvider).Minimize(z3p.CharSetProvider);
+                    var C1 = Automaton<BDD>.MkProduct(A1, B1).Determinize().Minimize();
 
-                    var C = Automaton<Expr>.MkProduct(A, B, z3p);
-                    var C2 = new SFAz3(z3p, z3p.CharSort, C.Determinize(z3p).Minimize(z3p)).Concretize(200);
+                    var C = Automaton<Expr>.MkProduct(A, B);
+                    var C2 = new SFAz3(z3p, z3p.CharSort, C.Determinize().Minimize()).Concretize(200);
 
                     var equiv = C1.IsEquivalentWith(C1);
                     Assert.IsTrue(equiv);
@@ -377,7 +377,7 @@ namespace Microsoft.Automata.Z3.Tests
                     var B = z3p.RegexConverter.Convert(regexB, System.Text.RegularExpressions.RegexOptions.None);
 
                     List<Expr> witness;
-                    bool C = Automaton<Expr>.CheckProduct(A, B, 0, z3p, out witness);
+                    bool C = Automaton<Expr>.CheckProduct(A, B, 0, out witness);
 
                     if (i == j)
                         Assert.IsTrue(C, "product must me nonempty");
@@ -486,7 +486,7 @@ namespace Microsoft.Automata.Z3.Tests
                     try
                     {
                         List<Expr> witness;
-                        var AmB = Automaton<Expr>.MkDifference(A, B, (int)timeout).Determinize(z3p).Minimize(z3p);
+                        var AmB = Automaton<Expr>.MkDifference(A, B, (int)timeout).Determinize().Minimize();
                         //AmB.ShowGraph();
                         bool isNonempty = Automaton<Expr>.CheckDifference(A, B, (int)timeout, out witness);
                         if (isNonempty)
@@ -750,7 +750,7 @@ namespace Microsoft.Automata.Z3.Tests
             var aut = Automaton<Expr>.Create(z3p, 0, new int[] { K, 2 * K }, moves);
 
             var sfa = new SFA<FuncDecl, Expr, Sort>(z3p, z3p.CharSort, aut);
-            sfa.Automaton.CheckDeterminism(sfa.Solver, true);
+            sfa.Automaton.CheckDeterminism(true);
 
             //sfa.ShowGraph();
 
@@ -782,12 +782,12 @@ namespace Microsoft.Automata.Z3.Tests
             var aut = Automaton<Expr>.Create(z3p, 0, new int[] { K, 2 * K }, moves);
 
             var sfa = new SFA<FuncDecl, Expr, Sort>(z3p, z3p.CharSort, aut);
-            sfa.Automaton.CheckDeterminism(sfa.Solver, true);
+            sfa.Automaton.CheckDeterminism(true);
 
 
 
             int t = System.Environment.TickCount;
-            var autmin = sfa.Automaton.MinimizeMoore(sfa.Solver);
+            var autmin = sfa.Automaton.MinimizeMoore();
             t = System.Environment.TickCount - t;
 
 
@@ -814,11 +814,11 @@ namespace Microsoft.Automata.Z3.Tests
             var aut = Automaton<Expr>.Create(z3p, 0, new int[] { K, 2 * K }, moves);
 
             var sfa = new SFA<FuncDecl, Expr, Sort>(z3p, z3p.CharSort, aut);
-            sfa.Automaton.CheckDeterminism(sfa.Solver, true);
+            sfa.Automaton.CheckDeterminism(true);
 
 
             int t = System.Environment.TickCount;
-            var autmin = sfa.Automaton.MinimizeHopcroft(sfa.Solver);
+            var autmin = sfa.Automaton.MinimizeHopcroft();
             t = System.Environment.TickCount - t;
 
             return t;

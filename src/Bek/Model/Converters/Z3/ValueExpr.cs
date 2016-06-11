@@ -70,7 +70,7 @@ namespace Microsoft.Bek.Model.Converters.Z3
                     throw new BekParseException(id.Line, id.Pos, "Wrong number of arguments");
 
                 string regex = "^(" + GetString(args[1]) + ")$";
-                Automaton<Expr> aut = solver.RegexConverter.Convert(regex).Determinize(solver).Minimize(solver);
+                Automaton<Expr> aut = solver.RegexConverter.Convert(regex).Determinize().Minimize();
                 if (aut.StateCount != 2 || aut.MoveCount != 1)
                     throw new BekParseException(id.Line, id.Pos, "The rhs must be a regex character class or regex matching strings of length 1 (anchors are implicit)");
 

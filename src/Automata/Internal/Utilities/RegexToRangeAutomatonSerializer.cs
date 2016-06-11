@@ -13,13 +13,13 @@ namespace Microsoft.Automata.Internal.Utilities
 
             var A = converter.Convert(regex, System.Text.RegularExpressions.RegexOptions.None);
             if (epsilonfree)
-                A = A.RemoveEpsilons(solver.MkOr);
+                A = A.RemoveEpsilons();
 
             if (determinize)
             {
-                A = A.RemoveEpsilons(solver.MkOr);
-                A.CheckDeterminism(solver);
-                A = A.Determinize(solver, determinization_timeout_ms);
+                A = A.RemoveEpsilons();
+                A.CheckDeterminism();
+                A = A.Determinize(determinization_timeout_ms);
             }
             //A.CheckDeterminism(solver,true);
             //if (!A.isDeterministic)

@@ -560,7 +560,7 @@ namespace Microsoft.Automata
                     sfa.AddMove(Move<S>.Epsilon(state, origInitState));
 
             //epsilon loops might have been created, remove them
-            var sfa1 = sfa.RemoveEpsilonLoops(solver.MkOr);
+            var sfa1 = sfa.RemoveEpsilonLoops();
             if (!sfa.DoesNotContainWordBoundaries)
                 sfa1.AddWordBoundaries(sfa.EnumerateWordBoundaries());
             return sfa1;

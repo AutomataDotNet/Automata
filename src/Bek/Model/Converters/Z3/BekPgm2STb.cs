@@ -77,7 +77,7 @@ namespace Microsoft.Bek.Model.Converters.Z3
             {
                 replacecase rcase = repl.GetCase(i);           
                 var pat = "^" + rcase.Pattern.val;
-                var M = css.Convert("^" + rcase.Pattern.val, System.Text.RegularExpressions.RegexOptions.Singleline).Determinize(css).Minimize(css);
+                var M = css.Convert("^" + rcase.Pattern.val, System.Text.RegularExpressions.RegexOptions.Singleline).Determinize().Minimize();
 
                 #region check that the pattern is a feasible nonempty sequence
                 if (M.IsEmpty)
@@ -121,7 +121,7 @@ namespace Microsoft.Bek.Model.Converters.Z3
 
                 //Microsoft.Automata.Visualizer.ToDot(N_i, "N" + i , "C:\\Automata\\Docs\\Papers\\Bex\\N" + i +".dot", x => "(" + css.PrettyPrint(x.First) + "," + css.PrettyPrint(x.Second) + ")");
 
-                N = N.Intersect(N_i.Complement(css2), css2);
+                N = N.Intersect(N_i.Complement());
 
                 #region other approach: disallow overlapping patterns
 
@@ -152,7 +152,7 @@ namespace Microsoft.Bek.Model.Converters.Z3
 
             }
              
-            N = N.Complement(css2).Minimize(css2);
+            N = N.Complement().Minimize();
             //Microsoft.Automata.Visualizer.ShowGraph(N, "N", x => "<" + css.PrettyPrint(x.First) + "," + css.PrettyPrint(x.Second) + ">");
             //Microsoft.Automata.Visualizer.ToDot(N, "N","C:\\Automata\\Docs\\Papers\\Bex\\N.dot", x => "(" + css.PrettyPrint(x.First) + "," + css.PrettyPrint(x.Second) + ")");
 

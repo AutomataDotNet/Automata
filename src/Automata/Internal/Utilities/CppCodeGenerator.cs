@@ -41,8 +41,8 @@ namespace Microsoft.Automata.Internal.Utilities
         {
             var aut = solver.Convert(regex.ToString(), regex.Options);
             //var autEpsFree = aut.RemoveEpsilons(solver.MkOr);
-            var autDet = aut.Determinize(solver);
-            var autMin = autDet.Minimize(solver);
+            var autDet = aut.Determinize();
+            var autMin = autDet.Minimize();
             return autMin;
         }
 

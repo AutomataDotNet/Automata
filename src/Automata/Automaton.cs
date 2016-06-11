@@ -342,7 +342,6 @@ namespace Microsoft.Automata
             }
         }
 
-
         public void ShowGraph(string name = "Automaton")
         {
             Internal.DirectedGraphs.DgmlWriter.ShowGraph<T>(-1, this, name);
@@ -897,30 +896,52 @@ namespace Microsoft.Automata
         }
 
         #region Product construction
-
         /// <summary>
         /// Make a product of a and b. First removes epsilons from a and b.
         /// </summary>
-        /// <param name="a">first SFA of the product</param>
-        /// <param name="b">second SFA of the product</param>
-        /// <param name="conj">make the conjunction of two conditions</param>
-        /// <param name="disj">make the disjunction of two conditions, used during initial epsilon elimination</param>
-        /// <param name="isSat">check if a condition is satisfiable, used to keep the result clean</param>
-        /// <returns>the product SFA of a and b</returns>
-        public static Automaton<T> MkProduct(Automaton<T> a, Automaton<T> b, IBooleanAlgebraPositive<T> solver)
+        /// <param name="a">first automaton</param>
+        /// <param name="b">second automaton</param>
+        /// <param name="timeout">timeout in milliseconds</param>
+        public static Automaton<T> MkProduct(Automaton<T> a, Automaton<T> b)
         {
-            return MkProduct(a, b, solver, 0);
+            CheckIdentityOfAlgebras(a.algebra, b.algebra);
+            return MkProduct(a, b, a.algebra, 0);
         }
 
-        private static Automaton<T> MkProductOfDeterministic(IEnumerable<Automaton<T>> automata, IBooleanAlgebra<T> solver)
+        /// <summary>
+        /// Internal usage when a and b have algebra = null, algebra is passed in explicitly
+        /// and is only required to be IBooleanAlgebraPositive.
+        /// </summary>
+        internal static Automaton<T> MkProduct_(Automaton<T> a, Automaton<T> b, IBooleanAlgebraPositive<T> algebra)
         {
-            Automaton<T> res = Automaton<T>.MkFull(solver);
-            foreach (var automaton in automata)
-                res = MkProduct(res, automaton, solver).Minimize(solver);
+            return MkProduct(a, b, algebra, 0);
+        }
+
+        public static Automaton<T> MkProductOfDeterministicAutomata(params Automaton<T>[] automata)
+        {
+            if (automata.Length == 0)
+                throw new AutomataException(AutomataExceptionKind.InvalidArgument_MustBeNonempty);
+
+
+            IBooleanAlgebra<T> solver = automata[0].algebra;
+            Automaton<T> res = automata[0];
+
+            if (!res.isDeterministic)
+                throw new AutomataException(AutomataExceptionKind.AutomatonIsNondeterministic);
+
+            for (int i = 1; i < automata.Length; i++)
+            {
+                var a = automata[i];
+                if (!a.isDeterministic)
+                    throw new AutomataException(AutomataExceptionKind.AutomatonIsNondeterministic);
+                CheckIdentityOfAlgebras(solver, a.algebra);
+                res = MkProduct(res, a).Minimize();
+            }
+
             return res;
         }
 
-        public static Automaton<T> MkProduct(Automaton<T> a, Automaton<T> b, IBooleanAlgebraPositive<T> solver, int timeout)
+        static Automaton<T> MkProduct(Automaton<T> a, Automaton<T> b, IBooleanAlgebraPositive<T> solver, int timeout)
         {
             long timeoutLimit;
             if (timeout > 0)
@@ -1027,8 +1048,9 @@ namespace Microsoft.Automata
             return product;
         }
 
-        public static Automaton<T> MkAmbiguitySelfProduct(Automaton<T> a, IBooleanAlgebra<T> solver, out Automaton<T> ambiguousLanguage)
+        public static Automaton<T> MkAmbiguitySelfProduct(Automaton<T> a, out Automaton<T> ambiguousLanguage)
         {
+            IBooleanAlgebra<T> solver = a.algebra;
             if (a.IsEmpty)
             {
                 ambiguousLanguage = a;
@@ -1164,6 +1186,8 @@ namespace Microsoft.Automata
         /// </summary>
         public static Automaton<T> MkSum(Automaton<T> a, Automaton<T> b)
         {
+            CheckIdentityOfAlgebras(a.algebra, b.algebra);
+
             int stateId = a.MaxState + 1;
             var b1 = b.MakeCopy(() => { return stateId++; });
             int initialState = stateId;
@@ -1206,51 +1230,6 @@ namespace Microsoft.Automata
             return Create(a.algebra, initialState, finalStates, moves);
         }
 
-        /// <summary>
-        /// Make a sum (union) of a and b. Produces an automaton a+b such that L(a+b) = L(a) union L(b)
-        /// </summary>
-        public static Automaton<T> MkSum(Automaton<T> a, IEnumerable<Automaton<T>> automata, IBooleanAlgebraPositive<T> solver)
-        {
-            int stateId = a.MaxState + 1;
-
-            List<Move<T>> moves = new List<Move<T>>();
-            int initialState = stateId;
-
-            moves.Add(Move<T>.Epsilon(initialState, a.InitialState));
-            moves.AddRange(a.GetMoves());
-            List<Automaton<T>> b1s = new List<Automaton<T>>();
-            List<int> finalStates = new List<int>(a.GetFinalStates());
-            foreach (var b in automata)
-            {
-                var b1 = b.MakeCopy(() => { return stateId++; });
-                b1s.Insert(0, b1);
-                moves.Add(Move<T>.Epsilon(initialState, b1.InitialState));
-                moves.AddRange(b1.GetMoves());
-                finalStates.AddRange(b1.GetFinalStates());
-            }
-  
-            return Create(a.algebra, initialState, finalStates, moves);
-        }
-
-        /// <summary>
-        /// Make a sum (union) of a and b. Produces an automaton a+b such that L(a+b) = L(a) union L(b)
-        /// </summary>
-        public static Automaton<T> MkSum(Automaton<T> a, Automaton<T> b, IBooleanAlgebraPositive<T> solver)
-        {
-            int stateId = a.MaxState + 1;
-            var b1 = b.MakeCopy(() => { return stateId++; });
-            int initialState = stateId;
-
-            List<Move<T>> moves = new List<Move<T>>();
-            moves.Add(Move<T>.Epsilon(initialState, a.InitialState));
-            moves.Add(Move<T>.Epsilon(initialState, b1.InitialState));
-            moves.AddRange(a.GetMoves());
-            moves.AddRange(b1.GetMoves());
-            List<int> finalStates = new List<int>(a.GetFinalStates());
-            finalStates.AddRange(b1.GetFinalStates());
-            return Create(a.algebra, initialState, finalStates, moves);
-        }
-
         #endregion
 
         #region Epsilon and Epsilon-loop removal
@@ -1259,8 +1238,9 @@ namespace Microsoft.Automata
         /// Remove epsilon loops from this fsa and normalize the result, use disj to 
         /// to make disjunctions of conditions during normalization
         /// </summary>
-        public Automaton<T> RemoveEpsilonLoops(Func<T, T, T> disj)
+        public Automaton<T> RemoveEpsilonLoops()
         {
+            Func<T, T, T> disj = algebra.MkOr;
             var eEquiv = new Dictionary<int, int>();
             foreach (int state in States)
             {
@@ -1315,7 +1295,15 @@ namespace Microsoft.Automata
         /// States unreachable from the initial state are eliminated.
         /// The reachable states remain the same.
         /// </summary>
-        public Automaton<T> RemoveEpsilons(Func<T, T, T> disj)
+        public Automaton<T> RemoveEpsilons()
+        {
+            return RemoveEpsilons(algebra.MkOr);
+        }
+
+        /// <summary> 
+        /// Used internally or when algebra=null
+        /// </summary>
+        internal Automaton<T> RemoveEpsilons(Func<T, T, T> disj)
         {
             var fa = this;
             if (fa.IsEpsilonFree)
@@ -1463,7 +1451,7 @@ namespace Microsoft.Automata
         /// </summary>
         /// <param name="B">another automaton</param>
         /// <param name="solver">boolean algebra solver over S</param>
-        public Automaton<T> Minus(Automaton<T> B, IBooleanAlgebra<T> solver)
+        public Automaton<T> Minus(Automaton<T> B)
         {
             return MkDifference(this, B, -1);
         }
@@ -1472,7 +1460,7 @@ namespace Microsoft.Automata
         /// Creates the automaton that accepts the complement of L(this).
         /// </summary>
         /// <param name="solver">boolean algebra solver over S</param>
-        public Automaton<T> Complement(IBooleanAlgebra<T> solver)
+        public Automaton<T> Complement()
         {
             return MkDifference(MkFull(algebra), this, -1);
         }
@@ -1482,9 +1470,9 @@ namespace Microsoft.Automata
         /// </summary>
         /// <param name="B">another automaton</param>
         /// <param name="solver">boolean algebra solver over S</param>
-        public Automaton<T> Intersect(Automaton<T> B, IBooleanAlgebraPositive<T> solver)
+        public Automaton<T> Intersect(Automaton<T> B)
         {
-            return MkProduct(this, B, solver);
+            return MkProduct(this, B);
         }
 
         /// <summary>
@@ -1505,16 +1493,6 @@ namespace Microsoft.Automata
         public Automaton<T> Union(IEnumerable<Automaton<T>> automata)
         {
             return MkSum(this, automata);
-        }
-
-        /// <summary>
-        /// Creates the automaton that accepts the union of L(this) and L(B).
-        /// Makes use of the solver. Avoids epsilons, if possible
-        /// </summary>
-        /// <param name="B">another automaton</param>
-        public Automaton<T> Union(Automaton<T> B, IBooleanAlgebraPositive<T> solver)
-        {
-            return MkSum(this, B, solver);
         }
 
         /// <summary>
@@ -1544,7 +1522,7 @@ namespace Microsoft.Automata
             return Create(this.algebra, initialState, new int[] { newFinalState }, newMoves);
         }
 
-        internal static void CheckIdentityOfAlgebras(IBooleanAlgebra<T> solver1, IBooleanAlgebra<T> solver2) 
+        static void CheckIdentityOfAlgebras(IBooleanAlgebra<T> solver1, IBooleanAlgebra<T> solver2) 
         {
             if (solver1 != solver2)
                 throw new AutomataException(AutomataExceptionKind.IncompatibleAlgebras);
@@ -1584,16 +1562,16 @@ namespace Microsoft.Automata
             else
                 timeoutLimit = 0;
 
-            A = A.RemoveEpsilons(solver.MkOr);
-            B = B.RemoveEpsilons(solver.MkOr);
+            A = A.RemoveEpsilons();
+            B = B.RemoveEpsilons();
 
             #region determinisitic case for B
-            B.CheckDeterminism(solver);
+            B.CheckDeterminism();
             if (B.isDeterministic)
-                return MkProduct(A, B.MkComplement(solver), solver);
+                return MkProduct(A, B.MkComplement(solver));
             #endregion
 
-            B = B.MakeTotal(solver); //???
+            B = B.MakeTotal(); //???
 
             //the sink state is represented implicitly, there is no need to make B total
             List<int> bStates = new List<int>(B.States);
@@ -1786,10 +1764,10 @@ namespace Microsoft.Automata
             else
                 timeoutLimit = 0;
 
-            A = A.RemoveEpsilons(solver.MkOr);
-            B = B.RemoveEpsilons(solver.MkOr);
+            A = A.RemoveEpsilons();
+            B = B.RemoveEpsilons();
 
-            B = B.MakeTotal(solver); //???
+            B = B.MakeTotal(); //???
 
             // #region determinisitic case for B
 
@@ -1955,11 +1933,12 @@ namespace Microsoft.Automata
         /// <summary>
         /// The sink state will be the state with the largest id.
         /// </summary>
-        public Automaton<T> MakeTotal(IBooleanAlgebra<T> solver)
+        public Automaton<T> MakeTotal()
         {
+            IBooleanAlgebra<T> solver = algebra;
             var aut = this;
             if (!this.isEpsilonFree)
-                aut = this.RemoveEpsilons(solver.MkOr);
+                aut = this.RemoveEpsilons();
 
             int deadState = aut.maxState + 1;
             var newMoves = new List<Move<T>>();
@@ -1990,7 +1969,7 @@ namespace Microsoft.Automata
         public Automaton<T> MkComplement(IBooleanAlgebra<T> solver)
         {
             if (!isDeterministic)
-                throw new AutomataException(AutomataExceptionKind.AutomatonIsNotDeterministic);
+                throw new AutomataException(AutomataExceptionKind.AutomatonIsNondeterministic);
 
             int deadState = maxState + 1;
             bool deadStateIsUsed = false;
@@ -2034,8 +2013,10 @@ namespace Microsoft.Automata
         /// Throws AutomataException if the FSA is not epsilon-free.
         /// </summary>
         /// <param name="solver">used to make conjunctions and to check satisfiability of resulting conditions</param>
-        public void CheckDeterminism(IBooleanAlgebraPositive<T> solver, bool resetIsDeterministicToFalse = false)
+        public void CheckDeterminism(bool resetIsDeterministicToFalse = false)
         {
+            IBooleanAlgebraPositive<T> solver = algebra;
+
             if (!isEpsilonFree)
                 throw new AutomataException(AutomataExceptionKind.AutomatonIsNotEpsilonfree);
 
@@ -2074,8 +2055,10 @@ namespace Microsoft.Automata
         /// paramter <i>ambiguousLanguage</i>
         /// </summary>
         /// <param name="solver">used to make conjunctions and to check satisfiability of resulting conditions</param>
-        public bool IsAmbiguous(IBooleanAlgebra<T> solver, out Automaton<T> ambiguousLanguage)
+        public bool IsAmbiguous(out Automaton<T> ambiguousLanguage)
         {
+            IBooleanAlgebra<T> solver = algebra;
+
             ambiguousLanguage = Automaton<T>.MkEmpty(algebra);
             if (!isEpsilonFree)
                 throw new AutomataException(AutomataExceptionKind.AutomatonIsNotEpsilonfree);
@@ -2085,7 +2068,7 @@ namespace Microsoft.Automata
                 return false;
             }
 
-            var product = MkAmbiguitySelfProduct(this, solver, out ambiguousLanguage);
+            var product = MkAmbiguitySelfProduct(this, out ambiguousLanguage);
             if (product.StateCount == this.StateCount)
             {
                 //ambiguousLanguage = Automaton<S>.Empty;
@@ -2121,12 +2104,14 @@ namespace Microsoft.Automata
         /// <param name="B">FSA to be intersected</param>
         /// <param name="witness">symbolic list of elements that represents a path from the initial state to a final state in A*B</param>
         /// <param name="timeout">timeout in milliseconds for termination, 0 or negative number means no timeout</param>
-        /// <param name="solver">solver for the set constraints</param>
         /// <returns>true iff the intersection of L(A) and L(B) is nonempty</returns>
-        public static bool CheckProduct(Automaton<T> A, Automaton<T> B, int timeout, IBooleanAlgebraPositive<T> solver, out List<T> witness)
+        public static bool CheckProduct(Automaton<T> A, Automaton<T> B, int timeout, out List<T> witness)
         {
-            A = A.RemoveEpsilons(solver.MkOr);
-            B = B.RemoveEpsilons(solver.MkOr);
+            CheckIdentityOfAlgebras(A.algebra, B.algebra);
+            IBooleanAlgebraPositive<T> solver = A.algebra;
+
+            A = A.RemoveEpsilons();
+            B = B.RemoveEpsilons();
 
             long timeoutLimit;
             if (timeout > 0)
@@ -2231,24 +2216,26 @@ namespace Microsoft.Automata
 
         #region Determinization
 
-        public Automaton<T> Determinize(IBooleanAlgebra<T> solver, int timeout = 0)
+        public Automaton<T> Determinize(int timeout = 0)
         {
+            IBooleanAlgebra<T> solver = algebra;
+
             if (IsDeterministic)
                 return this;
 
             Automaton<T>[] disjuncts;
             if (TryDecompose(out disjuncts))
             {
-                var disjuncts_det = Array.ConvertAll(disjuncts, d => d.Determinize(solver).Minimize(solver));
-                var disjuncts_comp = Array.ConvertAll(disjuncts_det, d => d.Complement(solver).Minimize(solver));
-                var prod = Automaton<T>.MkProductOfDeterministic(disjuncts_comp, solver);
-                var union = prod.Complement(solver);
+                var disjuncts_det = Array.ConvertAll(disjuncts, d => d.Determinize().Minimize());
+                var disjuncts_comp = Array.ConvertAll(disjuncts_det, d => d.Complement().Minimize());
+                var prod = Automaton<T>.MkProductOfDeterministicAutomata(disjuncts_comp);
+                var union = prod.Complement();
                 return union;
             }
 
             var full = Automaton<T>.MkFull(algebra);
             var compl = Automaton<T>.MkDifference(full, this, timeout); //make complement
-            var totCompl = compl.MakeTotal(solver); //make total
+            var totCompl = compl.MakeTotal(); //make total
             //the above algo guarantees that totCompl is deterministic
             //so just switch final states with nonfinal states
             var fstates = new HashSet<int>(totCompl.GetStates());
@@ -2317,11 +2304,12 @@ namespace Microsoft.Automata
         /// This algorithm is quadratic in the number of states.
         /// If the SFA is nondeterministic, the minimized SFA will be equivalent.
         /// </summary>
-        public Automaton<T> MinimizeMoore(IBooleanAlgebra<T> solver, int timeout = 0)
+        public Automaton<T> MinimizeMoore(int timeout = 0)
         {
+            IBooleanAlgebra<T> solver = algebra;
             //return MinimizeClassical(solver, 0, false);
             if (IsEmpty)
-                return Minimize(algebra);
+                return Minimize();
 
             if (this.IsEpsilon)
                 return this;
@@ -2335,7 +2323,7 @@ namespace Microsoft.Automata
             //if (fa.IsDeterministic != true)
             //    throw new AutomataException(AutomataExceptionKind.AutomatonIsNotDeterministic);
 
-            fa = fa.MakeTotal(solver);
+            fa = fa.MakeTotal();
 
             Func<int, int, Pair<int,int>> MkPair = (x,y) => (x<y ? new Pair<int,int>(x,y) : new Pair<int,int>(y,x));
 
@@ -2444,14 +2432,15 @@ namespace Microsoft.Automata
         /// <summary>
         /// Minimization of FAs using a symbolic generalization of Hopcroft's algorithm.
         /// </summary>
-        public Automaton<T> MinimizeHopcroft(IBooleanAlgebra<T> solver, int timeout = 0)
+        public Automaton<T> MinimizeHopcroft(int timeout = 0)
         {
+            IBooleanAlgebra<T> solver = algebra;
             System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
             if (timeout > 0)
                 sw.Start();
 
             if (IsEmpty)
-                return Minimize(solver);
+                return Minimize();
 
             //If it's singleton state accepting only the empty string
             if(MoveCount==0)
@@ -2461,7 +2450,7 @@ namespace Microsoft.Automata
                 return this;
 
             if (IsDeterministic != true)
-                throw new AutomataException(AutomataExceptionKind.AutomatonIsNotDeterministic);
+                throw new AutomataException(AutomataExceptionKind.AutomatonIsNondeterministic);
 
             //if (typeof(S) != typeof(BvSet))
             //    return MinimizeClassical(solver,0);
@@ -2515,7 +2504,7 @@ namespace Microsoft.Automata
                 foreach (var minterm in minterms)
                 {
                     CheckTimeout(sw, timeout);
-                    var sources = new HashSet<int>(GetSources(solver, minterm, Pelems));
+                    var sources = new HashSet<int>(GetSources(minterm, Pelems));
                     if (sources.Count > 0)
                     {
                         var splits = PR.Refine(sources);
@@ -2571,7 +2560,7 @@ namespace Microsoft.Automata
         /// Minimization of SFAs.
         /// Can also be applied to nondeterministic SFAs.
         /// </summary>
-        public Automaton<T> Minimize(IBooleanAlgebra<T> solver)
+        public Automaton<T> Minimize()
         {
             if (IsEmpty)
             {
@@ -2584,20 +2573,20 @@ namespace Microsoft.Automata
             if (this.IsEpsilon)
                 return this;
 
-            Automaton<T> fa = this.RemoveEpsilons(solver.MkOr);
+            Automaton<T> fa = this.RemoveEpsilons();
 
             if (fa.isDeterministic)
             {
-                return MinSFA(fa, solver);
+                return MinSFA(fa);
             }
             else
             {
-                var fa_m = MinSFA(fa, solver);
+                var fa_m = MinSFA(fa);
                 if (fa_m.StateCount < fa.StateCount)
                 {
-                    var fa_m_r = fa_m.Reverse().RemoveEpsilons(solver.MkOr);
-                    var fa_m_r_m = MinSFA(fa_m_r, solver);
-                    var fa_m_r_m_r = fa_m_r_m.Reverse().RemoveEpsilons(solver.MkOr);
+                    var fa_m_r = fa_m.Reverse().RemoveEpsilons();
+                    var fa_m_r_m = MinSFA(fa_m_r);
+                    var fa_m_r_m_r = fa_m_r_m.Reverse().RemoveEpsilons();
                     if (fa_m.StateCount <= fa_m_r_m_r.StateCount)
                         return fa_m;
                     else
@@ -2613,10 +2602,10 @@ namespace Microsoft.Automata
         /// <summary>
         /// Algorithm MinSFA from POPL14.
         /// </summary>
-        static Automaton<T> MinSFA(Automaton<T> autom, IBooleanAlgebra<T> solver)
+        static Automaton<T> MinSFA(Automaton<T> autom)
         {
-
-            var fa = autom.MakeTotal(solver);
+            var solver = autom.algebra;
+            var fa = autom.MakeTotal();
 
             var finalBlock = new Block(fa.GetFinalStates());
             var nonfinalBlock = new Block(fa.GetNonFinalStates());
@@ -2809,10 +2798,11 @@ namespace Microsoft.Automata
         /// <summary>
         /// Algorithm for minimizing nondeterministic SFAs based on bisimilarity of states.
         /// </summary>
-        static Automaton<T> MinBiSim(Automaton<T> automIn, IBooleanAlgebra<T> solver)
+        static Automaton<T> MinBiSim(Automaton<T> automIn)
         {
+            var solver = automIn.algebra;
 
-            var autom = automIn.MakeTotal(solver);
+            var autom = automIn.MakeTotal();
             var msb = new MultiSetBuilder(solver);
 
             var root = new SimBlockContainer();
@@ -3306,8 +3296,10 @@ namespace Microsoft.Automata
         //    //internal bool IsEmpty
 
 
-        public Dictionary<int, Block> GetStateEquivalenceClasses(IBooleanAlgebra<T> solver, bool makeTotal = true)
+        public Dictionary<int, Block> GetStateEquivalenceClasses(bool makeTotal = true)
         {
+            IBooleanAlgebra<T> solver = algebra;
+
             if (IsEmpty)
                 throw new AutomataException(AutomataExceptionKind.AutomatonInvalidInput);
 
@@ -3315,9 +3307,9 @@ namespace Microsoft.Automata
                 throw new AutomataException(AutomataExceptionKind.AutomatonInvalidInput);
 
             if (IsDeterministic != true)
-                throw new AutomataException(AutomataExceptionKind.AutomatonIsNotDeterministic);
+                throw new AutomataException(AutomataExceptionKind.AutomatonIsNondeterministic);
 
-            var fa = makeTotal ? this.MakeTotal(solver) : this;
+            var fa = makeTotal ? this.MakeTotal() : this;
 
             var finalBlock = new Block(fa.GetFinalStates());
             var nonfinalBlock = new Block(fa.GetNonFinalStates());
@@ -3510,11 +3502,11 @@ namespace Microsoft.Automata
             return w;
         }
 
-        IEnumerable<int> GetSources(IBooleanAlgebraPositive<T> solver, T cond, IEnumerable<int> targets)
+        IEnumerable<int> GetSources(T cond, IEnumerable<int> targets)
         {
             foreach (int p in targets)
                 foreach (var move in GetMovesTo(p))
-                    if (solver.IsSatisfiable(solver.MkAnd(move.Label, cond)))
+                    if (algebra.IsSatisfiable(algebra.MkAnd(move.Label, cond)))
                         yield return move.SourceState;
         }
          
@@ -3522,10 +3514,11 @@ namespace Microsoft.Automata
         /// Extension of standard minimization of FAs, use timeout.
         /// This is a naive cubic algorithm.
         /// </summary>
-        public Automaton<T> MinimizeClassical(IBooleanAlgebra<T> solver, int timeout, bool isTotal)
+        public Automaton<T> MinimizeClassical(int timeout, bool isTotal)
         {
+            IBooleanAlgebra<T> solver = algebra;
             if (IsEmpty || IsEpsilon)
-                return Minimize(solver);
+                return Minimize();
 
             var fa = this;
             var sw = new System.Diagnostics.Stopwatch();
@@ -3537,7 +3530,7 @@ namespace Microsoft.Automata
                 throw new ArgumentException("FA must be deterministic");
             
             if(!isTotal)
-                fa = fa.MakeTotal(solver);
+                fa = fa.MakeTotal();
 
             Equivalence E = new Equivalence();
 
@@ -3570,7 +3563,7 @@ namespace Microsoft.Automata
                     {
                         Pair<int, int> pq = new Pair<int, int>(statesList[i], statesList[j]);
                         if (E.Contains(pq))
-                            if (pq.First != pq.Second && AreDistinguishable(fa, E, pq, solver))
+                            if (pq.First != pq.Second && AreDistinguishable(fa, E, pq))
                             {
                                 E.Remove(pq);
                                 continueRefinement = true;
@@ -3689,8 +3682,9 @@ namespace Microsoft.Automata
             return solver.MkAnd(conds.ToArray());
         }
 
-        private bool AreDistinguishable(Automaton<T> fa, Equivalence E, Pair<int, int> pq, IBooleanAlgebraPositive<T> solver)
+        private bool AreDistinguishable(Automaton<T> fa, Equivalence E, Pair<int, int> pq)
         {
+            IBooleanAlgebraPositive<T> solver = fa.algebra;
             foreach (Move<T> from_p in fa.GetMovesFrom(pq.First))
                 foreach (Move<T> from_q in fa.GetMovesFrom(pq.Second))
                     if (from_p.TargetState != from_q.TargetState &&
@@ -3959,8 +3953,10 @@ namespace Microsoft.Automata
                 return null; //st is a final state and end of string was chosen here
         }
 
-        internal void EliminateWordBoundaries(IBooleanAlgebra<T> solver, Func<bool,T> getWordCharPred)
+        internal void EliminateWordBoundaries(Func<bool,T> getWordCharPred)
         {
+            IBooleanAlgebra<T> solver = algebra;
+
             if (DoesNotContainWordBoundaries)
                 return;
 

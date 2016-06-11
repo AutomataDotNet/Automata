@@ -664,9 +664,9 @@ program HtmlDecode1(_){replace{
             var P0 = "^&#[0-9]{3};";
             var P1 = "^&#[0-9]{3}";
 
-            var M0 = css.Convert(P0).Determinize(css).Minimize(css);
-            var M1 = css.Convert(P1).Determinize(css).Minimize(css);
-            var M2 = M1.Minus(M0, css).Minimize(css);
+            var M0 = css.Convert(P0).Determinize().Minimize();
+            var M1 = css.Convert(P1).Determinize().Minimize();
+            var M2 = M1.Minus(M0).Minimize();
 
             //css.ShowGraph(M2, "M2");
 

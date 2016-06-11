@@ -2898,7 +2898,7 @@ namespace Microsoft.Automata.Z3
             var b = sfa.Minimize();
 
             // Get equivalence classes of quotiented SFA and build STA
-            Dictionary<int, Block> Blocks = sfa.Automaton.GetStateEquivalenceClasses(sfa.Solver);
+            Dictionary<int, Block> Blocks = sfa.Automaton.GetStateEquivalenceClasses();
             Dictionary<string, Dictionary<Pair<List<int>, int>, HashSet<Expr>>> condMap =
                 new Dictionary<string, Dictionary<Pair<List<int>, int>, HashSet<Expr>>>();
             foreach (var move in this.rulesList)

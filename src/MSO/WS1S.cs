@@ -98,8 +98,8 @@ namespace Microsoft.Automata.MSO
         {
             var aut1 = phi1.getAutomaton(variables, ca);
             var aut2 = phi2.getAutomaton(variables, ca);
-            var aut3 = aut1.Intersect(aut2, ca);
-            var aut = aut3.Minimize(ca);
+            var aut3 = aut1.Intersect(aut2);
+            var aut = aut3.Minimize();
             //var aut_old = aut.Determinize(ca).Minimize(ca);
             return aut;
         }
@@ -108,8 +108,8 @@ namespace Microsoft.Automata.MSO
         {
             var aut1 = phi1.getAutomatonBDD(variables, alg, nrOfLabelBits);
             var aut2 = phi2.getAutomatonBDD(variables, alg, nrOfLabelBits);
-            var aut = aut1.Intersect(aut2, alg);
-            aut = aut.Minimize(alg);
+            var aut = aut1.Intersect(aut2);
+            aut = aut.Minimize();
             return aut;
         }
 
@@ -144,8 +144,8 @@ namespace Microsoft.Automata.MSO
             var aut2 = phi2.getAutomaton(variables, alg);
             //var res = aut1.Complement(alg).Intersect(aut2.Complement(alg), alg).Complement(alg);
             //res = res.Determinize(alg).Minimize(alg);
-            var res = aut1.Union(aut2).RemoveEpsilons(alg.MkOr);
-            var res1 = res.Minimize(alg);
+            var res = aut1.Union(aut2).RemoveEpsilons();
+            var res1 = res.Minimize();
             return res1;
         }
 
@@ -153,8 +153,8 @@ namespace Microsoft.Automata.MSO
         {
             var aut1 = phi1.getAutomatonBDD(variables, alg, nrOfLabelBits);
             var aut2 = phi2.getAutomatonBDD(variables, alg, nrOfLabelBits);
-            var res = aut1.Complement(alg).Intersect(aut2.Complement(alg), alg).Complement(alg);
-            res = res.Determinize(alg).Minimize(alg);
+            var res = aut1.Complement().Intersect(aut2.Complement()).Complement();
+            res = res.Determinize().Minimize();
             return res;
         }
 
@@ -184,11 +184,11 @@ namespace Microsoft.Automata.MSO
         internal override Automaton<IMonadicPredicate<BDD, T>> getAutomaton(SimpleList<Variable> variables, ICartesianAlgebraBDD<T> alg)
         {
             var aut = phi.getAutomaton(variables, alg);
-            var res = aut.Determinize(alg).Complement(alg).Minimize(alg);
+            var res = aut.Determinize().Complement().Minimize();
             foreach (var x in phi.GetFreeVariables(true))
             {
                 var sing = new WS1SSingleton<T>(x).getAutomaton(variables, alg);
-                res = res.Intersect(sing, alg).Determinize(alg).Minimize(alg);
+                res = res.Intersect(sing).Determinize().Minimize();
             }
             return res;
         }
@@ -196,13 +196,13 @@ namespace Microsoft.Automata.MSO
         internal override Automaton<BDD> getAutomatonBDD(SimpleList<Variable> variables, IBDDAlgebra alg, int nrOfLabelBits)
         {
             var aut = phi.getAutomatonBDD(variables, alg, nrOfLabelBits);
-            var res = aut.Determinize(alg).Complement(alg).Minimize(alg);
+            var res = aut.Determinize().Complement().Minimize();
             foreach (var x in phi.EnumerateFreeVariablesPossiblyWithDuplicates())
             {
                 if (x.IsFirstOrder)
                 {
                     var sing = new WS1SSingleton<T>(x).getAutomatonBDD(variables, alg, nrOfLabelBits);
-                    res = res.Intersect(sing, alg).Determinize(alg).Minimize(alg);
+                    res = res.Intersect(sing).Determinize().Minimize();
                 }
             }
             return res;
@@ -587,7 +587,7 @@ namespace Microsoft.Automata.MSO
 
             var res = Automaton<IMonadicPredicate<BDD, T>>.Create(alg, autPhi.InitialState, autPhi.GetFinalStates(), newMoves);
             //var res = res.Determinize(alg);
-            var res_min = res.Minimize(alg);
+            var res_min = res.Minimize();
 
             return res_min;
         }
@@ -606,8 +606,8 @@ namespace Microsoft.Automata.MSO
                 newMoves.Add(new Move<BDD>(move.SourceState, move.TargetState, alg.OmitBit(move.Label, varIndex)));
 
             var aut = Automaton<BDD>.Create(alg, autPhi.InitialState, autPhi.GetFinalStates(), newMoves);
-            var res = aut.Determinize(alg);
-            res = res.Minimize(alg);
+            var res = aut.Determinize();
+            res = res.Minimize();
 
             return res;
         }

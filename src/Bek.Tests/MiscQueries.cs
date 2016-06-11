@@ -468,7 +468,7 @@ program decode2(w) {
             D1.Simplify();
             var stb = BekConverter.BekToSTb(solver, pgm);
             //avoid introduction of '0' into the intermediate result
-            var dom = new SFAModel(D1.Solver, D1.Solver.CharSort, D1.Solver.RegexConverter.Convert("&#48;|&#0;").Complement(D1.Solver));
+            var dom = new SFAModel(D1.Solver, D1.Solver.CharSort, D1.Solver.RegexConverter.Convert("&#48;|&#0;").Complement());
             var D1r = D1.RestrictDomain(dom);
             var DD = D1r + D1r;
             var w = D1r.Diff(DD);

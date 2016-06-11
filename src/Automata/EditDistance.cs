@@ -303,7 +303,7 @@ namespace Microsoft.Automata
             var aut1 = Automaton<BDD>.Create(solver, S, new int[] { T }, aut.GetMoves());
             var autR = solver.Convert(System.Text.RegularExpressions.Regex.Escape(c.ToString()));
 
-            var contst = aut1.Intersect(autR, solver).Determinize(solver).Minimize(solver);
+            var contst = aut1.Intersect(autR).Determinize().Minimize();
             var finst= contst.GetFinalStates();
             var strings = new Dictionary<int, string>();
             strings[contst.InitialState] = "";
@@ -347,7 +347,7 @@ namespace Microsoft.Automata
                 return "";
 
             var aut1 = Automaton<BDD>.Create(aut.Algebra, S, new int[] { T }, aut.GetMoves());
-            var contst = aut1.Determinize(solver).Minimize(solver);
+            var contst = aut1.Determinize().Minimize();
             var finst = contst.GetFinalStates();
             var strings = new Dictionary<int, string>();
             strings[contst.InitialState] = "";

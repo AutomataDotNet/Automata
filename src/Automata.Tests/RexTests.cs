@@ -286,7 +286,7 @@ namespace Microsoft.Automata.Tests
 
             var rex = new Microsoft.Automata.Rex.RexEngine(BitWidth.BV7);
             var sfa = rex.CreateFromRegexes(RegexOptions.None, r1);
-            var sfa_min = sfa.Determinize(rex.Solver).MinimizeHopcroft(rex.Solver);
+            var sfa_min = sfa.Determinize().MinimizeHopcroft();
 
             //rex.Solver.ShowGraph(sfa_min, "test");
 
@@ -459,7 +459,7 @@ namespace Microsoft.Automata.Tests
 
             var rex = new Microsoft.Automata.Rex.RexEngine(BitWidth.BV7);
             var sfa = rex.CreateFromRegexes(RegexOptions.None, r1, r2);
-            var sfa_min = sfa.Determinize(rex.Solver).MinimizeHopcroft(rex.Solver);
+            var sfa_min = sfa.Determinize().MinimizeHopcroft();
 
             //rex.Solver.ShowGraph(sfa_min, "test");
 
@@ -508,7 +508,7 @@ namespace Microsoft.Automata.Tests
 
             var rex = new Microsoft.Automata.Rex.RexEngine(BitWidth.BV7);
             var sfa = rex.CreateFromRegexes(RegexOptions.None, r1);
-            var sfa_min = sfa.Determinize(rex.Solver).MinimizeHopcroft(rex.Solver);
+            var sfa_min = sfa.Determinize().MinimizeHopcroft();
 
             //rex.Solver.ShowGraph(sfa_min, "test");
 
@@ -525,11 +525,11 @@ namespace Microsoft.Automata.Tests
             for (int i = 0; i < 25; i++)
             {
                 string regex = regexes[i];
-                var autom = rex.CreateFromRegexes(regex).Determinize(rex.Solver);
+                var autom = rex.CreateFromRegexes(regex).Determinize();
                 //rex.Solver.ShowGraph(autom, "autom");
-                var automM = autom.MinimizeHopcroft(rex.Solver);
+                var automM = autom.MinimizeHopcroft();
                 //rex.Solver.ShowGraph(automM, "automM");
-                var automMC = autom.MinimizeMoore(rex.Solver);
+                var automMC = autom.MinimizeMoore();
                 //rex.Solver.ShowGraph(automMC, "automMC");
                 //var automM2 = autom.Minimize2(rex.Solver);
                 //rex.Solver.ShowGraph(automM2, "automM2");
@@ -571,20 +571,20 @@ namespace Microsoft.Automata.Tests
                 //var sfa3 = rex.CreateFromRegexes(r3);
                 var sfa4 = rex.CreateFromRegexes(r4);
                 var sfa5 = rex.CreateFromRegexes(r5);
-                var sfa = rex.Intersect(sfa1, sfa2, sfa4, sfa5).Determinize(rex.Solver);
+                var sfa = rex.Intersect(sfa1, sfa2, sfa4, sfa5).Determinize();
 
                 //rex.Solver.ShowGraph(sfa, "sfa");
 
                 time = System.Environment.TickCount - time;
 
                 int timeH = System.Environment.TickCount; 
-                var sfaH = sfa.MinimizeHopcroft(rex.Solver);
+                var sfaH = sfa.MinimizeHopcroft();
                 timeH = System.Environment.TickCount - timeH;
 
                 //rex.Solver.ShowGraph(sfaH, "sfaH");
 
                 int timeM = System.Environment.TickCount; 
-                var sfaM = sfa.MinimizeMoore(rex.Solver);
+                var sfaM = sfa.MinimizeMoore();
                 timeM = System.Environment.TickCount - timeM;
 
                 Console.WriteLine("length:{0}  creation time:{1} size:{2}  min(H):{3} min(M):{4} minsize:{5}", passwl, time, sfa.StateCount, timeH, timeM, sfaH.StateCount );
@@ -597,11 +597,11 @@ namespace Microsoft.Automata.Tests
         {
             var rex = new Microsoft.Automata.Rex.RexEngine(BitWidth.BV7);
             var r = "^((0[01])3|(1[012]3))$";
-            var autom = rex.CreateFromRegexes(r).Determinize(rex.Solver);//.MakeTotal(rex.Solver);
+            var autom = rex.CreateFromRegexes(r).Determinize();//.MakeTotal(rex.Solver);
             //rex.Solver.ShowGraph(autom, "autom");
-            var automM = autom.MinimizeHopcroft(rex.Solver);
+            var automM = autom.MinimizeHopcroft();
             //rex.Solver.ShowGraph(automM, "automM");
-            var automM3 = autom.Minimize(rex.Solver);
+            var automM3 = autom.Minimize();
             //rex.Solver.ShowGraph(automM3, "automM3");
             Assert.AreEqual<int>(automM.StateCount, automM3.StateCount);
             Assert.IsTrue(automM3.IsEquivalentWith(automM));
@@ -612,13 +612,13 @@ namespace Microsoft.Automata.Tests
         {
             string regex = "[NS]\\d{1,}(\\:[0-5]\\d){2}.{0,1}\\d{0,},[EW]\\d{1,}(\\:[0-5]\\d){2}.{0,1}\\d{0,}";
             var rex = new Microsoft.Automata.Rex.RexEngine(BitWidth.BV16);
-            var autom = rex.CreateFromRegexes(RegexOptions.Singleline, regex).Determinize(rex.Solver);//.MakeTotal(rex.Solver);
-            autom.CheckDeterminism(rex.Solver,true);
+            var autom = rex.CreateFromRegexes(RegexOptions.Singleline, regex).Determinize();//.MakeTotal(rex.Solver);
+            autom.CheckDeterminism(true);
             Assert.IsTrue(autom.IsDeterministic, "autom must be deterministic");
             //rex.Solver.ShowGraph(autom, "autom");
-            var automM3 = autom.Minimize(rex.Solver);
+            var automM3 = autom.Minimize();
             //rex.Solver.ShowGraph(automM3, "automM3");
-            var automM = autom.MinimizeHopcroft(rex.Solver);
+            var automM = autom.MinimizeHopcroft();
             var same = automM3.IsEquivalentWith(automM) && automM3.StateCount == automM.StateCount;
             Assert.IsTrue(same);
         }
@@ -628,11 +628,11 @@ namespace Microsoft.Automata.Tests
         {
             var rex = new Microsoft.Automata.Rex.RexEngine(BitWidth.BV7);
             var regex = "^.*(([01]|[1]0)0)$";
-            var autom0 = rex.CreateFromRegexes(RegexOptions.Singleline, regex).RemoveEpsilons(rex.Solver.MkOr);
-            var autom = autom0.Determinize(rex.Solver);
+            var autom0 = rex.CreateFromRegexes(RegexOptions.Singleline, regex).RemoveEpsilons();
+            var autom = autom0.Determinize();
             //rex.Solver.ShowGraph(autom0, "NFA");
             //rex.Solver.ShowGraph(autom, "DFA");
-            autom.CheckDeterminism(rex.Solver, true);
+            autom.CheckDeterminism(true);
             Assert.IsTrue(autom.IsDeterministic, "autom must be deterministic here");
 
             var automM = RunMinimize1(rex, autom);
@@ -678,7 +678,7 @@ namespace Microsoft.Automata.Tests
                 if (!exclude.Contains(i))
                 {
                     var regex = regexes[i];
-                    var autom = rex.CreateFromRegexes(RegexOptions.Singleline, regex).Determinize(rex.Solver, 0);
+                    var autom = rex.CreateFromRegexes(RegexOptions.Singleline, regex).Determinize();
                     SFAs.Add(autom);
                     minstates = Math.Min(minstates, autom.StateCount);
                     maxstates = Math.Max(maxstates, autom.StateCount);
@@ -689,13 +689,13 @@ namespace Microsoft.Automata.Tests
             var time2 = System.Environment.TickCount;
             foreach (var sfa in SFAs)
             {
-                SFAs2.Add(sfa.MinimizeMoore(rex.Solver));
+                SFAs2.Add(sfa.MinimizeMoore());
             }
             time2 = System.Environment.TickCount - time2;
             var time1 = System.Environment.TickCount;
             foreach (var sfa in SFAs)
             {
-                SFAs1.Add(sfa.MinimizeHopcroft(rex.Solver));
+                SFAs1.Add(sfa.MinimizeHopcroft());
             }
             time1 = System.Environment.TickCount - time1 ;
             for (int j = 0; j < K; j++)
@@ -740,7 +740,7 @@ namespace Microsoft.Automata.Tests
             try
             {
                 var rex = new Microsoft.Automata.Rex.RexEngine(BitWidth.BV16);
-                var autom = rex.CreateFromRegexes(RegexOptions.Singleline, regex).Determinize(rex.Solver);
+                var autom = rex.CreateFromRegexes(RegexOptions.Singleline, regex).Determinize();
                 
                 //---------------------
                 var automM = RunMinimize1(rex, autom);
@@ -788,7 +788,7 @@ namespace Microsoft.Automata.Tests
             var t = System.Environment.TickCount;
             Automaton<BDD> automM = null;
             for (int i = 0; i < 1; i++)
-                automM = autom.MinimizeMoore(rex.Solver);
+                automM = autom.MinimizeMoore();
             time1 = System.Environment.TickCount - t;
             return automM;
         }
@@ -798,7 +798,7 @@ namespace Microsoft.Automata.Tests
             var t = System.Environment.TickCount;
             Automaton<BDD> automM = null;
             for (int i = 0; i < 1; i++)
-                automM = autom.MinimizeHopcroft(rex.Solver);
+                automM = autom.MinimizeHopcroft();
             time2 = System.Environment.TickCount - t;
             return automM;
         }
@@ -808,7 +808,7 @@ namespace Microsoft.Automata.Tests
             var t2 = System.Environment.TickCount;
             Automaton<BDD> automM = null;
             for (int i = 0; i < 1; i++)
-                automM = autom.Minimize(rex.Solver);
+                automM = autom.Minimize();
             time3 = System.Environment.TickCount - t2;
             return automM;
         }
@@ -820,9 +820,9 @@ namespace Microsoft.Automata.Tests
             var solver = new CharSetSolver(BitWidth.BV16);
             var fat = solver.Convert(regex, System.Text.RegularExpressions.RegexOptions.Singleline);
             //solver.ShowGraph(fat, "fat");
-            var fat1 = fat.Determinize(solver);
+            var fat1 = fat.Determinize();
             //solver.ShowGraph(fat1, "fat1");
-            var fat2 = fat1.Minimize(solver);
+            var fat2 = fat1.Minimize();
             //solver.ShowGraph(fat2, "fat2");
             Assert.IsTrue(fat1.IsEquivalentWith(fat2));
         }
@@ -834,9 +834,9 @@ namespace Microsoft.Automata.Tests
             var solver = new CharSetSolver(BitWidth.BV7);
             var fat = solver.Convert(regex, System.Text.RegularExpressions.RegexOptions.Singleline);
             //solver.ShowGraph(fat, "fat");
-            var fat1 = fat.Determinize(solver);
+            var fat1 = fat.Determinize();
             //solver.ShowGraph(fat1, "fat1");
-            var fat2 = fat1.Minimize(solver);
+            var fat2 = fat1.Minimize();
             //solver.ShowGraph(fat2, "fat2");
             Assert.IsTrue(fat1.IsEquivalentWith(fat2));
         }

@@ -990,7 +990,7 @@ namespace Microsoft.Automata
             var D = Automaton<Rule<TERM>>.Create(null, sfa.InitialState, sfa.Automaton.GetFinalStates(),
                 LiftMoves(sfa.Solver, sfa.Automaton));
 
-            var restr = Automaton<Rule<TERM>>.MkProduct(automaton, D, new RestrictionSolver(solver), 0);
+            var restr = Automaton<Rule<TERM>>.MkProduct_(automaton, D, new RestrictionSolver(solver));
 
             return new ST<FUNC, TERM, SORT>(solver, string.Format("Restr_{0}_{1}", name, sfa.Name), initReg, inputSort, outputSort, registerSort, restr, AllYieldsAreEmpty(restr.GetMoves()));
         }
@@ -998,7 +998,7 @@ namespace Microsoft.Automata
         static IEnumerable<Move<Rule<TERM>>> LiftMoves(IContext<FUNC, TERM, SORT> solver, Automaton<TERM> automaton)
         {
             var eps = new TERM[] { };
-            var aut = automaton.RemoveEpsilons(solver.MkOr); //epsilon moves are not allowed in STs
+            var aut = automaton.RemoveEpsilons(); //epsilon moves are not allowed in STs
             foreach (var move in aut.GetMoves())
             {
                 yield return Move<Rule<TERM>>.Create(move.SourceState, move.TargetState,
@@ -2127,7 +2127,7 @@ namespace Microsoft.Automata
             var solver = A.solver;
             var ftb = A.solver;
             //the register sort of all rules in AxB is MkTupleSort(A.RegisterSort,B.RegisterSort)
-            var AxB = Automaton<Rule<TERM>>.MkProduct(A.automaton, B.automaton, new STProductSolver(solver, A.registerSort, B.registerSort));
+            var AxB = Automaton<Rule<TERM>>.MkProduct_(A.automaton, B.automaton, new STProductSolver(solver, A.registerSort, B.registerSort));
             if (AxB.IsEmpty) //there are no inputs in common
                 return true;
 
@@ -2295,7 +2295,7 @@ namespace Microsoft.Automata
             var solver = A.solver;
             var ftb = A.solver;
             //the register sort of all rules in AxB is MkTupleSort(A.RegisterSort,B.RegisterSort)
-            var AxB = Automaton<Rule<TERM>>.MkProduct(A.automaton, B.automaton,new STProductSolver(solver, A.registerSort, B.registerSort));
+            var AxB = Automaton<Rule<TERM>>.MkProduct_(A.automaton, B.automaton,new STProductSolver(solver, A.registerSort, B.registerSort));
             if (AxB.IsEmpty) //there are no inputs in common
                 return null;
 
@@ -2635,7 +2635,7 @@ namespace Microsoft.Automata
             var solver = A.solver;
             var ftb = A.solver;
             //the register sort of all rules in AxB is MkTupleSort(A.RegisterSort,B.RegisterSort)
-            var AxB = Automaton<Rule<TERM>>.MkProduct(A.automaton, B.automaton, new STProductSolver(solver, A.registerSort, B.registerSort));
+            var AxB = Automaton<Rule<TERM>>.MkProduct_(A.automaton, B.automaton, new STProductSolver(solver, A.registerSort, B.registerSort));
             if (AxB.IsEmpty) //there are no inputs in common
                 return true;
 
@@ -3206,7 +3206,7 @@ namespace Microsoft.Automata
             SORT inputSort = A.inputSort;
             SORT outputSort = A.outputSort;
             //the register sort of all rules in AxB is MkTupleSort(A.RegisterSort,B.RegisterSort)
-            var AxB = Automaton<Rule<TERM>>.MkProduct(A.automaton, B.automaton, new STProductSolver(solver, A.registerSort, B.registerSort));
+            var AxB = Automaton<Rule<TERM>>.MkProduct_(A.automaton, B.automaton, new STProductSolver(solver, A.registerSort, B.registerSort));
             if (AxB.IsEmpty) //there are no inputs in common
                 return true;
 

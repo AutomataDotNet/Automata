@@ -705,7 +705,7 @@ namespace Microsoft.Automata
             var minaut = new Tuple<string, Automaton<BDD>>[aut.Length];
             for (int i = 0; i < aut.Length; i++)
             {
-                minaut[i] = new Tuple<string, Automaton<BDD>>(aut[i].Item1, aut[i].Item2.RemoveEpsilons(this.MkOr).Determinize(this).Minimize(this));
+                minaut[i] = new Tuple<string, Automaton<BDD>>(aut[i].Item1, aut[i].Item2.RemoveEpsilons().Determinize().Minimize());
                 if (i > 0)
                 {
                     if (Overlaps(minaut[i - 1].Item2, minaut[i].Item2))
@@ -754,7 +754,7 @@ namespace Microsoft.Automata
         public bool Accepts(Automaton<BDD> aut, string s)
         {
             var s_aut = regexConverter.ConvertString(s);
-            var prod = aut.Intersect(s_aut, this);
+            var prod = aut.Intersect(s_aut);
             return !prod.IsEmpty;
         }
 
@@ -1259,7 +1259,7 @@ namespace Microsoft.Automata
         public HashSet<int> GetCoveredStates(Automaton<BDD> aut, string input, bool checkContainment = true)
         {
             if (!aut.isDeterministic)
-                throw new AutomataException(AutomataExceptionKind.AutomatonIsNotDeterministic);
+                throw new AutomataException(AutomataExceptionKind.AutomatonIsNondeterministic);
 
             HashSet<int> states = new HashSet<int>();
 
@@ -1287,7 +1287,7 @@ namespace Microsoft.Automata
         public HashSet<Move<BDD>> GetCoveredMoves(Automaton<BDD> aut, string input)
         {
             if (!aut.isDeterministic)
-                throw new AutomataException(AutomataExceptionKind.AutomatonIsNotDeterministic);
+                throw new AutomataException(AutomataExceptionKind.AutomatonIsNondeterministic);
 
             HashSet<Move<BDD>> moves = new HashSet<Move<BDD>>();
 

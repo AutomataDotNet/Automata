@@ -20,24 +20,24 @@ namespace Microsoft.Automata.Tests
         {
             var solver = new CharSetSolver(BitWidth.BV7);
             var fa = solver.Convert(@"^(a*\w)$", System.Text.RegularExpressions.RegexOptions.None);
-            fa = fa.RemoveEpsilons(solver.MkOr);
+            fa = fa.RemoveEpsilons();
             //solver.ShowGraph(fa, "fa.dgml");
-            fa.CheckDeterminism(solver);
+            fa.CheckDeterminism();
             Assert.IsFalse(fa.IsDeterministic, "fa expected to be nondeterministic");
-            var fad = fa.Determinize(solver);
+            var fad = fa.Determinize();
             //solver.ShowGraph(fad, "fad.dgml");
-            fad.CheckDeterminism(solver,true);
+            fad.CheckDeterminism(true);
             Assert.IsTrue(fad.IsDeterministic, "fad expected to be deterministic");
 
-            var fam = fad.Minimize(solver);
+            var fam = fad.Minimize();
             Assert.AreEqual<int>(3, fam.StateCount);
             //solver.ShowGraph(fam, "fam.dgml");
 
             fa = solver.Convert(@"^((a|B|c)*[\w-[a-d]])$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
             //ShowAsGraph(converter, fa, "fa3.dgml");
-            fa = fa.RemoveEpsilons(solver.MkOr);
+            fa = fa.RemoveEpsilons();
             //ShowAsGraph(converter.Describe, fa, "fa4.dgml");
-            fa.CheckDeterminism(solver);
+            fa.CheckDeterminism();
             Assert.IsTrue(fa.IsDeterministic, "fa expected to be deterministic");
         }
 
@@ -46,10 +46,10 @@ namespace Microsoft.Automata.Tests
         {
             var solver = new CharSetSolver(BitWidth.BV7);
             var fa = solver.Convert(@"^(ab)*$");
-            var pref = fa.PrefixLanguage().Determinize(solver).Minimize(solver);
-            Assert.IsTrue(fa.Minus(pref, solver).IsEmpty);
-            Assert.IsFalse(pref.Intersect(solver.Convert(@"^a$"), solver).IsEmpty);
-            Assert.IsTrue(pref.Intersect(solver.Convert(@"^b$"), solver).IsEmpty);
+            var pref = fa.PrefixLanguage().Determinize().Minimize();
+            Assert.IsTrue(fa.Minus(pref).IsEmpty);
+            Assert.IsFalse(pref.Intersect(solver.Convert(@"^a$")).IsEmpty);
+            Assert.IsTrue(pref.Intersect(solver.Convert(@"^b$")).IsEmpty);
         }
 
         [TestMethod]
@@ -57,10 +57,10 @@ namespace Microsoft.Automata.Tests
         {
             var solver = new CharSetSolver(BitWidth.BV7);
             var fa = solver.Convert(@"^(ab)*$");
-            var suffix = fa.SuffixLanguage().Determinize(solver).Minimize(solver);
-            Assert.IsTrue(fa.Minus(suffix, solver).IsEmpty);
-            Assert.IsFalse(suffix.Intersect(solver.Convert(@"^b$"), solver).IsEmpty);
-            Assert.IsTrue(suffix.Intersect(solver.Convert(@"^a$"), solver).IsEmpty);
+            var suffix = fa.SuffixLanguage().Determinize().Minimize();
+            Assert.IsTrue(fa.Minus(suffix).IsEmpty);
+            Assert.IsFalse(suffix.Intersect(solver.Convert(@"^b$")).IsEmpty);
+            Assert.IsTrue(suffix.Intersect(solver.Convert(@"^a$")).IsEmpty);
         }
 
         [TestMethod]
@@ -80,12 +80,12 @@ namespace Microsoft.Automata.Tests
             var aut1 = Automaton<BDD>.Create(solver, 0, new int[] { 2, 3 }, moves);
             Automaton<BDD> ambl;
 
-            Assert.IsFalse(aut1.IsAmbiguous(solver, out ambl));
+            Assert.IsFalse(aut1.IsAmbiguous(out ambl));
             Assert.IsTrue(ambl.IsEmpty);
             
 
             var aut2 = Automaton<BDD>.Create(solver, 0, new int[] { 2, 3, 1 }, moves);
-            Assert.IsTrue(aut2.IsAmbiguous(solver, out ambl));
+            Assert.IsTrue(aut2.IsAmbiguous(out ambl));
 
             //solver.ShowGraph(ambl.Determinize(solver).Minimize(solver),"amb");
             Assert.IsFalse(ambl.IsEmpty);
@@ -97,9 +97,9 @@ namespace Microsoft.Automata.Tests
             var solver = new CharSetSolver(BitWidth.BV7);
             var fa = solver.Convert(@"^((a|B|c)*[\w-[a-e]])$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
             //solver.ShowGraph(fa, "fa3.dgml");
-            fa = fa.RemoveEpsilons(solver.MkOr);
+            fa = fa.RemoveEpsilons();
             //solver.ShowGraph(fa, "fa.dgml");
-            fa.CheckDeterminism(solver, true);
+            fa.CheckDeterminism(true);
             Assert.IsTrue(fa.IsDeterministic, "fa expected to be deterministic");
         }
 
@@ -109,13 +109,13 @@ namespace Microsoft.Automata.Tests
             var converter = new CharSetSolver(BitWidth.BV7);
             var regex = @"^[\0-\x7E]*(([01]|01)0)$";
             var fa = converter.Convert(regex, System.Text.RegularExpressions.RegexOptions.None);
-            fa = fa.RemoveEpsilons(converter.MkOr);
-            fa.CheckDeterminism(converter);
+            fa = fa.RemoveEpsilons();
+            fa.CheckDeterminism();
             Assert.IsFalse(fa.IsDeterministic, "fa expected to be nondeterministic");
-            var fad = fa.Determinize(converter);
+            var fad = fa.Determinize();
             //converter.ShowGraph(fa, "fa.dgml");
             //converter.ShowGraph(fad, "fad.dgml");
-            fad.CheckDeterminism(converter, true);
+            fad.CheckDeterminism(true);
             Assert.IsTrue(fad.IsDeterministic, "fa expected to be deterministic");
         }
 
@@ -135,7 +135,7 @@ namespace Microsoft.Automata.Tests
         {
             var solver = new CharSetSolver(BitWidth.BV7);
             string regexA = "^abc(d|[a-ce-g])*$";
-            var A = solver.Convert(regexA).Determinize(solver).MinimizeHopcroft(solver);
+            var A = solver.Convert(regexA).Determinize().MinimizeHopcroft();
             string a = solver.ConvertToRegex(A);
             Assert.AreEqual<string>("^(abc([a-g])*)$", a);
         }
@@ -147,7 +147,7 @@ namespace Microsoft.Automata.Tests
             string regexA = "^(((((00|11)|10((00|11))*01)|(01|10((00|11))*10)(((00|11)|01((00|11))*10))*(10|01((00|11))*01)))*)$";
             BDD _1 = solver.MkCharConstraint( '1');
             var A = solver.Convert(regexA).RelpaceAllGuards<BDD>(x => (x == null ? null : _1));
-            var B = A.Determinize(solver).MinimizeHopcroft(solver);
+            var B = A.Determinize().MinimizeHopcroft();
             var lengthregex = solver.ConvertToRegex(B);
             Assert.AreEqual<string>("^((11)*)$", lengthregex);
         }
@@ -175,19 +175,19 @@ namespace Microsoft.Automata.Tests
             var aut = Automaton<BDD>.Create(solver, 0, new int[] { 0}, moves);
            //solver.ShowGraph(aut, "div3a");
             string regex = solver.ConvertToRegex(aut).Replace("[ad]", "(a|d)").Replace("[b]", "b").Replace("[c]", "c");
-            var aut2 = solver.Convert(regex).Determinize(solver).MinimizeHopcroft(solver);
+            var aut2 = solver.Convert(regex).Determinize().MinimizeHopcroft();
           // solver.ShowGraph(aut2, "div3b");
             bool equiv = aut.IsEquivalentWith(aut2);
             Assert.IsTrue(equiv);
             //binary version of the regex
             string regex01 = regex.Replace("a","00").Replace("b","01").Replace("c","10").Replace("d","11");
             var bits30 = solver.Convert("^[01]{10,30}\\z");
-            var aut01_ = solver.Convert(regex01).Determinize(solver);
+            var aut01_ = solver.Convert(regex01).Determinize();
             //solver.ShowGraph(aut01_, "aut01_");
-            var aut01 = aut01_.MinimizeHopcroft(solver);
+            var aut01 = aut01_.MinimizeHopcroft();
             //solver.ShowGraph(aut01, "aut01");
             string regex01small = solver.ConvertToRegex(aut01);
-            aut01 = aut01.Intersect(bits30, solver);
+            aut01 = aut01.Intersect(bits30);
             //genarate some random paths in this automaton and check that the binary representation is a numer that is divisible by 3.
             for (int i = 0; i < 1000; i++)
             {
@@ -267,7 +267,7 @@ namespace Microsoft.Automata.Tests
             foreach (string s in rex.GenerateMembers(A, 100))
                 Assert.IsTrue(Rex.RexEngine.IsMatch(s, r, RegexOptions.Multiline), "unexpected mismatch");
 
-            var notA = A.Complement(rex.Solver).MinimizeHopcroft(rex.Solver);
+            var notA = A.Complement().MinimizeHopcroft();
             //rex.Solver.ShowGraph(notA, "notA");
             foreach (string s in rex.GenerateMembers(notA, 10000))
                 Assert.IsFalse(Rex.RexEngine.IsMatch(s, r, RegexOptions.Multiline), "unexpected match");
@@ -305,7 +305,7 @@ namespace Microsoft.Automata.Tests
             CharSetSolver solver = new CharSetSolver(BitWidth.BV7);  //new solver using ASCII encoding
             string r1 = @"^[A-Za-z0-9]+@(([A-Za-z0-9\-])+\.)+([A-Za-z\-])+$";   // regex for "almost" valid emails
             Automaton<BDD> A = solver.Convert(r1); //accepts strings that match the regex r1
-            A = A.RemoveEpsilons(solver.MkOr);         //remove epsilons, uses disjunction of character sets to combine transitions
+            A = A.RemoveEpsilons();         //remove epsilons, uses disjunction of character sets to combine transitions
             //solver.ShowGraph(A, "A.dgml");             //save and visualize the automaton using dgml
             string s = solver.GenerateMember(A);       //grenerate some member
         }
@@ -319,9 +319,9 @@ namespace Microsoft.Automata.Tests
             string b = @"^\d.*$";                                               //.Net regex
             Automaton<BDD> A = solver.Convert(a);    //create the equivalent automata
             Automaton<BDD> B = solver.Convert(b);
-            Automaton<BDD> C = A.Minus(B, solver);   //construct the difference 
+            Automaton<BDD> C = A.Minus(B);   //construct the difference 
             //solver.ShowGraph(C, "C.dgml");
-            var M = C.Determinize(solver).MinimizeHopcroft(solver);  //minimize the automaton
+            var M = C.Determinize().MinimizeHopcroft();  //minimize the automaton
             //solver.ShowGraph(M, "M.dgml");               //save and visualize
             //var M2 = C.Determinize(solver).Minimize2(solver);  //minimize the automaton
             //solver.ShowGraph(M2, "M2.dgml");               //save and visualize
@@ -403,7 +403,7 @@ namespace Microsoft.Automata.Tests
 
                     var A = converter.Convert(regexA, System.Text.RegularExpressions.RegexOptions.None);
                     var B = converter.Convert(regexB, System.Text.RegularExpressions.RegexOptions.None);
-                    var C = Automaton<BDD>.MkProduct(A, B, converter);
+                    var C = Automaton<BDD>.MkProduct(A, B);
 
                     if (i == j)
                         Assert.IsFalse(C.IsEmpty);
@@ -438,7 +438,7 @@ namespace Microsoft.Automata.Tests
                     var B = converter.Convert(regexB, System.Text.RegularExpressions.RegexOptions.None);
 
                     List<BDD> witness;
-                    bool C = Automaton<BDD>.CheckProduct(A, B, 0, converter, out witness);
+                    bool C = Automaton<BDD>.CheckProduct(A, B, 0, out witness);
 
                     if (i == j)
                         Assert.IsTrue(C, "product must me nonempty");
@@ -523,7 +523,7 @@ namespace Microsoft.Automata.Tests
             var fou = @"(\xF0[\x90-\x9F]|\xF4[\x80-\x8F]|[\xF1-\xF3][\x80-\xBF])[\x80-\xBF]{2}";
             var regex = string.Format("^({0}|{1}|{2}|{3})*$", one, two, thr, fou);
             var aut = solver.Convert(regex);
-            var aut2 = aut.Determinize(solver).MinimizeHopcroft(solver);
+            var aut2 = aut.Determinize().MinimizeHopcroft();
             //var aut22 = aut.Determinize(solver).Minimize2(solver);
             //var aut3 = aut2.Complement(solver);
             //solver.ShowGraph(aut, "Utf8");
@@ -561,10 +561,10 @@ namespace Microsoft.Automata.Tests
         {
             var rex = new Rex.RexEngine(BitWidth.BV7);
             var solver = rex.Solver;
-            var dfa1 = solver.Convert("^(a*b)$").Determinize(solver).MinimizeHopcroft(solver);
-            var dfa2 = solver.Convert("^(b*a)$").Determinize(solver).MinimizeHopcroft(solver);
-            var dfa3 = dfa1.Union(dfa2).Determinize(solver).MinimizeHopcroft(solver);
-            var dfa4 = solver.Convert("^((a*b)|(b*a))$").Determinize(solver).MinimizeHopcroft(solver);
+            var dfa1 = solver.Convert("^(a*b)$").Determinize().MinimizeHopcroft();
+            var dfa2 = solver.Convert("^(b*a)$").Determinize().MinimizeHopcroft();
+            var dfa3 = dfa1.Union(dfa2).Determinize().MinimizeHopcroft();
+            var dfa4 = solver.Convert("^((a*b)|(b*a))$").Determinize().MinimizeHopcroft();
             Assert.IsTrue(dfa3.IsEquivalentWith(dfa4));
 
             //solver.ShowGraph(dfa, "TestUnion");
@@ -575,8 +575,8 @@ namespace Microsoft.Automata.Tests
         {
             var rex = new Rex.RexEngine(BitWidth.BV7);
             var r1 = ",(([^\\n,\"]*)|(\"[^\\n\"]*\")),";
-            var nfa = rex.Solver.Convert("^(" + r1 +")$").RemoveEpsilons(rex.Solver.MkOr);
-            var dfa = nfa.Determinize(rex.Solver).Minimize(rex.Solver);
+            var nfa = rex.Solver.Convert("^(" + r1 +")$").RemoveEpsilons();
+            var dfa = nfa.Determinize().Minimize();
             //rex.Solver.ShowGraph(nfa, "nfa");
             //rex.Solver.ShowGraph(dfa, "dfa");
         }
@@ -625,12 +625,12 @@ namespace Microsoft.Automata.Tests
             //rex.Solver.ShowGraph(sfa3, "sfa");
 
             var timeToMin = System.Environment.TickCount;
-            var sfa_min = sfa2.MinimizeMoore(rex.Solver);
+            var sfa_min = sfa2.MinimizeMoore();
             timeToMin = System.Environment.TickCount - timeToMin;
 
 
             var timeToMinB = System.Environment.TickCount;
-            var sfa_minB = sfa3.MinimizeHopcroft(rex.Solver);
+            var sfa_minB = sfa3.MinimizeHopcroft();
             timeToMinB = System.Environment.TickCount - timeToMinB;
 
 
@@ -658,13 +658,13 @@ namespace Microsoft.Automata.Tests
             var rex = new Microsoft.Automata.Rex.RexEngine(BitWidth.BV7);
 
             var regex = "^0*(0|1)01$";
-            var sfa = rex.CreateFromRegexes(regex).RemoveEpsilons(rex.Solver.MkOr);
-            var sfa_det = sfa.Determinize(rex.Solver);
+            var sfa = rex.CreateFromRegexes(regex).RemoveEpsilons();
+            var sfa_det = sfa.Determinize();
             //rex.Solver.ShowGraph(sfa_det, "sfa_det");
-            var sfa_min_cl = sfa_det.MinimizeMoore(rex.Solver);
+            var sfa_min_cl = sfa_det.MinimizeMoore();
             //rex.Solver.ShowGraph(sfa_min_cl, "sfa_min_cl");
 
-            var sfa_min = sfa_det.MinimizeHopcroft(rex.Solver);
+            var sfa_min = sfa_det.MinimizeHopcroft();
             //rex.Solver.ShowGraph(sfa_min, "sfa_min");
 
             Assert.IsTrue(rex.AreEquivalent(sfa, sfa_min_cl));
@@ -701,8 +701,8 @@ namespace Microsoft.Automata.Tests
             var aut = solver.Convert(regex, RegexOptions.Singleline);
             //var autEpsFree = aut.RemoveEpsilons(solver.MkOr);
             //autEpsFree.ShowGraph("autEpsFree");
-            var autDet = aut.Determinize(solver);
-            var autMin = autDet.Minimize(solver);
+            var autDet = aut.Determinize();
+            var autMin = autDet.Minimize();
             //autMin.ShowGraph("autMin");
         }
 

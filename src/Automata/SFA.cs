@@ -94,7 +94,7 @@ namespace Microsoft.Automata
             CheckCompatibiltyWith(B);
 
             string prodName = string.Format("[{0}_x_{1}]", name, B.Name);
-            var AxB = Automaton<TERM>.MkSum(automaton, B.automaton, solver);
+            var AxB = Automaton<TERM>.MkSum(automaton, B.automaton);
             return new SFA<FUNC, TERM, SORT>(solver, inpSort, prodName, AxB);
         }
 
@@ -111,7 +111,7 @@ namespace Microsoft.Automata
             CheckCompatibiltyWith(B);
 
             string prodName = string.Format("[{0}_x_{1}]", name, B.Name);
-            var AxB = Automaton<TERM>.MkProduct(automaton, B.automaton, solver);
+            var AxB = Automaton<TERM>.MkProduct(automaton, B.automaton);
             return new SFA<FUNC, TERM, SORT>(solver, inpSort, prodName, AxB);
         }
 
@@ -309,7 +309,7 @@ namespace Microsoft.Automata
         /// <returns>equivalent automaton without epsilon-moves</returns>
         public SFA<FUNC, TERM, SORT> EliminateEpsilons()
         {
-            var a = automaton.RemoveEpsilons(solver.MkOr);
+            var a = automaton.RemoveEpsilons();
             return new SFA<FUNC, TERM, SORT>(solver, inpSort, string.Format("ElimE[{0}]", name), a);
         }
 
@@ -319,7 +319,7 @@ namespace Microsoft.Automata
         public SFA<FUNC, TERM, SORT> Complement()
         {
             Automaton<TERM> full = Automaton<TERM>.MkFull(this.automaton.Algebra);
-            var compl = Automaton<TERM>.MkDifference(full, automaton.MakeTotal(solver), 0);
+            var compl = Automaton<TERM>.MkDifference(full, automaton.MakeTotal(), 0);
             return new SFA<FUNC, TERM, SORT>(solver, inpSort, string.Format("Compl[{0}]", name), compl);
         }
 
@@ -342,7 +342,7 @@ namespace Microsoft.Automata
         {
             if (automaton.IsDeterministic)
                 return this;
-            var det = automaton.Determinize(solver);
+            var det = automaton.Determinize();
             return new SFA<FUNC, TERM, SORT>(solver, inpSort, "Det[" + name + "]", det);
         }
 
@@ -352,7 +352,7 @@ namespace Microsoft.Automata
         /// </summary>
         public SFA<FUNC, TERM, SORT> MakeTotal()
         {
-            var tot = automaton.MakeTotal(solver);
+            var tot = automaton.MakeTotal();
             return new SFA<FUNC, TERM, SORT>(solver, inpSort, string.Format("Tot[{0}]", name), tot);
         }
 
@@ -362,7 +362,7 @@ namespace Microsoft.Automata
         public SFA<FUNC, TERM, SORT> Minimize()
         {
             var det = this.Determinize();
-            var min = det.automaton.Minimize(solver);
+            var min = det.automaton.Minimize();
             return new SFA<FUNC, TERM, SORT>(solver, inpSort, "Min[" + name + "]", min);
         }
 
@@ -372,7 +372,7 @@ namespace Microsoft.Automata
         public SFA<FUNC, TERM, SORT> MinimizeMoore(int timeout)
         {
             var det = this.Determinize();
-            var min = det.automaton.MinimizeClassical(solver,timeout,false);
+            var min = det.automaton.MinimizeClassical(timeout,false);
             return new SFA<FUNC, TERM, SORT>(solver, inpSort, "Min[" + name + "]", min);
         }
 
@@ -382,7 +382,7 @@ namespace Microsoft.Automata
         public SFA<FUNC, TERM, SORT> MinimizeHopcroft(int timeout)
         {
             var det = this.Determinize();
-            var min = det.automaton.MinimizeHopcroft(solver,timeout);
+            var min = det.automaton.MinimizeHopcroft(timeout);
             return new SFA<FUNC, TERM, SORT>(solver, inpSort, "Min[" + name + "]", min);
         }
 

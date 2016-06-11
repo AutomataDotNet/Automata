@@ -178,7 +178,7 @@ namespace Microsoft.Automata
                 }
                 else if (captureSortName[patternAutomataPairs[i].Item1] == "bool")
                 {
-                    var boolAcceptor = solver.CharSetProvider.Convert("^((T|t)rue|(F|f)alse)$").Intersect(patternAutomataPairs[i].Item2, solver.CharSetProvider).Minimize(solver.CharSetProvider);
+                    var boolAcceptor = solver.CharSetProvider.Convert("^((T|t)rue|(F|f)alse)$").Intersect(patternAutomataPairs[i].Item2).Minimize();
 
                     if (boolAcceptor.IsEmpty)
                         throw new AutomataException(AutomataExceptionKind.CaptureIsInfeasibleAsBoolean);
@@ -460,7 +460,5 @@ namespace Microsoft.Automata
             }
             return res;
         }
-
-
     }
 }

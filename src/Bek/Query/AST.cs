@@ -990,7 +990,7 @@ namespace Microsoft.Bek.Query
             string s = subexpressions[0].GetString(ec);
             var aut_s = ec.solver.RegexConverter.ConvertString(s);
             var aut = subexpressions[1].GetSFA(ec);
-            var prod = aut_s.Intersect(aut.Automaton, ec.solver);
+            var prod = aut_s.Intersect(aut.Automaton);
 
             if (prod.IsEmpty)
             {

@@ -141,7 +141,7 @@ namespace Microsoft.Automata.Rex
             foreach (var regex in regexes)
             {
                 var sfa1 = converter.Convert(regex, options);
-                sfa = (sfa == null ? sfa1 : Automaton<BDD>.MkProduct(sfa, sfa1, solver));
+                sfa = (sfa == null ? sfa1 : Automaton<BDD>.MkProduct(sfa, sfa1));
                 if (sfa.IsEmpty)
                     break;
             }
@@ -187,7 +187,7 @@ namespace Microsoft.Automata.Rex
         /// </summary>
         public Automaton<BDD> Minimize(Automaton<BDD> aut)
         {
-            return aut.Determinize(solver).Minimize(solver);
+            return aut.Determinize().Minimize();
         }
 
         /// <summary>
@@ -195,7 +195,7 @@ namespace Microsoft.Automata.Rex
         /// </summary>
         public Automaton<BDD> Complement(Automaton<BDD> aut)
         {
-            return aut.Determinize(solver).Complement(solver);
+            return aut.Determinize().Complement();
         }
 
         /// <summary>
@@ -209,7 +209,7 @@ namespace Microsoft.Automata.Rex
             var res = automata[0];
             for (int i = 1; i < automata.Length; i++)
             {
-                res = res.Intersect(automata[i], solver);
+                res = res.Intersect(automata[i]);
             }
             return res;
         }

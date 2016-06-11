@@ -39,7 +39,7 @@ namespace Microsoft.Automata
         {
             switch (kind)
             {
-                case AutomataExceptionKind.AutomatonIsNotDeterministic:
+                case AutomataExceptionKind.AutomatonIsNondeterministic:
                     return AutomatonIsNotDeterministic;
                 case AutomataExceptionKind.AutomatonIsNotEpsilonfree:
                     return AutomatonIsNotEpsilonfree;
@@ -79,7 +79,7 @@ namespace Microsoft.Automata
         }
 
         public const string RegexConstructNotSupported =
-            "The following constructs are currently not supported: anchors \\G, \\b, \\B, named groups, lookahead, lookbehind, as-few-times-as-possible quantifiers, backreferences, conditional alternation, substitution";
+            "The following constructs are currently not supported: anchors \\G, \\B, named groups, lookahead, lookbehind, as-few-times-as-possible quantifiers, backreferences, conditional alternation, substitution";
         public const string MisplacedEndAnchor =
             "The anchor \\z, \\Z or $ is not supported if it is followed by other regex patterns or is nested in a loop";
         public const string MisplacedStartAnchor =
@@ -124,7 +124,7 @@ namespace Microsoft.Automata
         MisplacedEndAnchor,
         MisplacedStartAnchor,
         UnrecognizedRegex,
-        AutomatonIsNotDeterministic,
+        AutomatonIsNondeterministic,
         AutomatonMustNotContainDeadStates,
         AutomatonIsNotEpsilonfree,
         NoFinalState,
@@ -256,6 +256,7 @@ namespace Microsoft.Automata
         BDDSerializationBitLimitViolation,
         BDDDeserializationError,
         InvalidName,
-        InvalidPath
+        InvalidPath,
+        InvalidArgument_MustBeNonempty
     }
 }

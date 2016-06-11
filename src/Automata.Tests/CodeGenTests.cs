@@ -134,7 +134,7 @@ namespace Automata.Tests
             Console.Write("Creating complements of autmata ...");
             for (int i = 0; i < regexes.Length; i++)
             {
-                Cautomata[i] = automata[i].Complement(solver).Minimize(solver);
+                Cautomata[i] = automata[i].Complement().Minimize();
             }
             t = System.Environment.TickCount - t;
             Console.WriteLine(string.Format(" done ({0}ms)", t));
@@ -148,7 +148,7 @@ namespace Automata.Tests
             for (int id = 0; id < automata.Length; id++)
             {
                 Console.Write(".");
-                var M = automata[id].Intersect(solver.Convert("^[\0-\x7F]{0," + CodeGenTests.MaxStringLength + "}$", RegexOptions.Singleline), solver).Determinize(solver);
+                var M = automata[id].Intersect(solver.Convert("^[\0-\x7F]{0," + CodeGenTests.MaxStringLength + "}$", RegexOptions.Singleline)).Determinize();
                 var tmp = new string[NrOfStrings];
                 int time = System.Environment.TickCount;
                 for (int i = 0; i < NrOfStrings; i++)
@@ -171,7 +171,7 @@ namespace Automata.Tests
             {
                 Console.Write(".");
                 //var M = Cautomata[id].Intersect(solver.Convert("^[^\uD800-\uDFFF]{0,100}$", RegexOptions.Singleline), solver).Determinize(solver);
-                var M = Cautomata[id].Intersect(solver.Convert("^[\0-\uFFFF]{0,100}$", RegexOptions.Singleline), solver).Determinize(solver);
+                var M = Cautomata[id].Intersect(solver.Convert("^[\0-\uFFFF]{0,100}$", RegexOptions.Singleline)).Determinize();
                 var tmp = new string[NrOfStrings];
                 for (int i = 0; i < NrOfStrings; i++)
                 {
@@ -270,9 +270,9 @@ namespace Automata.Tests
             //Regex.CompileToAssembly(new RegexCompilationInfo[] { new RegexCompilationInfo(myregex, RegexOptions.None, "EvilRegex", "RegexTransfomer", true) },
             //    new System.Reflection.AssemblyName("EvilRegex"));
 
-            var sfa = solver.Convert(myregex, regex.Options).RemoveEpsilons(solver.MkOr);
-            var sfaDet = sfa.Determinize(solver);
-            var sfaMin = sfaDet.Minimize(solver);
+            var sfa = solver.Convert(myregex, regex.Options).RemoveEpsilons();
+            var sfaDet = sfa.Determinize();
+            var sfaMin = sfaDet.Minimize();
 
             //solver.ShowGraph(sfa, "sfa");
             //solver.ShowGraph(sfaDet, "sfaDet");
@@ -295,7 +295,7 @@ namespace Automata.Tests
             Console.WriteLine("----------------------------");
 
             string sIn = solver.GenerateMember(sfaMin);
-            string sOut = solver.GenerateMember(sfaMin.Complement(solver));
+            string sOut = solver.GenerateMember(sfaMin.Complement());
             string s = sIn;
             int t1;
             int t2;
@@ -335,9 +335,9 @@ namespace Automata.Tests
         {
             var solver = new CharSetSolver();
             string regex = @"^(\w\d)+$";
-            var sfa = solver.Convert(regex, RegexOptions.Singleline).RemoveEpsilons(solver.MkOr);
-            var sfaDet = sfa.Determinize(solver);
-            var sfaMin = sfaDet.Minimize(solver);
+            var sfa = solver.Convert(regex, RegexOptions.Singleline).RemoveEpsilons();
+            var sfaDet = sfa.Determinize();
+            var sfaMin = sfaDet.Minimize();
             //solver.ShowGraph(sfa, "sfa");
             //solver.ShowGraph(sfaDet, "sfaDet");
             //solver.ShowGraph(sfaMin, "sfaMin");
@@ -378,9 +378,9 @@ namespace Automata.Tests
                 {
                     var regex = regexes[i];
                     var aut = solver.Convert(regex, RegexOptions.Singleline);
-                    var autDet = aut.Determinize(solver, 2000);
-                    var autMin = autDet.Minimize(solver);
-                    var autMinC = aut.Complement(solver);
+                    var autDet = aut.Determinize(2000);
+                    var autMin = autDet.Minimize();
+                    var autMinC = aut.Complement();
                     if (autMin.IsEmpty || autMinC.IsEmpty)
                         continue;
 
@@ -398,9 +398,9 @@ namespace Automata.Tests
                     HashSet<string> posSamples = new HashSet<string>();
                     HashSet<string> negSamples = new HashSet<string>();
                     int k = autMin.FindShortestFinalPath(autMin.InitialState).Item1.Length;
-                    var maxLengthAut = solver.Convert("^.{0," + (3 * k) + "}$").Determinize(solver).Minimize(solver);
+                    var maxLengthAut = solver.Convert("^.{0," + (3 * k) + "}$").Determinize().Minimize();
                     int tries = 0;
-                    var aut1 = autMin.Intersect(maxLengthAut, solver);
+                    var aut1 = autMin.Intersect(maxLengthAut);
                     while (posSamples.Count < K && tries < 10 * K)
                     {
                         var s = solver.GenerateMemberUniformly(aut1);
@@ -410,8 +410,8 @@ namespace Automata.Tests
                     }
                     tries = 0;
                     int k2 = autMinC.FindShortestFinalPath(autMin.InitialState).Item1.Length;
-                    var maxLengthAut2 = solver.Convert("^.{0," + (3 * k2) + "}$").Determinize(solver).Minimize(solver);
-                    var autMinCprefix = autMinC.Intersect(maxLengthAut2, solver);
+                    var maxLengthAut2 = solver.Convert("^.{0," + (3 * k2) + "}$").Determinize().Minimize();
+                    var autMinCprefix = autMinC.Intersect(maxLengthAut2);
                     while (negSamples.Count < K && tries < 10 * K)
                     {
                         var s = solver.GenerateMemberUniformly(autMinCprefix);

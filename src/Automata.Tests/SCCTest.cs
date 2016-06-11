@@ -15,7 +15,7 @@ namespace Microsoft.Automata.Tests
         {
             CharSetSolver solver = new CharSetSolver();
 
-            var aut = solver.Convert("^a(ab)*$").Determinize(solver).Minimize(solver);            
+            var aut = solver.Convert("^a(ab)*$").Determinize().Minimize();            
 
             var sccs = GraphAlgorithms.GetStronglyConnectedComponents(aut);
             List<int> total = new List<int>();

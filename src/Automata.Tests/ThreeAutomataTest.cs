@@ -23,8 +23,8 @@ namespace Microsoft.Automata.Tests
             var big = sfa.GetBiggestLanguageSFA();
             var small = sfa.GetSmallestLanguageSFA();
 
-            Assert.IsTrue(small.Minus(big, solver).IsEmpty);
-            Assert.IsFalse(big.Minus(small, solver).IsEmpty);
+            Assert.IsTrue(small.Minus(big).IsEmpty);
+            Assert.IsFalse(big.Minus(small).IsEmpty);
         }
 
         [TestMethod]
@@ -37,8 +37,8 @@ namespace Microsoft.Automata.Tests
             var sfa = ThreeAutomaton<BDD>.Create(solver, 0, new int[] { 0 }, new int[] { 2 }, moves);
             var csfa = sfa.MkComplement();
 
-            Assert.IsFalse(sfa.GetBiggestLanguageSFA().Intersect(csfa.GetBiggestLanguageSFA(),solver).IsEmpty);
-            Assert.IsTrue(sfa.GetSmallestLanguageSFA().Intersect(csfa.GetSmallestLanguageSFA(), solver).IsEmpty);
+            Assert.IsFalse(sfa.GetBiggestLanguageSFA().Intersect(csfa.GetBiggestLanguageSFA()).IsEmpty);
+            Assert.IsTrue(sfa.GetSmallestLanguageSFA().Intersect(csfa.GetSmallestLanguageSFA()).IsEmpty);
         }
 
         [TestMethod]

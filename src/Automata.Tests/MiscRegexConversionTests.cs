@@ -77,7 +77,7 @@ namespace Microsoft.Automata.Tests
                         Assert.IsTrue(regex.IsMatch(str), str);
                 }
 
-            var aut_compl = aut.Complement(css).Minimize(css);
+            var aut_compl = aut.Complement().Minimize();
             if (!aut_compl.IsEmpty)
                 for (int i = 0; i < 1000; i++)
                 {
@@ -142,7 +142,7 @@ namespace Microsoft.Automata.Tests
         {
             string r = @"\b";
             CharSetSolver css = new CharSetSolver(BitWidth.BV7);
-            var aut = css.Convert(r).RemoveEpsilons(css.MkOr).Determinize(css).Minimize(css);
+            var aut = css.Convert(r).RemoveEpsilons().Determinize().Minimize();
             //css.ShowGraph(aut, "TrivialWordBoundary1");
             CheckValidity(css, aut, new Regex(r, RegexOptions.Singleline));
         }
@@ -152,7 +152,7 @@ namespace Microsoft.Automata.Tests
         {
             string r = @"^\b$";
             CharSetSolver css = new CharSetSolver(BitWidth.BV7);
-            var aut = css.Convert(r).RemoveEpsilons(css.MkOr).Determinize(css).Minimize(css);
+            var aut = css.Convert(r).RemoveEpsilons().Determinize().Minimize();
             //css.ShowGraph(aut, "TrivialWordBoundary2");
             CheckValidity(css, aut, new Regex(r, RegexOptions.Singleline));
         }
@@ -162,7 +162,7 @@ namespace Microsoft.Automata.Tests
         {
             string r = @"^\b";
             CharSetSolver css = new CharSetSolver(BitWidth.BV7);
-            var aut = css.Convert(r).RemoveEpsilons(css.MkOr).Determinize(css).Minimize(css);
+            var aut = css.Convert(r).RemoveEpsilons().Determinize().Minimize();
             //css.ShowGraph(aut, "TrivialWordBoundary3");
             CheckValidity(css, aut, new Regex(r, RegexOptions.Singleline));
         }
@@ -175,7 +175,7 @@ namespace Microsoft.Automata.Tests
             var aut = css.Convert(r.ToString(), RegexOptions.Singleline, true);
             //css.ShowGraph(aut, "TrivialWordBoundary4_with_b");
             css.RegexConverter.EliminateBoundaryStates(aut);
-            var aut1 = aut.RemoveEpsilons(css.MkOr).Determinize(css).Minimize(css);
+            var aut1 = aut.RemoveEpsilons().Determinize().Minimize();
             //css.ShowGraph(aut, "TrivialWordBoundary4");
 
             string s = "@";

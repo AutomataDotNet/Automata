@@ -106,7 +106,7 @@ namespace Microsoft.Automata
             //delay accessing the condition
             Func<bool, S> getWordLetterCondition = (b => categorizer.WordLetterCondition);
             if (!keepBoundaryStates)
-                aut.EliminateWordBoundaries(solver, getWordLetterCondition);
+                aut.EliminateWordBoundaries(getWordLetterCondition);
             return aut;
         }
 
@@ -128,7 +128,7 @@ namespace Microsoft.Automata
                 rootnode = rootnode._children[0];
             foreach (var aut in ConvertCaptures(rootnode, id => tree._capslist[id]))
             {
-                aut.Item2.EliminateWordBoundaries(solver, getWordLetterCondition);
+                aut.Item2.EliminateWordBoundaries(getWordLetterCondition);
                 automata.Add(aut);
             }
             return automata.ToArray();
@@ -140,7 +140,7 @@ namespace Microsoft.Automata
         public void EliminateBoundaryStates(Automaton<S> aut)
         {
             Func<bool, S> getWordLetterCondition = (b => categorizer.WordLetterCondition);
-            aut.EliminateWordBoundaries(solver, getWordLetterCondition);
+            aut.EliminateWordBoundaries(getWordLetterCondition);
         }
 
         static string DescribeRegexNodeType(int node_type)

@@ -601,8 +601,8 @@ namespace Microsoft.Automata.MSO
         {
             var aut1 = phi1.GetAutomatonBDD(variables, alg, nrOfLabelBits);
             var aut2 = phi2.GetAutomatonBDD(variables, alg, nrOfLabelBits);
-            var aut = aut1.Intersect(aut2, alg);
-            aut = aut.Minimize(alg);
+            var aut = aut1.Intersect(aut2);
+            aut = aut.Minimize();
             return aut;
         }
     }
@@ -645,8 +645,8 @@ namespace Microsoft.Automata.MSO
         {
             var aut1 = phi1.GetAutomatonBDD(variables, alg, nrOfLabelBits);
             var aut2 = phi2.GetAutomatonBDD(variables, alg, nrOfLabelBits);
-            var res = aut1.Complement(alg).Intersect(aut2.Complement(alg), alg).Complement(alg);
-            res = res.Determinize(alg).Minimize(alg);
+            var res = aut1.Complement().Intersect(aut2.Complement()).Complement();
+            res = res.Determinize().Minimize();
             return res;
         }
     }
@@ -691,7 +691,7 @@ namespace Microsoft.Automata.MSO
         internal override Automaton<BDD> GetAutomatonBDD(SimpleList<Variable> variables, IBDDAlgebra alg, int nrOfLabelBits) 
         {
             var aut = phi.GetAutomatonBDD(variables, alg, nrOfLabelBits);
-            var res = aut.Determinize(alg).Complement(alg).Minimize(alg);
+            var res = aut.Determinize().Complement().Minimize();
             return res;
         }
 
@@ -1121,8 +1121,8 @@ namespace Microsoft.Automata.MSO
                 newMoves.Add(new Move<BDD>(move.SourceState, move.TargetState, alg.OmitBit(move.Label, varIndex)));
 
             var aut = Automaton<BDD>.Create(alg, autPhi.InitialState, autPhi.GetFinalStates(), newMoves);
-            var res = aut.Determinize(alg);
-            res = res.Minimize(alg);
+            var res = aut.Determinize();
+            res = res.Minimize();
 
             return res;
         }
