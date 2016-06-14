@@ -18,11 +18,14 @@ namespace Microsoft.Automata.MSO.Mona
 
         public MSOFormula<BDD> ToMSO()
         {
-            if (header != MonaHeader.M2LSTR)
-                throw new NotSupportedException("unsopprted header " + header);
+            //if (header != MonaHeader.M2LSTR)
+            //    throw new NotSupportedException("unsopprted header " + header);
 
-            if (declarations.Exists(d => (d.kind != Mona.MonaDeclKind.formula && d.kind != Mona.MonaDeclKind.var1 && d.kind != Mona.MonaDeclKind.var2)))
-                throw new NotSupportedException("unsopprted declaration (other than formula or var1 or var2)");
+            if (declarations.Exists(d => (d.kind != Mona.MonaDeclKind.formula 
+                && d.kind != Mona.MonaDeclKind.var1 
+                && d.kind != Mona.MonaDeclKind.var2
+                && d.kind != Mona.MonaDeclKind.constant)))
+                throw new NotSupportedException("unsopprted declaration ");
 
             if (vars1.Exists(d => (d.univs != null || d.varwhere.where != null)))
                 throw new NotSupportedException("unsopprted var declaration (with universe or where condition)");

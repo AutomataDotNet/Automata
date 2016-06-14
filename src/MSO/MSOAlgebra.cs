@@ -58,8 +58,8 @@ namespace Microsoft.Automata.MSO
 
         public bool AreEquivalent(MSOFormula<S> phi1, MSOFormula<S> phi2)
         {
-            var aut1 = phi1.GetAutomaton(solver);
-            var aut2 = phi2.GetAutomaton(solver);
+            var aut1 = phi1.GetAutomaton(solver, phi1.FreeVariables);
+            var aut2 = phi2.GetAutomaton(solver, phi1.FreeVariables);
             return aut1.IsEquivalentWith(aut2);
         }
 
@@ -75,7 +75,7 @@ namespace Microsoft.Automata.MSO
 
         public bool IsSatisfiable(MSOFormula<S> phi)
         {
-            var aut = phi.GetAutomaton(solver);
+            var aut = phi.GetAutomaton(solver, phi.FreeVariables);
             return !aut.IsEmpty;
         }
 

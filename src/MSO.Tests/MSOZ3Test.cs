@@ -638,7 +638,7 @@ namespace MSOZ3Test
             //every 0 is immediately followed by a 1
             MSOFormula<BoolExpr> phi = Forall(x, Implies(x_is_0, Exists(y, And(Succ(x, y), y_is_1))));
 
-            var aut = phi.GetAutomaton(solver);
+            var aut = phi.GetAutomaton(solver, phi.FreeVariables);
             //aut.ShowGraph();
 
             var expected_automaton = Automaton<BoolExpr>.Create(solver, 0, new int[] { 0 },
@@ -857,7 +857,7 @@ namespace MSOZ3Test
             MSOFormula<Expr> phi = new MSOForall<Expr>(x, psi);
             var ca = new CartesianAlgebraBDD<Expr>(solver);
             var aut_psi = psi.GetAutomaton(ca,x).Determinize().Minimize();
-            var aut_phi = phi.GetAutomaton(solver).Determinize().Minimize();
+            var aut_phi = phi.GetAutomaton(solver, phi.FreeVariables).Determinize().Minimize();
             Assert.IsFalse(aut_phi.IsEmpty);
             //aut_phi.ShowGraph("aut_phi");
             //aut_psi.ShowGraph("aut_psi");
@@ -874,7 +874,7 @@ namespace MSOZ3Test
                    new MSOPredicate<Expr>(solver.MkLe(solver.MkVar(0, solver.IntSort), solver.MkInt(0)), V1("x"))
                 );
 
-            var aut = phi.GetAutomaton(solver);
+            var aut = phi.GetAutomaton(solver, phi.FreeVariables);
         }
 
         [TestMethod]
@@ -936,7 +936,7 @@ namespace MSOZ3Test
 
             phi = new MSOExists<T>(V1("var"), phi);
 
-            var aut = phi.GetAutomaton(Z);
+            var aut = phi.GetAutomaton(Z, phi.FreeVariables);
 
             //aut.ShowGraph("aut");
 
@@ -959,7 +959,7 @@ namespace MSOZ3Test
 
             phi = new MSOExists<T>(V1("var"), phi);
 
-            var aut = phi.GetAutomaton(Z);
+            var aut = phi.GetAutomaton(Z, phi.FreeVariables);
 
             return aut;
         }
@@ -993,7 +993,7 @@ namespace MSOZ3Test
                 else
                     phi = new MSOForall<T>(V1("x" + index), phi);
             }
-            var aut = phi.GetAutomaton(Z);
+            var aut = phi.GetAutomaton(Z, phi.FreeVariables);
             return aut;
         }
 

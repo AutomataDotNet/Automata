@@ -27,25 +27,37 @@ namespace Microsoft.Automata.MSO
         /// <summary>
         /// Idempotent operation that constructs an equivalent predicate in the core subset of MSO formulas.
         /// </summary>
-        public abstract MSOFormula<T> ToCore(); 
+        public abstract MSOFormula<T> ToCore();
 
         /// <summary>
-        /// Constructs the automaton. The formula must be closed.
+        /// Invokes this.GetAutomaton(elementAlgebra, this.FreeVariables).
         /// </summary>
         public Automaton<T> GetAutomaton(IBooleanAlgebra<T> elementAlgebra)
+        {
+            return this.GetAutomaton(elementAlgebra, this.FreeVariables);
+        }
+
+        /// <summary>
+        /// Constructs the automaton assuming the given list of free variables.
+        /// </summary>
+        public Automaton<T> GetAutomaton(IBooleanAlgebra<T> elementAlgebra, Variable[] fvs)
         {
             var css = elementAlgebra as CharSetSolver;
             if (css != null)
             {
-                var ws1s = this.ToWS1S();
-                var aut = ws1s.GetAutomatonBDD(css, (int)css.Encoding) as Automaton<T>;
+                var aut = this.GetAutomatonBDD(SimpleList<Variable>.Empty.Append(fvs), css, (int)css.Encoding) as Automaton<T>;
                 return aut;
             }
             else
             {
-                var ws1s = this.ToWS1S();
-                var aut = ws1s.GetAutomaton(new BDDAlgebra<T>(elementAlgebra));
-                return BasicAutomata.Restrict(aut);
+                var bdd = elementAlgebra as BDDAlgebra;
+                if (bdd != null)
+                {
+                    var aut = this.GetAutomatonBDD(SimpleList<Variable>.Empty.Append(fvs), bdd, 0) as Automaton<T>;
+                    return aut;
+                }
+                else
+                    throw new NotImplementedException();
             }
         }
 
@@ -54,14 +66,15 @@ namespace Microsoft.Automata.MSO
         /// </summary>
         public Automaton<IMonadicPredicate<BDD, T>> GetAutomaton(ICartesianAlgebraBDD<T> alg, params Variable[] fvs)
         {
-            return ToWS1S().GetAutomaton(alg, fvs);
+            throw new NotImplementedException();
+            //return ToWS1S().GetAutomaton(alg, fvs);
         }
 
         /// <summary>
         /// Gets the automaton over alg where BDDs are extended with new bit positions for the variables. 
         /// All the free variables in the formula must occur among fv.
         /// The type T must be BDD.
-        public Automaton<BDD> GetAutomaton(IBDDAlgebra alg, int nrOfReservedBits, Variable[] fvs)
+        public Automaton<BDD> GetAutomaton(IBDDAlgebra alg, Variable[] fvs, int nrOfReservedBits)
         {
             return GetAutomatonBDD(SimpleList<Variable>.Empty.Append(fvs), alg, nrOfReservedBits);
         }
@@ -71,13 +84,29 @@ namespace Microsoft.Automata.MSO
         /// The type T must be BDD.
         public Automaton<BDD> GetAutomaton(IBDDAlgebra alg, int nrOfReservedBits)
         {
-            return GetAutomatonBDD(SimpleList<Variable>.Empty.Append(FreeVariables.ToArray()), alg, nrOfReservedBits);
+            return GetAutomatonBDD(SimpleList<Variable>.Empty.Append(FreeVariables), alg, nrOfReservedBits);
         }
 
         /// <summary>
-        /// Prints the formula in Mona format
+        /// Prints the formula in Mona formula format
         /// </summary>
         public abstract void Print(StringBuilder sb);
+
+        /// <summary>
+        /// Displays the formula as a Mona program.
+        /// </summary>
+        public string AsMonaProgram
+        {
+            get
+            {
+                StringBuilder pgm = new StringBuilder();
+                foreach (var v in FreeVariables)
+                    pgm.AppendLine(string.Format("var{1} {0};", v.Name, v.IsFirstOrder ? "1" : "2"));
+                Print(pgm);
+                pgm.Append(";");
+                return pgm.ToString();
+            }
+        }
 
         public override string ToString()
         {
@@ -98,18 +127,19 @@ namespace Microsoft.Automata.MSO
             return i;
         }
 
-        List<Variable> fvs = null;
+        Variable[] fvs = null;
         /// <summary>
         /// Gets the list of all free variables sorted alphabetically.
         /// </summary>
-        public List<Variable> FreeVariables
+        public Variable[] FreeVariables
         {
             get
             {
                 if (fvs == null)
                 {
-                    fvs = new List<Variable>(EnumerateFreeVariables(SimpleList<Variable>.Empty, new HashSet<Variable>()));
-                    fvs.Sort();
+                    var fvs_ = new List<Variable>(EnumerateFreeVariables(SimpleList<Variable>.Empty, new HashSet<Variable>()));
+                    fvs_.Sort();
+                    fvs = fvs_.ToArray();
                 }
                 return fvs;
             }

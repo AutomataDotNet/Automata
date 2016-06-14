@@ -16,8 +16,8 @@ namespace MSO.Tests
             foreach (string fileName in Directory.EnumerateFiles(@"C:\github\automatark\m2l-str\", "*.mona", SearchOption.AllDirectories))
             {
                 MonaProgram pgm = MonaParser.ParseFromFile(fileName);
-                    var pgmstr = pgm.Description;
-                    Assert.IsTrue(pgm.declarations.Count > 0);                
+                Assert.IsTrue(pgm.declarations.Count > 0);
+                var mso = pgm.ToMSO();
             }
         }
 
@@ -27,8 +27,12 @@ namespace MSO.Tests
             foreach (string fileName in Directory.EnumerateFiles(@"C:\github\automatark\ws1s\", "*.mona", SearchOption.AllDirectories))
             {
                 MonaProgram pgm = MonaParser.ParseFromFile(fileName);
-                var pgmstr = pgm.Description;
                 Assert.IsTrue(pgm.declarations.Count > 0);
+                // horn_trans??.mona : stackoverflow
+                if (!fileName.Contains("horn_trans"))
+                {
+                    var mso = pgm.ToMSO();
+                }
             }
         }
 
@@ -594,7 +598,7 @@ x < y;
             MonaProgram pgm = MonaParser.Parse(source);
             var mso = pgm.ToMSO();
             BDDAlgebra solver = new BDDAlgebra();
-            var aut = mso.GetAutomaton(solver, 0, new Variable[]{V1("x"), V1("y")});
+            var aut = mso.GetAutomaton(solver, new Variable[]{V1("x"), V1("y")}, 0);
             //aut.ShowGraph();
             Assert.IsTrue(aut.StateCount == 3);
         }
@@ -647,13 +651,13 @@ x < y & ~ex1 z1,z2: x<z1 & z1<y & x<z2 & z2<y & z1 ~= z2;
 ";
             MonaProgram pgm1 = MonaParser.Parse(source1);
             var mso1 = pgm1.ToMSO();
-            var aut1 = mso1.GetAutomaton(solver, 0, new Variable[]{V1("x"), V1("y")});
+            var aut1 = mso1.GetAutomaton(solver, new Variable[] { V1("x"), V1("y") }, 0);
 
             //aut1.ShowGraph("aut1");
 
             MonaProgram pgm2 = MonaParser.Parse(source2);
             var mso2 = pgm2.ToMSO();
-            var aut2 = mso2.GetAutomaton(solver, 0, new Variable[]{V1("x"), V1("y")});
+            var aut2 = mso2.GetAutomaton(solver, new Variable[] { V1("x"), V1("y") }, 0);
 
             //aut2.ShowGraph("aut2");
 
@@ -689,28 +693,27 @@ Y\X = empty & X\Y = empty;
 ";
             MonaProgram pgm1 = MonaParser.Parse(source1);
             var mso1 = pgm1.ToMSO();
-            var aut1 = mso1.GetAutomaton(solver, 0, new Variable[]{V2("X"), V2("Y")});
+            var aut1 = mso1.GetAutomaton(solver, new Variable[] { V2("X"), V2("Y") }, 0);
 
             //aut1.ShowGraph("aut1");
 
             MonaProgram pgm2 = MonaParser.Parse(source2);
             var mso2 = pgm2.ToMSO();
-            var aut2 = mso2.GetAutomaton(solver, 0, new Variable[]{V2("X"), V2("Y")});
+            var aut2 = mso2.GetAutomaton(solver, new Variable[] { V2("X"), V2("Y") }, 0);
 
             //aut2.ShowGraph("aut2");
 
             MonaProgram pgm3 = MonaParser.Parse(source3);
             var mso3 = pgm3.ToMSO();
-            var aut3 = mso3.GetAutomaton(solver, 0, new Variable[]{V2("X"), V2("Y")});
+            var aut3 = mso3.GetAutomaton(solver, new Variable[] { V2("X"), V2("Y") }, 0);
 
             MonaProgram pgm4 = MonaParser.Parse(source4);
             var mso4 = pgm4.ToMSO();
-            var aut4 = mso4.GetAutomaton(solver, 0, new Variable[]{V2("X"), V2("Y")});
+            var aut4 = mso4.GetAutomaton(solver, new Variable[] { V2("X"), V2("Y") }, 0);
 
             Assert.IsTrue(aut1.IsEquivalentWith(aut2));
             Assert.IsTrue(aut1.IsEquivalentWith(aut3));
             Assert.IsTrue(aut1.IsEquivalentWith(aut4));
         }
-
     }
 }

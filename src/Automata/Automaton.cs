@@ -8,7 +8,7 @@ namespace Microsoft.Automata
     /// <summary>
     /// Symbolic Finite Automaton, provides basic generic algorithms for manipulating SFAs
     /// </summary>
-    /// <typeparam name="T">type of the move condition</typeparam>
+    /// <typeparam name="T">type of the labels</typeparam>
     public class Automaton<T> : IAutomaton<T> 
     {
         private Dictionary<int, List<Move<T>>> delta;
@@ -23,6 +23,9 @@ namespace Microsoft.Automata
 
         private IBooleanAlgebra<T> algebra;
 
+        /// <summary>
+        /// Solver for labels
+        /// </summary>
         public IBooleanAlgebra<T> Algebra
         {
             get

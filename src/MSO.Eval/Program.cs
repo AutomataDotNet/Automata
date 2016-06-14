@@ -55,22 +55,21 @@ namespace MSOEvaluation
                     MonaProgram pgm1 = MonaParser.Parse(contents);
                     var phi = pgm1.ToMSO();
 
-                    //Cartesian Algebra
-                    var s1 = new CharSetSolver(BitWidth.BV64);
-                    var solver = new CartesianAlgebraBDD<BDD>(s1);
+                    var solver = new BDDAlgebra(); //CharSetSolver(BitWidth.BV64);
                     var sw = new Stopwatch();
                     sw.Restart();
                     for (int t = 0; t < numTests; t++)
                     {
-                        phi.GetAutomaton(solver);
+                        var aut = phi.GetAutomaton(solver);
+                        //aut.ShowGraph();
                     }
+
                     sw.Stop();
 
                     var t1 = sw.ElapsedMilliseconds;
 
-                    //BDD algebra
-                    s1 = new CharSetSolver(BitWidth.BV64);
-                    BDDAlgebra<BDD> newSolver = new BDDAlgebra<BDD>(s1);
+
+                    //var newSolver = new CharSetSolver(BitWidth.BV64);
 
                     //sw.Restart();
                     //for (int t = 0; t < numTests; t++)
@@ -79,10 +78,11 @@ namespace MSOEvaluation
                     //}
                     //sw.Stop();
 
-                    var t2 = sw.ElapsedMilliseconds;
+                    //var t2 = sw.ElapsedMilliseconds;
 
-                    file.WriteLine(fileName + "," + (double)t1 / numTests + "," + (double)t2 / numTests);
-                    Console.WriteLine(fileName + "," + (double)t1 / numTests + "," + (double)t2 / numTests);
+                    //file.WriteLine(fileName + "," + (double)t1 / numTests + "," + (double)t2 / numTests);
+                    //Console.WriteLine(fileName + "," + (double)t1 / numTests + "," + (double)t2 / numTests);
+                    Console.WriteLine(fileName + "," + (double)t1 / numTests);
                 }
             }
         }
@@ -931,7 +931,7 @@ namespace MSOEvaluation
 
             phi = new MSOExists<T>(new Variable("var", true), phi);
 
-            var aut = phi.GetAutomaton(Z);
+            var aut = phi.GetAutomaton(Z, phi.FreeVariables);
 
             return aut;
         }
@@ -952,7 +952,7 @@ namespace MSOEvaluation
 
             phi = new MSOExists<T>(new Variable("var", true), phi);
 
-            var aut = phi.GetAutomaton(Z);
+            var aut = phi.GetAutomaton(Z, phi.FreeVariables);
 
             return aut;
         }
@@ -987,11 +987,12 @@ namespace MSOEvaluation
                     phi = new MSOForall<T>(new Variable("x" + index, true), phi);
             }
 
-            var aut = phi.GetAutomaton(Z);
+            var aut = phi.GetAutomaton(Z, phi.FreeVariables);
             return aut;
         }
 
-        
+
 
     }
 }
+
