@@ -25,7 +25,7 @@ namespace MSOEvaluation
         {
             try
             {
-                z3.GenerateMinterms(predicates.ToArray());
+                z3.GenerateMinterms(predicates.ToArray()).ToList();
             }
             catch (ThreadAbortException)
             {
@@ -36,7 +36,7 @@ namespace MSOEvaluation
         {
             try
             {
-                var aut = formula.GetAutomaton(solver);
+                //formula.GetAutomaton(solver);
             }
             catch (ThreadAbortException)
             {
@@ -44,53 +44,64 @@ namespace MSOEvaluation
             }
         }
 
-        static long timeout = 10;
+        static int maxConst = 200;
+        static long timeout = 5000;
 
         public static void Run(){
+
+            random = new Random(0);
 
             c = new Context();
             z3 = new Z3BoolAlg(c, c.BoolSort);
 
-
-            foreach (var pair in GenerateMSOZ3Formulas(20, 1, 50))
-            {
-                formula = pair.First;
-                predicates = pair.Second;
-
-                var bdd = new BDDAlgebra();
-                solver = new CartesianAlgebraBDD<BoolExpr>(bdd,z3);
-                var sw = new Stopwatch();
-                sw.Restart();
-                Thread t = new Thread(CartesianSolver);
-                t.Start();
-                long t1 = timeout;
-                if (!t.Join(TimeSpan.FromSeconds(timeout)))
+            for (int numVars = 1; numVars < 4; numVars ++)
+                for (int phisize = 10; phisize < 200; phisize += 10)
                 {
-                    t.Abort();
-                    t1 = timeout;
-                }
-                else {
-                    sw.Stop();
-                    t1 = sw.ElapsedMilliseconds;
-                }
+                    foreach (var pair in GenerateMSOZ3Formulas(phisize, 1, 5))
+                    {
+                        formula = pair.First;
+                        predicates = pair.Second;
 
+                        var bdd = new BDDAlgebra();
+                        //foreach (var p in predicates)
+                        //    Console.WriteLine(p);
+                        solver = new CartesianAlgebraBDD<BoolExpr>(bdd, z3);
+                        var sw = new Stopwatch();
+                        sw.Restart();
+                        Thread t = new Thread(CartesianSolver);
+                        t.Start();
+                        long t1 = timeout;
+                        if (!t.Join(TimeSpan.FromMilliseconds(timeout)))
+                        {
+                            t.Abort();
+                            t1 = timeout;
+                        }
+                        else {
+                            sw.Stop();
+                            t1 = sw.ElapsedMilliseconds;
+                        }
 
-                sw.Restart();
-                t = new Thread(Minterm);
-                t.Start();
-                long t2 = timeout;
-                if (!t.Join(TimeSpan.FromSeconds(timeout)))
-                {
-                    t.Abort();
-                    t2 = timeout;
-                }
-                else {
-                    sw.Stop();
-                    t2 = sw.ElapsedMilliseconds;
-                }
+                        sw.Restart();
+                        //t = new Thread(Minterm);
+                        //t.Start();
+                        long t2 = timeout;
+                        //if (!t.Join(TimeSpan.FromMilliseconds(timeout)))
+                        //{
+                        //    t.Abort();
+                        //    t2 = timeout;
+                        //}
+                        //else {
+                        var mint = z3.GenerateMinterms(predicates.ToArray()).ToList();
+                        sw.Stop();
+                        t2 = sw.ElapsedMilliseconds;
+                        //}
 
-                Console.WriteLine((double)t1  + "," + (double)t2);
-            }
+                        Console.WriteLine("#phi: " + predicates.Count + ", #mint: " + mint.Count +", time mint: " + (double)t2);
+
+                    }
+                }
+            Console.Read();
+
         }
 
 
@@ -116,8 +127,6 @@ namespace MSOEvaluation
 
             for (seed = 0; seed < totgenerations; seed++)
             {
-                Console.WriteLine(seed);
-                random = new Random(seed);
                 size = maxS;
 
                 var pair =  GenerateMSOFormula(1);       
@@ -128,7 +137,7 @@ namespace MSOEvaluation
 
         private static Pair<MSOFormula<BoolExpr>, List<BoolExpr>> GenerateMSOFormula(int maxVarIndex)
         {
-            int randomNumber = random.Next(0, 6);
+            int randomNumber = random.Next(0, 8);
             size--;
             if (size <= 0)
             {
@@ -153,26 +162,28 @@ namespace MSOEvaluation
                         return new Pair<MSOFormula<BoolExpr>, List<BoolExpr>>(phi, phi1.Second);
                     }
                 case 2:
+                case 3:
                     {
                         Pair<MSOFormula<BoolExpr>, List<BoolExpr>> phi1 = GenerateMSOFormula(maxVarIndex);
                         Pair<MSOFormula<BoolExpr>, List<BoolExpr>> phi2 = GenerateMSOFormula(maxVarIndex);
                         MSOFormula<BoolExpr> phi = new MSOAnd<BoolExpr>(phi1.First, phi2.First);
                         return new Pair<MSOFormula<BoolExpr>, List<BoolExpr>>(phi, new List<BoolExpr>(phi1.Second.Union(phi2.Second)));
                     }
-                case 3:
+                case 4:
+                case 5:
                     {
                         Pair<MSOFormula<BoolExpr>, List<BoolExpr>> phi1 = GenerateMSOFormula(maxVarIndex);
                         Pair<MSOFormula<BoolExpr>, List<BoolExpr>> phi2 = GenerateMSOFormula(maxVarIndex);
                         MSOFormula<BoolExpr> phi = new MSOOr<BoolExpr>(phi1.First, phi2.First);
                         return new Pair<MSOFormula<BoolExpr>, List<BoolExpr>>(phi, new List<BoolExpr>(phi1.Second.Union(phi2.Second)));
                     }
-                case 4:
+                case 6:
                     {
                         Pair<MSOFormula<BoolExpr>, List<BoolExpr>> phi1 = GenerateMSOFormula(maxVarIndex);
                         MSOFormula<BoolExpr> phi = new MSONot<BoolExpr>(phi1.First);
                         return new Pair<MSOFormula<BoolExpr>, List<BoolExpr>>(phi, phi1.Second);
                     }
-                case 5:
+                case 7:
                     {
                         if (maxVarIndex > 1)
                         {
@@ -200,7 +211,7 @@ namespace MSOEvaluation
                         }
 
                     }
-                case 6:
+                case 8:
                     {
                         int variable1 = random.Next(0, maxVarIndex - 1);
                         int variable2 = random.Next(0, maxVarIndex - 1);
@@ -221,12 +232,12 @@ namespace MSOEvaluation
         #region expressions and predicates generator
         private static BoolExpr GeneratePredicate()
         {
-            switch (random.Next(0, 4))
+            switch (random.Next(0, 2))
             {
                 case 0:
                     {
                         IntExpr e1 = GenerateExprOfNumb();
-                        IntExpr e2 = GenerateExprOfNumb();
+                        IntExpr e2 = c.MkInt(random.Next(0, maxConst));
                         switch (random.Next(0, 5))
                         {
                             case 0:
@@ -278,7 +289,6 @@ namespace MSOEvaluation
                         return e1;
                     }
                 case 2:
-                case 3:
                     {
                         break;
                     }
@@ -288,24 +298,45 @@ namespace MSOEvaluation
 
         private static IntExpr GenerateExprOfNumb()
         {
-            int randomNumber = random.Next(0, 4);
+            int randomNumber = random.Next(0,4);
             switch (randomNumber)
             {
                 case 0:
-                case 1:
+                case 4:
                     {
                         return (IntExpr)(c.MkConst("y"+random.Next(0,1),c.IntSort));
                     }
-                case 2:
+                case 1:
                     {
                         var e1 = GenerateExprOfNumb();
-                        var e2 = GenerateExprOfNumb();
+                        var e2 = c.MkInt(random.Next(0, maxConst));
                         return (IntExpr)(c.MkAdd(e1, e2));
                     }
-                case 3:
-                case 4:
+                case 2:
                     {
-                        return c.MkInt(random.Next(0, 9999));
+                        switch (random.Next(0, 2))
+                        {
+                            case 0:
+                                {
+                                    var e1 = GenerateExprOfNumb();
+                                    var e2 = c.MkInt(random.Next(0, maxConst));
+                                    return (IntExpr)(c.MkAdd(e1, e2));
+                                }
+                            case 1:
+                            case 2:
+                                {
+                                    var e1 = GenerateExprOfNumb();
+                                    var e2 = c.MkInt(random.Next(0, maxConst));
+                                    return (IntExpr)(c.MkMod(e1, e2));
+                                }
+                        }
+                        break;
+                    }
+                case 3:
+                    {
+                        var e1 = (IntExpr)(c.MkConst("y" + random.Next(0, 1), c.IntSort));
+                        var e2 = c.MkInt(random.Next(0, maxConst));
+                        return (IntExpr)(c.MkMul(e1, e2));
                     }
             }
             throw new Exception("this shouldn't happen");
