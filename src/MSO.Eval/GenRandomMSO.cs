@@ -130,7 +130,7 @@ namespace MSOEvaluation
         {
             int randomNumber = random.Next(0, 6);
             size--;
-            if (size == 0)
+            if (size <= 0)
             {
                 int variable = random.Next(0, maxVarIndex-1);
                 BoolExpr b = GeneratePredicate();
