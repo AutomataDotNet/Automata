@@ -406,7 +406,7 @@ namespace Microsoft.Automata
                         return r;
                 };
 
-            var aut = st.automaton.RelpaceAllGuards<Rule<TERM>>(ReplaceEps);
+            var aut = st.automaton.RelpaceAllGuards(ReplaceEps);
             var q0 = aut.InitialState;
 
             bool onlyInitialRegisterValueIsReacahbleAtInitialState = false;

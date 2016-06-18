@@ -16,19 +16,26 @@ namespace Microsoft.Automata.MSO.Mona
             return new Variable(name, false);
         }
 
+        Dictionary<string, MSOFormula<BDD>> predMap = new Dictionary<string, MSOFormula<BDD>>();
+
         public MSOFormula<BDD> ToMSO()
         {
-            //if (header != MonaHeader.M2LSTR)
-            //    throw new NotSupportedException("unsopprted header " + header);
+            if (header == MonaHeader.M2LTREE || header == MonaHeader.WS2S)
+                throw new NotSupportedException("unsopprted header " + header);
 
-            if (declarations.Exists(d => (d.kind != Mona.MonaDeclKind.formula 
-                && d.kind != Mona.MonaDeclKind.var1 
-                && d.kind != Mona.MonaDeclKind.var2
-                && d.kind != Mona.MonaDeclKind.constant)))
-                throw new NotSupportedException("unsopprted declaration ");
-
-            if (vars1.Exists(d => (d.univs != null || d.varwhere.where != null)))
-                throw new NotSupportedException("unsopprted var declaration (with universe or where condition)");
+            foreach (var d in declarations)
+            {
+                if (d.kind != Mona.MonaDeclKind.formula
+                    && d.kind != Mona.MonaDeclKind.var1
+                    && d.kind != Mona.MonaDeclKind.var2
+                    && d.kind != Mona.MonaDeclKind.constant
+                    && d.kind != Mona.MonaDeclKind.pred
+                    && d.kind != Mona.MonaDeclKind.macro)
+                    throw new NotImplementedException("declaration: " + d.ToString());
+                MonaVarDecl vd = d as MonaVarDecl;
+                if (vd != null && (vd.univs != null || vd.varwhere.where != null))
+                    throw new NotImplementedException("var declaration (with universe or where condition): " + vd.ToString());
+            }
 
             int fvcount = vars1.Count + vars2.Count;
 
@@ -38,8 +45,19 @@ namespace Microsoft.Automata.MSO.Mona
                 if (decl.kind == MonaDeclKind.formula)
                 {
                     var phi = ConvertFormula(((MonaFormulaDecl)decl).formula, MapStack<string,MonaParam>.Empty);
-                    psi = (psi == null ? phi : new MSOAnd<BDD>(psi, phi));
+                    if (psi == null)
+                        psi = phi;
+                    else
+                        psi = psi & phi;
                 }
+                else if (decl.kind == MonaDeclKind.pred || decl.kind == MonaDeclKind.macro)
+                {
+                    var pd = decl as MonaPredDecl;
+                    predMap[pd.name.text] = ConvertFormula(pd.formula, MapStack<string, MonaParam>.Empty.Push(pd.pmap));
+                }
+
+            if (psi == null)
+                throw new ArgumentException("formula is missing from the mona program");
 
             return psi;
         }
@@ -106,9 +124,84 @@ namespace Microsoft.Automata.MSO.Mona
                             psi = new MSOForall<BDD>(new Variable(vw.name, phi.varmap[vw.name].type == MonaExprType.INT), psi);
                         return psi;
                     }
+                case Tokens.NAME:
+                    {
+                        var name = expr as MonaName;
+                        if (name != null)
+                        {
+                            //must be a nullary predicate application (var0 is not supported)
+                            var tmpPredApp = new MonaPredApp(name.symbol, Cons<MonaExpr>.Empty);
+                            return ConvertPredApp(tmpPredApp, locals);
+                        }
+              
+                        var predApp = expr as MonaPredApp;
+                        if (predApp != null)
+                        {
+                            return ConvertPredApp(predApp, locals);
+                        }
+
+                        throw new NotImplementedException(expr.ToString());
+                    }
                 default:
                     throw new NotImplementedException(expr.ToString());
             }
+        }
+
+        private MSOFormula<BDD> ConvertPredApp(MonaPredApp predApp, MapStack<string, MonaParam> locals)
+        {
+            var predDef = predMap[predApp.symbol.text];
+            var predDecl = (MonaPredDecl)globals[predApp.symbol.text];
+
+            int k = predDecl.parameters.Count;
+            if (k != predApp.NrOfSubexprs)
+                throw new ArgumentException("invalid call of " + predDecl.name);
+
+            if (k == 0)
+                return predDef;
+
+            var newVars = new Variable[k];
+            Dictionary<string, Variable> substitution = new Dictionary<string, Variable>();
+
+            var argPreds = new MSOFormula<BDD>[k];
+            var argVars = new Variable[k];
+
+            for (int i = 0; i < k; i++)
+            {
+                if (predDecl.parameters[i].kind != MonaParamKind.var1 && predDecl.parameters[i].kind != MonaParamKind.var2)
+                    throw new NotImplementedException("parameter kind " + predDecl.parameters[i].kind.ToString());
+
+                MSOFormula<BDD> argPreds_i;
+                Variable argVars_i;
+                if (predDecl.parameters[i].kind == MonaParamKind.var1)
+                {
+                    argVars_i = ConvertTerm1(predApp[i], locals, out argPreds_i);
+                    if (argPreds_i == null)
+                    {
+                        var tmp1 = MkNewVar1();
+                        argPreds_i = new MSOEq<BDD>(tmp1, argVars_i);
+                        argVars_i = tmp1;
+                    }
+                }
+                else
+                {
+                    argVars_i = ConvertTerm2(predApp[i], locals, out argPreds_i);
+                    if (argPreds_i == null)
+                    {
+                        var tmp2 = MkNewVar2();
+                        argPreds_i = new MSOEq<BDD>(tmp2, argVars_i);
+                        argVars_i = tmp2;
+                    }
+                }
+                argPreds[i] = argPreds_i;
+                argVars[i] = argVars_i;
+                substitution[predDecl.parameters[i].Token.text] = argVars_i;
+            }
+
+            MSOFormula<BDD> psi = predDef.SubstituteVariables(substitution);
+            for (int i = k - 1; i >= 0; i--)
+                psi = new MSOExists<BDD>(argVars[i], argPreds[i] & psi);
+
+            return psi;
         }
 
         private MSOFormula<BDD> ConvertIsEmpty(MonaExpr set, MapStack<string, MonaParam> locals)
@@ -188,14 +281,16 @@ namespace Microsoft.Automata.MSO.Mona
 
         int newVarId1 = 1;
         int newVarId2 = 1;
+
         Variable MkNewVar1()
         {
-            string v = "_x" + newVarId1++;
+            string v = "#" + newVarId1++;
             return new Variable(v,true);
         }
+
         Variable MkNewVar2()
         {
-            string v = "_X" + newVarId2++;
+            string v = "@" + newVarId2++;
             return new Variable(v, false);
         }
 

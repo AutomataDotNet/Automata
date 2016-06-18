@@ -61,9 +61,11 @@
     <Compile Include="Mona\MonaParser.cs" />
     <Compile Include="Mona\Program.ToMSO.cs" />
     <Compile Include="MSO.cs" />
+    <Compile Include="MSO.GetAutomaton.cs" />
+    <Compile Include="MSO.SubstituteVariables.cs" />
     <Compile Include="MSOAlgebra.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="WS1S.cs" />
+    <Compile Include="Variable.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Automata\Automata.csproj">

@@ -1343,10 +1343,10 @@ namespace Microsoft.Automata.MSO.Mona
         internal MonaPredDecl(Token name, Cons<MonaParam> parameters, Dictionary<string,MonaParam> pmap, MonaExpr formula, bool isMacro = false)
             : base(isMacro ? MonaDeclKind.macro : MonaDeclKind.pred)
         {
-            this.pmap = pmap;
+            this.pmap = (pmap == null ? new Dictionary<string,MonaParam>() : pmap);
             this.isMacro = isMacro;
             this.name = name;
-            this.parameters = parameters;
+            this.parameters = (parameters == null ? Cons<MonaParam>.Empty : parameters);
             this.formula = formula;
         }
 

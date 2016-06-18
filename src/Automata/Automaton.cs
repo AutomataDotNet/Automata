@@ -471,12 +471,26 @@ namespace Microsoft.Automata
         /// <summary>
         /// Convert the automaton to an automaton where each guard p has been replaced with transform(p).
         /// </summary>
-        public Automaton<T> RelpaceAllGuards<S>(Func<T,T> transform)
+        public Automaton<T> RelpaceAllGuards(Func<T,T> transform)
         {
             List<Move<T>> moves1 = new List<Move<T>>();
             foreach (var move in GetMoves())
                 moves1.Add(Move<T>.Create(move.SourceState, move.TargetState, transform(move.Label)));
             return Automaton<T>.Create(this.algebra, initialState, this.GetFinalStates(), moves1); 
+        }
+
+        /// <summary>
+        /// Project the second component an automaton with monadic predicates.
+        /// </summary>
+        static public Automaton<T> ProjectSecond<S>(Automaton<IMonadicPredicate<S,T>> automaton) 
+        {
+            ICartesianAlgebra<S, T> alg = automaton.algebra as ICartesianAlgebra<S, T>;
+            if (alg == null)
+                throw new AutomataException(AutomataExceptionKind.NotCartesianAlgebra);
+            List<Move<T>> moves1 = new List<Move<T>>();
+            foreach (var move in automaton.GetMoves())
+                moves1.Add(Move<T>.Create(move.SourceState, move.TargetState, move.Label.ProjectSecond()));
+            return Automaton<T>.Create(alg.Second, automaton.initialState, automaton.GetFinalStates(), moves1);
         }
 
         /// <summary>

@@ -146,7 +146,7 @@ namespace Microsoft.Automata.Tests
             var solver = new CharSetSolver(BitWidth.BV7);
             string regexA = "^(((((00|11)|10((00|11))*01)|(01|10((00|11))*10)(((00|11)|01((00|11))*10))*(10|01((00|11))*01)))*)$";
             BDD _1 = solver.MkCharConstraint( '1');
-            var A = solver.Convert(regexA).RelpaceAllGuards<BDD>(x => (x == null ? null : _1));
+            var A = solver.Convert(regexA).RelpaceAllGuards(x => (x == null ? null : _1));
             var B = A.Determinize().MinimizeHopcroft();
             var lengthregex = solver.ConvertToRegex(B);
             Assert.AreEqual<string>("^((11)*)$", lengthregex);

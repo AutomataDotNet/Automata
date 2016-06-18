@@ -257,6 +257,7 @@ namespace Microsoft.Automata
         BDDDeserializationError,
         InvalidName,
         InvalidPath,
-        InvalidArgument_MustBeNonempty
+        InvalidArgument_MustBeNonempty,
+        NotCartesianAlgebra
     }
 }

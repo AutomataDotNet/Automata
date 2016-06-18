@@ -231,8 +231,8 @@ namespace Microsoft.Automata.Internal.DirectedGraphs
             tw.WriteLine("</Style>");
             tw.WriteLine("<Style TargetType=\"Node\" GroupLabel=\"FinalState\" ValueLabel=\"True\">");
             tw.WriteLine("<Condition Expression=\"HasCategory('FinalState')\" />");
-            tw.WriteLine("<Setter Property=\"Background\" Value=\"lightgreen\" />");
-            tw.WriteLine("<Setter Property=\"StrokeThickness\" Value=\"0\" />");
+            //tw.WriteLine("<Setter Property=\"Background\" Value=\"lightgreen\" />");
+            tw.WriteLine("<Setter Property=\"StrokeThickness\" Value=\"4\" />");
             //tw.WriteLine("<Setter Property=\"Background\" Value=\"white\" />");
             //tw.WriteLine("<Setter Property=\"MinWidth\" Value=\"0\" />");
             tw.WriteLine("</Style>");

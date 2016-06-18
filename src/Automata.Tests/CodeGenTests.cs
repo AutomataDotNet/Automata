@@ -33,9 +33,11 @@ namespace Automata.Tests
             Regex abplus = new Regex(@"^(ab)+$", RegexOptions.Compiled | (RegexOptions.Singleline));
             Regex margus = new Regex(@"^(?i:margus)Veanes$");
             Regex wdplusASCII = new Regex(@"^([\w-[\x80-\uFFFF]][\d-[\x80-\uFFFF]])+$");
-            Regex wdplus = new Regex(@"^(\w\d)+$");
+            Regex wdplus = new Regex(@"^(\w\d\s)+$");
 
-            var regexes = new Regex[] {Regex9, Regex10, Regex11, Regex12, Regex13, Regex14, Regex15, Regex16, EvilRegex, abplus, margus, wdplusASCII, wdplus};
+            //var regexes = new Regex[] {Regex9, Regex10, Regex11, Regex12, Regex13, Regex14, Regex15, Regex16, EvilRegex, abplus, margus, wdplusASCII, wdplus};
+
+            var regexes = new Regex[] {  wdplus };
 
             TestCppCodeGen(regexes);
 
