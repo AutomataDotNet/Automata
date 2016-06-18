@@ -14,8 +14,34 @@ namespace Microsoft.Automata.MSO
         /// </summary>
         internal static Automaton<BDD> MkIn1(int i, int j, IBDDAlgebra alg)
         {
-            throw new NotImplementedException("MkIn1");
+            var bit_j_is1 = alg.MkBitTrue(j);
+            var bit_i_is1 = alg.MkBitTrue(i);
+            var bit_i_is0 = alg.MkBitFalse(i);
+            var both1 = alg.MkAnd(bit_i_is1, bit_j_is1);
+            var moves = new Move<BDD>[] { new Move<BDD>(0, 0, bit_i_is0), 
+                new Move<BDD>(0, 1, both1), new Move<BDD>(1, 1, bit_i_is0) };
+            var aut = Automaton<BDD>.Create(alg, 0, new int[] { 1 }, moves, false, false, true);
+            return aut;
         }
+        /// <summary>
+        /// x_i in X_j with singleton-set-semantics for x_i
+        /// </summary>
+        internal static Automaton<IMonadicPredicate<BDD, T>> MkIn1<T>(int i, int j, ICartesianAlgebraBDD<T> ca)
+        {
+            Func<BDD, IMonadicPredicate<BDD, T>> lift = bdd => ca.MkCartesianProduct(bdd, ca.Second.True);
+            var alg = ca.BDDAlgebra;
+            var bit_j_is1 = alg.MkBitTrue(j);
+            var bit_i_is1 = alg.MkBitTrue(i);
+            var bit_i_is0 = alg.MkBitFalse(i);
+            var both1 = alg.MkAnd(bit_i_is1, bit_j_is1);
+            var moves = new Move<IMonadicPredicate<BDD, T>>[] { 
+                new Move<IMonadicPredicate<BDD, T>>(0, 0, lift(bit_i_is0)), 
+                new Move<IMonadicPredicate<BDD, T>>(0, 1, lift(both1)), 
+                new Move<IMonadicPredicate<BDD, T>>(1, 1, lift(bit_i_is0)) };
+            var aut = Automaton<IMonadicPredicate<BDD, T>>.Create(ca, 0, new int[] { 1 }, moves, false, false, true);
+            return aut;
+        }
+
         /// <summary>
         /// x_i in X_j with min(nonempty-set)-semantics for x_i
         /// </summary>
@@ -52,6 +78,9 @@ namespace Microsoft.Automata.MSO
             return aut;
         }
 
+        /// <summary>
+        /// X_i sub X_j
+        /// </summary>
         public static Automaton<BDD> MkSubset(int i, int j, IBDDAlgebra alg)
         {
             var bit_j_is1 = alg.MkBitTrue(j);
@@ -62,6 +91,9 @@ namespace Microsoft.Automata.MSO
             return aut;
         }
 
+        /// <summary>
+        /// X_i sub X_j
+        /// </summary>
         public static Automaton<IMonadicPredicate<BDD, T>> MkSubset<T>(int i, int j, ICartesianAlgebraBDD<T> alg)
         {
             var bit_j_is1 = alg.BDDAlgebra.MkBitTrue(j);
@@ -87,6 +119,9 @@ namespace Microsoft.Automata.MSO
             return aut;
         }
 
+        /// <summary>
+        /// X_i = X_j
+        /// </summary>
         public static Automaton<IMonadicPredicate<BDD, T>> MkEqualSets<T>(int i, int j, ICartesianAlgebraBDD<T> alg)
         {
             var bit_j_is1 = alg.BDDAlgebra.MkBitTrue(j);
@@ -157,7 +192,7 @@ namespace Microsoft.Automata.MSO
         /// <summary>
         /// x_i = x_j, with min(nonempty-set)-semantics for f-o vars
         /// </summary>
-        internal static Automaton<IMonadicPredicate<BDD, T>> MkEqualPositions2<T>(int i, int j, ICartesianAlgebraBDD<T> alg) 
+        public static Automaton<IMonadicPredicate<BDD, T>> MkEqualPositions2<T>(int i, int j, ICartesianAlgebraBDD<T> alg) 
         {
             var bit_j_is1 = alg.BDDAlgebra.MkBitTrue(j);
             var bit_i_is1 = alg.BDDAlgebra.MkBitTrue(i);
@@ -173,49 +208,27 @@ namespace Microsoft.Automata.MSO
             return aut;
         }
 
-        public static Automaton<BDD> MkMember(int i, int j, IBDDAlgebra alg)
-        {
-            var bit_j_is1 = alg.MkBitTrue(j);
-            var bit_i_is1 = alg.MkBitTrue(i);
-            var bit_i_is0 = alg.MkBitFalse(i);
-            var both1 = alg.MkAnd(bit_i_is1, bit_j_is1);
-            var moves = new Move<BDD>[] { new Move<BDD>(0, 0, bit_i_is0), 
-                new Move<BDD>(0, 1, both1), new Move<BDD>(1, 1, bit_i_is0) };
-            var aut = Automaton<BDD>.Create(alg, 0, new int[] { 1 }, moves, false, false, true);
-            return aut;
-        }
-
-        public static Automaton<IMonadicPredicate<BDD, T>> MkMember<T>(int i, int j, ICartesianAlgebraBDD<T> ca)
-        {
-            Func<BDD, IMonadicPredicate<BDD, T>> lift = bdd => ca.MkCartesianProduct(bdd, ca.Second.True);
-            var alg = ca.BDDAlgebra;
-            var bit_j_is1 = alg.MkBitTrue(j);
-            var bit_i_is1 = alg.MkBitTrue(i);
-            var bit_i_is0 = alg.MkBitFalse(i);
-            var both1 = alg.MkAnd(bit_i_is1, bit_j_is1);
-            var moves = new Move<IMonadicPredicate<BDD, T>>[] { 
-                new Move<IMonadicPredicate<BDD, T>>(0, 0, lift(bit_i_is0)), 
-                new Move<IMonadicPredicate<BDD, T>>(0, 1, lift(both1)), 
-                new Move<IMonadicPredicate<BDD, T>>(1, 1, lift(bit_i_is0)) };
-            var aut = Automaton<IMonadicPredicate<BDD, T>>.Create(ca, 0, new int[] { 1 }, moves, false, false, true);
-            return aut;
-        }
-
-        public static Automaton<BDD> MkLabelOfSet(int i, BDD lab, IBDDAlgebra alg)
+        /// <summary>
+        /// all1 x: x in X_i => [psi](x)
+        /// </summary>
+        public static Automaton<BDD> MkLabelOfSet(int i, BDD psi, IBDDAlgebra alg)
         {
             var bit_i_is0 = alg.MkBitFalse(i);
-            var cond = alg.MkOr(lab, bit_i_is0);
+            var cond = alg.MkOr(psi, bit_i_is0);
             var moves = new Move<BDD>[] { new Move<BDD>(0, 0, cond) };
             var aut = Automaton<BDD>.Create(alg, 0, new int[] { 0 }, moves, false, false, true);
             return aut;
         }
 
-        public static Automaton<IMonadicPredicate<BDD, T>> MkLabelOfSet<T>(int i, T lab, ICartesianAlgebraBDD<T> ca)
+        /// <summary>
+        /// all1 x: x in X_i => [psi](x)
+        /// </summary>
+        public static Automaton<IMonadicPredicate<BDD, T>> MkLabelOfSet<T>(int i, T psi, ICartesianAlgebraBDD<T> ca)
         {
             Func<BDD, IMonadicPredicate<BDD, T>> lift1 = bdd => ca.MkCartesianProduct(bdd, ca.Second.True);
-            Func<T, IMonadicPredicate<BDD, T>> lift2 = psi => ca.MkCartesianProduct(ca.BDDAlgebra.True, psi);
+            Func<T, IMonadicPredicate<BDD, T>> lift2 = p => ca.MkCartesianProduct(ca.BDDAlgebra.True, p);
             var bit_i_is0 = ca.BDDAlgebra.MkBitFalse(i);
-            var cond = ca.MkOr(lift2(lab), lift1(bit_i_is0));
+            var cond = ca.MkOr(lift2(psi), lift1(bit_i_is0));
             var moves = new Move<IMonadicPredicate<BDD, T>>[] { new Move<IMonadicPredicate<BDD, T>>(0, 0, cond) };
             var aut = Automaton<IMonadicPredicate<BDD, T>>.Create(ca, 0, new int[] { 0 }, moves, false, false, true);
             return aut;
@@ -317,7 +330,6 @@ namespace Microsoft.Automata.MSO
         public static Automaton<IMonadicPredicate<BDD, T>> MkLt1<T>(int i, int j, ICartesianAlgebraBDD<T> ca)
         {
             Func<BDD, IMonadicPredicate<BDD, T>> lift1 = bdd => ca.MkCartesianProduct(bdd, ca.Second.True);
-            //Func<T, IMonadicPredicate<BDD, T>> lift2 = psi => ca.MkCartesianProduct(ca.BDDAlgebra.True, psi);
             var alg = ca.BDDAlgebra;
             var bit_i_is0 = alg.MkBitFalse(i);
             var bit_i_is1 = alg.MkBitTrue(i);
@@ -384,6 +396,14 @@ namespace Microsoft.Automata.MSO
         internal static Automaton<BDD> MkLe1(int i, int j, IBDDAlgebra alg)
         {
             throw new NotImplementedException("MkLe1");
+        }
+
+        /// <summary>
+        /// x_i &lt;= x_j, with singleton-set-semantics for f-o vars
+        /// </summary>
+        public static Automaton<IMonadicPredicate<BDD, T>> MkLe1<T>(int i, int j, ICartesianAlgebraBDD<T> alg)
+        {
+            throw new NotImplementedException("MkLe1<T>");
         }
 
         /// <summary>
@@ -626,6 +646,14 @@ namespace Microsoft.Automata.MSO
             throw new NotImplementedException("MkEqN1");
         }
         /// <summary>
+        /// x_i = n, with singleton-set-semantics
+        /// </summary>
+        internal static Automaton<IMonadicPredicate<BDD, T>> MkEqN1<T>(int i, int n, ICartesianAlgebraBDD<T> alg)
+        {
+            throw new NotImplementedException("MkEqN1<T>");
+        }
+
+        /// <summary>
         /// x_i = n, with min(nonempty-set)-semantics
         /// </summary>
         internal static Automaton<BDD> MkEqN2(int i, int n, IBDDAlgebra alg)
@@ -669,6 +697,14 @@ namespace Microsoft.Automata.MSO
         internal static Automaton<BDD> MkMin1(int p1, int p2, IBDDAlgebra alg)
         {
             throw new NotImplementedException("MkMin1");
+        }
+
+        /// <summary>
+        /// x_i = min X_j with singleton-set-semantics for x_i
+        /// </summary>
+        internal static Automaton<IMonadicPredicate<BDD, T>> MkMin1<T>(int i, int j, ICartesianAlgebraBDD<T> alg)
+        {
+            throw new NotImplementedException("MkMin1<T>"); 
         }
 
         /// <summary>
@@ -718,6 +754,14 @@ namespace Microsoft.Automata.MSO
         {
             throw new NotImplementedException("MkMax1");
         }
+        /// <summary>
+        /// x_i = max X_j with singleton-set-semantics for x_i
+        /// </summary>
+        internal static Automaton<IMonadicPredicate<BDD, T>> MkMax1<T>(int i, int j, ICartesianAlgebraBDD<T> alg)
+        {
+            throw new NotImplementedException("MkMax1<T>");
+        }
+
         /// <summary>
         /// x_i = max X_j with min(nonempty-set)-semantics for x_i
         /// </summary>

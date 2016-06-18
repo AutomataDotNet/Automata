@@ -8,31 +8,38 @@ namespace Microsoft.Automata.MSO
     public abstract partial class MSOFormula<T>
     {
         /// <summary>
-        /// Constructs the automaton assuming the given list fvs of free variables.
+        ///  Constructs the automaton assuming the given list fvs of free variables.
         /// </summary>
         /// <param name="alg">label algebra</param>
+        /// <param name="nrOfLabelBits">nr of labels bits, only relevant if alg is not CharSetSolver but is BDDAlgebra</param>
         /// <param name="singletonSetSemantics">if true uses singleton-set-semantics for f-o variables else uses min-nonempty-set-semantics</param>
         /// <param name="fvs">free variables, if null uses this.FreeVariables</param>
         /// <returns></returns>
-        public Automaton<T> GetAutomaton(IBooleanAlgebra<T> alg, bool singletonSetSemantics = false, Variable[] fvs = null)
+        public Automaton<T> GetAutomaton(IBooleanAlgebra<T> alg, int nrOfLabelBits = 0, bool singletonSetSemantics = false, Variable[] fvs = null)
         {
             if (fvs == null)
                 fvs = this.FreeVariables;
             Automaton<T> res;
-            var css = alg as CharSetSolver;
-            if (css != null)
-                res = this.GetAutomatonBDD1(fvs, css, (int)css.Encoding, singletonSetSemantics) as Automaton<T>;
+            var A = alg as CharSetSolver;
+            if (A != null)
+            {
+                res = this.GetAutomatonBDD1(fvs, A, (int)A.Encoding, singletonSetSemantics) as Automaton<T>;
+            }
             else
             {
-                var bdd = alg as BDDAlgebra;
-                if (bdd != null)
-                    res = this.GetAutomatonBDD1(fvs, bdd, 0, singletonSetSemantics) as Automaton<T>;
+                var B = alg as BDDAlgebra;
+                if (B != null)
+                {
+                    if (nrOfLabelBits == 0 && this.ExistsSubformula(f => f.Kind == MSOFormulaKind.Predicate))
+                        throw new ArgumentException("BDD predicates are not allowed without any reserved label bits");
+                    res = this.GetAutomatonBDD1(fvs, B, nrOfLabelBits, singletonSetSemantics) as Automaton<T>;
+                }
                 else
                 {
                     //create temporary cartesian product algebra
-                    var ca = new CartesianAlgebraBDD<T>(alg);
-                    //project only the original algebra
-                    res = Automaton<T>.ProjectSecond<BDD>(this.GetAutomatonX1(fvs, ca));
+                    var C = new CartesianAlgebraBDD<T>(alg);
+                    //keep only the original algebra
+                    res = Automaton<T>.ProjectSecond<BDD>(this.GetAutomatonX1(fvs, C, singletonSetSemantics)).Determinize().Minimize();
                 }
             }
             return res;
@@ -49,7 +56,7 @@ namespace Microsoft.Automata.MSO
         {
             if (fvs == null)
                 fvs = this.FreeVariables;
-            return GetAutomatonX1(fvs, alg);
+            return GetAutomatonX1(fvs, alg, singletonSetSemantics);
         }
 
 
@@ -59,25 +66,31 @@ namespace Microsoft.Automata.MSO
             for (int i = 0; i < variables.Length; i++)
             {
                 if (variables[i].IsFirstOrder)
-                    res = res.Intersect(BasicAutomata.MkIsNonempty(i, alg)).Determinize().Minimize();
+                    if (singletonSetSemantics)
+                        res = res.Intersect(BasicAutomata.MkSingleton(i, alg)).Determinize().Minimize();
+                    else
+                        res = res.Intersect(BasicAutomata.MkIsNonempty(i, alg)).Determinize().Minimize();
             }
             return res;
         }
 
         internal abstract Automaton<BDD> GetAutomatonBDD(SimpleList<Variable> variables, IBDDAlgebra alg, int nrOfFreeBits, bool singletonSetSemantics);
 
-        Automaton<IMonadicPredicate<BDD, T>> GetAutomatonX1(Variable[] variables, ICartesianAlgebraBDD<T> alg)
+        Automaton<IMonadicPredicate<BDD, T>> GetAutomatonX1(Variable[] variables, ICartesianAlgebraBDD<T> alg, bool singletonSetSemantics)
         {
-            var res = GetAutomatonX(SimpleList<Variable>.Empty.Append(variables), alg);
+            var res = GetAutomatonX(SimpleList<Variable>.Empty.Append(variables), alg, singletonSetSemantics);
             for (int i = 0; i < variables.Length; i++)
             {
                 if (variables[i].IsFirstOrder)
-                    res = res.Intersect(BasicAutomata.MkIsNonempty<T>(i, alg)).Determinize().Minimize();
+                    if (singletonSetSemantics)
+                        res = res.Intersect(BasicAutomata.MkSingleton<T>(i, alg)).Determinize().Minimize();
+                    else
+                        res = res.Intersect(BasicAutomata.MkIsNonempty<T>(i, alg)).Determinize().Minimize();
             }
             return res;
         }
 
-        internal abstract Automaton<IMonadicPredicate<BDD, T>> GetAutomatonX(SimpleList<Variable> variables, ICartesianAlgebraBDD<T> alg); 
+        internal abstract Automaton<IMonadicPredicate<BDD, T>> GetAutomatonX(SimpleList<Variable> variables, ICartesianAlgebraBDD<T> alg, bool singletonSetSemantics); 
 
     }
 
@@ -88,7 +101,7 @@ namespace Microsoft.Automata.MSO
             return BasicAutomata.MkTrue(alg);
         }
 
-        internal override Automaton<IMonadicPredicate<BDD, T>> GetAutomatonX(SimpleList<Variable> variables, ICartesianAlgebraBDD<T> alg)
+        internal override Automaton<IMonadicPredicate<BDD, T>> GetAutomatonX(SimpleList<Variable> variables, ICartesianAlgebraBDD<T> alg, bool singletonSetSemantics)
         {
             return BasicAutomata.MkTrue<T>(alg);
         }
@@ -101,7 +114,7 @@ namespace Microsoft.Automata.MSO
             return BasicAutomata.MkFalse(alg);
         }
 
-        internal override Automaton<IMonadicPredicate<BDD, T>> GetAutomatonX(SimpleList<Variable> variables, ICartesianAlgebraBDD<T> alg)
+        internal override Automaton<IMonadicPredicate<BDD, T>> GetAutomatonX(SimpleList<Variable> variables, ICartesianAlgebraBDD<T> alg, bool singletonSetSemantics)
         {
             return BasicAutomata.MkFalse<T>(alg);
         }
@@ -124,13 +137,16 @@ namespace Microsoft.Automata.MSO
                 return BasicAutomata.MkEqualSets(pos1, pos2, alg);
         }
 
-        internal override Automaton<IMonadicPredicate<BDD, T>> GetAutomatonX(SimpleList<Variable> variables, ICartesianAlgebraBDD<T> alg)
+        internal override Automaton<IMonadicPredicate<BDD, T>> GetAutomatonX(SimpleList<Variable> variables, ICartesianAlgebraBDD<T> alg, bool singletonSetSemantics)
         {
             var pos1 = GetVarIndex(var1, variables);
             var pos2 = GetVarIndex(var2, variables);
 
             if (var1.IsFirstOrder)
-                return BasicAutomata.MkEqualPositions2<T>(pos1, pos2, alg);
+                if (singletonSetSemantics)
+                    return BasicAutomata.MkEqualPositions1<T>(pos1, pos2, alg);
+                else
+                    return BasicAutomata.MkEqualPositions2<T>(pos1, pos2, alg);
             else
                 return BasicAutomata.MkEqualSets<T>(pos1, pos2, alg);
         }
@@ -148,12 +164,14 @@ namespace Microsoft.Automata.MSO
                 return BasicAutomata.MkIn2(pos1 + nrOfLabelBits, pos2 + nrOfLabelBits, alg);
         }
 
-        internal override Automaton<IMonadicPredicate<BDD, T>> GetAutomatonX(SimpleList<Variable> variables, ICartesianAlgebraBDD<T> alg)
+        internal override Automaton<IMonadicPredicate<BDD, T>> GetAutomatonX(SimpleList<Variable> variables, ICartesianAlgebraBDD<T> alg, bool singletonSetSemantics)
         {
             var pos1 = GetVarIndex(var1, variables);
             var pos2 = GetVarIndex(var2, variables);
-            var aut = BasicAutomata.MkIn2<T>(pos1, pos2, alg);
-            return aut;
+            if (singletonSetSemantics)
+                return BasicAutomata.MkIn1<T>(pos1, pos2, alg);
+            else
+                return BasicAutomata.MkIn2<T>(pos1, pos2, alg);
         }
     }
 
@@ -169,12 +187,14 @@ namespace Microsoft.Automata.MSO
                 return BasicAutomata.MkMin2(pos1 + nrOfLabelBits, pos2 + nrOfLabelBits, alg);
         }
 
-        internal override Automaton<IMonadicPredicate<BDD, T>> GetAutomatonX(SimpleList<Variable> variables, ICartesianAlgebraBDD<T> alg)
+        internal override Automaton<IMonadicPredicate<BDD, T>> GetAutomatonX(SimpleList<Variable> variables, ICartesianAlgebraBDD<T> alg, bool singletonSetSemantics)
         {
             var pos1 = GetVarIndex(var1, variables);
             var pos2 = GetVarIndex(var2, variables);
-            var aut = BasicAutomata.MkMin2<T>(pos1, pos2, alg);
-            return aut;
+            if (singletonSetSemantics)
+                return BasicAutomata.MkMin1<T>(pos1, pos2, alg);
+            else
+                return BasicAutomata.MkMin2<T>(pos1, pos2, alg);
         }
     }
 
@@ -190,12 +210,14 @@ namespace Microsoft.Automata.MSO
                 return BasicAutomata.MkMax2(pos1 + nrOfLabelBits, pos2 + nrOfLabelBits, alg);
         }
 
-        internal override Automaton<IMonadicPredicate<BDD, T>> GetAutomatonX(SimpleList<Variable> variables, ICartesianAlgebraBDD<T> alg)
+        internal override Automaton<IMonadicPredicate<BDD, T>> GetAutomatonX(SimpleList<Variable> variables, ICartesianAlgebraBDD<T> alg, bool singletonSetSemantics)
         {
             var pos1 = GetVarIndex(var1, variables);
             var pos2 = GetVarIndex(var2, variables);
-            var aut = BasicAutomata.MkMax2<T>(pos1, pos2, alg);
-            return aut;
+            if (singletonSetSemantics)
+                return BasicAutomata.MkMax1<T>(pos1, pos2, alg);
+            else
+                return BasicAutomata.MkMax2<T>(pos1, pos2, alg);
         }
     }
 
@@ -210,10 +232,10 @@ namespace Microsoft.Automata.MSO
             return aut;
         }
 
-        internal override Automaton<IMonadicPredicate<BDD, T>> GetAutomatonX(SimpleList<Variable> variables, ICartesianAlgebraBDD<T> alg)
+        internal override Automaton<IMonadicPredicate<BDD, T>> GetAutomatonX(SimpleList<Variable> variables, ICartesianAlgebraBDD<T> alg, bool singletonSetSemantics)
         {
-            var aut1 = phi1.GetAutomatonX(variables, alg);
-            var aut2 = phi2.GetAutomatonX(variables, alg);
+            var aut1 = phi1.GetAutomatonX(variables, alg, singletonSetSemantics);
+            var aut2 = phi2.GetAutomatonX(variables, alg, singletonSetSemantics);
             var aut = aut1.Intersect(aut2);
             aut = aut.Minimize();
             return aut;
@@ -231,10 +253,10 @@ namespace Microsoft.Automata.MSO
             return res;
         }
 
-        internal override Automaton<IMonadicPredicate<BDD, T>> GetAutomatonX(SimpleList<Variable> variables, ICartesianAlgebraBDD<T> alg)
+        internal override Automaton<IMonadicPredicate<BDD, T>> GetAutomatonX(SimpleList<Variable> variables, ICartesianAlgebraBDD<T> alg, bool singletonSetSemantics)
         {
-            var aut1 = phi1.GetAutomatonX(variables, alg);
-            var aut2 = phi2.GetAutomatonX(variables, alg);
+            var aut1 = phi1.GetAutomatonX(variables, alg, singletonSetSemantics);
+            var aut2 = phi2.GetAutomatonX(variables, alg, singletonSetSemantics);
             var res = aut1.Complement().Intersect(aut2.Complement()).Complement();
             res = res.Determinize().Minimize();
             return res;
@@ -250,9 +272,9 @@ namespace Microsoft.Automata.MSO
             return res;
         }
 
-        internal override Automaton<IMonadicPredicate<BDD, T>> GetAutomatonX(SimpleList<Variable> variables, ICartesianAlgebraBDD<T> alg)
+        internal override Automaton<IMonadicPredicate<BDD, T>> GetAutomatonX(SimpleList<Variable> variables, ICartesianAlgebraBDD<T> alg, bool singletonSetSemantics)
         {
-            var aut = phi.GetAutomatonX(variables, alg);
+            var aut = phi.GetAutomatonX(variables, alg, singletonSetSemantics);
             var res = aut.Determinize().Complement().Minimize();
             return res;
         }
@@ -277,11 +299,14 @@ namespace Microsoft.Automata.MSO
                 return BasicAutomata.MkLabelOfSet(k, pred as BDD, alg);
         }
 
-        internal override Automaton<IMonadicPredicate<BDD, T>> GetAutomatonX(SimpleList<Variable> variables, ICartesianAlgebraBDD<T> alg)
+        internal override Automaton<IMonadicPredicate<BDD, T>> GetAutomatonX(SimpleList<Variable> variables, ICartesianAlgebraBDD<T> alg, bool singletonSetSemantics)
         {
             var k = GetVarIndex(var, variables);
             if (var.IsFirstOrder)
-                return BasicAutomata.MkLabelOfPosition2<T>(k, pred, alg);
+                if (singletonSetSemantics)
+                    return BasicAutomata.MkLabelOfPosition1<T>(k, pred, alg);
+                else
+                    return BasicAutomata.MkLabelOfPosition2<T>(k, pred, alg);
             else
                 return BasicAutomata.MkLabelOfSet<T>(k, pred, alg);
         }
@@ -294,7 +319,7 @@ namespace Microsoft.Automata.MSO
             return BasicAutomata.MkLast(GetVarIndex(var, variables) + nrOfLabelBits, alg);
         }
 
-        internal override Automaton<IMonadicPredicate<BDD, T>> GetAutomatonX(SimpleList<Variable> variables, ICartesianAlgebraBDD<T> alg)
+        internal override Automaton<IMonadicPredicate<BDD, T>> GetAutomatonX(SimpleList<Variable> variables, ICartesianAlgebraBDD<T> alg, bool singletonSetSemantics)
         {
             return BasicAutomata.MkLast<T>(GetVarIndex(var, variables), alg);
         }
@@ -316,12 +341,15 @@ namespace Microsoft.Automata.MSO
                 return BasicAutomata.MkSuccN2(pos1, pos2, N, alg);
         }
 
-        internal override Automaton<IMonadicPredicate<BDD, T>> GetAutomatonX(SimpleList<Variable> variables, ICartesianAlgebraBDD<T> alg)
+        internal override Automaton<IMonadicPredicate<BDD, T>> GetAutomatonX(SimpleList<Variable> variables, ICartesianAlgebraBDD<T> alg, bool singletonSetSemantics)
         {
             var pos1 = GetVarIndex(var1, variables);
             var pos2 = GetVarIndex(var2, variables);
 
-            return BasicAutomata.MkSuccN2<T>(pos1, pos2, N, alg);
+            if (singletonSetSemantics)
+                return BasicAutomata.MkSuccN1<T>(pos1, pos2, N, alg);
+            else 
+                return BasicAutomata.MkSuccN2<T>(pos1, pos2, N, alg);
         }
     }
 
@@ -336,10 +364,13 @@ namespace Microsoft.Automata.MSO
                 return BasicAutomata.MkEqN2(k, n, alg);
         }
 
-        internal override Automaton<IMonadicPredicate<BDD, T>> GetAutomatonX(SimpleList<Variable> variables, ICartesianAlgebraBDD<T> alg)
+        internal override Automaton<IMonadicPredicate<BDD, T>> GetAutomatonX(SimpleList<Variable> variables, ICartesianAlgebraBDD<T> alg, bool singletonSetSemantics)
         {
             var k = GetVarIndex(var, variables);
-            return BasicAutomata.MkEqN2<T>(k, n, alg);
+            if (singletonSetSemantics)
+                return BasicAutomata.MkEqN1<T>(k, n, alg);
+            else
+                return BasicAutomata.MkEqN2<T>(k, n, alg);
         }
     }
 
@@ -355,11 +386,14 @@ namespace Microsoft.Automata.MSO
                 return BasicAutomata.MkLt2(pos1, pos2, alg);
         }
 
-        internal override Automaton<IMonadicPredicate<BDD, T>> GetAutomatonX(SimpleList<Variable> variables, ICartesianAlgebraBDD<T> alg)
+        internal override Automaton<IMonadicPredicate<BDD, T>> GetAutomatonX(SimpleList<Variable> variables, ICartesianAlgebraBDD<T> alg, bool singletonSetSemantics)
         {
             var pos1 = GetVarIndex(var1, variables);
             var pos2 = GetVarIndex(var2, variables);
-            return BasicAutomata.MkLt2<T>(pos1, pos2, alg);
+            if (singletonSetSemantics)
+                return BasicAutomata.MkLt1<T>(pos1, pos2, alg);
+            else
+                return BasicAutomata.MkLt2<T>(pos1, pos2, alg);
         }
     }
 
@@ -373,9 +407,12 @@ namespace Microsoft.Automata.MSO
                 return BasicAutomata.MkLe2(GetVarIndex(var1, variables) + nrOfLabelBits, GetVarIndex(var2, variables) + nrOfLabelBits, alg);
         }
 
-        internal override Automaton<IMonadicPredicate<BDD, T>> GetAutomatonX(SimpleList<Variable> variables, ICartesianAlgebraBDD<T> alg)
+        internal override Automaton<IMonadicPredicate<BDD, T>> GetAutomatonX(SimpleList<Variable> variables, ICartesianAlgebraBDD<T> alg, bool singletonSetSemantics)
         {
-            return BasicAutomata.MkLe2<T>(GetVarIndex(var1, variables), GetVarIndex(var2, variables), alg);
+            if (singletonSetSemantics)
+                return BasicAutomata.MkLe1<T>(GetVarIndex(var1, variables), GetVarIndex(var2, variables), alg);
+            else
+                return BasicAutomata.MkLe2<T>(GetVarIndex(var1, variables), GetVarIndex(var2, variables), alg);
         }
     }
 
@@ -390,7 +427,7 @@ namespace Microsoft.Automata.MSO
             return aut;
         }
 
-        internal override Automaton<IMonadicPredicate<BDD, T>> GetAutomatonX(SimpleList<Variable> variables, ICartesianAlgebraBDD<T> alg)
+        internal override Automaton<IMonadicPredicate<BDD, T>> GetAutomatonX(SimpleList<Variable> variables, ICartesianAlgebraBDD<T> alg, bool singletonSetSemantics)
         {
             var pos1 = GetVarIndex(var1, variables);
             var pos2 = GetVarIndex(var2, variables);
@@ -433,19 +470,17 @@ namespace Microsoft.Automata.MSO
         }
 
         //TBD: enable singleton-set-semantics
-        internal override Automaton<IMonadicPredicate<BDD, T>> GetAutomatonX(SimpleList<Variable> variables, ICartesianAlgebraBDD<T> alg)
+        internal override Automaton<IMonadicPredicate<BDD, T>> GetAutomatonX(SimpleList<Variable> variables, ICartesianAlgebraBDD<T> alg, bool singletonSetSemantics)
         {
             //the existential variable will shadow any previous occurrence with the same name
             //because when looking up the index of var it will be the last occurrence
             var varIndex = variables.Count;
             var variablesExt = variables.Append(var);
-            var autPhi = phi.GetAutomatonX(variablesExt, alg);
-
-
+            var autPhi = phi.GetAutomatonX(variablesExt, alg, singletonSetSemantics);
             Automaton<IMonadicPredicate<BDD, T>> autEx;
             if (this.IsFirstOrder)
             {
-                if (false) //(singletonSetSemantics)
+                if (singletonSetSemantics)
                     autEx = autPhi.Intersect(BasicAutomata.MkSingleton<T>(varIndex, alg)).Minimize();
                 else
                     autEx = autPhi.Intersect(BasicAutomata.MkIsNonempty<T>(varIndex, alg)).Minimize();
@@ -474,7 +509,7 @@ namespace Microsoft.Automata.MSO
             return BasicAutomata.MkIsEmpty(pos, alg);
         }
 
-        internal override Automaton<IMonadicPredicate<BDD, T>> GetAutomatonX(SimpleList<Variable> variables, ICartesianAlgebraBDD<T> alg)
+        internal override Automaton<IMonadicPredicate<BDD, T>> GetAutomatonX(SimpleList<Variable> variables, ICartesianAlgebraBDD<T> alg, bool singletonSetSemantics)
         {
             var pos = GetVarIndex(var, variables);
             return BasicAutomata.MkIsEmpty<T>(pos, alg);
@@ -489,7 +524,7 @@ namespace Microsoft.Automata.MSO
             return BasicAutomata.MkSingleton(pos, alg);
         }
 
-        internal override Automaton<IMonadicPredicate<BDD, T>> GetAutomatonX(SimpleList<Variable> variables, ICartesianAlgebraBDD<T> alg)
+        internal override Automaton<IMonadicPredicate<BDD, T>> GetAutomatonX(SimpleList<Variable> variables, ICartesianAlgebraBDD<T> alg, bool singletonSetSemantics)
         {
             var pos = GetVarIndex(var, variables);
             return BasicAutomata.MkSingleton<T>(pos, alg);
@@ -503,9 +538,9 @@ namespace Microsoft.Automata.MSO
             return ToCore().GetAutomatonBDD(variables, alg, nrOfFreeBits, singletonSetSemantics);
         }
 
-        internal override Automaton<IMonadicPredicate<BDD, T>> GetAutomatonX(SimpleList<Variable> variables, ICartesianAlgebraBDD<T> alg)
+        internal override Automaton<IMonadicPredicate<BDD, T>> GetAutomatonX(SimpleList<Variable> variables, ICartesianAlgebraBDD<T> alg, bool singletonSetSemantics)
         {
-            return ToCore().GetAutomatonX(variables, alg);
+            return ToCore().GetAutomatonX(variables, alg, singletonSetSemantics);
         }
     }
 
@@ -516,9 +551,9 @@ namespace Microsoft.Automata.MSO
             return ToCore().GetAutomatonBDD(variables, alg, nrOfFreeBits, singletonSetSemantics);
         }
 
-        internal override Automaton<IMonadicPredicate<BDD, T>> GetAutomatonX(SimpleList<Variable> variables, ICartesianAlgebraBDD<T> alg)
+        internal override Automaton<IMonadicPredicate<BDD, T>> GetAutomatonX(SimpleList<Variable> variables, ICartesianAlgebraBDD<T> alg, bool singletonSetSemantics)
         {
-            return ToCore().GetAutomatonX(variables, alg);
+            return ToCore().GetAutomatonX(variables, alg, singletonSetSemantics);
         }
     }
 
@@ -529,9 +564,9 @@ namespace Microsoft.Automata.MSO
             return ToCore().GetAutomatonBDD(variables, alg, nrOfFreeBits, singletonSetSemantics);
         }
 
-        internal override Automaton<IMonadicPredicate<BDD, T>> GetAutomatonX(SimpleList<Variable> variables, ICartesianAlgebraBDD<T> alg)
+        internal override Automaton<IMonadicPredicate<BDD, T>> GetAutomatonX(SimpleList<Variable> variables, ICartesianAlgebraBDD<T> alg, bool singletonSetSemantics)
         {
-            return ToCore().GetAutomatonX(variables, alg);
+            return ToCore().GetAutomatonX(variables, alg, singletonSetSemantics);
         }
     }
 }

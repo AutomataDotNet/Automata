@@ -662,13 +662,13 @@ x < y & ~ex1 z1,z2: x<z1 & z1<y & x<z2 & z2<y & z1 ~= z2;
 ";
             MonaProgram pgm1 = MonaParser.Parse(source1);
             var mso1 = pgm1.ToMSO();
-            var aut1 = mso1.GetAutomaton(solver, singletonSetSemantics);
+            var aut1 = mso1.GetAutomaton(solver, 0, singletonSetSemantics);
 
             //aut1.ShowGraph("aut1");
 
             MonaProgram pgm2 = MonaParser.Parse(source2);
             var mso2 = pgm2.ToMSO();
-            var aut2 = mso2.GetAutomaton(solver, singletonSetSemantics);
+            var aut2 = mso2.GetAutomaton(solver, 0, singletonSetSemantics);
 
             //aut2.ShowGraph("aut2");
 
@@ -758,11 +758,11 @@ y = x+1 & z = y + 1;
 
             MonaProgram pgm1 = MonaParser.Parse(source1);
             var mso1 = pgm1.ToMSO();
-            var aut1 = mso1.GetAutomaton(solver, useSingletonSetSemantics);
+            var aut1 = mso1.GetAutomaton(solver,0, useSingletonSetSemantics);
 
             MonaProgram pgm2 = MonaParser.Parse(source2);
             var mso2 = pgm2.ToMSO();
-            var aut2 = mso2.GetAutomaton(solver, useSingletonSetSemantics);
+            var aut2 = mso2.GetAutomaton(solver,0, useSingletonSetSemantics);
 
             Assert.IsTrue(aut1.IsEquivalentWith(aut2));
         }
@@ -781,11 +781,11 @@ succ(x,y) & succ(y,z);
 
             MonaProgram pgm1 = MonaParser.Parse(source);
             var mso1 = pgm1.ToMSO();
-            var aut1 = mso1.GetAutomaton(solver, true);
+            var aut1 = mso1.GetAutomaton(solver,0, true);
 
             MonaProgram pgm2 = MonaParser.Parse(source);
             var mso2 = pgm2.ToMSO();
-            var aut2 = mso2.GetAutomaton(solver, false);
+            var aut2 = mso2.GetAutomaton(solver,0, false);
 
             Assert.IsFalse(aut1.IsEquivalentWith(aut2));
         }

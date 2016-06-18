@@ -134,6 +134,10 @@ namespace Microsoft.Automata.MSO
 
         internal abstract IEnumerable<Variable> EnumerateFreeVariables(SimpleList<Variable> bound, HashSet<Variable> free);
 
+        /// <summary>
+        /// Returns true iff some subformula satisfies the predicate check.
+        /// </summary>
+        public abstract bool ExistsSubformula(Predicate<MSOFormula<T>> check); 
     }
 
     /// <summary>
@@ -159,6 +163,11 @@ namespace Microsoft.Automata.MSO
                 if (free.Add(var2))
                     yield return var2;
         }
+
+        public override bool ExistsSubformula(Predicate<MSOFormula<T>> check)
+        {
+            return check(this);
+        }
     }
 
     /// <summary>
@@ -178,6 +187,11 @@ namespace Microsoft.Automata.MSO
             if (!bound.Contains(var))
                 if (free.Add(var))
                     yield return var;
+        }
+
+        public override bool ExistsSubformula(Predicate<MSOFormula<T>> check)
+        {
+            return check(this);
         }
     }
 
@@ -203,6 +217,10 @@ namespace Microsoft.Automata.MSO
                 yield return x;
         }
 
+        public override bool ExistsSubformula(Predicate<MSOFormula<T>> check)
+        {
+            return check(this) || phi1.ExistsSubformula(check) || phi1.ExistsSubformula(check);
+        }
     }
 
     /// <summary>
@@ -247,6 +265,11 @@ namespace Microsoft.Automata.MSO
             foreach (var x in phi.EnumerateFreeVariables(bound.Append(var), free))
                 yield return x;
         }
+
+        public override bool ExistsSubformula(Predicate<MSOFormula<T>> check)
+        {
+            return check(this) || phi.ExistsSubformula(check);
+        }
     }
 
     #region Core formulas
@@ -276,6 +299,11 @@ namespace Microsoft.Automata.MSO
         {
             yield break;
         }
+
+        public override bool ExistsSubformula(Predicate<MSOFormula<T>> check)
+        {
+            return check(this);
+        }
     }
 
     /// <summary>
@@ -303,6 +331,11 @@ namespace Microsoft.Automata.MSO
         internal override IEnumerable<Variable> EnumerateFreeVariables(SimpleList<Variable> bound, HashSet<Variable> free)
         {
             yield break;
+        }
+
+        public override bool ExistsSubformula(Predicate<MSOFormula<T>> check)
+        {
+            return check(this);
         }
     }
 
@@ -463,10 +496,6 @@ namespace Microsoft.Automata.MSO
     {
         public MSOOr(MSOFormula<T> phi1, MSOFormula<T> phi2) : base(phi1, phi2) { }
 
-        //public override WS1SFormula<T> ToWS1S()
-        //{
-        //    return new WS1SOr<T>(phi1.ToWS1S(), phi2.ToWS1S());
-        //}
         public override void Print(StringBuilder sb)
         {
             sb.Append("(");
@@ -527,6 +556,11 @@ namespace Microsoft.Automata.MSO
         {
             foreach (var x in phi.EnumerateFreeVariables(bound, free))
                 yield return x;
+        }
+
+        public override bool ExistsSubformula(Predicate<MSOFormula<T>> check)
+        {
+            return check(this) || phi.ExistsSubformula(check);
         }
     }
 
