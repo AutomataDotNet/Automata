@@ -36,7 +36,7 @@ namespace MSOEvaluation
         {
             try
             {
-                formula.GetAutomaton(solver);
+                //formula.GetAutomaton(solver);
             }
             catch (ThreadAbortException)
             {
@@ -44,7 +44,7 @@ namespace MSOEvaluation
             }
         }
 
-        static int maxConst = 200;
+        static int maxConst = 40;
         static long timeout = 5000;
 
         public static void Run(){
@@ -71,15 +71,16 @@ namespace MSOEvaluation
                         Thread t = new Thread(CartesianSolver);
                         t.Start();
                         long t1 = timeout;
-                        if (!t.Join(TimeSpan.FromMilliseconds(timeout)))
-                        {
-                            t.Abort();
-                            t1 = timeout;
-                        }
-                        else {
-                            sw.Stop();
-                            t1 = sw.ElapsedMilliseconds;
-                        }
+                        formula.GetAutomaton(solver);
+                        //if (!t.Join(TimeSpan.FromMilliseconds(timeout)))
+                        //{
+                        //    t.Abort();
+                        //    t1 = timeout;
+                        //}
+                        //else {
+                        //    sw.Stop();
+                        t1 = sw.ElapsedMilliseconds;
+                        //}
 
                         sw.Restart();
                         //t = new Thread(Minterm);
