@@ -249,7 +249,7 @@ namespace MSOEvaluation
 
 
             var d= (IntExpr)(c.MkInt(random.Next(-maxConst, maxConst)));
-            var i = (IntExpr)(c.MkInt(random.Next(-maxConst, maxConst)));
+            var i = (IntExpr)(c.MkInt(random.Next(-maxConst, maxConst)*2+1));
             var j = (IntExpr)(c.MkInt(random.Next(-maxConst, maxConst)));
             IntExpr ex = d;
             for(int v = 0;v< alphVars; v++)
