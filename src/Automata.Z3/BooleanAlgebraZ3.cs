@@ -14,6 +14,20 @@ namespace Microsoft.Automata.Z3
         MintermGenerator<BoolExpr> mtg;
         BoolExpr _False;
         BoolExpr _True;
+
+        public Z3BoolAlg(Context z3context, Sort elementSort, long timeout)
+        {
+            this.context = z3context;
+            this.context.UpdateParamValue("MODEL", "true");
+            this.context.UpdateParamValue("timeout", timeout.ToString());
+            this.elementSort = elementSort;
+            this.solver = z3context.MkSolver();
+            this.elemVar = z3context.MkConst("x", elementSort);
+            this.mtg = new MintermGenerator<BoolExpr>(this);
+            this._False = z3context.MkFalse();
+            this._True = z3context.MkTrue();
+        }
+
         public Z3BoolAlg(Context z3context, Sort elementSort)
         {
             this.context = z3context;
@@ -236,10 +250,13 @@ namespace Microsoft.Automata.Z3
                 return true;
             solver.Push();
             solver.Assert(psi);
+
             var sat = solver.Check();
             solver.Pop();
             if (sat != Status.UNSATISFIABLE)
             {
+                if (sat == Status.UNKNOWN)
+                    throw new Z3Exception("timeout");
                 return true;
             }
             else
