@@ -36,7 +36,7 @@ namespace MSOEvaluation
         {
             try
             {
-                //formula.GetAutomaton(solver);
+                formula.GetAutomaton(solver);
             }
             catch (ThreadAbortException)
             {
@@ -96,7 +96,7 @@ namespace MSOEvaluation
                         t2 = sw.ElapsedMilliseconds;
                         //}
 
-                        Console.WriteLine("#phi: " + predicates.Count + ", #mint: " + mint.Count +", time mint: " + (double)t2);
+                        Console.WriteLine("#phi: " + predicates.Count + ", #mint: " + mint.Count +", time mint: " + (double)t2 + ", time ws1s: " + (double)t1);
 
                     }
                 }
