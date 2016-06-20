@@ -230,70 +230,98 @@ namespace MSOEvaluation
         }
 
         #region expressions and predicates generator
+        private static BoolExpr GeneratePredicateOut()
+        {
+            var v = GeneratePredicate();
+            Solver s = c.MkSolver();
+            s.Assert(v);
+            var res = s.Check();
+            if (res == Status.SATISFIABLE)
+                return v;
+            else
+                return GeneratePredicateOut();    
+
+        }
+
         private static BoolExpr GeneratePredicate()
         {
-            switch (random.Next(0, 2))
+            //ax+by+d%i=j
+
+
+            var d= (IntExpr)(c.MkInt(random.Next(-maxConst, maxConst)));
+            var i = (IntExpr)(c.MkInt(random.Next(-maxConst, maxConst)));
+            var j = (IntExpr)(c.MkInt(random.Next(-maxConst, maxConst)));
+            IntExpr ex = d;
+            for(int v = 0;v< alphVars; v++)
             {
-                case 0:
-                    {
-                        IntExpr e1 = GenerateExprOfNumb();
-                        IntExpr e2 = c.MkInt(random.Next(0, maxConst));
-                        switch (random.Next(0, 5))
-                        {
-                            case 0:
-                                {
-                                    return c.MkEq(e1, e2);
-                                }
-                            case 1:
-                                {
-                                    return c.MkGe(e1, e2);
-                                }
-                            case 2:
-                                {
-                                    return c.MkGt(e1, e2);
-                                }
-                            case 3:
-                                {
-                                    return c.MkLe(e1, e2);
-                                }
-                            case 4:
-                                {
-                                    return c.MkLt(e1, e2);
-                                }
-                        }                        
-                        break;
-                    }
-                case 1:
-                    {
-                        var v = random.Next(0, 4);
-
-                        BoolExpr e1 = GeneratePredicate();
-                        switch (v)
-                        {
-                            case 0:
-                                {
-                                    BoolExpr e2 = GeneratePredicate();
-                                    return c.MkAnd(e1, e2);
-                                }
-                            case 1:
-                                {
-                                    BoolExpr e2 = GeneratePredicate();
-                                    return c.MkOr(e1, e2);
-                                }
-                            case 2:
-                                {
-                                    return c.MkNot(e1);
-                                }
-
-                        }
-                        return e1;
-                    }
-                case 2:
-                    {
-                        break;
-                    }
+                ex = (IntExpr)(c.MkAdd(ex, c.MkMul(c.MkInt(random.Next(-maxConst, maxConst)), (IntExpr)(c.MkConst("y" + v, c.IntSort)))));
             }
-            return c.MkTrue();
+            ex = c.MkMod(ex, i);
+            return c.MkEq(ex, j);
+
+
+            //switch (random.Next(0, 2))
+            //{
+            //    case 0:
+            //        {
+            //            IntExpr e1 = GenerateExprOfNumb();
+            //            IntExpr e2 = c.MkInt(random.Next(0, maxConst));
+            //            switch (random.Next(0, 5))
+            //            {
+            //                case 0:
+            //                    {
+            //                        return c.MkEq(e1, e2);
+            //                    }
+            //                case 1:
+            //                    {
+            //                        return c.MkGe(e1, e2);
+            //                    }
+            //                case 2:
+            //                    {
+            //                        return c.MkGt(e1, e2);
+            //                    }
+            //                case 3:
+            //                    {
+            //                        return c.MkLe(e1, e2);
+            //                    }
+            //                case 4:
+            //                    {
+            //                        return c.MkLt(e1, e2);
+            //                    }
+            //            }                        
+            //            break;
+            //        }
+            //    case 1:
+            //        {
+            //            var v = random.Next(0, 4);
+
+            //            BoolExpr e1 = GeneratePredicate();
+            //            switch (v)
+            //            {
+            //                case 0:
+            //                    {
+            //                        BoolExpr e2 = GeneratePredicate();
+            //                        return c.MkAnd(e1, e2);
+            //                    }
+            //                case 1:
+            //                    {
+            //                        BoolExpr e2 = GeneratePredicate();
+            //                        return c.MkOr(e1, e2);
+            //                    }
+            //                case 2:
+            //                    {
+            //                        return c.MkNot(e1);
+            //                    }
+
+            //            }
+            //            return e1;
+            //        }
+            //    case 2:
+            //        {
+            //            break;
+            //        }
+            //}
+            //return c.MkTrue();
         }
 
         private static IntExpr GenerateExprOfNumb()
