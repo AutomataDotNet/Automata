@@ -21,29 +21,7 @@ namespace MSO.Eval
         static CartesianAlgebraBDD<BoolExpr> solver;
         static MSOFormula<BoolExpr> formula;
         static List<BoolExpr> predicates;
-        static void Minterm()
-        {
-            try
-            {
-                z3.GenerateMinterms(predicates.ToArray()).ToList();
-            }
-            catch (ThreadAbortException)
-            {
-                // cleanup code, if needed...
-            }
-        }
-        static void CartesianSolver()
-        {
-            try
-            {
-                //formula.GetAutomaton(solver);
-            }
-            catch (ThreadAbortException)
-            {
-                // cleanup code, if needed...
-            }
-        }
-
+        
         static int maxConst = 15;
         static long timeout = 5000;
 
@@ -84,8 +62,7 @@ namespace MSO.Eval
                                     solver = new CartesianAlgebraBDD<BoolExpr>(bdd, z3);
                                     var sw = new Stopwatch();
                                     sw.Restart();
-                                    Thread t = new Thread(CartesianSolver);
-                                    t.Start();
+
                                     long t1 = timeout;
 
                                     try
@@ -100,7 +77,7 @@ namespace MSO.Eval
                                     {
                                         t1 = timeout;
                                     }
-                                    //}
+
                                     if (t1 != timeout)
                                     {
 
