@@ -22,13 +22,14 @@ namespace MSO.Eval
         static int maxmint = 19;
         static int numTests = 1;
 
-        public static void MintermTest()
+        public static void Run()
         {
 
             var sw = new Stopwatch();
 
+            //ex x1 x2... a(x1) /\ a(x2).../\ x1<x2...
             using (System.IO.StreamWriter file =
-            new System.IO.StreamWriter(@"..\msomintermp1s1.txt"))
+            new System.IO.StreamWriter(@"..\mso-minterm-p1.txt"))
             {
                 for (int size = 2; size < kminterm; size++)
                 {
@@ -55,18 +56,48 @@ namespace MSO.Eval
                     sw.Restart();
                     for (int t = 0; t < numTests; t++)
                     {
-                        phi.GetAutomaton(solver);
+                        phi.GetAutomaton(new CartesianAlgebraBDD<BDD>(solver));
                     }
                     sw.Stop();
 
                     var t1 = sw.ElapsedMilliseconds;
 
-                    file.WriteLine((double)t1 / numTests);
-                    Console.WriteLine((double)t1 / numTests);
+                    sw.Restart();
+                    for (int t = 0; t < numTests; t++)
+                    {
+                        phi.GetAutomaton(new BDDAlgebra<BDD>(solver), false);
+                    }
+                    sw.Stop();
+
+                    var t2 = sw.ElapsedMilliseconds;
+
+                    //Tminterm
+                    solver = new CharSetSolver(BitWidth.BV64);
+                    BDD[] predicates = new BDD[size];
+                    solver.GenerateMinterms();
+                    for (int k = 0; k < size; k++)
+                        predicates[k] = solver.MkBitTrue(k);
+
+                    var t3 = 60000L * numTests;
+                    if (size <= maxmint)
+                    {
+                        sw.Restart();
+                        for (int t = 0; t < numTests; t++)
+                        {
+                            var mint = solver.GenerateMinterms(predicates).ToList();
+                        }
+                        sw.Stop();
+                        t3 = sw.ElapsedMilliseconds;
+                    }
+
+                    file.WriteLine(size + ", " + (double)t1 / numTests + ", " + (double)t2 / numTests + ", " + (double)t3 / numTests);
+                    Console.WriteLine(size + ", " + (double)t1 / numTests + ", " + (double)t2 / numTests + ", " + (double)t3 / numTests);
                 }
             }
+
+            //ex x1 x2... a(x1) /\ a(x2)...
             using (System.IO.StreamWriter file =
-           new System.IO.StreamWriter(@"..\msomintermp2s1.txt"))
+           new System.IO.StreamWriter(@"..\mso-minterm-p2.txt"))
             {
                 for (int size = 2; size < kminterm; size++)
                 {
@@ -93,109 +124,29 @@ namespace MSO.Eval
                         sw.Restart();
                         for (int t = 0; t < numTests; t++)
                         {
-                            phi.GetAutomaton(solver);
+                            phi.GetAutomaton(new CartesianAlgebraBDD<BDD>(solver));
                         }
                         sw.Stop();
 
                         t1 = sw.ElapsedMilliseconds;
                     }
-                    file.WriteLine((double)t1 / numTests);
-                    Console.WriteLine((double)t1 / numTests);
-                }
-            }
-            using (System.IO.StreamWriter file =
-           new System.IO.StreamWriter(@"..\msomintermp1s2.txt"))
-            {
-                for (int size = 2; size < kminterm; size++)
-                {
-
-                    // Tsolve solver 2
-                    var solver = new CharSetSolver(BitWidth.BV64);
-
-                    MSOFormula<BDD> phi = new MSOTrue<BDD>();
-
-                    for (int k = 1; k < size; k++)
-                    {
-                        var leq = new MSOLt<BDD>(new Variable("x" + (k - 1), true), new Variable("x" + k, true));
-                        phi = new MSOAnd<BDD>(phi, leq);
-
-                    }
-                    for (int k = 0; k < size; k++)
-                    {
-                        var axk = new MSOPredicate<BDD>(solver.MkBitTrue(k), new Variable("x" + k, true));
-                        phi = new MSOAnd<BDD>(phi, axk);
-
-                    }
-                    for (int k = size - 1; k >= 0; k--)
-                    {
-                        phi = new MSOExists<BDD>(new Variable("x" + k, true), phi);
-                    }
-
-                    var t1 = 60000L;
-
-
                     sw.Restart();
                     for (int t = 0; t < numTests; t++)
                     {
-                        phi.GetAutomaton(solver);
+                        phi.GetAutomaton(new BDDAlgebra<BDD>(solver), false);
                     }
                     sw.Stop();
 
-                    t1 = sw.ElapsedMilliseconds;
+                    var t2 = sw.ElapsedMilliseconds;
 
-                    file.WriteLine((double)t1 / numTests);
-                    Console.WriteLine((double)t1 / numTests);
-                }
-            }
-            using (System.IO.StreamWriter file =
-           new System.IO.StreamWriter(@"..\msomintermp2s2.txt"))
-            {
-                for (int size = 2; size < kminterm; size++)
-                {
-
-                    var solver = new CharSetSolver();
-                    //Tforce sol 2
-                    MSOFormula<BDD> phi = new MSOTrue<BDD>();
-
-                    for (int k = 0; k < size; k++)
-                    {
-                        var axk = new MSOPredicate<BDD>(solver.MkBitTrue(k), new Variable("x" + k, true));
-                        phi = new MSOAnd<BDD>(phi, axk);
-
-                    }
-                    for (int k = size - 1; k >= 0; k--)
-                    {
-                        phi = new MSOExists<BDD>(new Variable("x" + k, true), phi);
-                    }
-
-                    var t1 = 60000L;
-                    if (size <= maxmint)
-                    {
-                        sw.Restart();
-                        for (int t = 0; t < numTests; t++)
-                        {
-                            phi.GetAutomaton(solver);
-                        }
-                        sw.Stop();
-                        t1 = sw.ElapsedMilliseconds;
-                    }
-                    file.WriteLine((double)t1 / numTests);
-                    Console.WriteLine((double)t1 / numTests);
-                }
-            }
-            using (System.IO.StreamWriter file =
-           new System.IO.StreamWriter(@"..\msominterm.txt"))
-            {
-                for (int size = 2; size < kminterm; size++)
-                {
                     //Tminterm
-                    var solver = new CharSetSolver(BitWidth.BV64);
+                    solver = new CharSetSolver(BitWidth.BV64);
                     BDD[] predicates = new BDD[size];
                     solver.GenerateMinterms();
                     for (int k = 0; k < size; k++)
                         predicates[k] = solver.MkBitTrue(k);
 
-                    var t1 = 60000L * numTests;
+                    var t3 = 60000L * numTests;
                     if (size <= maxmint)
                     {
                         sw.Restart();
@@ -204,16 +155,17 @@ namespace MSO.Eval
                             var mint = solver.GenerateMinterms(predicates).ToList();
                         }
                         sw.Stop();
-                        t1 = sw.ElapsedMilliseconds;
+                        t3 = sw.ElapsedMilliseconds;
                     }
 
-                    file.WriteLine((double)t1 / numTests);
-                    Console.WriteLine((double)t1 / numTests);
+                    file.WriteLine(size + ", " + (double)t1 / numTests + ", " + (double)t2 / numTests + ", " + (double)t3 / numTests);
+                    Console.WriteLine(size + ", " + (double)t1 / numTests + ", " + (double)t2 / numTests + ", " + (double)t3 / numTests);
                 }
             }
         }
 
 
+        #region old
         public static void TestLargeLoris()
         {
             var max = 10;
@@ -328,6 +280,7 @@ namespace MSO.Eval
 
             var aut = phi.GetAutomaton(Z);
             return aut;
-        }
+        } 
+        #endregion
     }
 }

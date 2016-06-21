@@ -25,30 +25,16 @@ namespace MSO.Eval
         /// </summary>
         public static void Main()
         {
-            MSOPopl14.RunPOPLTests();
+            //MSOPopl14.RunPOPLTests();
+            
+            //LTLMSO.RunM2LSTR();
+            //LTLMSO.RunWS1S();
+
+            LargeMinterm.Run();
 
             //GenRandomMSO.Run();
-
-            //string outF = @"..\ws1stest.txt";
-            //string inpD = @"C:\github\automatark\ws1s\";
-
-            ////LTLTest(inpD,outF);
-
-            //outF = @"..\ltltest.txt";
-            //inpD = @"C:\github\automatark\m2l-str\LTL-finite\random\";
-            //LTLTest(inpD, outF);
-
-
-            //POPLTestsNew();
-            //POPLTestsOld();
-            //POPLTestsNewSolver2();
-            //POPLTestsInt();
-
-            //MintermTest();
-
-            //Console.Read();
         }
-        
+
     }
 }
 

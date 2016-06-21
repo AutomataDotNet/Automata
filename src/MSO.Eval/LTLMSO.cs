@@ -20,73 +20,28 @@ namespace MSO.Eval
     {
         static int numTests = 1;
         static MSOFormula<BDD> phi;
-        static CartesianAlgebra<BDD,BDD> cartSolver;
-        static CartesianAlgebraBDD<BDD> bddSolver;
-        static void BDDSolver()
+        static BDDAlgebra<BDD> bddSolver;
+        static CartesianAlgebraBDD<BDD> cartSolver;
+
+        public static void RunM2LSTR()
         {
-            try
-            {
-                var aut = phi.GetAutomaton(bddSolver);
-            }
-            catch (ThreadAbortException)
-            {
-                // cleanup code, if needed...
-            }
+            string outF = outF = @"..\ltltest.txt";
+            var inpD = @"C:\github\automatark\m2l-str\LTL-finite\random\";
+
+            LTLTest(inpD, outF);           
         }
 
-        static void CartesianSolver()
+        public static void RunWS1S()
         {
-            try
-            {
-                //var aut = phi.GetAutomaton(cartSolver);
-            }
-            catch (ThreadAbortException)
-            {
-                // cleanup code, if needed...
-            }
-        }
-        public static int cmp(string s1, string s2)
-        {
-            var s1splits = s1.Split('\\');
-            var s2splits = s2.Split('\\');
+            string outF = @"..\ws1stest.txt";
+            string inpD = @"C:\github\automatark\ws1s\";
 
-            var dir1 = s1splits[s1splits.Length - 2];
-            var dir2 = s2splits[s2splits.Length - 2];
-            if (dir1.CompareTo(dir2) < 0)
-                return -1;
-            if (dir1.CompareTo(dir2) > 0)
-                return 1;
-
-
-
-            var s1c = s1splits[s1splits.Length - 1].ToCharArray();
-            var s2c = s2splits[s2splits.Length - 1].ToCharArray();
-
-
-            int ll = 15;
-            if (s1c[0] == 'P' && s2c[0] == 'P')
-            {
-                var pref1 = s1splits[s1splits.Length - 1].Substring(0, s1splits[s1splits.Length - 1].IndexOf("form"));
-                var pref2 = s2splits[s2splits.Length - 1].Substring(0, s1splits[s1splits.Length - 1].IndexOf("form"));
-                if (pref1.CompareTo(pref2) != 0)
-                    return pref1.CompareTo(pref2);
-
-
-                var ind1 = s1splits[s1splits.Length - 1].IndexOf("form") + 4;
-                var ind2 = s2splits[s2splits.Length - 1].IndexOf("form") + 4;
-                var i1 = int.Parse(s1splits[s1splits.Length - 1].Substring(s1splits[s1splits.Length - 1].IndexOf("form") + 4, s1splits[s1splits.Length - 1].Length - 5 - ind1));
-                var i2 = int.Parse(s2splits[s2splits.Length - 1].Substring(s2splits[s2splits.Length - 1].IndexOf("form") + 4, s2splits[s2splits.Length - 1].Length - 5 - ind2));
-                return i1 - i2;
-            }
-
-            return s1.CompareTo(s2);
-
-
+            LTLTest(inpD, outF);
         }
 
 
         //LTL over finite traces
-        public static void LTLTest(string inputDir, string outFile)
+        private static void LTLTest(string inputDir, string outFile)
         {
             using (System.IO.StreamWriter file =
                new System.IO.StreamWriter(outFile))
@@ -139,6 +94,66 @@ namespace MSO.Eval
                     Console.WriteLine(fileName + "," + (double)t1 / numTests + "," + (double)t2 / numTests);
                 }
             }
+        }
+
+        static void BDDSolver()
+        {
+            try
+            {
+                var aut = phi.GetAutomaton(bddSolver, false);
+            }
+            catch (ThreadAbortException)
+            {
+                // cleanup code, if needed...
+            }
+        }
+
+        static void CartesianSolver()
+        {
+            try
+            {
+                var aut = phi.GetAutomaton(cartSolver);
+            }
+            catch (ThreadAbortException)
+            {
+                // cleanup code, if needed...
+            }
+        }
+        public static int cmp(string s1, string s2)
+        {
+            var s1splits = s1.Split('\\');
+            var s2splits = s2.Split('\\');
+
+            var dir1 = s1splits[s1splits.Length - 2];
+            var dir2 = s2splits[s2splits.Length - 2];
+            if (dir1.CompareTo(dir2) < 0)
+                return -1;
+            if (dir1.CompareTo(dir2) > 0)
+                return 1;
+
+
+
+            var s1c = s1splits[s1splits.Length - 1].ToCharArray();
+            var s2c = s2splits[s2splits.Length - 1].ToCharArray();
+
+
+            int ll = 15;
+            if (s1c[0] == 'P' && s2c[0] == 'P')
+            {
+                var pref1 = s1splits[s1splits.Length - 1].Substring(0, s1splits[s1splits.Length - 1].IndexOf("form"));
+                var pref2 = s2splits[s2splits.Length - 1].Substring(0, s1splits[s1splits.Length - 1].IndexOf("form"));
+                if (pref1.CompareTo(pref2) != 0)
+                    return pref1.CompareTo(pref2);
+
+
+                var ind1 = s1splits[s1splits.Length - 1].IndexOf("form") + 4;
+                var ind2 = s2splits[s2splits.Length - 1].IndexOf("form") + 4;
+                var i1 = int.Parse(s1splits[s1splits.Length - 1].Substring(s1splits[s1splits.Length - 1].IndexOf("form") + 4, s1splits[s1splits.Length - 1].Length - 5 - ind1));
+                var i2 = int.Parse(s2splits[s2splits.Length - 1].Substring(s2splits[s2splits.Length - 1].IndexOf("form") + 4, s2splits[s2splits.Length - 1].Length - 5 - ind2));
+                return i1 - i2;
+            }
+
+            return s1.CompareTo(s2);
         }
     }
 }

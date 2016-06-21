@@ -31,87 +31,87 @@ namespace MSO.Eval
             //// all x1...xn. xi<xi+1
             List<Pair<MSOFormula<BDD>, CharSetSolver>> phis = new List<Pair<MSOFormula<BDD>, CharSetSolver>>();
 
-            //for (int to = 2; to < kpopl; to++)
-            //{
-            //    var solver = new CharSetSolver();
-            //    MSOFormula<BDD> phi = new MSOTrue<BDD>();
+            for (int to = 2; to < kpopl; to++)
+            {
+                var solver = new CharSetSolver();
+                MSOFormula<BDD> phi = new MSOTrue<BDD>();
 
-            //    for (int k = 1; k < to; k++)
-            //    {
-            //        var leq = new MSOLt<BDD>(new Variable("x" + (k - 1), true), new Variable("x" + k, true));
-            //        phi = new MSOAnd<BDD>(phi, leq);
+                for (int k = 1; k < to; k++)
+                {
+                    var leq = new MSOLt<BDD>(new Variable("x" + (k - 1), true), new Variable("x" + k, true));
+                    phi = new MSOAnd<BDD>(phi, leq);
 
-            //    }
-            //    for (int k = to - 1; k >= 0; k--)
-            //    {
-            //        phi = new MSOExists<BDD>(new Variable("x" + k, true), phi);
-            //    }
+                }
+                for (int k = to - 1; k >= 0; k--)
+                {
+                    phi = new MSOExists<BDD>(new Variable("x" + k, true), phi);
+                }
 
-            //    phis.Add(new Pair<MSOFormula<BDD>, CharSetSolver>(phi, solver));
-            //}
+                phis.Add(new Pair<MSOFormula<BDD>, CharSetSolver>(phi, solver));
+            }
 
-            //RunTest(new StreamWriter("popl14-1.csv"),phis);
+            RunTest(new StreamWriter("popl14-1.csv"), phis);
 
 
-            //// all x1...xn. xi<xi+1 and a(xi)
-            //phis = new List<Pair<MSOFormula<BDD>, CharSetSolver>>();
-            //for (int to = 2; to < kpopl; to++)
-            //{
-            //    var solver = new CharSetSolver(BitWidth.BV64);
-            //    MSOFormula<BDD> phi = new MSOTrue<BDD>();
+            // all x1...xn. xi<xi+1 and a(xi)
+            phis = new List<Pair<MSOFormula<BDD>, CharSetSolver>>();
+            for (int to = 2; to < kpopl; to++)
+            {
+                var solver = new CharSetSolver(BitWidth.BV64);
+                MSOFormula<BDD> phi = new MSOTrue<BDD>();
 
-            //    for (int k = 1; k < to; k++)
-            //    {
-            //        var leq = new MSOLt<BDD>(new Variable("x" + (k - 1), true), new Variable("x" + k, true));
-            //        phi = new MSOAnd<BDD>(phi, leq);
+                for (int k = 1; k < to; k++)
+                {
+                    var leq = new MSOLt<BDD>(new Variable("x" + (k - 1), true), new Variable("x" + k, true));
+                    phi = new MSOAnd<BDD>(phi, leq);
 
-            //    }
-            //    for (int k = 0; k < to; k++)
-            //    {
-            //        var axk = new MSOPredicate<BDD>(
-            //            solver.MkCharConstraint('a', false), new Variable("x" + k, true));
-            //        phi = new MSOAnd<BDD>(phi, axk);
+                }
+                for (int k = 0; k < to; k++)
+                {
+                    var axk = new MSOPredicate<BDD>(
+                        solver.MkCharConstraint('a', false), new Variable("x" + k, true));
+                    phi = new MSOAnd<BDD>(phi, axk);
 
-            //    }
-            //    for (int k = to - 1; k >= 0; k--)
-            //    {
-            //        phi = new MSOExists<BDD>(new Variable("x" + k, true), phi);
-            //    }
-            //    phis.Add(new Pair<MSOFormula<BDD>, CharSetSolver>(phi, solver));
-            //}
-            //RunTest(new StreamWriter("popl14-2.csv"), phis);
+                }
+                for (int k = to - 1; k >= 0; k--)
+                {
+                    phi = new MSOExists<BDD>(new Variable("x" + k, true), phi);
+                }
+                phis.Add(new Pair<MSOFormula<BDD>, CharSetSolver>(phi, solver));
+            }
+            RunTest(new StreamWriter("popl14-2.csv"), phis);
 
-            //// all x1...xn. (xi<xi+1 and a(xi)) and ex y. c(y)
-            //phis = new List<Pair<MSOFormula<BDD>, CharSetSolver>>();
-            //for (int to = 2; to < kpopl; to++)
-            //{
-            //    var solver = new CharSetSolver(BitWidth.BV64);
-            //    MSOFormula<BDD> phi = new MSOTrue<BDD>();
+            // all x1...xn. (xi<xi+1 and a(xi)) and ex y. c(y)
+            phis = new List<Pair<MSOFormula<BDD>, CharSetSolver>>();
+            for (int to = 2; to < kpopl; to++)
+            {
+                var solver = new CharSetSolver(BitWidth.BV64);
+                MSOFormula<BDD> phi = new MSOTrue<BDD>();
 
-            //    for (int k = 1; k < to; k++)
-            //    {
-            //        var leq = new MSOLt<BDD>(new Variable("x" + (k - 1), true), new Variable("x" + k, true));
-            //        phi = new MSOAnd<BDD>(phi, leq);
+                for (int k = 1; k < to; k++)
+                {
+                    var leq = new MSOLt<BDD>(new Variable("x" + (k - 1), true), new Variable("x" + k, true));
+                    phi = new MSOAnd<BDD>(phi, leq);
 
-            //    }
-            //    for (int k = 0; k < to; k++)
-            //    {
-            //        var axk = new MSOPredicate<BDD>(solver.MkCharConstraint('a', false), new Variable("x" + k, true));
-            //        phi = new MSOAnd<BDD>(phi, axk);
+                }
+                for (int k = 0; k < to; k++)
+                {
+                    var axk = new MSOPredicate<BDD>(solver.MkCharConstraint('a', false), new Variable("x" + k, true));
+                    phi = new MSOAnd<BDD>(phi, axk);
 
-            //    }
-            //    for (int k = to - 1; k >= 0; k--)
-            //    {
-            //        phi = new MSOExists<BDD>(new Variable("x" + k, true), phi);
-            //    }
+                }
+                for (int k = to - 1; k >= 0; k--)
+                {
+                    phi = new MSOExists<BDD>(new Variable("x" + k, true), phi);
+                }
 
-            //    var exycy = new MSOExists<BDD>(new Variable("y", true), new MSOPredicate<BDD>(solver.MkCharConstraint('c', false), new Variable("y", true)));
-            //    phi = new MSOAnd<BDD>(phi, exycy);
+                var exycy = new MSOExists<BDD>(new Variable("y", true), new MSOPredicate<BDD>(solver.MkCharConstraint('c', false), new Variable("y", true)));
+                phi = new MSOAnd<BDD>(phi, exycy);
 
-            //    phis.Add(new Pair<MSOFormula<BDD>, CharSetSolver>(phi, solver));
-            //}
+                phis.Add(new Pair<MSOFormula<BDD>, CharSetSolver>(phi, solver));
+            }
 
-            //RunTest(new StreamWriter("popl14-3.csv"), phis);
+            RunTest(new StreamWriter("popl14-3.csv"), phis);
 
             // all x1...xn. (xi<xi+1 and a(xi) \/ c(xi))
 
