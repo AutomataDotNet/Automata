@@ -1963,7 +1963,7 @@ namespace Microsoft.Automata
             {
                 var conds = new List<T>(aut.EnumerateConditions(state));
                 var or_conds = solver.MkOr(conds);
-                var str_or_conds = or_conds.ToString();
+                //var str_or_conds = or_conds.ToString();
                 var cond = solver.MkNot(or_conds);
                 if (solver.IsSatisfiable(cond))
                     newMoves.Add(Move<T>.Create(state, deadState, cond));
