@@ -24,108 +24,102 @@ namespace MSO.Eval
         
         static int maxConst = 15;
         static long timeout = 5000;
+        static int howMany = 50;
 
         public static void Run()
         {
-            int howMany = 20;
+
 
             using (System.IO.StreamWriter file =
-               new System.IO.StreamWriter(@"..\randomMSOInt.txt"))
+               new System.IO.StreamWriter(@"..\randomMSOInt.csv", false))
             {
-                random = new Random(0);
+                file.WriteLine("num-predicates, num-minterms, minterm-time, sws1s-time");
+            }
+            random = new Random(0);
 
-                c = new Context();
-                z3 = new Z3BoolAlg(c, c.BoolSort, timeout);
+            c = new Context();
+            z3 = new Z3BoolAlg(c, c.BoolSort, timeout);
 
 
-                for (alphVars = 1; alphVars < 2; alphVars++)
-                    for (int maxConst = 3; maxConst < 5; maxConst++)
-                        for (int phisize = 5; phisize < 8; phisize += 1)
+            for (alphVars = 1; alphVars < 2; alphVars++)
+                for (int maxConst = 3; maxConst < 5; maxConst++)
+                    for (int phisize = 5; phisize < 7; phisize += 1)
+                    {
+                        Console.WriteLine(alphVars + "," + maxConst + "," + phisize);
+
+                        foreach (var pair in GenerateMSOZ3Formulas(phisize, howMany))
                         {
-                            Console.WriteLine(alphVars + "," + maxConst + "," + phisize);
+                            if (alphVars == 1 && maxConst == 4 && phisize > 5)
+                                break;
 
-                            foreach (var pair in GenerateMSOZ3Formulas(phisize, howMany))
+
+
+                            formula = pair.First;
+                            predicates = pair.Second;
+                            if (predicates.Count > 2)
                             {
-                                if (alphVars == 1 && maxConst == 4 && phisize > 5)
-                                    break;
 
+                                var bdd = new BDDAlgebra();
+                                //foreach (var p in predicates)
+                                //    Console.WriteLine(p);
+                                solver = new CartesianAlgebraBDD<BoolExpr>(bdd, z3);
+                                var sw = new Stopwatch();
+                                sw.Restart();
 
+                                long t1 = timeout;
 
-                                formula = pair.First;
-                                predicates = pair.Second;
-                                if (predicates.Count > 2)
+                                try
+                                {
+                                    formula.GetAutomaton(solver);
+                                    sw.Stop();
+                                    t1 = sw.ElapsedMilliseconds;
+                                    if (t1 > timeout)
+                                        t1 = timeout;
+                                }
+                                catch (Z3Exception e)
+                                {
+                                    t1 = timeout;
+                                }
+
+                                if (t1 != timeout)
                                 {
 
-                                    var bdd = new BDDAlgebra();
-                                    //foreach (var p in predicates)
-                                    //    Console.WriteLine(p);
-                                    solver = new CartesianAlgebraBDD<BoolExpr>(bdd, z3);
-                                    var sw = new Stopwatch();
                                     sw.Restart();
-
-                                    long t1 = timeout;
-
+                                    long t2 = timeout;
+                                    List<Pair<bool[], BoolExpr>> mint = new List<Pair<bool[], BoolExpr>>();
                                     try
                                     {
-                                        formula.GetAutomaton(solver);
+                                        mint = z3.GenerateMinterms(predicates.ToArray()).ToList();
                                         sw.Stop();
-                                        t1 = sw.ElapsedMilliseconds;
-                                        if (t1 > timeout)
-                                            t1 = timeout;
+                                        t2 = sw.ElapsedMilliseconds;
+                                        if (t2 > timeout)
+                                            t2 = timeout;
                                     }
                                     catch (Z3Exception e)
                                     {
-                                        t1 = timeout;
-                                    }
 
-                                    if (t1 != timeout)
+                                        t2 = timeout;
+
+                                    }
+                                    using (System.IO.StreamWriter file =
+               new System.IO.StreamWriter(@"..\randomMSOInt.txt", false))
                                     {
-
-                                        sw.Restart();
-                                        //t = new Thread(Minterm);
-                                        //t.Start();
-                                        long t2 = timeout;
-                                        //if (!t.Join(TimeSpan.FromMilliseconds(timeout)))
-                                        //{
-                                        //    t.Abort();
-                                        //    t2 = timeout;
-                                        //}
-                                        //else {
-                                        List<Pair<bool[], BoolExpr>> mint = new List<Pair<bool[], BoolExpr>>();
-                                        try
-                                        {
-                                            mint = z3.GenerateMinterms(predicates.ToArray()).ToList();
-                                            sw.Stop();
-                                            t2 = sw.ElapsedMilliseconds;
-                                            if (t2 > timeout)
-                                                t2 = timeout;
-                                        }
-                                        catch (Z3Exception e)
-                                        {
-
-                                            t2 = timeout;
-
-                                        }
-
-                                        //}
-
-                                        Console.WriteLine("#phi: " + predicates.Count + ", #mint: " + mint.Count + ", time mint: " + (double)t2 + ", time ws1s: " + (double)t1);
+                                        Console.WriteLine("#phi: " + predicates.Count + ", #mint: " + (t2 == timeout ? (int)Math.Pow(2, predicates.Count) : mint.Count) + ", time mint: " + (double)t2 + ", time ws1s: " + (double)t1);
                                         file.WriteLine(predicates.Count + ", " + mint.Count + ", " + (double)t2 + ", " + (double)t1);
-
-                                    }
-                                    else {
-                                        Console.WriteLine("moving to next one");
-
                                     }
                                 }
-                                else
-                                {
+                                else {
                                     Console.WriteLine("moving to next one");
 
                                 }
                             }
+                            else
+                            {
+                                Console.WriteLine("moving to next one");
+
+                            }
                         }
-            }
+                    }
         }
 
 

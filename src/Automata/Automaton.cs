@@ -1663,10 +1663,10 @@ namespace Microsoft.Automata
                 }
                 return stateId;
             };
-
-
+            
             while (stack.Count > 0)
             {
+
                 var prodSourceState = stack.Pop();
                 if (prodSourceState.Second == -1) //sink state, that is a final state in the complement of B
                 {
@@ -2233,22 +2233,22 @@ namespace Microsoft.Automata
 
         #region Determinization
 
-        public Automaton<T> Determinize(int timeout = 0)
+        public Automaton<T> DeterminizeOld(int timeout = 0)
         {
             IBooleanAlgebra<T> solver = algebra;
 
             if (IsDeterministic)
                 return this;
 
-            Automaton<T>[] disjuncts;
-            if (TryDecompose(out disjuncts))
-            {
-                var disjuncts_det = Array.ConvertAll(disjuncts, d => d.Determinize().Minimize());
-                var disjuncts_comp = Array.ConvertAll(disjuncts_det, d => d.Complement().Minimize());
-                var prod = Automaton<T>.MkProductOfDeterministicAutomata(disjuncts_comp);
-                var union = prod.Complement();
-                return union;
-            }
+            //Automaton<T>[] disjuncts;
+            //if (TryDecompose(out disjuncts))
+            //{
+            //    var disjuncts_det = Array.ConvertAll(disjuncts, d => d.Determinize().Minimize());
+            //    var disjuncts_comp = Array.ConvertAll(disjuncts_det, d => d.Complement().Minimize());
+            //    var prod = Automaton<T>.MkProductOfDeterministicAutomata(disjuncts_comp);
+            //    var union = prod.Complement();
+            //    return union;
+            //}
 
             var full = Automaton<T>.MkFull(algebra);
             var compl = Automaton<T>.MkDifference(full, this, timeout); //make complement
@@ -2260,6 +2260,98 @@ namespace Microsoft.Automata
             var det = Automaton<T>.Create(algebra, totCompl.InitialState, fstates, totCompl.GetMoves());
             det.EliminateDeadStates();
             det.isDeterministic = true;
+            return det;
+        }
+
+
+        public Automaton<T> Determinize(int timeout = 0)
+        {
+            IBooleanAlgebra<T> solver = algebra;
+
+            if (IsDeterministic)
+                return this;
+           
+            
+            long timeout1 = Microsoft.Automata.Internal.Utilities.HighTimer.Frequency * ((long)timeout / (long)1000);
+            long timeoutLimit;
+            if (timeout > 0)
+                timeoutLimit = Internal.Utilities.HighTimer.Now + timeout1;
+            else
+                timeoutLimit = 0;
+
+            var A = this.RemoveEpsilons();
+            
+            //the sink state is represented implicitly, there is no need to make B total
+            List<int> states = new List<int>(A.States);
+            PowerSetStateBuilder dfaStateBuilder = PowerSetStateBuilder.Create(states.ToArray());
+            
+
+            var stack = new Stack<int>();
+
+            var startState = dfaStateBuilder.MakePowerSetState(new int[] { A.InitialState });
+            stack.Push(startState);
+            
+            var delta = new Dictionary<int, List<Move<T>>>();
+            delta[startState] = new List<Move<T>>();
+            var finalStateList = new HashSet<int>();
+
+            Func<int, bool> IsDFAFinalState = id =>
+            {
+                foreach (int state in dfaStateBuilder.GetMembers(id))
+                    if (A.IsFinalState(state))
+                        return true;
+                return false;
+            };
+
+            if (IsDFAFinalState(startState))
+                finalStateList.Add(startState);
+
+            while (stack.Count > 0)
+            {
+
+                var sourceState = stack.Pop();
+
+                var moves = new List<Move<T>>(A.GetMovesFromStates(dfaStateBuilder.GetMembers(sourceState)));
+                var conds = Array.ConvertAll(moves.ToArray(), move => { return move.Label; });
+
+                int n = moves.Count;
+
+                foreach (var solution in solver.GenerateMinterms(conds))
+                {
+
+                    CheckTimeout(timeoutLimit);
+                    var nfaTargetStates = new List<int>();
+                    for (int j = 0; j < n; j++)
+                        if (solution.First[j])
+                            nfaTargetStates.Add(moves[j].TargetState);
+
+                    //if all conditions are false then this leads to the sink state -1
+                    int targetState;
+                    if (nfaTargetStates.Count > 0)
+                    {
+                        targetState = dfaStateBuilder.MakePowerSetState(nfaTargetStates);
+
+                        T prodCondition = solution.Second;
+                        var prodMove = Move<T>.Create(sourceState, targetState, prodCondition);
+                        delta[sourceState].Add(prodMove);
+                        if (!delta.ContainsKey(targetState))
+                        {
+                            delta[targetState] = new List<Move<T>>();
+                            if (IsDFAFinalState(targetState))
+                                finalStateList.Add(targetState);
+                            stack.Push(targetState);
+                        }
+                    }
+                }
+            }
+            if (finalStateList.Count == 0)
+                return Automaton<T>.MkEmpty(solver);
+            
+            Automaton<T> det = Automaton<T>.Create(solver, startState, finalStateList, EnumerateMoves(delta));
+            det.isEpsilonFree = true;
+            det.isDeterministic = true;
+
+            det.EliminateDeadStates();
             return det;
         }
 

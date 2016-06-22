@@ -25,7 +25,7 @@ namespace MSO.Eval
 
         public static void RunM2LSTR()
         {
-            string outF = outF = @"..\ltltest.txt";
+            string outF = outF = @"..\ltltest.csv";
             var inpD = @"C:\github\automatark\m2l-str\LTL-finite\random\";
 
             LTLTest(inpD, outF);           
@@ -33,7 +33,7 @@ namespace MSO.Eval
 
         public static void RunWS1S()
         {
-            string outF = @"..\ws1stest.txt";
+            string outF = @"..\ws1stest.csv";
             string inpD = @"C:\github\automatark\ws1s\";
 
             LTLTest(inpD, outF);
@@ -54,7 +54,8 @@ namespace MSO.Eval
                     MonaProgram pgm1 = MonaParser.Parse(contents);
                     phi = pgm1.ToMSO();
 
-                    bddSolver = null; //new BDDAlgebra(); //CharSetSolver(BitWidth.BV64);
+                    var bv7 = new CharSetSolver(BitWidth.BV7);
+                    bddSolver = new BDDAlgebra<BDD>(bv7);
                     var sw = new Stopwatch();
                     sw.Restart();
                     Thread t = new Thread(BDDSolver);
@@ -70,7 +71,7 @@ namespace MSO.Eval
                         t1 = sw.ElapsedMilliseconds;
                     }
 
-                    var bv7 = new CharSetSolver(BitWidth.BV7);
+                    bv7 = new CharSetSolver(BitWidth.BV7);
                     cartSolver = new CartesianAlgebraBDD<BDD>(bv7);
 
                     sw.Restart();

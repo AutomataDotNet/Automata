@@ -27,12 +27,12 @@ namespace MSO.Eval
         {
             //MSOPopl14.RunPOPLTests();
             
-            //LTLMSO.RunM2LSTR();
-            //LTLMSO.RunWS1S();
-
-            LargeMinterm.Run();
+            //LargeMinterm.Run();
 
             //GenRandomMSO.Run();
+
+            LTLMSO.RunM2LSTR();
+            LTLMSO.RunWS1S();
         }
 
     }

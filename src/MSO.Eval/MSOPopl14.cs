@@ -50,7 +50,7 @@ namespace MSO.Eval
                 phis.Add(new Pair<MSOFormula<BDD>, CharSetSolver>(phi, solver));
             }
 
-            RunTest(new StreamWriter("popl14-1.csv"), phis);
+            RunTest(new StreamWriter(@"..\popl14-1.csv"), phis);
 
 
             // all x1...xn. xi<xi+1 and a(xi)
@@ -79,7 +79,7 @@ namespace MSO.Eval
                 }
                 phis.Add(new Pair<MSOFormula<BDD>, CharSetSolver>(phi, solver));
             }
-            RunTest(new StreamWriter("popl14-2.csv"), phis);
+            RunTest(new StreamWriter(@"..\popl14 -2.csv"), phis);
 
             // all x1...xn. (xi<xi+1 and a(xi)) and ex y. c(y)
             phis = new List<Pair<MSOFormula<BDD>, CharSetSolver>>();
@@ -111,7 +111,7 @@ namespace MSO.Eval
                 phis.Add(new Pair<MSOFormula<BDD>, CharSetSolver>(phi, solver));
             }
 
-            RunTest(new StreamWriter("popl14-3.csv"), phis);
+            RunTest(new StreamWriter(@"..\popl14 -3.csv"), phis);
 
             // all x1...xn. (xi<xi+1 and a(xi) \/ c(xi))
 
@@ -141,7 +141,7 @@ namespace MSO.Eval
                 phis.Add(new Pair<MSOFormula<BDD>, CharSetSolver>(phi, solver));
             }
 
-            RunTest(new StreamWriter("popl14-4.csv"), phis, 10, 10, 11);
+            RunTest(new StreamWriter(@"..\popl14 -4.csv"), phis, 10, 10, 11);
         }
 
 

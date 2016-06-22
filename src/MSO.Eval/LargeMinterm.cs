@@ -19,7 +19,7 @@ namespace MSO.Eval
     class LargeMinterm
     {
         static int kminterm = 40;
-        static int maxmint = 19;
+        static int maxmint = 22;
         static int numTests = 1;
 
         public static void Run()
@@ -29,45 +29,60 @@ namespace MSO.Eval
 
             //ex x1 x2... a(x1) /\ a(x2).../\ x1<x2...
             using (System.IO.StreamWriter file =
-            new System.IO.StreamWriter(@"..\mso-minterm-p1.txt"))
+            new System.IO.StreamWriter(@"..\mso-minterm-p1.csv"))
             {
+                file.WriteLine("k, old, cartesian, trie, minterm");
                 for (int size = 2; size < kminterm; size++)
                 {
-                    var solver = new CharSetSolver();
+                    var solver = new CharSetSolver(BitWidth.BV64);
                     MSOFormula<BDD> phi = new MSOTrue<BDD>();
 
+                    //x1<x2 /\...
                     for (int k = 1; k < size; k++)
                     {
-                        var leq = new MSOLt<BDD>(new Variable("x" + (k - 1), true), new Variable("x" + k, true));
+                        var leq = new MSOSuccN<BDD>(new Variable("x" + (k - 1), true), new Variable("x" + k, true),1);
                         phi = new MSOAnd<BDD>(phi, leq);
 
                     }
+
+                    //ai(xi) /\ ...
                     for (int k = 0; k < size; k++)
                     {
                         var axk = new MSOPredicate<BDD>(solver.MkBitTrue(k), new Variable("x" + k, true));
                         phi = new MSOAnd<BDD>(phi, axk);
 
                     }
+                    phi = new MSOAnd<BDD>(new MSOeqN<BDD>(new Variable("x" + 0, true), 0), phi);
                     for (int k = size - 1; k >= 0; k--)
                     {
                         phi = new MSOExists<BDD>(new Variable("x" + k, true), phi);
                     }
 
+                    //Old
                     sw.Restart();
                     for (int t = 0; t < numTests; t++)
                     {
-                        phi.GetAutomaton(new CartesianAlgebraBDD<BDD>(solver));
+                        var aut = phi.GetAutomaton(solver);
+                    }
+
+                    var told = sw.ElapsedMilliseconds;
+
+                    //BDD
+                    sw.Restart();
+                    for (int t = 0; t < numTests; t++)
+                    {
+                        var aut =phi.GetAutomaton(new CartesianAlgebraBDD<BDD>(solver));
                     }
                     sw.Stop();
 
                     var t1 = sw.ElapsedMilliseconds;
 
+                    //Trie
                     sw.Restart();
                     for (int t = 0; t < numTests; t++)
                     {
-                        phi.GetAutomaton(new BDDAlgebra<BDD>(solver), false);
+                        var aut = phi.GetAutomaton(new BDDAlgebra<BDD>(solver), false);
                     }
-                    sw.Stop();
 
                     var t2 = sw.ElapsedMilliseconds;
 
@@ -90,16 +105,17 @@ namespace MSO.Eval
                         t3 = sw.ElapsedMilliseconds;
                     }
 
-                    file.WriteLine(size + ", " + (double)t1 / numTests + ", " + (double)t2 / numTests + ", " + (double)t3 / numTests);
-                    Console.WriteLine(size + ", " + (double)t1 / numTests + ", " + (double)t2 / numTests + ", " + (double)t3 / numTests);
+                    file.WriteLine(size + ", " + (double)told / numTests+ ", " + (double)t1 / numTests + ", " + (double)t2 / numTests + ", " + (double)t3 / numTests);
+                    Console.WriteLine(size + ", " + (double)told / numTests + ", " + (double)t1 / numTests + ", " + (double)t2 / numTests + ", " + (double)t3 / numTests);
                 }
             }
 
             //ex x1 x2... a(x1) /\ a(x2)...
             using (System.IO.StreamWriter file =
-           new System.IO.StreamWriter(@"..\mso-minterm-p2.txt"))
+           new System.IO.StreamWriter(@"..\mso-minterm-p2.csv"))
             {
-                for (int size = 2; size < kminterm; size++)
+                file.WriteLine("k, old, cartesian, trie, minterm");
+                for (int size = 2; size < 10; size++)
                 {
 
                     // Tsolve force
@@ -118,8 +134,18 @@ namespace MSO.Eval
                         phi = new MSOExists<BDD>(new Variable("x" + k, true), phi);
                     }
 
-                    var t1 = 60000L;
-                    if (size <= maxmint)
+                    //Old
+                    sw.Restart();
+                    for (int t = 0; t < numTests; t++)
+                    {
+                        var aut = phi.GetAutomaton(solver);
+                    }
+
+                    var told = sw.ElapsedMilliseconds;
+
+                    //Cartesian
+                    var t1 = 60000L * numTests;
+                    if (size <= 7)
                     {
                         sw.Restart();
                         for (int t = 0; t < numTests; t++)
@@ -130,6 +156,10 @@ namespace MSO.Eval
 
                         t1 = sw.ElapsedMilliseconds;
                     }
+
+
+                    //Trie
+                    var t2= 60000L * numTests;
                     sw.Restart();
                     for (int t = 0; t < numTests; t++)
                     {
@@ -137,7 +167,7 @@ namespace MSO.Eval
                     }
                     sw.Stop();
 
-                    var t2 = sw.ElapsedMilliseconds;
+                    t2 = sw.ElapsedMilliseconds;
 
                     //Tminterm
                     solver = new CharSetSolver(BitWidth.BV64);
@@ -158,8 +188,8 @@ namespace MSO.Eval
                         t3 = sw.ElapsedMilliseconds;
                     }
 
-                    file.WriteLine(size + ", " + (double)t1 / numTests + ", " + (double)t2 / numTests + ", " + (double)t3 / numTests);
-                    Console.WriteLine(size + ", " + (double)t1 / numTests + ", " + (double)t2 / numTests + ", " + (double)t3 / numTests);
+                    file.WriteLine(size + ", " + (double)told / numTests + ", " + (double)t1 / numTests + ", " + (double)t2 / numTests + ", " + (double)t3 / numTests);
+                    Console.WriteLine(size + ", " + (double)told / numTests + ", " + (double)t1 / numTests + ", " + (double)t2 / numTests + ", " + (double)t3 / numTests);
                 }
             }
         }
