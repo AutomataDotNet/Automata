@@ -26,7 +26,7 @@ namespace MSO.Eval
         public static void Main()
         {
             //MSOPopl14.RunPOPLTests();
-            
+
             //LargeMinterm.Run();
 
             GenRandomMSO.Run();

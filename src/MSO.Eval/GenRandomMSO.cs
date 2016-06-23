@@ -281,7 +281,7 @@ namespace MSO.Eval
             var i = (IntExpr)(c.MkInt(random.Next(0, maxConst/2)*2+1));
             var j = (IntExpr)(c.MkInt(random.Next(-maxConst, maxConst)));
             IntExpr ex = d;
-            ex = (IntExpr)(c.MkAdd(ex, c.MkMul(c.MkInt(random.Next(-maxConst, maxConst)), (IntExpr)(c.MkConst("x", c.IntSort)))));
+            ex = (IntExpr)(c.MkAdd(ex, c.MkMul(c.MkInt(random.Next(-maxConst, maxConst)), (IntExpr)(c.MkConst("y", c.IntSort)))));
             
             ex = c.MkMod(ex, i);
             return c.MkEq(ex, j);
@@ -389,7 +389,7 @@ namespace MSO.Eval
                     }
                 case 3:
                     {
-                        var e1 = (IntExpr)(c.MkConst("x", c.IntSort));
+                        var e1 = (IntExpr)(c.MkConst("y", c.IntSort));
                         var e2 = c.MkInt(random.Next(0, maxConst));
                         return (IntExpr)(c.MkMul(e1, e2));
                     }
