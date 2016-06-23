@@ -26,17 +26,21 @@ namespace MSO.Eval
         public static void RunM2LSTR()
         {
             string outF = outF = @"..\ltltest.csv";
-            var inpD = @"C:\github\automatark\m2l-str\LTL-finite\random\";
+            var inpD = @"C:\github\automatark\m2l-str\LTL-finite\";
 
             LTLTest(inpD, outF);           
         }
 
         public static void RunWS1S()
         {
-            string outF = @"..\ws1stest.csv";
-            string inpD = @"C:\github\automatark\ws1s\";
+            string outF = @"..\ws1s-generated.csv";
+            string inpD = @"C:\github\automatark\ws1s\generated-formulae\";
 
             LTLTest(inpD, outF);
+
+            //outF = @"..\ws1s-STRAND.csv";
+            //inpD = @"C:\github\automatark\ws1s\STRAND\";
+            //LTLTest(inpD, outF);
         }
 
 

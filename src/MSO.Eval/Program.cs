@@ -29,10 +29,10 @@ namespace MSO.Eval
             
             //LargeMinterm.Run();
 
-            //GenRandomMSO.Run();
+            GenRandomMSO.Run();
 
-            LTLMSO.RunM2LSTR();
-            LTLMSO.RunWS1S();
+            //LTLMSO.RunM2LSTR();
+            //LTLMSO.RunWS1S();
         }
 
     }

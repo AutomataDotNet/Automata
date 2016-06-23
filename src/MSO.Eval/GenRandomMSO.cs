@@ -24,7 +24,7 @@ namespace MSO.Eval
         
         static int maxConst = 15;
         static long timeout = 5000;
-        static int howMany = 50;
+        static int howMany = 100;
 
         public static void Run()
         {
@@ -33,7 +33,7 @@ namespace MSO.Eval
             using (System.IO.StreamWriter file =
                new System.IO.StreamWriter(@"..\randomMSOInt.csv", false))
             {
-                file.WriteLine("num-predicates, num-minterms, minterm-time, sws1s-time");
+                file.WriteLine("num-predicates, num-minterms, minterm-time, generic-BDD, product ");
             }
             random = new Random(0);
 
@@ -41,92 +41,104 @@ namespace MSO.Eval
             z3 = new Z3BoolAlg(c, c.BoolSort, timeout);
 
 
-            for (alphVars = 1; alphVars < 2; alphVars++)
-                for (int maxConst = 3; maxConst < 5; maxConst++)
-                    for (int phisize = 5; phisize < 7; phisize += 1)
+            for (int maxConst = 3; maxConst < 5; maxConst++)
+                for (int phisize = 5; phisize < 7; phisize += 1)
+                {
+                    Console.WriteLine(maxConst + "," + phisize);
+
+                    foreach (var pair in GenerateMSOZ3Formulas(phisize, howMany))
                     {
-                        Console.WriteLine(alphVars + "," + maxConst + "," + phisize);
+                        if (maxConst == 4 && phisize > 5)
+                            break;
 
-                        foreach (var pair in GenerateMSOZ3Formulas(phisize, howMany))
+
+
+                        formula = pair.First;
+                        predicates = pair.Second;
+                        if (predicates.Count > 2)
                         {
-                            if (alphVars == 1 && maxConst == 4 && phisize > 5)
-                                break;
+                            var bddsolver = new BDDAlgebra<BoolExpr>(z3);
+                            var sw = new Stopwatch();
+                            sw.Restart();
 
+                            long tbdd = timeout;
 
-
-                            formula = pair.First;
-                            predicates = pair.Second;
-                            if (predicates.Count > 2)
+                            try
                             {
+                                formula.GetAutomaton(bddsolver, false);
+                                sw.Stop();
+                                tbdd = sw.ElapsedMilliseconds;
+                                if (tbdd > timeout)
+                                    tbdd = timeout;
+                            }
+                            catch (Z3Exception e)
+                            {
+                                tbdd = timeout;
+                            }
 
-                                var bdd = new BDDAlgebra();
-                                //foreach (var p in predicates)
-                                //    Console.WriteLine(p);
-                                solver = new CartesianAlgebraBDD<BoolExpr>(bdd, z3);
-                                var sw = new Stopwatch();
-                                sw.Restart();
 
-                                long t1 = timeout;
 
+
+                            if (tbdd != timeout)
+                            {
+                                long tcart = timeout;
                                 try
                                 {
+                                    var bdd = new BDDAlgebra();
+                                    solver = new CartesianAlgebraBDD<BoolExpr>(bdd, z3);
+                                    sw.Restart();
                                     formula.GetAutomaton(solver);
                                     sw.Stop();
-                                    t1 = sw.ElapsedMilliseconds;
-                                    if (t1 > timeout)
-                                        t1 = timeout;
+                                    tcart = sw.ElapsedMilliseconds;
+                                    if (tcart > timeout)
+                                        tcart = timeout;
                                 }
                                 catch (Z3Exception e)
                                 {
-                                    t1 = timeout;
+                                    tcart = timeout;
                                 }
 
-                                if (t1 != timeout)
+                                sw.Restart();
+                                long tminterm = timeout;
+                                List<Pair<bool[], BoolExpr>> mint = new List<Pair<bool[], BoolExpr>>();
+                                try
+                                {
+                                    mint = z3.GenerateMinterms(predicates.ToArray()).ToList();
+                                    sw.Stop();
+                                    tminterm = sw.ElapsedMilliseconds;
+                                    if (tminterm > timeout)
+                                        tminterm = timeout;
+                                }
+                                catch (Z3Exception e)
                                 {
 
-                                    sw.Restart();
-                                    long t2 = timeout;
-                                    List<Pair<bool[], BoolExpr>> mint = new List<Pair<bool[], BoolExpr>>();
-                                    try
-                                    {
-                                        mint = z3.GenerateMinterms(predicates.ToArray()).ToList();
-                                        sw.Stop();
-                                        t2 = sw.ElapsedMilliseconds;
-                                        if (t2 > timeout)
-                                            t2 = timeout;
-                                    }
-                                    catch (Z3Exception e)
-                                    {
+                                    tminterm = timeout;
 
-                                        t2 = timeout;
-
-                                    }
-                                    using (System.IO.StreamWriter file =
-               new System.IO.StreamWriter(@"..\randomMSOInt.txt", false))
-                                    {
-                                        Console.WriteLine("#phi: " + predicates.Count + ", #mint: " + (t2 == timeout ? (int)Math.Pow(2, predicates.Count) : mint.Count) + ", time mint: " + (double)t2 + ", time ws1s: " + (double)t1);
-                                        file.WriteLine(predicates.Count + ", " + mint.Count + ", " + (double)t2 + ", " + (double)t1);
-                                    }
                                 }
-                                else {
-                                    Console.WriteLine("moving to next one");
-
+                                using (System.IO.StreamWriter file = new System.IO.StreamWriter(@"..\randomMSOInt.csv", true))
+                                {
+                                    Console.WriteLine("#phi: " + predicates.Count + ", #mint: " + (tminterm == timeout ? (int)Math.Pow(2, predicates.Count) : mint.Count) + ", time mint: " + (double)tminterm + ", time ws1s: " + (double)tbdd);
+                                    file.WriteLine(predicates.Count + ", " + mint.Count + ", " + (double)tminterm + ", " + (double)tbdd + ", " + (double)tcart);
                                 }
                             }
-                            else
-                            {
+                            else {
                                 Console.WriteLine("moving to next one");
 
                             }
                         }
+                        else
+                        {
+                            Console.WriteLine("moving to next one");
+
+                        }
                     }
+                }
         }
 
 
         const bool app = false;        
         
         static int size;                 //Numb of states (computed randomly)
-        static int alphVars;
         static Random random;
         static int seed;
         static int totgenerations;
@@ -269,10 +281,8 @@ namespace MSO.Eval
             var i = (IntExpr)(c.MkInt(random.Next(0, maxConst/2)*2+1));
             var j = (IntExpr)(c.MkInt(random.Next(-maxConst, maxConst)));
             IntExpr ex = d;
-            for(int v = 0;v< alphVars; v++)
-            {
-                ex = (IntExpr)(c.MkAdd(ex, c.MkMul(c.MkInt(random.Next(-maxConst, maxConst)), (IntExpr)(c.MkConst("y" + v, c.IntSort)))));
-            }
+            ex = (IntExpr)(c.MkAdd(ex, c.MkMul(c.MkInt(random.Next(-maxConst, maxConst)), (IntExpr)(c.MkConst("x", c.IntSort)))));
+            
             ex = c.MkMod(ex, i);
             return c.MkEq(ex, j);
 
@@ -379,7 +389,7 @@ namespace MSO.Eval
                     }
                 case 3:
                     {
-                        var e1 = (IntExpr)(c.MkConst("y" + random.Next(0, 1), c.IntSort));
+                        var e1 = (IntExpr)(c.MkConst("x", c.IntSort));
                         var e2 = c.MkInt(random.Next(0, maxConst));
                         return (IntExpr)(c.MkMul(e1, e2));
                     }
