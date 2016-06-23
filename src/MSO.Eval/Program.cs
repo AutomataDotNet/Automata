@@ -25,14 +25,14 @@ namespace MSO.Eval
         /// </summary>
         public static void Main()
         {
-            //MSOPopl14.RunPOPLTests();
+            MSOPopl14.RunPOPLTests();
 
-            //LargeMinterm.Run();
+            LargeMinterm.Run();
 
             GenRandomMSO.Run();
 
-            //LTLMSO.RunM2LSTR();
-            //LTLMSO.RunWS1S();
+            LTLMSO.RunM2LSTR();
+            LTLMSO.RunWS1S();
         }
 
     }

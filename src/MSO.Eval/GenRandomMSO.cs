@@ -24,7 +24,7 @@ namespace MSO.Eval
         
         static int maxConst = 15;
         static long timeout = 5000;
-        static int howMany = 100;
+        static int howMany = 40;
 
         public static void Run()
         {
@@ -38,10 +38,10 @@ namespace MSO.Eval
             random = new Random(0);
 
             c = new Context();
-            z3 = new Z3BoolAlg(c, c.BoolSort, timeout);
+            z3 = new Z3BoolAlg(c, c.IntSort, timeout);
 
 
-            for (int maxConst = 3; maxConst < 5; maxConst++)
+            for (int maxConst = 3; maxConst < 4; maxConst++)
                 for (int phisize = 5; phisize < 7; phisize += 1)
                 {
                     Console.WriteLine(maxConst + "," + phisize);
@@ -75,6 +75,10 @@ namespace MSO.Eval
                             {
                                 tbdd = timeout;
                             }
+                            catch (AutomataException e)
+                            {
+                                tbdd = timeout;
+                            }
 
 
 
@@ -94,6 +98,10 @@ namespace MSO.Eval
                                         tcart = timeout;
                                 }
                                 catch (Z3Exception e)
+                                {
+                                    tcart = timeout;
+                                }
+                                catch (AutomataException e)
                                 {
                                     tcart = timeout;
                                 }
@@ -117,7 +125,7 @@ namespace MSO.Eval
                                 }
                                 using (System.IO.StreamWriter file = new System.IO.StreamWriter(@"..\randomMSOInt.csv", true))
                                 {
-                                    Console.WriteLine("#phi: " + predicates.Count + ", #mint: " + (tminterm == timeout ? (int)Math.Pow(2, predicates.Count) : mint.Count) + ", time mint: " + (double)tminterm + ", time ws1s: " + (double)tbdd);
+                                    Console.WriteLine("#phi: " + predicates.Count + ", #mint: " + (tminterm == timeout ? (int)Math.Pow(2, predicates.Count) : mint.Count) + ", time mint: " + (double)tminterm + ", generic-bdd: " + (double)tbdd + ", product: " + (double)tcart);
                                     file.WriteLine(predicates.Count + ", " + mint.Count + ", " + (double)tminterm + ", " + (double)tbdd + ", " + (double)tcart);
                                 }
                             }
@@ -171,7 +179,7 @@ namespace MSO.Eval
             if (size <= 0)
             {
                 int variable = random.Next(0, maxVarIndex-1);
-                BoolExpr b = GeneratePredicateOut();
+                BoolExpr b = GeneratePredicateOut(200);
                 List<BoolExpr> l = new List<BoolExpr>();
                 l.Add(b);
                 return new Pair<MSOFormula<BoolExpr>, List<BoolExpr>>(new MSOPredicate<BoolExpr>(b, new Variable("x"+variable, true)), l);
@@ -259,16 +267,34 @@ namespace MSO.Eval
         }
 
         #region expressions and predicates generator
-        private static BoolExpr GeneratePredicateOut()
+        private static BoolExpr GeneratePredicateOut(int attemptsLeft)
         {
-            var v = GeneratePredicate();
-            Solver s = c.MkSolver();
-            s.Assert(v);
-            var res = s.Check();
-            if (res == Status.SATISFIABLE)
-                return v;
-            else
-                return GeneratePredicateOut();    
+            if (attemptsLeft == 0)
+            {
+                var i = (IntExpr)(c.MkInt(2));
+                var ex = (IntExpr)(c.MkMul(c.MkInt(5), (IntExpr)(c.MkConst("x", c.IntSort))));
+
+                ex = c.MkMod(ex, i);
+                return c.MkEq(ex, (IntExpr)(c.MkInt(1)));
+            }
+            try
+            {
+                var v = GeneratePredicate();
+
+
+                Solver s = c.MkSolver();
+                s.Assert(v);
+                var res = s.Check();
+                if (res == Status.SATISFIABLE)
+                    return v;
+                else 
+                    return GeneratePredicateOut(attemptsLeft-1);
+            }
+            catch (Z3Exception e)
+            {
+                return GeneratePredicateOut(attemptsLeft-1);
+            }
+
 
         }
 
@@ -281,120 +307,12 @@ namespace MSO.Eval
             var i = (IntExpr)(c.MkInt(random.Next(0, maxConst/2)*2+1));
             var j = (IntExpr)(c.MkInt(random.Next(-maxConst, maxConst)));
             IntExpr ex = d;
-            ex = (IntExpr)(c.MkAdd(ex, c.MkMul(c.MkInt(random.Next(-maxConst, maxConst)), (IntExpr)(c.MkConst("y", c.IntSort)))));
+            ex = (IntExpr)(c.MkAdd(ex, c.MkMul(c.MkInt(random.Next(-maxConst, maxConst)), (IntExpr)(c.MkConst("x", c.IntSort)))));
             
             ex = c.MkMod(ex, i);
             return c.MkEq(ex, j);
 
-
-            //switch (random.Next(0, 2))
-            //{
-            //    case 0:
-            //        {
-            //            IntExpr e1 = GenerateExprOfNumb();
-            //            IntExpr e2 = c.MkInt(random.Next(0, maxConst));
-            //            switch (random.Next(0, 5))
-            //            {
-            //                case 0:
-            //                    {
-            //                        return c.MkEq(e1, e2);
-            //                    }
-            //                case 1:
-            //                    {
-            //                        return c.MkGe(e1, e2);
-            //                    }
-            //                case 2:
-            //                    {
-            //                        return c.MkGt(e1, e2);
-            //                    }
-            //                case 3:
-            //                    {
-            //                        return c.MkLe(e1, e2);
-            //                    }
-            //                case 4:
-            //                    {
-            //                        return c.MkLt(e1, e2);
-            //                    }
-            //            }                        
-            //            break;
-            //        }
-            //    case 1:
-            //        {
-            //            var v = random.Next(0, 4);
-
-            //            BoolExpr e1 = GeneratePredicate();
-            //            switch (v)
-            //            {
-            //                case 0:
-            //                    {
-            //                        BoolExpr e2 = GeneratePredicate();
-            //                        return c.MkAnd(e1, e2);
-            //                    }
-            //                case 1:
-            //                    {
-            //                        BoolExpr e2 = GeneratePredicate();
-            //                        return c.MkOr(e1, e2);
-            //                    }
-            //                case 2:
-            //                    {
-            //                        return c.MkNot(e1);
-            //                    }
-
-            //            }
-            //            return e1;
-            //        }
-            //    case 2:
-            //        {
-            //            break;
-            //        }
-            //}
-            //return c.MkTrue();
-        }
-
-        private static IntExpr GenerateExprOfNumb()
-        {
-            int randomNumber = random.Next(0,4);
-            switch (randomNumber)
-            {
-                case 0:
-                case 4:
-                    {
-                        return (IntExpr)(c.MkConst("y"+random.Next(0,1),c.IntSort));
-                    }
-                case 1:
-                    {
-                        var e1 = GenerateExprOfNumb();
-                        var e2 = c.MkInt(random.Next(0, maxConst));
-                        return (IntExpr)(c.MkAdd(e1, e2));
-                    }
-                case 2:
-                    {
-                        switch (random.Next(0, 2))
-                        {
-                            case 0:
-                                {
-                                    var e1 = GenerateExprOfNumb();
-                                    var e2 = c.MkInt(random.Next(0, maxConst));
-                                    return (IntExpr)(c.MkAdd(e1, e2));
-                                }
-                            case 1:
-                            case 2:
-                                {
-                                    var e1 = GenerateExprOfNumb();
-                                    var e2 = c.MkInt(random.Next(0, maxConst));
-                                    return (IntExpr)(c.MkMod(e1, e2));
-                                }
-                        }
-                        break;
-                    }
-                case 3:
-                    {
-                        var e1 = (IntExpr)(c.MkConst("y", c.IntSort));
-                        var e2 = c.MkInt(random.Next(0, maxConst));
-                        return (IntExpr)(c.MkMul(e1, e2));
-                    }
-            }
-            throw new Exception("this shouldn't happen");
+            
         }
         #endregion
         
