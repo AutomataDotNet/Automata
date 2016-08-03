@@ -2711,6 +2711,211 @@ namespace Microsoft.Automata
         /// <summary>
         /// Algorithm MinSFA from POPL14.
         /// </summary>
+        static Automaton<T> MinSFANew(Automaton<T> autom)
+        {
+            var solver = autom.algebra;
+            var fa = autom.MakeTotal();
+
+            var finalBlock = new Block(fa.GetFinalStates());
+            var nonfinalBlock = new Block(fa.GetNonFinalStates());
+            var Blocks = new Dictionary<int, Block>();
+            foreach (var q in fa.GetFinalStates()) Blocks[q] = finalBlock;
+            foreach (var q in fa.GetNonFinalStates()) Blocks[q] = nonfinalBlock;
+
+            var W = new BlockStack();
+            if (!fa.isDeterministic)
+            {
+                W.Push(nonfinalBlock);
+                W.Push(finalBlock);
+            }
+            else if (nonfinalBlock.Count < finalBlock.Count)
+                W.Push(nonfinalBlock);
+            else
+                W.Push(finalBlock);
+
+            Func<T, T, T> MkDiff = (x, y) => solver.MkAnd(x, solver.MkNot(y));
+
+            while (!W.IsEmpty)
+            {
+                var B = W.Pop();
+                var Bcopy = new Block(B);                //make a copy of B for iterating over its elemenents
+                
+                var Gamma = new Dictionary<int, T>();     //joined conditions leading to B from states leading to B
+                foreach (var q in Bcopy)
+                    foreach (var move in fa.deltaInv[q]) //moves leading to q
+                        if (Blocks[move.SourceState].Count > 1) //singleton blocks cannot be further split
+                            if (Gamma.ContainsKey(move.SourceState))
+                                Gamma[move.SourceState] = solver.MkOr(Gamma[move.SourceState], move.Label);
+                            else
+                                Gamma[move.SourceState] = move.Label;
+
+
+                var Diff = new Dictionary<int, T>();     //symbols that go to both B and S\B                
+                foreach (var q in Gamma.Keys)
+                {
+                    Diff[q] = solver.False;
+                    if (!autom.isDeterministic)
+                        foreach (var move in fa.delta[q]) //moves leading to q
+                            if (!Bcopy.Contains(move.TargetState))
+                                Diff[move.SourceState] = solver.MkOr(Gamma[move.SourceState], move.Label);
+                    Diff[q] = solver.MkAnd(Diff[q], Gamma[q]);
+                }
+
+                #region apply initial splitting without using guards
+                var relevant = new HashSet<Block>();
+                foreach (var q in Gamma.Keys)
+                    relevant.Add(Blocks[q]);
+
+                foreach (var P in relevant)
+                {
+                    var P1 = new Block(Gamma.Keys, P.Contains); //all q in Gamma.Keys such that P.Contains(q)
+                    if (P1.Count < P.Count)
+                    {
+                        foreach (var p in P1)
+                        {
+                            P.Remove(p);
+                            Blocks[p] = P1;
+                        }
+                        if (W.Contains(P))
+                            W.Push(P1);
+                        else
+                            //Double check this is enough
+                            if (P.Count <= P1.Count)
+                                W.Push(P);
+                            else
+                                W.Push(P1);
+                    }
+                }
+                #endregion
+
+
+                //keep using Bcopy until no more changes occur
+                //effectively, this replaces the loop over characters
+                bool iterate = true;
+                while (iterate)
+                {
+                    iterate = false;
+                    //in each relevant block all states lead to B due to the initial splitting
+                    var relevant2 = new HashSet<Block>();
+                    foreach (var q in Gamma.Keys)
+                        if (Blocks[q].Count > 1)
+                            relevant2.Add(Blocks[q]); //collect the relevant blocks
+
+                    //only relevant blocks are potentially split
+                    foreach (var P in relevant2)
+                    {
+                        var PE = P.GetEnumerator();
+                        PE.MoveNext();
+
+                        var P1 = new Block();
+                        bool splitFound = false;
+                        bool diffSplitFound = false;
+
+                        var psi = Gamma[PE.Current];
+                        P1.Add(PE.Current); //note that PE has at least 2 elements
+                        var diffp = Diff[PE.Current];
+
+                        #region compute P1 as the new sub-block of P
+                        while (PE.MoveNext())
+                        {
+                            var q = PE.Current;
+                            var phi = Gamma[q];
+                            var diffq = Diff[q];
+                            if (splitFound)
+                            {
+                                var psi_and_phi = solver.MkAnd(psi, phi);
+                                if (solver.IsSatisfiable(psi_and_phi))
+                                    P1.Add(q);
+                            }
+                            else
+                            {
+                                if (diffSplitFound)
+                                {
+                                    var diffp_and_diffq = solver.MkAnd(diffp, diffq);
+                                    if (solver.IsSatisfiable(diffp_and_diffq))
+                                        P1.Add(q);
+                                }
+                                else
+                                {
+                                    var psi_min_phi = MkDiff(psi, phi);
+                                    if (solver.IsSatisfiable(psi_min_phi))
+                                    {
+                                        psi = psi_min_phi;
+                                        splitFound = true;
+                                    }
+                                    else // [[psi]] is subset of [[phi]]
+                                    {
+                                        var phi_min_psi = MkDiff(phi, psi);
+                                        if (solver.IsSatisfiable(phi_min_psi))
+                                        {
+                                            //there is some a: q --a--> B and p --a--> compl(B) for all p in C1
+
+                                            //TODO: Why do you clear here?
+                                            P1.Clear();
+                                            P1.Add(q);
+                                            psi = phi_min_psi;
+                                            splitFound = true;
+                                        }
+                                        else
+                                        {
+                                            // NEW                                                                                    
+                                            var diffp_min_diffq = MkDiff(diffp, diffq);
+                                            if (solver.IsSatisfiable(diffp_min_diffq))
+                                            {
+                                                diffp = diffp_min_diffq;
+                                                diffSplitFound = true;
+                                            }
+                                            else
+                                            {
+                                                var diffq_min_diffp = MkDiff(diffq, diffp);
+                                                if (solver.IsSatisfiable(diffq_min_diffp))
+                                                {
+                                                    //TODO: Why do you clear here?
+                                                    P1.Clear();
+                                                    P1.Add(q);
+                                                    diffp = diffq_min_diffp;
+                                                    diffSplitFound = true;
+                                                }
+                                                else
+                                                    P1.Add(q); //psi and phi are equivalent
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        #endregion
+
+                        #region split P
+                        if (P1.Count < P.Count)
+                        {
+                            iterate = (iterate || (P.Count > 2)); //otherwise C was split into singletons
+                            foreach (var p in P1)
+                            {
+                                P.Remove(p);
+                                Blocks[p] = P1;
+                            }
+
+                            if (W.Contains(P))
+                                W.Push(P1);
+                            else
+                                if (P.Count <= P1.Count)
+                                    W.Push(P);
+                                else
+                                    W.Push(P1);
+                        }
+                        #endregion
+                    }
+                }
+            }
+
+            Func<int, int> GetRepresentative = (q => Blocks[q].GetRepresentative());
+            return autom.JoinStates(GetRepresentative, solver.MkOr);
+        }
+
+        /// <summary>
+        /// Algorithm MinSFA from POPL14.
+        /// </summary>
         static Automaton<T> MinSFA(Automaton<T> autom)
         {
             var solver = autom.algebra;
