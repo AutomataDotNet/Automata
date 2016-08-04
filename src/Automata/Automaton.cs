@@ -2759,14 +2759,14 @@ namespace Microsoft.Automata
             }
 
             Func<T, T, T> MkDiff = (x, y) => solver.MkAnd(x, solver.MkNot(y));
-            
+
 
             while (!W.IsEmpty)
             {
                 var B = W.Pop();
 
                 var Gamma = GetBlockPre(B);
-                var GammaHat = GetBlockPre(ComplementBlock[B]);
+                var GammaHat = autom.isDeterministic? null: GetBlockPre(ComplementBlock[B]);
 
                 #region apply initial splitting without using guards
                 var relevant = new HashSet<Block>();
@@ -2778,29 +2778,32 @@ namespace Microsoft.Automata
                     var P1 = new Block(Gamma.Keys, P.Contains); //all q in Gamma.Keys such that P.Contains(q)
                     if (P1.Count < P.Count)
                     {
+                        var P2 = new Block(P);
                         foreach (var p in P1)
                         {
-                            P.Remove(p);
+                            P2.Remove(p);
                             Blocks[p] = P1;
                         }
-                        //P has changed and we need to recompute the Pre for it
-                        BlockPre.Remove(P);
-                        if (W.Contains(P))
+                        foreach (var p in P2)
+                            Blocks[p] = P2;
+
+                        if (W.Contains(P2))
                         {
                             W.Push(P1);
                             ComplementBlock[P1] = ComplementBlock[P];
-                        }                        
+                            ComplementBlock[P2] = ComplementBlock[P];
+                        }
                         else
                         {
-                            if (P.Count <= P1.Count)
+                            if (P2.Count <= P1.Count)
                             {
-                                W.Push(P);
-                                ComplementBlock[P] = P1;
+                                W.Push(P2);
+                                ComplementBlock[P2] = P1;
                             }
                             else
                             {
                                 W.Push(P1);
-                                ComplementBlock[P1] = P;
+                                ComplementBlock[P1] = P2;
                             }
                         }
                     }
@@ -2808,46 +2811,47 @@ namespace Microsoft.Automata
                 #endregion
 
 
-                //keep using Bcopy until no more changes occur
-                //effectively, this replaces the loop over characters
-                bool iterate = true;
-                while (iterate)
+                //in each relevant block all states lead to B due to the initial splitting
+                var relevant2 = new List<Block>();
+                foreach (var q in Gamma.Keys)
+                    if (Blocks[q].Count > 1)
+                        relevant2.Add(Blocks[q]); //collect the relevant blocks
+
+
+                //only relevant blocks are potentially split
+                while(relevant2.Count>0)
                 {
-                    iterate = false;
-                    //in each relevant block all states lead to B due to the initial splitting
-                    var relevant2 = new HashSet<Block>();
-                    foreach (var q in Gamma.Keys)
-                        if (Blocks[q].Count > 1)
-                            relevant2.Add(Blocks[q]); //collect the relevant blocks
+                    var P = relevant2[0];
+                    relevant2.RemoveAt(0);
 
-                    //only relevant blocks are potentially split
-                    foreach (var P in relevant2)
+                    var PE = P.GetEnumerator();
+                    PE.MoveNext();
+
+                    var P1 = new Block();
+                    bool splitFound = false;
+                    bool diffSplitFound = false;
+
+                    var psi = Gamma[PE.Current];
+                    P1.Add(PE.Current); //note that PE has at least 2 elements
+                    var psihat = solver.False;
+                    if (!autom.isDeterministic && GammaHat.ContainsKey(PE.Current))
+                        psihat = GammaHat[PE.Current];
+                    var curr_shared_witness = solver.MkAnd(psi, psihat);
+
+                    #region compute P1 as the new sub-block of P
+                    while (PE.MoveNext())
                     {
-                        var PE = P.GetEnumerator();
-                        PE.MoveNext();
+                        var q = PE.Current;
+                        var phi = Gamma[q];
+                        var phihat = solver.False;
+                        if (!autom.isDeterministic && GammaHat.ContainsKey(q))
+                            phihat = GammaHat[q];
 
-                        var P1 = new Block();
-                        bool splitFound = false;
-                        bool diffSplitFound = false;
+                        var phi_inters_phihat = solver.MkAnd(phi, phihat);
 
-                        var psi = Gamma[PE.Current];
-                        P1.Add(PE.Current); //note that PE has at least 2 elements
-                        var psihat = solver.False;
-                        if (GammaHat.ContainsKey(PE.Current))
-                            psihat = GammaHat[PE.Current];
-                        var curr_shared_witness = solver.MkAnd(psi, psihat);
-
-                        #region compute P1 as the new sub-block of P
-                        while (PE.MoveNext())
+                        //Have a witness for splitting
+                        if (splitFound || diffSplitFound)
                         {
-                            var q = PE.Current;
-                            var phi = Gamma[q];
-                            var phihat = solver.False;
-                            if (GammaHat.ContainsKey(q))
-                                phihat = GammaHat[q];
-
-                            var phi_inters_phihat = solver.MkAnd(phi, phihat);
-
                             if (splitFound)
                             {
                                 var psi_and_phi = solver.MkAnd(psi, phi);
@@ -2856,93 +2860,104 @@ namespace Microsoft.Automata
                             }
                             else
                             {
-                                if (diffSplitFound)
+                                var shared_area = solver.MkAnd(curr_shared_witness, phi_inters_phihat);
+                                if (solver.IsSatisfiable(shared_area))
+                                    P1.Add(q);
+                            }
+                        }
+                        else
+                        {
+                            // Look for a splitter
+                            var psi_min_phi = MkDiff(psi, phi);
+                            if (solver.IsSatisfiable(psi_min_phi))
+                            {
+                                //there is some a: p --a--> B and q --a--> compl(B) 
+                                psi = psi_min_phi;
+                                splitFound = true;
+                            }
+                            else // [[psi]] is subset of [[phi]]
+                            {
+                                var phi_min_psi = MkDiff(phi, psi);
+                                if (solver.IsSatisfiable(phi_min_psi))
                                 {
-                                    var shared_area = solver.MkAnd(curr_shared_witness, phi_inters_phihat);
-                                    if (solver.IsSatisfiable(shared_area))
-                                        P1.Add(q);
+                                    //there is some a: q --a--> B and p --a--> compl(B) for all p in C1
+                                    P1.Clear();
+                                    P1.Add(q);
+                                    psi = phi_min_psi;
+                                    splitFound = true;
                                 }
                                 else
                                 {
-                                    var psi_min_phi = MkDiff(psi, phi);
-                                    if (solver.IsSatisfiable(psi_min_phi))
+                                    if (!autom.isDeterministic)
                                     {
-                                        psi = psi_min_phi;
-                                        splitFound = true;
-                                    }
-                                    else // [[psi]] is subset of [[phi]]
-                                    {
-                                        var phi_min_psi = MkDiff(phi, psi);
-                                        if (solver.IsSatisfiable(phi_min_psi))
+                                        var shared_area = MkDiff(curr_shared_witness, phi_inters_phihat);
+                                        if (solver.IsSatisfiable(shared_area))
                                         {
-                                            //there is some a: q --a--> B and p --a--> compl(B) for all p in C1
-                                            P1.Clear();
-                                            P1.Add(q);
-                                            psi = phi_min_psi;
-                                            splitFound = true;
+                                            //there is some a: p --a--> B p--a--> compl(b) and q--a--> B  but not q--a--> compl(B)
+                                            curr_shared_witness = shared_area;
+                                            diffSplitFound = true;
                                         }
                                         else
                                         {
-                                            var shared_area = MkDiff(curr_shared_witness, phi_inters_phihat);
+                                            shared_area = MkDiff(phi_inters_phihat, curr_shared_witness);
                                             if (solver.IsSatisfiable(shared_area))
                                             {
-                                                //there is some a: p --a--> B p--a--> compl(b) and q--a--> B  but not q--a--> compl(B)
+                                                //there is some a: q --a--> B q--a--> compl(b) and p--a--> B  but not p--a--> compl(B)
+                                                P1.Clear();
+                                                P1.Add(q);
                                                 curr_shared_witness = shared_area;
                                                 diffSplitFound = true;
                                             }
                                             else
-                                            {
-                                                shared_area = MkDiff(phi_inters_phihat, curr_shared_witness);
-                                                if (solver.IsSatisfiable(shared_area))
-                                                {
-                                                    //there is some a: q --a--> B q--a--> compl(b) and p--a--> B  but not p--a--> compl(B)
-                                                    P1.Clear();
-                                                    P1.Add(q);
-                                                    curr_shared_witness = shared_area;
-                                                    diffSplitFound = true;
-                                                }
-                                                else
-                                                    P1.Add(q); //psi and phi are equivalent
-                                            }
+                                                P1.Add(q); //psi and phi are equivalent and phihat and psihat are equivalent
                                         }
                                     }
+                                    else
+                                        P1.Add(q); //psi and phi are equivalent
                                 }
                             }
                         }
-                        #endregion
+                    }
+                    #endregion
 
-                        #region split P
-                        if (P1.Count < P.Count)
+                    #region split P
+                    if (P1.Count < P.Count)
+                    {
+                        var P2 = new Block(P);
+                        foreach (var p in P1)
                         {
-                            iterate = (iterate || (P.Count > 2)); //otherwise C was split into singletons
-                            foreach (var p in P1)
+                            P2.Remove(p);
+                            Blocks[p] = P1;
+                        }
+                        foreach (var p in P2)
+                            Blocks[p] = P2;
+
+                        if (W.Contains(P2))
+                        {
+                            W.Push(P1);
+                            ComplementBlock[P1] = ComplementBlock[P];
+                            ComplementBlock[P2] = ComplementBlock[P];
+                        }
+                        else
+                        {
+                            if (P2.Count <= P1.Count)
                             {
-                                P.Remove(p);
-                                Blocks[p] = P1;
-                            }
-                            //P has changed and we need to recompute the Pre for it
-                            BlockPre.Remove(P);
-                            if (W.Contains(P))
-                            {
-                                W.Push(P1);
-                                ComplementBlock[P1] = ComplementBlock[P];
+                                W.Push(P2);
+                                ComplementBlock[P2] = P1;
                             }
                             else
                             {
-                                if (P.Count <= P1.Count)
-                                {
-                                    W.Push(P);
-                                    ComplementBlock[P] = P1;
-                                }
-                                else
-                                {
-                                    W.Push(P1);
-                                    ComplementBlock[P1] = P;
-                                }
+                                W.Push(P1);
+                                ComplementBlock[P1] = P2;
                             }
                         }
-                        #endregion
+                        // Something was split
+                        if(P1.Count>1)
+                            relevant2.Add(P1);
+                        if (P2.Count > 1)
+                            relevant2.Add(P2);
                     }
+                    #endregion
                 }
             }
 
