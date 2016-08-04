@@ -2766,7 +2766,7 @@ namespace Microsoft.Automata
                 var B = W.Pop();
 
                 var Gamma = GetBlockPre(B);
-                var GammaHat = autom.isDeterministic? null: GetBlockPre(ComplementBlock[B]);
+                var GammaHat = autom.isDeterministic ? null : GetBlockPre(ComplementBlock[B]);
 
                 #region apply initial splitting without using guards
                 var relevant = new HashSet<Block>();
@@ -2818,8 +2818,8 @@ namespace Microsoft.Automata
                         relevant2.Add(Blocks[q]); //collect the relevant blocks
 
 
-                //only relevant blocks are potentially split
-                while(relevant2.Count>0)
+                //only relevant blocks are potentially split               
+                while (relevant2.Count > 0)
                 {
                     var P = relevant2[0];
                     relevant2.RemoveAt(0);
@@ -2952,7 +2952,7 @@ namespace Microsoft.Automata
                             }
                         }
                         // Something was split
-                        if(P1.Count>1)
+                        if (P1.Count > 1)
                             relevant2.Add(P1);
                         if (P2.Count > 1)
                             relevant2.Add(P2);
@@ -3036,93 +3036,97 @@ namespace Microsoft.Automata
                 }
                 #endregion
 
-                //keep using Bcopy until no more changes occur
-                //effectively, this replaces the loop over characters
-                bool iterate = true; 
-                while (iterate)
+
+                //in each relevant block all states lead to B due to the initial splitting
+                var relevant2 = new List<Block>();
+                foreach (var q in Gamma.Keys)
+                    if (Blocks[q].Count > 1)
+                        relevant2.Add(Blocks[q]); //collect the relevant blocks
+
+
+                //only relevant blocks are potentially split               
+                while (relevant2.Count > 0)
                 {
-                    iterate = false;
-                    //in each relevant block all states lead to B due to the initial splitting
-                    var relevant2 = new HashSet<Block>();
-                    foreach (var q in Gamma.Keys)
-                        if (Blocks[q].Count > 1)
-                            relevant2.Add(Blocks[q]); //collect the relevant blocks
+                    var P = relevant2[0];
+                    relevant2.RemoveAt(0);
 
-                    //only relevant blocks are potentially split
-                    foreach (var P in relevant2)
+                    var PE = P.GetEnumerator();
+                    PE.MoveNext();
+
+                    var P1 = new Block();
+                    bool splitFound = false;
+
+                    var psi = Gamma[PE.Current];
+                    P1.Add(PE.Current); //note that PE has at least 2 elements
+
+                    #region compute P1 as the new sub-block of P
+                    while (PE.MoveNext())
                     {
-                        var PE = P.GetEnumerator();
-                        PE.MoveNext();
-
-                        var P1 = new Block();
-                        bool splitFound = false;
-
-                        var psi = Gamma[PE.Current];
-                        P1.Add(PE.Current); //note that PE has at least 2 elements
-
-                        #region compute P1 as the new sub-block of P
-                        while (PE.MoveNext())
+                        var q = PE.Current;
+                        var phi = Gamma[q];
+                        if (splitFound)
                         {
-                            var q = PE.Current;
-                            var phi = Gamma[q];
-                            if (splitFound)
+                            var psi_and_phi = solver.MkAnd(psi, phi);
+                            if (solver.IsSatisfiable(psi_and_phi))
+                                P1.Add(q);
+                        }
+                        else
+                        {
+                            var psi_min_phi = MkDiff(psi, phi);
+                            if (solver.IsSatisfiable(psi_min_phi))
                             {
-                                var psi_and_phi = solver.MkAnd(psi, phi);
-                                if (solver.IsSatisfiable(psi_and_phi))
-                                    P1.Add(q);
+                                psi = psi_min_phi;
+                                splitFound = true;
                             }
-                            else
+                            else // [[psi]] is subset of [[phi]]
                             {
-                                var psi_min_phi = MkDiff(psi, phi);
-                                if (solver.IsSatisfiable(psi_min_phi))
+                                var phi_min_psi = MkDiff(phi, psi);
+                                if (!solver.IsSatisfiable(phi_min_psi))
+                                    P1.Add(q); //psi and phi are equivalent
+                                else
                                 {
-                                    psi = psi_min_phi;
+                                    //there is some a: q --a--> B and p --a--> compl(B) for all p in C1
+                                    P1.Clear();
+                                    P1.Add(q);
+                                    psi = phi_min_psi;
                                     splitFound = true;
                                 }
-                                else // [[psi]] is subset of [[phi]]
-                                {
-                                    var phi_min_psi = MkDiff(phi, psi);
-                                    if (!solver.IsSatisfiable(phi_min_psi))
-                                        P1.Add(q); //psi and phi are equivalent
-                                    else
-                                    {
-                                        //there is some a: q --a--> B and p --a--> compl(B) for all p in C1
-                                        P1.Clear();
-                                        P1.Add(q);
-                                        psi = phi_min_psi;
-                                        splitFound = true;
-                                    }
-                                }
                             }
                         }
-                        #endregion
-
-                        #region split P
-                        if (P1.Count < P.Count)
-                        {
-                            iterate = (iterate || (P.Count > 2)); //otherwise C was split into singletons
-                            foreach (var p in P1)
-                            {
-                                P.Remove(p);
-                                Blocks[p] = P1;
-                            }
-
-                            if (W.Contains(P))
-                                W.Push(P1);
-                            else if (!fa.isDeterministic)
-                            {
-                                //both blocks are needed, bisumlation based minimization
-                                W.Push(P);
-                                W.Push(P1);
-                            }
-                            else if (P.Count <= P1.Count)
-                                W.Push(P);
-                            else
-                                W.Push(P1);
-                        }
-                        #endregion
                     }
+                    #endregion
+
+                    #region split P
+                    if (P1.Count < P.Count)
+                    {
+                        foreach (var p in P1)
+                        {
+                            P.Remove(p);
+                            Blocks[p] = P1;
+                        }
+
+                        if (W.Contains(P))
+                            W.Push(P1);
+                        else if (!fa.isDeterministic)
+                        {
+                            //both blocks are needed, bisumlation based minimization
+                            W.Push(P);
+                            W.Push(P1);
+                        }
+                        else if (P.Count <= P1.Count)
+                            W.Push(P);
+                        else
+                            W.Push(P1);
+
+                        // Something was split
+                        if (P.Count > 1)
+                            relevant2.Add(P);
+                        if (P1.Count > 1)
+                            relevant2.Add(P1);
+                    }
+                    #endregion
                 }
+
             }
 
             Func<int, int> GetRepresentative = (q => Blocks[q].GetRepresentative());
