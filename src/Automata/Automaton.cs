@@ -2686,15 +2686,15 @@ namespace Microsoft.Automata
 
             if (fa.isDeterministic)
             {
-                return MinSFA(fa);
+                return MinSFANew(fa);
             }
             else
             {
-                var fa_m = MinSFA(fa);
+                var fa_m = MinSFANew(fa);
                 if (fa_m.StateCount < fa.StateCount)
                 {
                     var fa_m_r = fa_m.Reverse().RemoveEpsilons();
-                    var fa_m_r_m = MinSFA(fa_m_r);
+                    var fa_m_r_m = MinSFANew(fa_m_r);
                     var fa_m_r_m_r = fa_m_r_m.Reverse().RemoveEpsilons();
                     if (fa_m.StateCount <= fa_m_r_m_r.StateCount)
                         return fa_m;
@@ -2722,44 +2722,51 @@ namespace Microsoft.Automata
             foreach (var q in fa.GetFinalStates()) Blocks[q] = finalBlock;
             foreach (var q in fa.GetNonFinalStates()) Blocks[q] = nonfinalBlock;
 
+            //Stores what block this was the split of
+            var ComplementBlock = new Dictionary<Block, Block>();
+            var BlockPre = new Dictionary<Block, Dictionary<int, T>>();     //BlockPre[B][q]= all symbols that go from q to B                       
+
+            //Computes and memoizes BlockPre
+            Func<Block, Dictionary<int, T>> GetBlockPre = (B) => {
+                if (BlockPre.ContainsKey(B))
+                    return BlockPre[B];
+                else
+                {
+                    var dicB = new Dictionary<int, T>();
+                    var Bcopy = new Block(B); //make a copy of B for iterating over its elemenents
+                    foreach (var q in Bcopy)
+                        foreach (var move in fa.deltaInv[q]) //moves leading to q
+                            if (Blocks[move.SourceState].Count > 1) //singleton blocks cannot be further split
+                                if (dicB.ContainsKey(move.SourceState))
+                                    dicB[move.SourceState] = solver.MkOr(dicB[move.SourceState], move.Label);
+                                else
+                                    dicB[move.SourceState] = move.Label;
+                    BlockPre[B] = dicB;
+                    return dicB;
+                }
+            };
+
             var W = new BlockStack();
-            if (!fa.isDeterministic)
+            if (nonfinalBlock.Count < finalBlock.Count)
             {
                 W.Push(nonfinalBlock);
-                W.Push(finalBlock);
+                ComplementBlock[nonfinalBlock] = finalBlock;                
             }
-            else if (nonfinalBlock.Count < finalBlock.Count)
-                W.Push(nonfinalBlock);
             else
+            {
                 W.Push(finalBlock);
+                ComplementBlock[finalBlock] = nonfinalBlock;
+            }
 
             Func<T, T, T> MkDiff = (x, y) => solver.MkAnd(x, solver.MkNot(y));
+            
 
             while (!W.IsEmpty)
             {
                 var B = W.Pop();
-                var Bcopy = new Block(B);                //make a copy of B for iterating over its elemenents
-                
-                var Gamma = new Dictionary<int, T>();     //joined conditions leading to B from states leading to B
-                foreach (var q in Bcopy)
-                    foreach (var move in fa.deltaInv[q]) //moves leading to q
-                        if (Blocks[move.SourceState].Count > 1) //singleton blocks cannot be further split
-                            if (Gamma.ContainsKey(move.SourceState))
-                                Gamma[move.SourceState] = solver.MkOr(Gamma[move.SourceState], move.Label);
-                            else
-                                Gamma[move.SourceState] = move.Label;
 
-
-                var Diff = new Dictionary<int, T>();     //symbols that go to both B and S\B                
-                foreach (var q in Gamma.Keys)
-                {
-                    Diff[q] = solver.False;
-                    if (!autom.isDeterministic)
-                        foreach (var move in fa.delta[q]) //moves leading to q
-                            if (!Bcopy.Contains(move.TargetState))
-                                Diff[move.SourceState] = solver.MkOr(Gamma[move.SourceState], move.Label);
-                    Diff[q] = solver.MkAnd(Diff[q], Gamma[q]);
-                }
+                var Gamma = GetBlockPre(B);
+                var GammaHat = GetBlockPre(ComplementBlock[B]);
 
                 #region apply initial splitting without using guards
                 var relevant = new HashSet<Block>();
@@ -2776,14 +2783,26 @@ namespace Microsoft.Automata
                             P.Remove(p);
                             Blocks[p] = P1;
                         }
+                        //P has changed and we need to recompute the Pre for it
+                        BlockPre.Remove(P);
                         if (W.Contains(P))
+                        {
                             W.Push(P1);
+                            ComplementBlock[P1] = ComplementBlock[P];
+                        }                        
                         else
-                            //Double check this is enough
+                        {
                             if (P.Count <= P1.Count)
+                            {
                                 W.Push(P);
+                                ComplementBlock[P] = P1;
+                            }
                             else
+                            {
                                 W.Push(P1);
+                                ComplementBlock[P1] = P;
+                            }
+                        }
                     }
                 }
                 #endregion
@@ -2813,14 +2832,22 @@ namespace Microsoft.Automata
 
                         var psi = Gamma[PE.Current];
                         P1.Add(PE.Current); //note that PE has at least 2 elements
-                        var diffp = Diff[PE.Current];
+                        var psihat = solver.False;
+                        if (GammaHat.ContainsKey(PE.Current))
+                            psihat = GammaHat[PE.Current];
+                        var curr_shared_witness = solver.MkAnd(psi, psihat);
 
                         #region compute P1 as the new sub-block of P
                         while (PE.MoveNext())
                         {
                             var q = PE.Current;
                             var phi = Gamma[q];
-                            var diffq = Diff[q];
+                            var phihat = solver.False;
+                            if (GammaHat.ContainsKey(q))
+                                phihat = GammaHat[q];
+
+                            var phi_inters_phihat = solver.MkAnd(phi, phihat);
+
                             if (splitFound)
                             {
                                 var psi_and_phi = solver.MkAnd(psi, phi);
@@ -2831,8 +2858,8 @@ namespace Microsoft.Automata
                             {
                                 if (diffSplitFound)
                                 {
-                                    var diffp_and_diffq = solver.MkAnd(diffp, diffq);
-                                    if (solver.IsSatisfiable(diffp_and_diffq))
+                                    var shared_area = solver.MkAnd(curr_shared_witness, phi_inters_phihat);
+                                    if (solver.IsSatisfiable(shared_area))
                                         P1.Add(q);
                                 }
                                 else
@@ -2849,8 +2876,6 @@ namespace Microsoft.Automata
                                         if (solver.IsSatisfiable(phi_min_psi))
                                         {
                                             //there is some a: q --a--> B and p --a--> compl(B) for all p in C1
-
-                                            //TODO: Why do you clear here?
                                             P1.Clear();
                                             P1.Add(q);
                                             psi = phi_min_psi;
@@ -2858,22 +2883,22 @@ namespace Microsoft.Automata
                                         }
                                         else
                                         {
-                                            // NEW                                                                                    
-                                            var diffp_min_diffq = MkDiff(diffp, diffq);
-                                            if (solver.IsSatisfiable(diffp_min_diffq))
+                                            var shared_area = MkDiff(curr_shared_witness, phi_inters_phihat);
+                                            if (solver.IsSatisfiable(shared_area))
                                             {
-                                                diffp = diffp_min_diffq;
+                                                //there is some a: p --a--> B p--a--> compl(b) and q--a--> B  but not q--a--> compl(B)
+                                                curr_shared_witness = shared_area;
                                                 diffSplitFound = true;
                                             }
                                             else
                                             {
-                                                var diffq_min_diffp = MkDiff(diffq, diffp);
-                                                if (solver.IsSatisfiable(diffq_min_diffp))
+                                                shared_area = MkDiff(phi_inters_phihat, curr_shared_witness);
+                                                if (solver.IsSatisfiable(shared_area))
                                                 {
-                                                    //TODO: Why do you clear here?
+                                                    //there is some a: q --a--> B q--a--> compl(b) and p--a--> B  but not p--a--> compl(B)
                                                     P1.Clear();
                                                     P1.Add(q);
-                                                    diffp = diffq_min_diffp;
+                                                    curr_shared_witness = shared_area;
                                                     diffSplitFound = true;
                                                 }
                                                 else
@@ -2895,14 +2920,26 @@ namespace Microsoft.Automata
                                 P.Remove(p);
                                 Blocks[p] = P1;
                             }
-
+                            //P has changed and we need to recompute the Pre for it
+                            BlockPre.Remove(P);
                             if (W.Contains(P))
+                            {
                                 W.Push(P1);
+                                ComplementBlock[P1] = ComplementBlock[P];
+                            }
                             else
+                            {
                                 if (P.Count <= P1.Count)
+                                {
                                     W.Push(P);
+                                    ComplementBlock[P] = P1;
+                                }
                                 else
+                                {
                                     W.Push(P1);
+                                    ComplementBlock[P1] = P;
+                                }
+                            }
                         }
                         #endregion
                     }
