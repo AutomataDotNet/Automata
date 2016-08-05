@@ -1660,22 +1660,14 @@ namespace Microsoft.Automata
                             var to1 = new HashSet<int>();
                             for (int i = 0; i < minterm1.First.Length; i++)
                                 if (minterm1.First[i])
-                                {
-                                    var conj1 = aut1.algebra.MkAnd(conj, movesFromCurr1[i].Label);
-                                    if (aut1.algebra.IsSatisfiable(conj1))
-                                        to1.Add(movesFromCurr1[i].TargetState);
-                                }
+                                    to1.Add(movesFromCurr1[i].TargetState);
                             var to1st = dfaStateBuilderForAut1.MakePowerSetState(to1);
 
-                            // Take from states
                             var to2 = new HashSet<int>();
                             for (int i = 0; i < minterm2.First.Length; i++)
                                 if (minterm2.First[i])
-                                {                                    
-                                    var conj2 = aut2.algebra.MkAnd(conj, movesFromCurr2[i].Label);
-                                    if (aut2.algebra.IsSatisfiable(conj2))
-                                       to2.Add(movesFromCurr2[i].TargetState);
-                                }
+                                    to2.Add(movesFromCurr2[i].TargetState);
+                                
                             var to2st = dfaStateBuilderForAut2.MakePowerSetState(to2);
 
 
