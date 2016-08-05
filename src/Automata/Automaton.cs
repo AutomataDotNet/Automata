@@ -9,7 +9,7 @@ namespace Microsoft.Automata
     /// Symbolic Finite Automaton, provides basic generic algorithms for manipulating SFAs
     /// </summary>
     /// <typeparam name="T">type of the labels</typeparam>
-    public class Automaton<T> : IAutomaton<T> 
+    public class Automaton<T> : IAutomaton<T>
     {
         private Dictionary<int, List<Move<T>>> delta;
         private Dictionary<int, List<Move<T>>> deltaInv;
@@ -60,7 +60,7 @@ namespace Microsoft.Automata
         internal void AddWordBoundaries(IEnumerable<int> wordBoundaryStates)
         {
             foreach (var s in wordBoundaryStates)
-                AddWordBoundary(s); 
+                AddWordBoundary(s);
         }
 
         internal bool IsWordBoundary(int s)
@@ -239,20 +239,21 @@ namespace Microsoft.Automata
         }
 
 
-        public static Automaton<T> MkEmpty(IBooleanAlgebra<T> algebra){            
+        public static Automaton<T> MkEmpty(IBooleanAlgebra<T> algebra)
+        {
             var fsa = new Automaton<T>();
             fsa.algebra = algebra;
             fsa.initialState = 0;
             fsa.finalStateSet = new HashSet<int>();
             fsa.isEpsilonFree = true;
             fsa.maxState = 0;
-            fsa.delta = new Dictionary<int,List<Move<T>>>();
+            fsa.delta = new Dictionary<int, List<Move<T>>>();
             fsa.delta[0] = new List<Move<T>>();
             fsa.deltaInv = new Dictionary<int, List<Move<T>>>();
             fsa.deltaInv[0] = new List<Move<T>>();
             fsa.isDeterministic = true;
             return fsa;
-        }   
+        }
 
         ///// <summary>
         ///// The automaton with one state that is also final and one move state --psi--&gt; state
@@ -268,7 +269,8 @@ namespace Microsoft.Automata
         /// <summary>
         /// The automaton that accepts only the empty word.
         /// </summary>
-        public static Automaton<T> MkEpsilon(IBooleanAlgebra<T> algebra){
+        public static Automaton<T> MkEpsilon(IBooleanAlgebra<T> algebra)
+        {
             return Automaton<T>.Create(algebra, 0, new int[] { 0 }, new Move<T>[] { });
         }
 
@@ -407,7 +409,7 @@ namespace Microsoft.Automata
         /// <summary>
         /// True iff there are no moves and the initial state is also final.
         /// </summary>
-        public bool IsEpsilon 
+        public bool IsEpsilon
         {
             get { return finalStateSet.Count == 1 && StateCount == 1 && delta[initialState].Count == 0 && DoesNotContainWordBoundaries; }
         }
@@ -471,18 +473,18 @@ namespace Microsoft.Automata
         /// <summary>
         /// Convert the automaton to an automaton where each guard p has been replaced with transform(p).
         /// </summary>
-        public Automaton<T> RelpaceAllGuards(Func<T,T> transform)
+        public Automaton<T> RelpaceAllGuards(Func<T, T> transform)
         {
             List<Move<T>> moves1 = new List<Move<T>>();
             foreach (var move in GetMoves())
                 moves1.Add(Move<T>.Create(move.SourceState, move.TargetState, transform(move.Label)));
-            return Automaton<T>.Create(this.algebra, initialState, this.GetFinalStates(), moves1); 
+            return Automaton<T>.Create(this.algebra, initialState, this.GetFinalStates(), moves1);
         }
 
         /// <summary>
         /// Project the second component an automaton with monadic predicates.
         /// </summary>
-        static public Automaton<T> ProjectSecond<S>(Automaton<IMonadicPredicate<S,T>> automaton) 
+        static public Automaton<T> ProjectSecond<S>(Automaton<IMonadicPredicate<S, T>> automaton)
         {
             ICartesianAlgebra<S, T> alg = automaton.algebra as ICartesianAlgebra<S, T>;
             if (alg == null)
@@ -867,7 +869,8 @@ namespace Microsoft.Automata
             finalStateSet.Remove(state);
         }
 
-        public void MakeStateNotFinal(int state){
+        public void MakeStateNotFinal(int state)
+        {
             if (finalStateSet.Contains(state))
             {
                 finalStateSet.Remove(state);
@@ -1091,7 +1094,7 @@ namespace Microsoft.Automata
             var ambiguousStates = new HashSet<int>();
             int n = 1;
             while (frontier.Count > 0)
-            {                
+            {
                 var currPair = frontier.Pop();
                 int source = stateIdMap[currPair];
                 if (currPair.First != currPair.Second)
@@ -1163,9 +1166,9 @@ namespace Microsoft.Automata
                 delta[state] = trans;
             }
             #endregion
-         
 
-            var finalMoves =  new List<Move<T>>(EnumerateMoves(delta));
+
+            var finalMoves = new List<Move<T>>(EnumerateMoves(delta));
             Automaton<T> product = Automaton<T>.Create(a.Algebra, 0, finalStates, finalMoves, true, true);
             product.isEpsilonFree = true;
 
@@ -1182,7 +1185,7 @@ namespace Microsoft.Automata
                         ambiguousLanguage = ambiguousLanguage.Union(auta);
                     }
                 }
-            }            
+            }
 
             return product;
         }
@@ -1217,7 +1220,7 @@ namespace Microsoft.Automata
             List<int> finalStates = new List<int>(a.GetFinalStates());
             finalStates.AddRange(b1.GetFinalStates());
             return Create(a.algebra, initialState, finalStates, moves);
-        }        
+        }
 
         /// <summary>
         /// Make a sum (union) of a and b. Produces an automaton a+b such that L(a+b) = L(a) union L(b)
@@ -1447,7 +1450,7 @@ namespace Microsoft.Automata
             reachableStates.Add(InitialState);
             while (stack.Count > 0)
             {
-                var q= stack.Pop();
+                var q = stack.Pop();
                 foreach (var t in delta[q])
                     if (reachableStates.Add(t.TargetState)) //if returns false then already added
                         stack.Push(t.TargetState);
@@ -1516,10 +1519,10 @@ namespace Microsoft.Automata
         /// Returns the language containing all the suffixes of L
         /// </summary>
         public Automaton<T> SuffixLanguage()
-        {            
+        {
             List<Move<T>> newMoves = new List<Move<T>>(this.GetMoves());
             int newInitState = maxState + 1;
-            foreach(var state in States)
+            foreach (var state in States)
                 newMoves.Add(Move<T>.Epsilon(newInitState, state));
 
             List<int> finalStates = new List<int>(GetFinalStates());
@@ -1539,7 +1542,7 @@ namespace Microsoft.Automata
             return Create(this.algebra, initialState, new int[] { newFinalState }, newMoves);
         }
 
-        static void CheckIdentityOfAlgebras(IBooleanAlgebra<T> solver1, IBooleanAlgebra<T> solver2) 
+        static void CheckIdentityOfAlgebras(IBooleanAlgebra<T> solver1, IBooleanAlgebra<T> solver2)
         {
             if (solver1 != solver2)
                 throw new AutomataException(AutomataExceptionKind.IncompatibleAlgebras);
@@ -1549,15 +1552,260 @@ namespace Microsoft.Automata
         /// Returns true iff this automaton and another automaton B are equivalent
         /// </summary>
         /// <param name="B">another automaton</param>
-        public bool IsEquivalentWith(Automaton<T> B)
+        public bool IsEquivalentWith(Automaton<T> B, out List<T> witness)
         {
             CheckIdentityOfAlgebras(algebra, B.algebra);
-            List<T> witness = null;
-            bool diff = Automaton<T>.CheckDifference(this, B, -1,  out witness);
-            if (diff)
+
+            if (this.isDeterministic && B.isDeterministic)
+            {
+                var res1 = areHKEquivalentDeterministic(this.MakeTotal(), B.MakeTotal());
+                witness = res1.Second;
+                return res1.First;
+            }
+
+            var res = areHKEquivalent(this.RemoveEpsilons().MakeTotal(), B.RemoveEpsilons().MakeTotal());
+            witness = res.Second;
+            return res.First;
+        }
+
+        /// <summary>
+        /// Returns true iff this automaton and another automaton B are equivalent
+        /// </summary>
+        /// <param name="B">another automaton</param>
+        public bool IsEquivalentWith(Automaton<T> B)
+        {
+            CheckIdentityOfAlgebras(algebra, B.algebra);      
+      
+            if(this.isDeterministic && B.isDeterministic)
+                return areHKEquivalentDeterministic(this.MakeTotal(), B.MakeTotal()).First;
+
+            return areHKEquivalent(this.RemoveEpsilons().MakeTotal(), B.RemoveEpsilons().MakeTotal()).First;
+        }
+
+        /**
+	     * Checks whether laut and raut are equivalent using HopcroftKarp on the SFA
+	     * accepting the reverse language
+	    */
+        public static Pair<Boolean, List<T>> areHKEquivalent(Automaton<T> aut1, Automaton<T> aut2)
+        {
+            var ds = new UnionFindHopKarp<T>();
+
+            var reached1 = new Dictionary<int, int>();
+            var reached2 = new Dictionary<int, int>();
+
+            var toVisit = new List<Pair<int, int>>();
+
+            List<int> aut1States = new List<int>(aut1.States);
+            PowerSetStateBuilder dfaStateBuilderForAut1 = PowerSetStateBuilder.Create(aut1States.ToArray());
+            List<int> aut2States = new List<int>(aut2.States);
+            PowerSetStateBuilder dfaStateBuilderForAut2 = PowerSetStateBuilder.Create(aut2States.ToArray());
+            Func<int, bool> IsDFAFinalStateForAut1 = (state) =>
+            {
+                foreach (int st in dfaStateBuilderForAut1.GetMembers(state))
+                    if (aut1.IsFinalState(st))
+                        return true;
                 return false;
-            diff = Automaton<T>.CheckDifference(B, this, -1,  out witness);
-            return !diff;
+            };
+            Func<int, bool> IsDFAFinalStateForAut2 = (state) =>
+            {
+                foreach (int st in dfaStateBuilderForAut2.GetMembers(state))
+                    if (aut2.IsFinalState(st))
+                        return true;
+                return false;
+            };
+
+
+            int st1 = dfaStateBuilderForAut1.MakePowerSetState(new int[] { aut1.InitialState });
+            int st2 = dfaStateBuilderForAut2.MakePowerSetState(new int[] { aut2.InitialState });
+
+            reached1[st1] = 0;
+            reached2[st2] = 1;
+
+            toVisit.Add(new Pair<int, int>(st1, st2));
+
+            bool isIn1Final = IsDFAFinalStateForAut1(st1);
+            bool isIn2Final = IsDFAFinalStateForAut2(st2);
+            if (isIn1Final != isIn2Final)
+                return new Pair<bool, List<T>>(false, new List<T>());
+
+            ds.add(0, isIn1Final, new List<T>());
+            ds.add(1, isIn2Final, new List<T>());
+            ds.mergeSets(0, 1);
+
+            while (toVisit.Count > 0)
+            {
+
+                var curr = toVisit[0];
+                toVisit.RemoveAt(0);
+
+                var curr1 = dfaStateBuilderForAut1.GetMembers(curr.First);
+                var curr2 = dfaStateBuilderForAut2.GetMembers(curr.Second);
+
+                var movesFromCurr1 = new List<Move<T>>(aut1.GetMovesFromStates(curr1));
+                var movesFromCurr2 = new List<Move<T>>(aut2.GetMovesFromStates(curr2));
+                var predicates1 = Array.ConvertAll(movesFromCurr1.ToArray(), move => { return move.Label; });
+                var predicates2 = Array.ConvertAll(movesFromCurr2.ToArray(), move => { return move.Label; });
+
+                var minterms1 = aut1.algebra.GenerateMinterms(predicates1);
+                var minterms2 = aut2.algebra.GenerateMinterms(predicates2);
+
+
+                foreach (var minterm1 in minterms1)
+                {                    
+                    foreach (var minterm2 in minterms2)
+                    {
+                        var conj = aut1.algebra.MkAnd(minterm1.Second, minterm2.Second);
+                        if (aut1.algebra.IsSatisfiable(conj))
+                        {
+                            var to1 = new HashSet<int>();
+                            for (int i = 0; i < minterm1.First.Length; i++)
+                                if (minterm1.First[i])
+                                {
+                                    var conj1 = aut1.algebra.MkAnd(conj, movesFromCurr1[i].Label);
+                                    if (aut1.algebra.IsSatisfiable(conj1))
+                                        to1.Add(movesFromCurr1[i].TargetState);
+                                }
+                            var to1st = dfaStateBuilderForAut1.MakePowerSetState(to1);
+
+                            // Take from states
+                            var to2 = new HashSet<int>();
+                            for (int i = 0; i < minterm2.First.Length; i++)
+                                if (minterm2.First[i])
+                                {                                    
+                                    var conj2 = aut2.algebra.MkAnd(conj, movesFromCurr2[i].Label);
+                                    if (aut2.algebra.IsSatisfiable(conj2))
+                                       to2.Add(movesFromCurr2[i].TargetState);
+                                }
+                            var to2st = dfaStateBuilderForAut2.MakePowerSetState(to2);
+
+
+                            var wit = ds.getWitness(reached1[curr.First]);
+                            var pref = new List<T>(wit);
+                            pref.Add(conj);
+
+
+                            // If not in union find add them
+                            int r1 = 0, r2 = 0;
+                            if (!reached1.ContainsKey(to1st))
+                            {
+                                r1 = ds.getNumberOfElements();
+                                reached1[to1st] = r1;
+                                ds.add(r1, IsDFAFinalStateForAut1(to1st), pref);
+                            }
+                            else
+                                r1 = reached1[to1st];
+
+                            if (!reached2.ContainsKey(to2st))
+                            {
+                                r2 = ds.getNumberOfElements();
+                                reached2[to2st] = r2;
+                                ds.add(r2, IsDFAFinalStateForAut2(to2st), pref);
+                            }
+                            else
+                                r2 = reached2[to2st];
+
+                            // Check whether are in simulation relation
+                            if (!ds.areInSameSet(r1, r2))
+                            {
+                                if (!ds.mergeSets(r1, r2))
+                                    return new Pair<Boolean, List<T>>(false, pref);
+
+                                toVisit.Add(new Pair<int, int>(to1st, to2st));
+                            }
+                        }
+                    }
+                }
+            }
+            return new Pair<bool, List<T>>(true, null);
+        }
+
+        /**
+	     * Checks whether laut and raut are equivalent using HopcroftKarp on the SFA
+	     * accepting the reverse language
+	    */
+        public static Pair<Boolean, List<T>> areHKEquivalentDeterministic(Automaton<T> aut1, Automaton<T> aut2)
+        {
+            var ds = new UnionFindHopKarp<T>();
+
+            var reached1 = new Dictionary<int, int>();
+            var reached2 = new Dictionary<int, int>();
+
+            var toVisit = new List<Pair<int, int>>();
+
+            reached1[aut1.initialState] = 0;
+            reached2[aut2.initialState] = 1;
+
+            toVisit.Add(new Pair<int, int>(aut1.initialState, aut2.initialState));
+
+            bool isIn1Final = aut1.IsFinalState(aut1.initialState);
+            bool isIn2Final = aut2.IsFinalState(aut2.initialState);
+            if (isIn1Final != isIn2Final)
+                return new Pair<bool, List<T>>(false, new List<T>());
+
+            ds.add(0, isIn1Final, new List<T>());
+            ds.add(1, isIn2Final, new List<T>());
+            ds.mergeSets(0, 1);
+
+            while (toVisit.Count > 0)
+            {
+
+                var curr = toVisit[0];
+                toVisit.RemoveAt(0);
+
+                var curr1 = curr.First;
+                var curr2 = curr.Second;
+
+                var movesFromCurr1 = new List<Move<T>>(aut1.GetMovesFrom(curr1));
+                var movesFromCurr2 = new List<Move<T>>(aut2.GetMovesFrom(curr2));
+
+
+                foreach (var move1 in movesFromCurr1)
+                    foreach (var move2 in movesFromCurr2)
+                    {
+                        var conj = aut1.algebra.MkAnd(move1.Label, move2.Label);
+                        if (aut1.algebra.IsSatisfiable(conj))
+                        {
+                            var to1 = move1.TargetState;
+                            var to2 = move2.TargetState;
+
+
+                            var wit = ds.getWitness(reached1[curr.First]);
+                            var pref = new List<T>(wit);
+                            pref.Add(conj);
+
+
+                            // If not in union find add them
+                            int r1 = 0, r2 = 0;
+                            if (!reached1.ContainsKey(to1))
+                            {
+                                r1 = ds.getNumberOfElements();
+                                reached1[to1] = r1;
+                                ds.add(r1, aut1.IsFinalState(to1), pref);
+                            }
+                            else
+                                r1 = reached1[to1];
+
+                            if (!reached2.ContainsKey(to2))
+                            {
+                                r2 = ds.getNumberOfElements();
+                                reached2[to2] = r2;
+                                ds.add(r2, aut2.IsFinalState(to2), pref);
+                            }
+                            else
+                                r2 = reached2[to2];
+
+                            // Check whether are in simulation relation
+                            if (!ds.areInSameSet(r1, r2))
+                            {
+                                if (!ds.mergeSets(r1, r2))
+                                    return new Pair<Boolean, List<T>>(false, pref);
+
+                                toVisit.Add(new Pair<int, int>(to1, to2));
+                            }
+                        }
+                    }
+            }
+            return new Pair<bool, List<T>>(true, null);
         }
 
         /// <summary>
@@ -1572,7 +1820,7 @@ namespace Microsoft.Automata
         {
             CheckIdentityOfAlgebras(A.algebra, B.algebra);
             var solver = A.algebra;
-            long timeout1 = Microsoft.Automata.Internal.Utilities.HighTimer.Frequency * ((long)timeout/(long)1000);
+            long timeout1 = Microsoft.Automata.Internal.Utilities.HighTimer.Frequency * ((long)timeout / (long)1000);
             long timeoutLimit;
             if (timeout > 0)
                 timeoutLimit = Internal.Utilities.HighTimer.Now + timeout1;
@@ -1663,7 +1911,7 @@ namespace Microsoft.Automata
                 }
                 return stateId;
             };
-            
+
             while (stack.Count > 0)
             {
 
@@ -1825,7 +2073,7 @@ namespace Microsoft.Automata
             if (IsFinalState(prodStartState))
             {
                 witness = new List<T>();
-                return true; 
+                return true;
             }
 
             while (stack.Count > 0)
@@ -1934,7 +2182,7 @@ namespace Microsoft.Automata
 
 
             //if (prodFinalStateIds.Count == 0)
-             //   return false;
+            //   return false;
 
             //var prodFinalStateIdsList = new List<int>(prodFinalStateIds);
             // Automaton<S> prod = Automaton<S>.Create(prodInitialStateId, prodFinalStateIdsList, EnumerateMoves(prodDelta));
@@ -2080,8 +2328,9 @@ namespace Microsoft.Automata
             if (!isEpsilonFree)
                 throw new AutomataException(AutomataExceptionKind.AutomatonIsNotEpsilonfree);
 
-            if (isDeterministic || isUnambiguous){ //already known to be deterministic
-                isUnambiguous = true;                
+            if (isDeterministic || isUnambiguous)
+            { //already known to be deterministic
+                isUnambiguous = true;
                 return false;
             }
 
@@ -2099,7 +2348,7 @@ namespace Microsoft.Automata
         #region timeout check
         static void CheckTimeout(System.Diagnostics.Stopwatch sw, long timeoutLimit)
         {
-            if (sw.ElapsedMilliseconds>timeoutLimit)
+            if (sw.ElapsedMilliseconds > timeoutLimit)
                 throw new TimeoutException();
         }
         static void CheckTimeout(long timeoutLimit)
@@ -2270,8 +2519,8 @@ namespace Microsoft.Automata
 
             if (IsDeterministic)
                 return this;
-           
-            
+
+
             long timeout1 = Microsoft.Automata.Internal.Utilities.HighTimer.Frequency * ((long)timeout / (long)1000);
             long timeoutLimit;
             if (timeout > 0)
@@ -2280,17 +2529,17 @@ namespace Microsoft.Automata
                 timeoutLimit = 0;
 
             var A = this.RemoveEpsilons();
-            
+
             //the sink state is represented implicitly, there is no need to make B total
             List<int> states = new List<int>(A.States);
             PowerSetStateBuilder dfaStateBuilder = PowerSetStateBuilder.Create(states.ToArray());
-            
+
 
             var stack = new Stack<int>();
 
             var startState = dfaStateBuilder.MakePowerSetState(new int[] { A.InitialState });
             stack.Push(startState);
-            
+
             var delta = new Dictionary<int, List<Move<T>>>();
             delta[startState] = new List<Move<T>>();
             var finalStateList = new HashSet<int>();
@@ -2346,7 +2595,7 @@ namespace Microsoft.Automata
             }
             if (finalStateList.Count == 0)
                 return Automaton<T>.MkEmpty(solver);
-            
+
             Automaton<T> det = Automaton<T>.Create(solver, startState, finalStateList, EnumerateMoves(delta));
             det.isEpsilonFree = true;
             det.isDeterministic = true;
@@ -2434,7 +2683,7 @@ namespace Microsoft.Automata
 
             fa = fa.MakeTotal();
 
-            Func<int, int, Pair<int,int>> MkPair = (x,y) => (x<y ? new Pair<int,int>(x,y) : new Pair<int,int>(y,x));
+            Func<int, int, Pair<int, int>> MkPair = (x, y) => (x < y ? new Pair<int, int>(x, y) : new Pair<int, int>(y, x));
 
             var distinguishable = new HashSet<Pair<int, int>>();
             var stack = new Stack<Pair<int, int>>();
@@ -2489,7 +2738,7 @@ namespace Microsoft.Automata
             {
                 var p = repr[move.SourceState];
                 var q = repr[move.TargetState];
-                var pq = new Pair<int,int>(p,q);
+                var pq = new Pair<int, int>(p, q);
                 T guard;
                 if (guards.TryGetValue(pq, out guard))
                     guard = solver.MkOr(guard, move.Label);
@@ -2552,7 +2801,7 @@ namespace Microsoft.Automata
                 return Minimize();
 
             //If it's singleton state accepting only the empty string
-            if(MoveCount==0)
+            if (MoveCount == 0)
                 return this;
 
             if (this.IsEpsilon)
@@ -2605,7 +2854,7 @@ namespace Microsoft.Automata
             }
             else
                 W.Push(PR.InitialPart);
-          
+
             while (W.Count > 0)
             {
                 var P = W.Pop();
@@ -2631,7 +2880,7 @@ namespace Microsoft.Automata
                 }
             }
 
-            Dictionary<Pair<int,int>,HashSet<T>> condMap = new Dictionary<Pair<int,int>,HashSet<T>>();
+            Dictionary<Pair<int, int>, HashSet<T>> condMap = new Dictionary<Pair<int, int>, HashSet<T>>();
             foreach (var move in GetMoves())
             {
                 int s = PR.GetPart(move.SourceState).Representative;
@@ -2727,7 +2976,8 @@ namespace Microsoft.Automata
             var BlockPre = new Dictionary<Block, Dictionary<int, T>>();     //BlockPre[B][q]= all symbols that go from q to B                       
 
             //Computes and memoizes BlockPre
-            Func<Block, Dictionary<int, T>> GetBlockPre = (B) => {
+            Func<Block, Dictionary<int, T>> GetBlockPre = (B) =>
+            {
                 if (BlockPre.ContainsKey(B))
                     return BlockPre[B];
                 else
@@ -2750,7 +3000,7 @@ namespace Microsoft.Automata
             if (nonfinalBlock.Count < finalBlock.Count)
             {
                 W.Push(nonfinalBlock);
-                ComplementBlock[nonfinalBlock] = finalBlock;                
+                ComplementBlock[nonfinalBlock] = finalBlock;
             }
             else
             {
@@ -3135,7 +3385,7 @@ namespace Microsoft.Automata
 
         Automaton<T> JoinStates(Func<int, int> GetRepresentative, Func<IEnumerable<T>, T> MkDisjunction)
         {
-            var autom = this; 
+            var autom = this;
             var condMap = new Dictionary<Tuple<int, int>, HashSet<T>>();
             foreach (var move in autom.GetMoves())
             {
@@ -3194,7 +3444,7 @@ namespace Microsoft.Automata
 
             while (NextW.IsNonempty)
             {
-                var tmp1 = W; 
+                var tmp1 = W;
                 W = NextW;
                 NextW = tmp1;
                 NextWelems.Clear();
@@ -3212,7 +3462,7 @@ namespace Microsoft.Automata
                     if (S.IsCompound)
                         W.Push(S);
 
-                    var NextPartition = new List<SimBlock>(); 
+                    var NextPartition = new List<SimBlock>();
 
                     foreach (var D in Partition)
                     {
@@ -3314,7 +3564,7 @@ namespace Microsoft.Automata
             return automIn.JoinStates(GetRepresentative, solver.MkOr);
         }
 
-        
+
         public IEnumerable<Tuple<int, T>> GetIncoming(int target)
         {
             foreach (Move<T> move in deltaInv[target])
@@ -3335,7 +3585,7 @@ namespace Microsoft.Automata
             internal MultiSet zero;
             internal MultiSet one;
 
-            Dictionary<Tuple<T, MultiSet, MultiSet>, MultiSet> nodes = 
+            Dictionary<Tuple<T, MultiSet, MultiSet>, MultiSet> nodes =
                 new Dictionary<Tuple<T, MultiSet, MultiSet>, MultiSet>();
             Dictionary<int, MultiSet> leaves = new Dictionary<int, MultiSet>();
 
@@ -3437,18 +3687,18 @@ namespace Microsoft.Automata
                 {
                     if (cases.Item1.Equals(pred))
                     {
-                        var node = msb.CreateNode(cases.Item1, cases.Item2.IncrAll(new Dictionary<MultiSet,MultiSet>()), cases.Item3);
+                        var node = msb.CreateNode(cases.Item1, cases.Item2.IncrAll(new Dictionary<MultiSet, MultiSet>()), cases.Item3);
                         return node;
                     }
                     else
                     {
-                        var node = msb.CreateNode(pred, this.IncrAll(new Dictionary<MultiSet,MultiSet>()), this);
+                        var node = msb.CreateNode(pred, this.IncrAll(new Dictionary<MultiSet, MultiSet>()), this);
                         return node;
                     }
                 }
             }
 
-            private MultiSet IncrAll(Dictionary<MultiSet,MultiSet> done)
+            private MultiSet IncrAll(Dictionary<MultiSet, MultiSet> done)
             {
                 MultiSet res;
                 if (!done.TryGetValue(this, out res))
@@ -3498,8 +3748,8 @@ namespace Microsoft.Automata
 
         internal class SimBlock : Block
         {
-            Dictionary<int, MultiSet> incoming = new Dictionary<int,MultiSet>();
-            Func<int, IEnumerable<Tuple<int,T>>> GetIncomingMoves;
+            Dictionary<int, MultiSet> incoming = new Dictionary<int, MultiSet>();
+            Func<int, IEnumerable<Tuple<int, T>>> GetIncomingMoves;
             MultiSetBuilder msb;
 
             internal Dictionary<int, MultiSet> Incoming
@@ -3589,7 +3839,7 @@ namespace Microsoft.Automata
                 {
                     block = blocks.Last.Value;
                     blocks.RemoveLast();
-                    
+
                 }
                 return block;
             }
@@ -3632,7 +3882,7 @@ namespace Microsoft.Automata
                 }
             }
         }
- 
+
         //internal class Block : IEnumerable<int>
         //{
         //    int representative = -1;
@@ -3697,7 +3947,6 @@ namespace Microsoft.Automata
                     W.Push(finalBlock);
             }
             else
-
             {
                 // This version should work when you don't want to make the automaton total
                 W.Push(nonfinalBlock);
@@ -3879,7 +4128,7 @@ namespace Microsoft.Automata
                     if (algebra.IsSatisfiable(algebra.MkAnd(move.Label, cond)))
                         yield return move.SourceState;
         }
-         
+
         /// <summary>
         /// Extension of standard minimization of FAs, use timeout.
         /// This is a naive cubic algorithm.
@@ -3892,14 +4141,14 @@ namespace Microsoft.Automata
 
             var fa = this;
             var sw = new System.Diagnostics.Stopwatch();
-            long timeoutLimit=timeout;
+            long timeoutLimit = timeout;
             if (timeout > 0)
                 sw.Start();
 
             if (fa.IsDeterministic != true)
                 throw new ArgumentException("FA must be deterministic");
-            
-            if(!isTotal)
+
+            if (!isTotal)
                 fa = fa.MakeTotal();
 
             Equivalence E = new Equivalence();
@@ -3919,7 +4168,7 @@ namespace Microsoft.Automata
                     if ((sIsFinal && tIsFinal) || (!sIsFinal && !tIsFinal))
                         E.Add(p, q);
                 }
-                CheckTimeout(sw,timeoutLimit);
+                CheckTimeout(sw, timeoutLimit);
             }
 
             //refine E
@@ -4219,7 +4468,7 @@ namespace Microsoft.Automata
         /// Returns 0.0 if q is not a final state.
         /// </summary>
         /// <param name="q">given state of the automaton</param>
-        public double GetProbability(int q) 
+        public double GetProbability(int q)
         {
             if (probabilities == null)
                 throw new AutomataException(AutomataExceptionKind.ProbabilitiesHaveNotBeenComputed);
@@ -4281,7 +4530,7 @@ namespace Microsoft.Automata
                 }
                 if (IsFinalState(st))
                 {
-                    transitionCardinalities[k-1] = BigInt.One;
+                    transitionCardinalities[k - 1] = BigInt.One;
                 }
                 double acc = 0.0;
                 for (int j = 0; j < transitionCardinalities.Length; j++)
@@ -4323,7 +4572,7 @@ namespace Microsoft.Automata
                 return null; //st is a final state and end of string was chosen here
         }
 
-        internal void EliminateWordBoundaries(Func<bool,T> getWordCharPred)
+        internal void EliminateWordBoundaries(Func<bool, T> getWordCharPred)
         {
             IBooleanAlgebra<T> solver = algebra;
 
@@ -4352,8 +4601,8 @@ namespace Microsoft.Automata
             while (stack.Count > 0)
             {
                 var b = stack.Pop();
-                var p1 = maxState+1;
-                var p2 = maxState+2;
+                var p1 = maxState + 1;
+                var p2 = maxState + 2;
                 maxState = p2;
 
 
@@ -4370,10 +4619,10 @@ namespace Microsoft.Automata
                     var cond2 = solver.MkAnd(move.Label, not_wordCharPred);
                     if (solver.IsSatisfiable(cond1))
                         AddMove(Move<T>.Create(move.SourceState, p1, cond1));
-                        //newMoves.Add(Move<S>.M(move.SourceState, p1, cond1));
+                    //newMoves.Add(Move<S>.M(move.SourceState, p1, cond1));
                     if (solver.IsSatisfiable(cond2))
                         AddMove(Move<T>.Create(move.SourceState, p2, cond2));
-                       // newMoves.Add(Move<S>.M(move.SourceState, p2, cond2));
+                    // newMoves.Add(Move<S>.M(move.SourceState, p2, cond2));
                 }
 
                 foreach (var move in exitingMoves)
@@ -4382,19 +4631,19 @@ namespace Microsoft.Automata
                     var cond2 = solver.MkAnd(move.Label, not_wordCharPred);
                     if (solver.IsSatisfiable(cond2))
                         AddMove(Move<T>.Create(p1, move.TargetState, cond2));
-                        //newMoves.Add(Move<S>.M(p1, move.TargetState, cond2));
+                    //newMoves.Add(Move<S>.M(p1, move.TargetState, cond2));
                     if (solver.IsSatisfiable(cond1))
                         AddMove(Move<T>.Create(p2, move.TargetState, cond1));
-                        //newMoves.Add(Move<S>.M(p2, move.TargetState, cond1));
+                    //newMoves.Add(Move<S>.M(p2, move.TargetState, cond1));
                 }
 
                 if (isAtStart)
                     AddMove(Move<T>.Epsilon(initialState, p2));
-                    //newMoves.Add(Move<S>.Epsilon(initialState, p2));
+                //newMoves.Add(Move<S>.Epsilon(initialState, p2));
 
                 if (isAtEnd)
                     AddMove(Move<T>.Epsilon(p1, sink));
-                    //newMoves.Add(Move<S>.Epsilon(p1, sink));
+                //newMoves.Add(Move<S>.Epsilon(p1, sink));
 
                 //foreach (var move in newMoves)
                 //    AddMove(move);
@@ -4420,7 +4669,7 @@ namespace Microsoft.Automata
                 if (initialState == q1)
                     b = true;
                 foreach (var move in GetNonepsilonMovesTo(q1))
-                    res.Add(move); 
+                    res.Add(move);
             }
             isAtStart = b;
             return res;
@@ -4448,7 +4697,7 @@ namespace Microsoft.Automata
         /// </summary>
         /// <param name="pStart">given start state</param>
         /// <returns>(label path, final state) or null</returns>
-        public Tuple<T[],int> FindShortestFinalPath(int pStart)
+        public Tuple<T[], int> FindShortestFinalPath(int pStart)
         {
             if (!this.delta.ContainsKey(pStart))
                 throw new AutomataException(AutomataExceptionKind.AutomatonInvalidState);
@@ -4546,7 +4795,8 @@ namespace Microsoft.Automata
             reprChosen = false;
         }
 
-        internal Block() : base()
+        internal Block()
+            : base()
         {
             set = new HashSet<int>();
         }
@@ -4873,7 +5123,7 @@ namespace Microsoft.Automata
             return dfaStateId;
         }
 
-        int[] nothing = new int[] {};
+        int[] nothing = new int[] { };
         public override IEnumerable<int> GetMembers(int dfaState)
         {
             if (dfaState == 0)
@@ -4893,4 +5143,3 @@ namespace Microsoft.Automata
 
     #endregion
 }
-

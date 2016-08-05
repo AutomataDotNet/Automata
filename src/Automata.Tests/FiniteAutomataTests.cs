@@ -683,7 +683,7 @@ namespace Microsoft.Automata.Tests
 
                 string regex = regexes[i];
                 var sfa = rex.CreateFromRegexes(regex);
-                var msfa = rex.Minimize(sfa);
+                var msfa = sfa.Minimize();
                 //var msfa2 = sfa.Determinize(rex.Solver).MinimizeClassical(rex.Solver);
                 //Assert.IsTrue(rex.AreEquivalent(sfa, msfa2));
                 bool eq = rex.AreEquivalent(sfa, msfa);

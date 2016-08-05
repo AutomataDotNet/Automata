@@ -155,6 +155,7 @@
     <Compile Include="STBuilder.cs" />
     <Compile Include="StringUtility.cs" />
     <Compile Include="ThreeAutomaton.cs" />
+    <Compile Include="UnionFindHopKarp.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
