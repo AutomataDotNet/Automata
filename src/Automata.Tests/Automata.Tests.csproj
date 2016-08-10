@@ -75,6 +75,7 @@
     <Compile Include="EditDistanceTest.cs" />
     <Compile Include="FiniteAutomataTests.cs" />
     <Compile Include="HashSetSolverTests.cs" />
+    <Compile Include="MinimizationTests.cs" />
     <Compile Include="MiscRegexConversionTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RegexToSMTTests.cs" />

@@ -349,7 +349,11 @@ namespace Microsoft.Automata
 
         public void ShowGraph(string name = "Automaton")
         {
-            Internal.DirectedGraphs.DgmlWriter.ShowGraph<T>(-1, this, name);
+            CharSetSolver css = this.algebra as CharSetSolver;
+            if (css != null)
+                css.ShowGraph(this as Automaton<BDD>, name);
+            else
+                Internal.DirectedGraphs.DgmlWriter.ShowGraph<T>(-1, this, name);
         }
 
         /// <summary>
