@@ -2910,6 +2910,17 @@ namespace Microsoft.Automata
         /// Minimization of SFAs.
         /// Can also be applied to nondeterministic SFAs.
         /// </summary>
+        public Automaton<T> NonDetGetMinAut(bool useQuadratic)
+        {
+            if (useQuadratic)
+                return MinSFA(this);
+            return MinSFANew(this);
+        }
+
+        /// <summary>
+        /// Minimization of SFAs.
+        /// Can also be applied to nondeterministic SFAs.
+        /// </summary>
         public Automaton<T> Minimize()
         {
             if (IsEmpty)
@@ -2927,25 +2938,26 @@ namespace Microsoft.Automata
 
             if (fa.isDeterministic)
             {
-                return MinSFANew(fa);
+                return MinSFA(fa);
             }
             else
             {
-                var fa_m = MinSFANew(fa);
-                if (fa_m.StateCount < fa.StateCount)
-                {
-                    var fa_m_r = fa_m.Reverse().RemoveEpsilons();
-                    var fa_m_r_m = MinSFANew(fa_m_r);
-                    var fa_m_r_m_r = fa_m_r_m.Reverse().RemoveEpsilons();
-                    if (fa_m.StateCount <= fa_m_r_m_r.StateCount)
-                        return fa_m;
-                    else
-                        return fa_m_r_m_r;
-                }
-                else
-                {
-                    return fa;
-                }
+                return MinSFANew(fa);
+                //var fa_m = MinSFA(fa);
+                //if (fa_m.StateCount < fa.StateCount)
+                //{
+                //    var fa_m_r = fa_m.Reverse().RemoveEpsilons();
+                //    var fa_m_r_m = MinSFANew(fa_m_r);
+                //    var fa_m_r_m_r = fa_m_r_m.Reverse().RemoveEpsilons();
+                //    if (fa_m.StateCount <= fa_m_r_m_r.StateCount)
+                //        return fa_m;
+                //    else
+                //        return fa_m_r_m_r;
+                //}
+                //else
+                //{
+                //    return fa;
+                //}
             }
         }
 
@@ -3002,7 +3014,6 @@ namespace Microsoft.Automata
 
             Func<T, T, T> MkDiff = (x, y) => solver.MkAnd(x, solver.MkNot(y));
 
-
             while (!W.IsEmpty)
             {
                 var B = W.Pop();
@@ -3015,28 +3026,48 @@ namespace Microsoft.Automata
                 foreach (var q in Gamma.Keys)
                     relevant.Add(Blocks[q]);
 
+                var KeySet = new HashSet<int>(Gamma.Keys);
                 foreach (var P in relevant)
                 {
-                    var P1 = new Block(Gamma.Keys, P.Contains); //all q in Gamma.Keys such that P.Contains(q)
-                    if (P1.Count < P.Count)
-                    {
-                        var P2 = new Block(P);
-                        foreach (var p in P1)
-                        {
-                            P2.Remove(p);
-                            Blocks[p] = P1;
-                        }
-                        foreach (var p in P2)
-                            Blocks[p] = P2;
+                    var P1 = new Block();
+                    var P2 = new Block();
 
-                        if (W.Contains(P2))
+                    foreach (var p in P)
+                    {
+                        if (KeySet.Contains(p))
                         {
-                            W.Push(P1);
-                            ComplementBlock[P1] = ComplementBlock[P];
-                            ComplementBlock[P2] = ComplementBlock[P];
+                            P1.Add(p);
+                            Blocks[p] = P1;
                         }
                         else
                         {
+                            P2.Add(p);
+                            Blocks[p] = P2;
+                        }                            
+                    }
+
+                    //If it was there put both halves otherwise only one half
+                    if (W.Contains(P))
+                    {
+                        W.Remove(P);
+
+                        if (P1.Count > 0)
+                        {
+                            W.Push(P1);
+                            ComplementBlock[P1] = ComplementBlock[P];
+                        }
+
+                        if (P2.Count > 0)
+                        {
+                            W.Push(P2);
+                            ComplementBlock[P2] = ComplementBlock[P];
+                        }
+                    }
+                    else
+                    {
+                        if (P1.Count > 0 && P2.Count>0)
+                        {
+                            // If both non-empty keep the smallest
                             if (P2.Count <= P1.Count)
                             {
                                 W.Push(P2);
@@ -3054,31 +3085,37 @@ namespace Microsoft.Automata
 
 
                 //in each relevant block all states lead to B due to the initial splitting
-                var relevant2 = new List<Block>();
+                var relevant2 = new HashSet<Block>();
                 foreach (var q in Gamma.Keys)
                     if (Blocks[q].Count > 1)
                         relevant2.Add(Blocks[q]); //collect the relevant blocks
 
+                var relevantList = new List<Block>(relevant2);
 
                 //only relevant blocks are potentially split               
-                while (relevant2.Count > 0)
+                while (relevantList.Count > 0)
                 {
-                    var P = relevant2[0];
-                    relevant2.RemoveAt(0);
+                    var P = relevantList[0];
+                    relevantList.RemoveAt(0);
 
                     var PE = P.GetEnumerator();
                     PE.MoveNext();
 
                     var P1 = new Block();
+                    var P2 = new Block();
+
+                    P1.Add(PE.Current);
+                    Blocks[PE.Current] = P1;
+
                     bool splitFound = false;
                     bool diffSplitFound = false;
 
                     var psi = Gamma[PE.Current];
-                    P1.Add(PE.Current); //note that PE has at least 2 elements
                     var psihat = solver.False;
                     if (!autom.isDeterministic && GammaHat.ContainsKey(PE.Current))
                         psihat = GammaHat[PE.Current];
-                    var curr_shared_witness = solver.MkAnd(psi, psihat);
+
+                    var curr_shared_witness = solver.MkAnd(psi, psihat);                    
 
                     #region compute P1 as the new sub-block of P
                     while (PE.MoveNext())
@@ -3098,13 +3135,30 @@ namespace Microsoft.Automata
                             {
                                 var psi_and_phi = solver.MkAnd(psi, phi);
                                 if (solver.IsSatisfiable(psi_and_phi))
+                                {
                                     P1.Add(q);
+                                    Blocks[q] = P1;
+                                }
+                                else
+                                {
+                                    P2.Add(q);
+                                    Blocks[q] = P2;
+                                }
+                                    
                             }
                             else
                             {
                                 var shared_area = solver.MkAnd(curr_shared_witness, phi_inters_phihat);
                                 if (solver.IsSatisfiable(shared_area))
+                                {
                                     P1.Add(q);
+                                    Blocks[q] = P1;
+                                }
+                                else
+                                {
+                                    P2.Add(q);
+                                    Blocks[q] = P2;
+                                }
                             }
                         }
                         else
@@ -3116,6 +3170,9 @@ namespace Microsoft.Automata
                                 //there is some a: p --a--> B and q --a--> compl(B) 
                                 psi = psi_min_phi;
                                 splitFound = true;
+
+                                P2.Add(q);
+                                Blocks[q] = P2;
                             }
                             else // [[psi]] is subset of [[phi]]
                             {
@@ -3123,8 +3180,13 @@ namespace Microsoft.Automata
                                 if (solver.IsSatisfiable(phi_min_psi))
                                 {
                                     //there is some a: q --a--> B and p --a--> compl(B) for all p in C1
-                                    P1.Clear();
+                                    var tmp = P1;
+                                    P1 = P2;
+                                    P2 = tmp;
+
                                     P1.Add(q);
+                                    Blocks[q] = P1;
+
                                     psi = phi_min_psi;
                                     splitFound = true;
                                 }
@@ -3138,6 +3200,9 @@ namespace Microsoft.Automata
                                             //there is some a: p --a--> B p--a--> compl(b) and q--a--> B  but not q--a--> compl(B)
                                             curr_shared_witness = shared_area;
                                             diffSplitFound = true;
+
+                                            P2.Add(q);
+                                            Blocks[q] = P2;
                                         }
                                         else
                                         {
@@ -3145,17 +3210,28 @@ namespace Microsoft.Automata
                                             if (solver.IsSatisfiable(shared_area))
                                             {
                                                 //there is some a: q --a--> B q--a--> compl(b) and p--a--> B  but not p--a--> compl(B)
-                                                P1.Clear();
+                                                var tmp = P1;
+                                                P1 = P2;
+                                                P2 = tmp;
+
                                                 P1.Add(q);
+                                                Blocks[q] = P1;
+
                                                 curr_shared_witness = shared_area;
                                                 diffSplitFound = true;
                                             }
                                             else
+                                            {
                                                 P1.Add(q); //psi and phi are equivalent and phihat and psihat are equivalent
+                                                Blocks[q] = P1;
+                                            }
                                         }
                                     }
                                     else
+                                    {
                                         P1.Add(q); //psi and phi are equivalent
+                                        Blocks[q] = P1;
+                                    }
                                 }
                             }
                         }
@@ -3163,25 +3239,27 @@ namespace Microsoft.Automata
                     #endregion
 
                     #region split P
-                    if (P1.Count < P.Count)
+                    //If it was there put both halves otherwise only one half
+                    if (W.Contains(P))
                     {
-                        var P2 = new Block(P);
-                        foreach (var p in P1)
-                        {
-                            P2.Remove(p);
-                            Blocks[p] = P1;
-                        }
-                        foreach (var p in P2)
-                            Blocks[p] = P2;
-
-                        if (W.Contains(P2))
+                        W.Remove(P);
+                        if (P1.Count > 0)
                         {
                             W.Push(P1);
                             ComplementBlock[P1] = ComplementBlock[P];
+                        }
+                        if (P2.Count > 0)
+                        {
+                            W.Push(P2);
                             ComplementBlock[P2] = ComplementBlock[P];
                         }
-                        else
+                        
+                    }
+                    else
+                    {
+                        if (P1.Count > 0 && P2.Count>0)
                         {
+                            // If both non-empty keep the smallest
                             if (P2.Count <= P1.Count)
                             {
                                 W.Push(P2);
@@ -3193,11 +3271,14 @@ namespace Microsoft.Automata
                                 ComplementBlock[P1] = P2;
                             }
                         }
-                        // Something was split
+                    }
+                    // Something was split
+                    if (P1.Count > 0 && P2.Count > 0)
+                    {
                         if (P1.Count > 1)
-                            relevant2.Add(P1);
+                            relevantList.Add(P1);
                         if (P2.Count > 1)
-                            relevant2.Add(P2);
+                            relevantList.Add(P2);
                     }
                     #endregion
                 }
@@ -3235,8 +3316,9 @@ namespace Microsoft.Automata
             Func<T, T, T> MkDiff = (x, y) => solver.MkAnd(x, solver.MkNot(y));
 
             while (!W.IsEmpty)
-            {
+            {                
                 var B = W.Pop();
+
                 var Bcopy = new Block(B);                //make a copy of B for iterating over its elemenents
                 var Gamma = new Dictionary<int, T>();     //joined conditions leading to B from states leading to B
                 foreach (var q in Bcopy)
@@ -3280,17 +3362,17 @@ namespace Microsoft.Automata
 
 
                 //in each relevant block all states lead to B due to the initial splitting
-                var relevant2 = new List<Block>();
+                var relevant2 = new HashSet<Block>();
                 foreach (var q in Gamma.Keys)
                     if (Blocks[q].Count > 1)
                         relevant2.Add(Blocks[q]); //collect the relevant blocks
-
+                var relevantList = new List<Block>(relevant2);
 
                 //only relevant blocks are potentially split               
-                while (relevant2.Count > 0)
+                while (relevantList.Count>0)
                 {
-                    var P = relevant2[0];
-                    relevant2.RemoveAt(0);
+                    var P = relevantList[0];
+                    relevantList.RemoveAt(0);
 
                     var PE = P.GetEnumerator();
                     PE.MoveNext();
@@ -3362,9 +3444,9 @@ namespace Microsoft.Automata
 
                         // Something was split
                         if (P.Count > 1)
-                            relevant2.Add(P);
+                            relevantList.Add(P);
                         if (P1.Count > 1)
-                            relevant2.Add(P1);
+                            relevantList.Add(P1);
                     }
                     #endregion
                 }
@@ -4868,7 +4950,7 @@ namespace Microsoft.Automata
 
         internal bool IsEmpty
         {
-            get { return list == null; }
+            get { return set.Count == 0; }
         }
 
         internal void Push(Block b)
@@ -4879,15 +4961,27 @@ namespace Microsoft.Automata
 
         internal Block Pop()
         {
-            var b = list.First;
-            list = list.Rest;
-            set.Remove(b);
-            return b;
+            while (true)
+            {
+                var b = list.First;
+                list = list.Rest;
+                if (set.Contains(b))
+                {
+                    set.Remove(b);
+                    return b;
+                }                
+            }
         }
 
         internal bool Contains(Block b)
         {
             return set.Contains(b);
+        }
+
+        internal void Remove(Block b)
+        {
+            if (Contains(b))
+                set.Remove(b);
         }
 
         public override string ToString()

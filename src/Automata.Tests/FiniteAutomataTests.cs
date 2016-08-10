@@ -680,7 +680,6 @@ namespace Microsoft.Automata.Tests
             string[] regexes = SampleRegexes.regexes;
             for (int i = 0; i < regexes.Length; i++)
             {
-
                 string regex = regexes[i];
                 var sfa = rex.CreateFromRegexes(regex);
                 var msfa = sfa.Minimize();

@@ -62,6 +62,8 @@
     <Compile Include="FastExperiment.cs" />
     <Compile Include="GenerateTAs.cs" />
     <Compile Include="LargeAlphabetExperiment.cs" />
+    <Compile Include="nfa-minimization\RegexExperiment.cs" />
+    <Compile Include="nfa-minimization\NFAUtil.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RecognizerGenerator.cs" />
@@ -74,6 +76,10 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Automata.Tests\Automata.Tests.csproj">
+      <Project>{d437274d-5bfd-42fd-bbe5-96c4c0ffba05}</Project>
+      <Name>Automata.Tests</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Automata.Z3\Automata.Z3.csproj">
       <Project>{7fe1092a-83f9-4f34-a04c-815cab2bd35b}</Project>
       <Name>Automata.Z3</Name>

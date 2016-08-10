@@ -16,6 +16,7 @@ namespace RunExperiments
 {
     class Program
     {
+        
 
         static internal string path = @"..\..\benchmark\";
         static internal int timeOut = 299999; // 5 minutes
@@ -25,6 +26,9 @@ namespace RunExperiments
         static internal string timbukFileDM = "dtaminrestimbuk.txt";
         static internal string largeAlphabetFile = "largeAlphabetResults.txt";
         static internal string fastFile = "fastResults.txt";
+        static internal string regexOutputFile = "nfaRegexMinResults.txt";
+
+        static internal string regexInputFile = "regexes.txt";
 
         static internal string timbukPrefix = "timbuk";
         static internal string largeAlphabetPrefix = "large";
@@ -46,14 +50,16 @@ namespace RunExperiments
             //DTAMINParsing.RunGeneration();
 
             // Rune experiments                    
-            LargeAlphabetExperiment.RunTest();
-            FastExperiment.RunTest();
-            TimbukExperiment.RunTest();
+            //LargeAlphabetExperiment.RunTest();
+            //FastExperiment.RunTest();
+            //TimbukExperiment.RunTest();
 
-            //Gather results in text files            
-            Util.GatherResults(largeAlphabetFile, largeAlphabetPrefix);
-            Util.GatherResults(fastFile, fastPrefix);
-            Util.GatherResultsTimbuk(timbukFile, timbukFileDM, timbukPrefix);
+            ////Gather results in text files            
+            //Util.GatherResults(largeAlphabetFile, largeAlphabetPrefix);
+            //Util.GatherResults(fastFile, fastPrefix);
+            //Util.GatherResultsTimbuk(timbukFile, timbukFileDM, timbukPrefix);
+
+            RegexExperiment.RunTest();
         }
 
     }
