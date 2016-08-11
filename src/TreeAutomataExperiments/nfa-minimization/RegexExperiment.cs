@@ -18,6 +18,7 @@ namespace RunExperiments
     class RegexExperiment
     {
         static int startAt=0;
+        static int endAt = 5000;
 
         public static void RunTest()
         {
@@ -29,7 +30,7 @@ namespace RunExperiments
             var lines = File.ReadAllLines(Program.path + Program.regexInputFile);
 
             var rex = new Microsoft.Automata.Rex.RexEngine(BitWidth.BV16);
-            for (int i = 0; i < lines.Length; i++)
+            for (int i = 0; i < Math.Min(lines.Length, endAt); i++)
             {
                 if (i >= startAt)
                 {
@@ -41,13 +42,12 @@ namespace RunExperiments
                     }
                     catch (Exception e)
                     {
+                        e = e;
                         //Console.WriteLine("Can't parse " + regex);
                         //Console.WriteLine(e);
                     }
                 }
             }
-
-
         }
 
     }

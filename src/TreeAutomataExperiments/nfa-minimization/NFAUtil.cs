@@ -16,7 +16,12 @@ using Microsoft.Automata.Rex;
 namespace RunExperiments
 {
     class NFAUtil
-    {       
+    {
+
+        static double GetAvgTime(long t, long max)
+        {
+            return (double)(t-max) / (double)(Program.numTests-1);
+        }
 
         //Runs the three algorithms. It requires the deterministic automton, the total automaton, and the output file
         public static void RunAllAlgorithms(Automaton<BDD> automaton, 
@@ -26,23 +31,38 @@ namespace RunExperiments
             Automaton<BDD> algo2Min = null;
 
             var noEps = automaton.RemoveEpsilons().MakeTotal();
+            noEps.isDeterministic = false;
 
             if (noEps == null)
                 return;
 
             // Quardatic algorithm
             int time = System.Environment.TickCount;
+            int maxTime = 0;
             for (int i = 0; i < Program.numTests; i++)
+            {
+                int tLoc = System.Environment.TickCount;
                 algo1Min = noEps.NonDetGetMinAut(true);
-              
-            var timeAlgo1 = (System.Environment.TickCount - time) / Program.numTests;
+                maxTime = Math.Max(System.Environment.TickCount - tLoc, maxTime);
+
+                //Console.WriteLine(System.Environment.TickCount - tLoc);
+            }
+
+            var timeAlgo1 = GetAvgTime(System.Environment.TickCount - time,maxTime);
 
             // Logarithmic algorithm
             time = System.Environment.TickCount;
+            maxTime = 0;
             for (int i = 0; i < Program.numTests; i++)
-                algo2Min = noEps.NonDetGetMinAut(false); 
-            
-            var timeAlgo2 = (System.Environment.TickCount - time) / Program.numTests;
+            {
+                int tLoc = System.Environment.TickCount;
+                algo2Min = noEps.NonDetGetMinAut(false);
+                maxTime = Math.Max(System.Environment.TickCount - tLoc, maxTime);
+
+                //Console.WriteLine(System.Environment.TickCount - tLoc);
+            }
+
+            var timeAlgo2 = GetAvgTime(System.Environment.TickCount - time, maxTime);
 
             
             //Check that results are correct
@@ -68,8 +88,8 @@ namespace RunExperiments
                     noEps.MoveCount,
                     algo1Min.StateCount,
                     algo1Min.MoveCount,
-                    timeAlgo1.ToString(),
-                    timeAlgo2.ToString());
+                    timeAlgo1+0.1,
+                    timeAlgo2+0.1);
             }
 
         }

@@ -2990,9 +2990,8 @@ namespace Microsoft.Automata
                     return BlockPre[B];
                 else
                 {
-                    var dicB = new Dictionary<int, T>();
-                    var Bcopy = new Block(B); //make a copy of B for iterating over its elemenents
-                    foreach (var q in Bcopy)
+                    var dicB = new Dictionary<int, T>();                    
+                    foreach (var q in B)
                         foreach (var move in fa.deltaInv[q]) //moves leading to q
                             if (Blocks[move.SourceState].Count > 1) //singleton blocks cannot be further split
                                 if (dicB.ContainsKey(move.SourceState))
@@ -3019,11 +3018,11 @@ namespace Microsoft.Automata
             Func<T, T, T> MkDiff = (x, y) => solver.MkAnd(x, solver.MkNot(y));
 
             while (!W.IsEmpty)
-            {
+            {                
+
                 var B = W.Pop();
 
-                var Gamma = GetBlockPre(B);
-                var GammaHat = autom.isDeterministic ? null : GetBlockPre(ComplementBlock[B]);
+                var Gamma = GetBlockPre(B);                
 
                 #region apply initial splitting without using guards
                 var relevant = new HashSet<Block>();
@@ -3084,6 +3083,12 @@ namespace Microsoft.Automata
                             }
                         }
                     }
+
+                    if (P1.Count == P.Count && BlockPre.ContainsKey(P))
+                        BlockPre[P1] = BlockPre[P];
+                    
+                    if (P2.Count == P.Count && BlockPre.ContainsKey(P))
+                        BlockPre[P2] = BlockPre[P];
                 }
                 #endregion
 
@@ -3095,6 +3100,10 @@ namespace Microsoft.Automata
                         relevant2.Add(Blocks[q]); //collect the relevant blocks
 
                 var relevantList = new List<Block>(relevant2);
+
+                Dictionary<int, T> GammaHat = null;
+                if(relevantList.Count>0 && !autom.isDeterministic)
+                    GammaHat = GetBlockPre(ComplementBlock[B]);
 
                 //only relevant blocks are potentially split               
                 while (relevantList.Count > 0)
@@ -3121,7 +3130,7 @@ namespace Microsoft.Automata
 
                     var curr_shared_witness = solver.MkAnd(psi, psihat);                    
 
-                    #region compute P1 as the new sub-block of P
+                    #region compute P1 and P2 as subblocks
                     while (PE.MoveNext())
                     {
                         var q = PE.Current;
@@ -3198,6 +3207,10 @@ namespace Microsoft.Automata
                                 {
                                     if (!autom.isDeterministic)
                                     {
+                                        //Delay creation of GammaHat as much as possible
+                                        if(GammaHat==null)
+                                            GammaHat = GetBlockPre(ComplementBlock[B]);
+
                                         var shared_area = MkDiff(curr_shared_witness, phi_inters_phihat);
                                         if (solver.IsSatisfiable(shared_area))
                                         {
@@ -3243,6 +3256,13 @@ namespace Microsoft.Automata
                     #endregion
 
                     #region split P
+                    //If nothing changed, copy the pre-function
+                    if (P1.Count == P.Count && BlockPre.ContainsKey(P))
+                        BlockPre[P1] = BlockPre[P];
+
+                    if (P2.Count == P.Count && BlockPre.ContainsKey(P))
+                        BlockPre[P2] = BlockPre[P];
+
                     //If it was there put both halves otherwise only one half
                     if (W.Contains(P))
                     {
@@ -3250,7 +3270,7 @@ namespace Microsoft.Automata
                         if (P1.Count > 0)
                         {
                             W.Push(P1);
-                            ComplementBlock[P1] = ComplementBlock[P];
+                            ComplementBlock[P1] = ComplementBlock[P];                            
                         }
                         if (P2.Count > 0)
                         {
@@ -3318,9 +3338,10 @@ namespace Microsoft.Automata
                 W.Push(finalBlock);
 
             Func<T, T, T> MkDiff = (x, y) => solver.MkAnd(x, solver.MkNot(y));
-
+            
             while (!W.IsEmpty)
-            {                
+            {
+
                 var B = W.Pop();
 
                 var Bcopy = new Block(B);                //make a copy of B for iterating over its elemenents
