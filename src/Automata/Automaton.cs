@@ -3129,7 +3129,8 @@ namespace Microsoft.Automata
                     if (!autom.isDeterministic && GammaHat.ContainsKey(p))
                         psihat = GammaHat[p];
 
-                    var curr_shared_witness = solver.MkAnd(psi, psihat);                    
+                    var psi_and_psihat = solver.MkAnd(psi, psihat);
+                    var witness = solver.False;
 
                     #region compute P1 and P2 as subblocks
                     while (PE.MoveNext())
@@ -3147,8 +3148,8 @@ namespace Microsoft.Automata
                         {
                             if (splitFound)
                             {
-                                var psi_and_phi = solver.MkAnd(psi, phi);
-                                if (solver.IsSatisfiable(psi_and_phi))
+                                var inters = solver.MkAnd(witness, phi);
+                                if (solver.IsSatisfiable(inters))
                                 {
                                     P1.Add(q);
                                     Blocks[q] = P1;
@@ -3162,8 +3163,8 @@ namespace Microsoft.Automata
                             }
                             else
                             {
-                                var shared_area = solver.MkAnd(curr_shared_witness, phi_inters_phihat);
-                                if (solver.IsSatisfiable(shared_area))
+                                var inters = solver.MkAnd(witness, phi_inters_phihat);
+                                if (solver.IsSatisfiable(inters))
                                 {
                                     P1.Add(q);
                                     Blocks[q] = P1;
@@ -3178,11 +3179,10 @@ namespace Microsoft.Automata
                         else
                         {
                             // Look for a splitter
-                            var psi_min_phi = MkDiff(psi, phi);
-                            if (solver.IsSatisfiable(psi_min_phi))
+                            witness = MkDiff(psi, phi);
+                            if (solver.IsSatisfiable(witness))
                             {
                                 //there is some a: p --a--> B and q --a--> compl(B) 
-                                psi = psi_min_phi;
                                 splitFound = true;
 
                                 P2.Add(q);
@@ -3190,8 +3190,8 @@ namespace Microsoft.Automata
                             }
                             else // [[psi]] is subset of [[phi]]
                             {
-                                var phi_min_psi = MkDiff(phi, psi);
-                                if (solver.IsSatisfiable(phi_min_psi))
+                                witness = MkDiff(phi, psi);
+                                if (solver.IsSatisfiable(witness))
                                 {
                                     //there is some a: q --a--> B and p --a--> compl(B) for all p in C1
                                     var tmp = P1;
@@ -3201,7 +3201,6 @@ namespace Microsoft.Automata
                                     P1.Add(q);
                                     Blocks[q] = P1;
 
-                                    psi = phi_min_psi;
                                     splitFound = true;
                                 }
                                 else
@@ -3209,14 +3208,15 @@ namespace Microsoft.Automata
                                     if (!autom.isDeterministic)
                                     {
                                         //Delay creation of GammaHat as much as possible
-                                        if(GammaHat==null)
+                                        if (GammaHat == null)
+                                        {
                                             GammaHat = GetBlockPre(ComplementBlock[B]);
+                                        }
 
-                                        var shared_area = MkDiff(curr_shared_witness, phi_inters_phihat);
-                                        if (solver.IsSatisfiable(shared_area))
+                                        witness = MkDiff(psi_and_psihat, phi_inters_phihat);
+                                        if (solver.IsSatisfiable(witness))
                                         {
                                             //there is some a: p --a--> B p--a--> compl(b) and q--a--> B  but not q--a--> compl(B)
-                                            curr_shared_witness = shared_area;
                                             diffSplitFound = true;
 
                                             P2.Add(q);
@@ -3224,8 +3224,8 @@ namespace Microsoft.Automata
                                         }
                                         else
                                         {
-                                            shared_area = MkDiff(phi_inters_phihat, curr_shared_witness);
-                                            if (solver.IsSatisfiable(shared_area))
+                                            witness = MkDiff(phi_inters_phihat, psi_and_psihat);
+                                            if (solver.IsSatisfiable(witness))
                                             {
                                                 //there is some a: q --a--> B q--a--> compl(b) and p--a--> B  but not p--a--> compl(B)
                                                 var tmp = P1;
@@ -3235,7 +3235,6 @@ namespace Microsoft.Automata
                                                 P1.Add(q);
                                                 Blocks[q] = P1;
 
-                                                curr_shared_witness = shared_area;
                                                 diffSplitFound = true;
                                             }
                                             else
