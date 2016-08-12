@@ -3141,7 +3141,7 @@ namespace Microsoft.Automata
                         if (!autom.isDeterministic && GammaHat.ContainsKey(q))
                             phihat = GammaHat[q];
 
-                        var phi_inters_phihat = solver.MkAnd(phi, phihat);
+                        var phi_and_phihat = solver.MkAnd(phi, phihat);
 
                         //Have a witness for splitting
                         if (splitFound || diffSplitFound)
@@ -3163,7 +3163,7 @@ namespace Microsoft.Automata
                             }
                             else
                             {
-                                var inters = solver.MkAnd(witness, phi_inters_phihat);
+                                var inters = solver.MkAnd(witness, phi_and_phihat);
                                 if (solver.IsSatisfiable(inters))
                                 {
                                     P1.Add(q);
@@ -3207,13 +3207,8 @@ namespace Microsoft.Automata
                                 {
                                     if (!autom.isDeterministic)
                                     {
-                                        //Delay creation of GammaHat as much as possible
-                                        if (GammaHat == null)
-                                        {
-                                            GammaHat = GetBlockPre(ComplementBlock[B]);
-                                        }
 
-                                        witness = MkDiff(psi_and_psihat, phi_inters_phihat);
+                                        witness = MkDiff(psi_and_psihat, phi_and_phihat);
                                         if (solver.IsSatisfiable(witness))
                                         {
                                             //there is some a: p --a--> B p--a--> compl(b) and q--a--> B  but not q--a--> compl(B)
@@ -3224,7 +3219,7 @@ namespace Microsoft.Automata
                                         }
                                         else
                                         {
-                                            witness = MkDiff(phi_inters_phihat, psi_and_psihat);
+                                            witness = MkDiff(phi_and_phihat, psi_and_psihat);
                                             if (solver.IsSatisfiable(witness))
                                             {
                                                 //there is some a: q --a--> B q--a--> compl(b) and p--a--> B  but not p--a--> compl(B)
