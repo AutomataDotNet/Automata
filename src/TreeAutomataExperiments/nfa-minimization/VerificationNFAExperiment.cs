@@ -17,45 +17,46 @@ namespace RunExperiments
 {
     class VerificationNFAExperiment
     {
-        static int startAt=160;
-        static int endAt = 161;
+        static int startAt = 0;
+        static int endAt = 1000;
 
         public static void RunTest()
         {
             CharSetSolver solver = new CharSetSolver(BitWidth.BV7);  //new solver using ASCII encoding
             var nfaPath = Program.path + @"NFA\";
             DirectoryInfo detDir = new DirectoryInfo(nfaPath);
-                        
+
             if (startAt == 0)
                 using (System.IO.StreamWriter outfile = new System.IO.StreamWriter(Program.path + Program.verifNFAOutputFile))
                 {
                     outfile.WriteLine("ID, StateCount, RuleCount, MinStateCount, MinRuleCount, quadratic, n log n");
                 }
 
-            int count=0;
-            foreach (var file in detDir.GetFiles("*",SearchOption.AllDirectories)) {
-                if (startAt<=count && count <= endAt)
+            int count = 0;
+            foreach (var file in detDir.GetFiles("*", SearchOption.AllDirectories))
+            {
+                if (startAt <= count && count <= endAt)
                 {
                     Automaton<BDD> detAut = TimbukNFAParser.ParseVataFile(file.FullName, solver);
                     NFAUtil.RunAllAlgorithms(detAut, file.Name, Program.verifNFAOutputFile, solver);
-                    
+
                 }
                 count++;
             }
-            
+
         }
 
-        public static Automaton<BDD> fadoToSFA (string description, CharSetSolver solver){
+        public static Automaton<BDD> fadoToSFA(string description, CharSetSolver solver)
+        {
 
             var finalStates = new HashSet<int>();
             var moves = new List<Move<BDD>>();
 
-            moves.Add(new Move<BDD>(0,1,solver.MkCharConstraint('a')));
+            moves.Add(new Move<BDD>(0, 1, solver.MkCharConstraint('a')));
 
 
 
             return Automaton<BDD>.Create(solver, 0, finalStates, moves).RemoveEpsilonLoops(); //This causes normalization
         }
-
     }
 }
