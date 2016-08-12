@@ -3117,16 +3117,17 @@ namespace Microsoft.Automata
                     var P1 = new Block();
                     var P2 = new Block();
 
-                    P1.Add(PE.Current);
-                    Blocks[PE.Current] = P1;
+                    int p = PE.Current;
+                    P1.Add(p);
+                    Blocks[p] = P1;
 
                     bool splitFound = false;
                     bool diffSplitFound = false;
 
-                    var psi = Gamma[PE.Current];
+                    var psi = Gamma[p];
                     var psihat = solver.False;
-                    if (!autom.isDeterministic && GammaHat.ContainsKey(PE.Current))
-                        psihat = GammaHat[PE.Current];
+                    if (!autom.isDeterministic && GammaHat.ContainsKey(p))
+                        psihat = GammaHat[p];
 
                     var curr_shared_witness = solver.MkAnd(psi, psihat);                    
 
