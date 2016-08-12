@@ -30,6 +30,7 @@ namespace RunExperiments
             var lines = File.ReadAllLines(Program.path + Program.regexInputFile);
 
             var rex = new Microsoft.Automata.Rex.RexEngine(BitWidth.BV16);
+            var solver = rex.Solver;
             for (int i = 0; i < Math.Min(lines.Length, endAt); i++)
             {
                 if (i >= startAt)
@@ -38,7 +39,7 @@ namespace RunExperiments
                     try
                     {
                         var sfa = rex.CreateFromRegexes(regex);
-                        NFAUtil.RunAllAlgorithms(sfa, i.ToString(), Program.regexOutputFile, rex);
+                        NFAUtil.RunAllAlgorithms(sfa, i.ToString(), Program.regexOutputFile, solver);
                     }
                     catch (Exception e)
                     {

@@ -23,7 +23,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MSO", "src\MSO\MSO.csproj",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MSO.Tests", "src\MSO.Tests\MSO.Tests.csproj", "{2E3ADC63-7A3B-4D6A-989F-09E71B5481B4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TreeAutomataExperiments", "src\TreeAutomataExperiments\TreeAutomataExperiments.csproj", "{B71C402D-52D8-4062-AAE2-2AD244D1F531}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Experiments", "src\TreeAutomataExperiments\Experiments.csproj", "{B71C402D-52D8-4062-AAE2-2AD244D1F531}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MSO.Eval", "src\MSO.Eval\MSO.Eval.csproj", "{C0D72444-2B2A-4721-A42C-D77B8796ADAA}"
 EndProject

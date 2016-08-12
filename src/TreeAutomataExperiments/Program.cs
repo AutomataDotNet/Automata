@@ -20,13 +20,15 @@ namespace RunExperiments
 
         static internal string path = @"..\..\benchmark\";
         static internal int timeOut = 299999; // 5 minutes
-        static internal int numTests = 11;
+        static internal int numTests = 2;
 
         static internal string timbukFile = "timbukResults.txt";
         static internal string timbukFileDM = "dtaminrestimbuk.txt";
         static internal string largeAlphabetFile = "largeAlphabetResults.txt";
         static internal string fastFile = "fastResults.txt";
+        
         static internal string regexOutputFile = "nfaRegexMinResults.txt";
+        static internal string verifNFAOutputFile = "nfaVerificationMinResults.txt";
 
         static internal string regexInputFile = "regexes.txt";
 
@@ -58,8 +60,9 @@ namespace RunExperiments
             //Util.GatherResults(largeAlphabetFile, largeAlphabetPrefix);
             //Util.GatherResults(fastFile, fastPrefix);
             //Util.GatherResultsTimbuk(timbukFile, timbukFileDM, timbukPrefix);
+            VerificationNFAExperiment.RunTest();
 
-            RegexExperiment.RunTest();
+            //RegexExperiment.RunTest();
         }
 
     }

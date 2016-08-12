@@ -59,18 +59,21 @@
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="FastExperiment.cs" />
-    <Compile Include="GenerateTAs.cs" />
-    <Compile Include="LargeAlphabetExperiment.cs" />
+    <Compile Include="sta-minimization\FastExperiment.cs" />
+    <Compile Include="sta-minimization\GenerateTAs.cs" />
+    <Compile Include="sta-minimization\LargeAlphabetExperiment.cs" />
+    <Compile Include="nfa-minimization\TimbukNFAParser.cs" />
+    <Compile Include="nfa-minimization\VerificationNFAExperiment.cs" />
+    <Compile Include="nfa-minimization\RandomNFAExperiment.cs" />
     <Compile Include="nfa-minimization\RegexExperiment.cs" />
     <Compile Include="nfa-minimization\NFAUtil.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="RecognizerGenerator.cs" />
-    <Compile Include="TestMinLoris.cs" />
-    <Compile Include="TimbukExperiment.cs" />
-    <Compile Include="Util.cs" />
-    <Compile Include="ParsingUtil.cs" />
+    <Compile Include="sta-minimization\RecognizerGenerator.cs" />
+    <Compile Include="sta-minimization\TestMinLoris.cs" />
+    <Compile Include="sta-minimization\TimbukExperiment.cs" />
+    <Compile Include="sta-minimization\Util.cs" />
+    <Compile Include="sta-minimization\ParsingUtil.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
@@ -93,6 +96,7 @@
       <Name>Fast</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

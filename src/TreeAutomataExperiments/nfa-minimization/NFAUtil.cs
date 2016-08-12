@@ -25,7 +25,7 @@ namespace RunExperiments
 
         //Runs the three algorithms. It requires the deterministic automton, the total automaton, and the output file
         public static void RunAllAlgorithms(Automaton<BDD> automaton, 
-            string exampleName, string outputFileName, RexEngine rex)
+            string exampleName, string outputFileName, CharSetSolver rex)
         {
             Automaton<BDD> algo1Min = null;
             Automaton<BDD> algo2Min = null;

@@ -22,7 +22,22 @@ namespace RunExperiments
 
         public static void RunTest()
         {
+            CharSetSolver solver = new CharSetSolver(BitWidth.BV7);  //new solver using ASCII encoding
+
+
             
+        }
+
+        public static Automaton<BDD> fadoToSFA (string description, CharSetSolver solver){
+
+            var finalStates = new HashSet<int>();
+            var moves = new List<Move<BDD>>();
+
+            moves.Add(new Move<BDD>(0,1,solver.MkCharConstraint('a')));
+
+
+
+            return Automaton<BDD>.Create(solver, 0, finalStates, moves).RemoveEpsilonLoops(); //This causes normalization
         }
 
     }
