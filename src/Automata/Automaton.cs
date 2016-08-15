@@ -3034,39 +3034,37 @@ namespace Microsoft.Automata
                     var P2 = new Block();
 
                     foreach (var p in P)
-                    {
                         if (KeySet.Contains(p))
-                        {
                             P1.Add(p);
-                            Blocks[p] = P1;
-                        }
-                        else
-                        {
-                            P2.Add(p);
-                            Blocks[p] = P2;
-                        }                            
-                    }
+                        else                        
+                            P2.Add(p);                     
 
                     //If it was there put both halves otherwise only one half
-                    if (W.Contains(P))
+                    if (P1.Count > 0 && P2.Count > 0)
                     {
-                        W.Remove(P);
+                        // Something was split
+                        foreach (var st in P1)
+                            Blocks[st] = P1;
+                        foreach (var st in P2)
+                            Blocks[st] = P2;
 
-                        if (P1.Count > 0)
+                        if (W.Contains(P))
                         {
-                            W.Push(P1);
-                            ComplementBlock[P1] = ComplementBlock[P];
-                        }
+                            W.Remove(P);
 
-                        if (P2.Count > 0)
-                        {
-                            W.Push(P2);
-                            ComplementBlock[P2] = ComplementBlock[P];
+                            if (P1.Count > 0)
+                            {
+                                W.Push(P1);
+                                ComplementBlock[P1] = ComplementBlock[P];
+                            }
+
+                            if (P2.Count > 0)
+                            {
+                                W.Push(P2);
+                                ComplementBlock[P2] = ComplementBlock[P];
+                            }
                         }
-                    }
-                    else
-                    {
-                        if (P1.Count > 0 && P2.Count>0)
+                        else
                         {
                             // If both non-empty keep the smallest
                             if (P2.Count <= P1.Count)
@@ -3080,12 +3078,7 @@ namespace Microsoft.Automata
                                 ComplementBlock[P1] = P2;
                             }
                         }
-                    }
-
-                    if (P1.Count == P.Count)
-                        if (BlockPre.ContainsKey(P))
-                            BlockPre[P1] = BlockPre[P];     
-                    
+                    }                    
                 }
                 #endregion
 
