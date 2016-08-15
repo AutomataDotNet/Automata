@@ -3118,7 +3118,6 @@ namespace Microsoft.Automata
 
                         int p = PE.Current;
                         P1.Add(p);
-                        Blocks[p] = P1;
 
                         bool splitFound = false;                        
                         var psi = Gamma[p];
@@ -3136,15 +3135,9 @@ namespace Microsoft.Automata
                             {
                                 var inters = solver.MkAnd(witness, phi);
                                 if (solver.IsSatisfiable(inters))
-                                {
                                     P1.Add(q);
-                                    Blocks[q] = P1;
-                                }
                                 else
-                                {
                                     P2.Add(q);
-                                    Blocks[q] = P2;
-                                }
                             }
                             else
                             {
@@ -3156,7 +3149,6 @@ namespace Microsoft.Automata
                                     splitFound = true;
 
                                     P2.Add(q);
-                                    Blocks[q] = P2;
                                 }
                                 else // [[psi]] is subset of [[phi]]
                                 {
@@ -3169,16 +3161,11 @@ namespace Microsoft.Automata
                                         P2 = tmp;
 
                                         P1.Add(q);
-                                        Blocks[q] = P1;
 
                                         splitFound = true;
                                     }
                                     else
-                                    {
-
                                         P1.Add(q); //psi and phi are equivalent
-                                        Blocks[q] = P1;
-                                    }
                                 }
                             }
                         }
@@ -3189,38 +3176,36 @@ namespace Microsoft.Automata
                         if (!splitFound)
                         {
                             gammaHatList.Add(P1);
-                            if(BlockPre.ContainsKey(P))
-                                BlockPre[P1] = BlockPre[P];                            
                         }
-
-                        // Something was split
-                        if (splitFound)
+                        else
                         {
+                            // Something was split
+                            foreach (var st in P1)
+                                Blocks[st] = P1;
+                            foreach (var st in P2)
+                                Blocks[st] = P2;
+                           
                             if (P1.Count > 1)
                                 relevantList.Add(P1);
                             if (P2.Count > 1)
                                 relevantList.Add(P2);
-                        }
 
-                        //If it was there put both halves otherwise only one half
-                        if (W.Contains(P))
-                        {
-                            W.Remove(P);
-                            if (P1.Count > 0)
+                            //If it was there put both halves otherwise only one half
+                            if (W.Contains(P))
                             {
-                                W.Push(P1);
-                                ComplementBlock[P1] = ComplementBlock[P];
+                                W.Remove(P);
+                                if (P1.Count > 0)
+                                {
+                                    W.Push(P1);
+                                    ComplementBlock[P1] = ComplementBlock[P];
+                                }
+                                if (P2.Count > 0)
+                                {
+                                    W.Push(P2);
+                                    ComplementBlock[P2] = ComplementBlock[P];
+                                }
                             }
-                            if (P2.Count > 0)
-                            {
-                                W.Push(P2);
-                                ComplementBlock[P2] = ComplementBlock[P];
-                            }
-
-                        }
-                        else
-                        {
-                            if (splitFound)
+                            else
                             {
                                 // If both non-empty keep the smallest
                                 if (P2.Count <= P1.Count)
@@ -3258,7 +3243,6 @@ namespace Microsoft.Automata
 
                         int p = PE.Current;
                         P1.Add(p);
-                        Blocks[p] = P1;
 
                         bool splitFound = false;
 
@@ -3286,16 +3270,9 @@ namespace Microsoft.Automata
                             {
                                 var inters = solver.MkAnd(witness, phi_and_phihat);
                                 if (solver.IsSatisfiable(inters))
-                                {
-                                    P1.Add(q);
-                                    Blocks[q] = P1;
-                                }
+                                    P1.Add(q);                               
                                 else
-                                {
                                     P2.Add(q);
-                                    Blocks[q] = P2;
-                                }
-
                             }
                             else
                             {
@@ -3306,7 +3283,6 @@ namespace Microsoft.Automata
                                     splitFound = true;
 
                                     P2.Add(q);
-                                    Blocks[q] = P2;
                                 }
                                 else
                                 {
@@ -3319,15 +3295,11 @@ namespace Microsoft.Automata
                                         P2 = tmp;
 
                                         P1.Add(q);
-                                        Blocks[q] = P1;
 
                                         splitFound = true;
                                     }
                                     else
-                                    {
                                         P1.Add(q); //p and q go to gammahat with same symbols
-                                        Blocks[q] = P1;
-                                    }
                                 }
 
                             }
@@ -3335,40 +3307,35 @@ namespace Microsoft.Automata
                         #endregion
 
                         #region split P
-                        //If nothing changed, copy the pre-function
-                        if (!splitFound)
+                        if (splitFound)
                         {
-                            if (BlockPre.ContainsKey(P))
-                                BlockPre[P1] = BlockPre[P];                         
-                        }
-                        else
-                        {
-                            // Something was split add to relevant
+                            // Something was split
+                            foreach (var st in P1)
+                                Blocks[st] = P1;
+                            foreach (var st in P2)
+                                Blocks[st] = P2;
+
                             if (P1.Count > 1)
                                 relevantList.Add(P1);
                             if (P2.Count > 1)
                                 relevantList.Add(P2);
-                        }
 
-                        //If it was there put both halves otherwise only one half
-                        if (W.Contains(P))
-                        {
-                            W.Remove(P);
-                            if (P1.Count > 0)
+                            //If it was there put both halves otherwise only one half
+                            if (W.Contains(P))
                             {
-                                W.Push(P1);
-                                ComplementBlock[P1] = ComplementBlock[P];
+                                W.Remove(P);
+                                if (P1.Count > 0)
+                                {
+                                    W.Push(P1);
+                                    ComplementBlock[P1] = ComplementBlock[P];
+                                }
+                                if (P2.Count > 0)
+                                {
+                                    W.Push(P2);
+                                    ComplementBlock[P2] = ComplementBlock[P];
+                                }
                             }
-                            if (P2.Count > 0)
-                            {
-                                W.Push(P2);
-                                ComplementBlock[P2] = ComplementBlock[P];
-                            }
-
-                        }
-                        else
-                        {
-                            if (splitFound)
+                            else
                             {
                                 // If both non-empty keep the smallest
                                 if (P2.Count <= P1.Count)
@@ -3382,7 +3349,7 @@ namespace Microsoft.Automata
                                     ComplementBlock[P1] = P2;
                                 }
                             }
-                        }                        
+                        }
                         #endregion
                     } 
                     #endregion                    
