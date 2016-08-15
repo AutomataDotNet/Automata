@@ -103,9 +103,16 @@ namespace RunExperiments
                     }
 
                 }
-            }
+            }            
             if (initialStates.Count > 1)
-                throw new Exception("More than one init state");
+            {
+                int specialState = 100000;
+                foreach (var st in initialStates)
+                {
+                    rules.Add(new Move<BDD>(specialState, st, null));
+                }
+                return Automaton<BDD>.Create(solver, specialState, finStates, rules).RemoveEpsilonLoops();
+            }
 
             return Automaton<BDD>.Create(solver, new List<int>(initialStates)[0], finStates, rules).RemoveEpsilonLoops();
         }

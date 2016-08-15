@@ -3015,11 +3015,9 @@ namespace Microsoft.Automata
                 ComplementBlock[finalBlock] = nonfinalBlock;
             }
 
-            Func<T, T, T> MkDiff = (x, y) => solver.MkAnd(x, solver.MkNot(y));
-
+            Func<T, T, T> MkDiff = (x, y) => solver.MkAnd(x, solver.MkNot(y));            
             while (!W.IsEmpty)
             {                
-
                 var B = W.Pop();
 
                 var Gamma = GetBlockPre(B);                
@@ -3084,11 +3082,10 @@ namespace Microsoft.Automata
                         }
                     }
 
-                    if (P1.Count == P.Count && BlockPre.ContainsKey(P))
-                        BlockPre[P1] = BlockPre[P];
+                    if (P1.Count == P.Count)
+                        if (BlockPre.ContainsKey(P))
+                            BlockPre[P1] = BlockPre[P];     
                     
-                    if (P2.Count == P.Count && BlockPre.ContainsKey(P))
-                        BlockPre[P2] = BlockPre[P];
                 }
                 #endregion
 
@@ -3101,18 +3098,13 @@ namespace Microsoft.Automata
 
                 var relevantList = new List<Block>(relevant2);
                 var gammaHatList = new List<Block>();
-                
-
-                
-                
+                                               
                 Dictionary<int, T> GammaHat = null;
-                //if(relevantList.Count>0 && !autom.isDeterministic)
-                //    GammaHat = GetBlockPre(ComplementBlock[B]);
-
+                
                 //only relevant blocks are potentially split               
                 while (relevantList.Count > 0)
-                {
-                    //only relevant blocks are potentially split               
+                {                    
+                    //this loop splits using gamma, if a block that is processed is not split, we feed it to gamma hat
                     while (relevantList.Count > 0)
                     {
                         var P = relevantList[0];
@@ -3131,7 +3123,7 @@ namespace Microsoft.Automata
                         bool splitFound = false;                        
                         var psi = Gamma[p];
 
-                        var witness = solver.False;
+                        var witness = solver.False;                        
 
                         #region compute P1 and P2 as subblocks
                         while (PE.MoveNext())
@@ -3247,8 +3239,9 @@ namespace Microsoft.Automata
                         #endregion
                     }
 
+                    
                     #region GammaHatSplit
-                    //do splitting with respect to GammaHat           
+                    //do splitting with respect to GammaHat                               
                     while (gammaHatList.Count > 0)
                     {
                         if (GammaHat == null)
@@ -3343,8 +3336,19 @@ namespace Microsoft.Automata
 
                         #region split P
                         //If nothing changed, copy the pre-function
-                        if (P1.Count == P.Count && BlockPre.ContainsKey(P))
-                            BlockPre[P1] = BlockPre[P];
+                        if (!splitFound)
+                        {
+                            if (BlockPre.ContainsKey(P))
+                                BlockPre[P1] = BlockPre[P];                         
+                        }
+                        else
+                        {
+                            // Something was split add to relevant
+                            if (P1.Count > 1)
+                                relevantList.Add(P1);
+                            if (P2.Count > 1)
+                                relevantList.Add(P2);
+                        }
 
                         //If it was there put both halves otherwise only one half
                         if (W.Contains(P))
@@ -3364,7 +3368,7 @@ namespace Microsoft.Automata
                         }
                         else
                         {
-                            if (P1.Count > 0 && P2.Count > 0)
+                            if (splitFound)
                             {
                                 // If both non-empty keep the smallest
                                 if (P2.Count <= P1.Count)
@@ -3378,18 +3382,10 @@ namespace Microsoft.Automata
                                     ComplementBlock[P1] = P2;
                                 }
                             }
-                        }
-                        // Something was split
-                        if (P1.Count > 0 && P2.Count > 0)
-                        {
-                            if (P1.Count > 1)
-                                relevantList.Add(P1);
-                            if (P2.Count > 1)
-                                relevantList.Add(P2);
-                        }
+                        }                        
                         #endregion
                     } 
-                    #endregion
+                    #endregion                    
                 }
             }
 
@@ -3422,8 +3418,7 @@ namespace Microsoft.Automata
             else
                 W.Push(finalBlock);
 
-            Func<T, T, T> MkDiff = (x, y) => solver.MkAnd(x, solver.MkNot(y));
-            
+            Func<T, T, T> MkDiff = (x, y) => solver.MkAnd(x, solver.MkNot(y));            
             while (!W.IsEmpty)
             {
 
