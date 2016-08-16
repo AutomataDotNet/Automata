@@ -3015,7 +3015,49 @@ namespace Microsoft.Automata
                 ComplementBlock[finalBlock] = nonfinalBlock;
             }
 
-            Func<T, T, T> MkDiff = (x, y) => solver.MkAnd(x, solver.MkNot(y));            
+            Func<T, T, T> MkDiff = (x, y) => solver.MkAnd(x, solver.MkNot(y));
+            #region UpdateBlocks
+            Func<Block, Block, Block, bool> UpdateBlocks = (P, P1, P2) =>
+            {
+                // Something was split
+                foreach (var st in P1)
+                    Blocks[st] = P1;
+                foreach (var st in P2)
+                    Blocks[st] = P2;
+
+                if (W.Contains(P))
+                {
+                    W.Remove(P);
+                    if (P1.Count > 0)
+                    {
+                        W.Push(P1);
+                        ComplementBlock[P1] = ComplementBlock[P];
+                    }
+
+                    if (P2.Count > 0)
+                    {
+                        W.Push(P2);
+                        ComplementBlock[P2] = ComplementBlock[P];
+                    }
+                }
+                else
+                {
+                    // If both non-empty keep the smallest
+                    if (P2.Count <= P1.Count)
+                    {
+                        W.Push(P2);
+                        ComplementBlock[P2] = P1;
+                    }
+                    else
+                    {
+                        W.Push(P1);
+                        ComplementBlock[P1] = P2;
+                    }
+                }
+                return true;
+            };
+            #endregion
+
             while (!W.IsEmpty)
             {                
                 var B = W.Pop();
@@ -3041,44 +3083,8 @@ namespace Microsoft.Automata
 
                     //If it was there put both halves otherwise only one half
                     if (P1.Count > 0 && P2.Count > 0)
-                    {
-                        // Something was split
-                        foreach (var st in P1)
-                            Blocks[st] = P1;
-                        foreach (var st in P2)
-                            Blocks[st] = P2;
-
-                        if (W.Contains(P))
-                        {
-                            W.Remove(P);
-
-                            if (P1.Count > 0)
-                            {
-                                W.Push(P1);
-                                ComplementBlock[P1] = ComplementBlock[P];
-                            }
-
-                            if (P2.Count > 0)
-                            {
-                                W.Push(P2);
-                                ComplementBlock[P2] = ComplementBlock[P];
-                            }
-                        }
-                        else
-                        {
-                            // If both non-empty keep the smallest
-                            if (P2.Count <= P1.Count)
-                            {
-                                W.Push(P2);
-                                ComplementBlock[P2] = P1;
-                            }
-                            else
-                            {
-                                W.Push(P1);
-                                ComplementBlock[P1] = P2;
-                            }
-                        }
-                    }                    
+                        UpdateBlocks(P, P1, P2);
+                                        
                 }
                 #endregion
 
@@ -3172,46 +3178,26 @@ namespace Microsoft.Automata
                         }
                         else
                         {
-                            // Something was split
-                            foreach (var st in P1)
-                                Blocks[st] = P1;
-                            foreach (var st in P2)
-                                Blocks[st] = P2;
-                           
+                            //New created blocks have to be investigated
+                            // Investigate new blocks
                             if (P1.Count > 1)
-                                relevantList.Add(P1);
+                            {
+                                foreach (var st in P1)
+                                    if (Gamma.ContainsKey(st))
+                                    {
+                                        relevantList.Add(P1);
+                                        break;
+                                    }
+                            }
                             if (P2.Count > 1)
-                                relevantList.Add(P2);
-
-                            //If it was there put both halves otherwise only one half
-                            if (W.Contains(P))
-                            {
-                                W.Remove(P);
-                                if (P1.Count > 0)
-                                {
-                                    W.Push(P1);
-                                    ComplementBlock[P1] = ComplementBlock[P];
-                                }
-                                if (P2.Count > 0)
-                                {
-                                    W.Push(P2);
-                                    ComplementBlock[P2] = ComplementBlock[P];
-                                }
-                            }
-                            else
-                            {
-                                // If both non-empty keep the smallest
-                                if (P2.Count <= P1.Count)
-                                {
-                                    W.Push(P2);
-                                    ComplementBlock[P2] = P1;
-                                }
-                                else
-                                {
-                                    W.Push(P1);
-                                    ComplementBlock[P1] = P2;
-                                }
-                            }
+                                foreach (var st in P2)
+                                    if (Gamma.ContainsKey(st))
+                                    {
+                                        relevantList.Add(P2);
+                                        break;
+                                    }
+                            
+                            UpdateBlocks(P, P1, P2);
                         }
                         
                         #endregion
@@ -3302,46 +3288,24 @@ namespace Microsoft.Automata
                         #region split P
                         if (splitFound)
                         {
-                            // Something was split
-                            foreach (var st in P1)
-                                Blocks[st] = P1;
-                            foreach (var st in P2)
-                                Blocks[st] = P2;
-
-                            if (P1.Count > 1)
-                                relevantList.Add(P1);
-                            if (P2.Count > 1)
-                                relevantList.Add(P2);
-
-                            //If it was there put both halves otherwise only one half
-                            if (W.Contains(P))
-                            {
-                                W.Remove(P);
-                                if (P1.Count > 0)
-                                {
-                                    W.Push(P1);
-                                    ComplementBlock[P1] = ComplementBlock[P];
-                                }
-                                if (P2.Count > 0)
-                                {
-                                    W.Push(P2);
-                                    ComplementBlock[P2] = ComplementBlock[P];
-                                }
+                            // Investigate new blocks
+                            if (P1.Count > 1) {
+                                foreach(var st in P1)
+                                    if (Gamma.ContainsKey(st))
+                                    {
+                                        relevantList.Add(P1);
+                                        break;
+                                    }
                             }
-                            else
-                            {
-                                // If both non-empty keep the smallest
-                                if (P2.Count <= P1.Count)
-                                {
-                                    W.Push(P2);
-                                    ComplementBlock[P2] = P1;
-                                }
-                                else
-                                {
-                                    W.Push(P1);
-                                    ComplementBlock[P1] = P2;
-                                }
-                            }
+                            if (P2.Count > 1) 
+                                foreach (var st in P2)
+                                    if (Gamma.ContainsKey(st))
+                                    {
+                                        relevantList.Add(P2);
+                                        break;
+                                    }
+
+                            UpdateBlocks(P, P1, P2);
                         }
                         #endregion
                     } 
