@@ -3168,7 +3168,7 @@ namespace Microsoft.Automata
                         //If nothing changed, copy the pre-function
                         if (!splitFound)
                         {
-                            gammaHatList.Add(P1);
+                            gammaHatList.Add(P);
                         }
                         else
                         {
