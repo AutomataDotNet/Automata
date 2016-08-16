@@ -258,6 +258,7 @@ namespace Microsoft.Automata
         InvalidName,
         InvalidPath,
         InvalidArgument_MustBeNonempty,
-        NotCartesianAlgebra
+        NotCartesianAlgebra,
+        IteBagError
     }
 }

@@ -119,6 +119,7 @@
     <Compile Include="Internal\Utilities\RegexToRangeAutomatonSerializer.cs" />
     <Compile Include="Internal\Utilities\ShiftReduceParser.cs" />
     <Compile Include="Internal\Utilities\UnicodeCategoryRangesGenerator.cs" />
+    <Compile Include="IteBag.cs" />
     <Compile Include="MintermGenerator.cs" />
     <Compile Include="Move.cs" />
     <Compile Include="OrderedSet.cs" />
