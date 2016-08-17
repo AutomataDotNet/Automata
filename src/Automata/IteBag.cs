@@ -76,9 +76,9 @@ namespace Microsoft.Automata
 
     }
 
-    internal enum BagOpertion
+    public enum BagOpertion
     {
-        PLUS, MINUS, SETMINUS, MIN, MAX
+        PLUS, MINUS, SETMINUS, MIN, MAX, ISNONEMPTYINTERSECTION
     }
 
     public class IteBagBuilder<T>
@@ -92,11 +92,30 @@ namespace Microsoft.Automata
         Dictionary<Tuple<T, IteBag<T>, IteBag<T>>, bool> intersectionEmptinessTestCache =
             new Dictionary<Tuple<T, IteBag<T>, IteBag<T>>, bool>();
 
+        //profiling info
+        Dictionary<BagOpertion, int> count = new Dictionary<BagOpertion, int>();
+        Dictionary<BagOpertion, System.Diagnostics.Stopwatch> stopwatch = new Dictionary<BagOpertion, System.Diagnostics.Stopwatch>();
+
+        public int GetCallCount(BagOpertion op)
+        {
+            return count[op];
+        }
+
+        public long GetElapsedMilliseconds(BagOpertion op)
+        {
+            return stopwatch[op].ElapsedMilliseconds;
+        }
+
         public IteBagBuilder(IBooleanAlgebra<T> algebra)
         {
             this.algebra = algebra;
             leafCache[0] = new IteBag<T>(this, 0, default(T), null, null);
             leafCache[1] = new IteBag<T>(this, 1, default(T), null, null);
+            foreach (BagOpertion op in Enum.GetValues(typeof(BagOpertion)))
+            {
+                count[op] = 0;
+                stopwatch[op] = new System.Diagnostics.Stopwatch();
+            }
         }
 
         public IteBag<T> MkSingleton(T predicate)
@@ -132,7 +151,11 @@ namespace Microsoft.Automata
 
         internal IteBag<T> Op(BagOpertion op, IteBag<T> bag1, IteBag<T> bag2)
         {
-            return OpInContext(op, algebra.True, bag1, bag2);
+            count[op] += 1;
+            stopwatch[op].Start();
+            var res = OpInContext(op, algebra.True, bag1, bag2);
+            stopwatch[op].Stop();
+            return res;
         }
 
         /// <summary>
@@ -207,7 +230,11 @@ namespace Microsoft.Automata
 
         internal bool IsNonemptyIntersection(IteBag<T> bag1, IteBag<T> bag2)
         {
-            return IsNonemptyIntersection_1(algebra.True, bag1, bag2);
+            count[BagOpertion.ISNONEMPTYINTERSECTION] += 1;
+            stopwatch[BagOpertion.ISNONEMPTYINTERSECTION].Start();
+            var res = IsNonemptyIntersection_1(algebra.True, bag1, bag2);
+            stopwatch[BagOpertion.ISNONEMPTYINTERSECTION].Stop();
+            return res;
         }
 
         private bool IsNonemptyIntersection_1(T context, IteBag<T> bag1, IteBag<T> bag2)
