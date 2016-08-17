@@ -38,9 +38,6 @@ namespace RunExperiments
 
         static void Main(string[] args)
         {
-            
-
-
             //Test generation for Fast
             // This takes hours
             //RecognizerGenerator.GenerateTAUsingFast(10, 12, 50);
@@ -60,9 +57,9 @@ namespace RunExperiments
             //Util.GatherResults(largeAlphabetFile, largeAlphabetPrefix);
             //Util.GatherResults(fastFile, fastPrefix);
             //Util.GatherResultsTimbuk(timbukFile, timbukFileDM, timbukPrefix);
-            VerificationNFAExperiment.RunTest();
+            //VerificationNFAExperiment.RunTest();
 
-            //RegexExperiment.RunTest();
+            RegexExperiment.RunTest();
         }
 
     }

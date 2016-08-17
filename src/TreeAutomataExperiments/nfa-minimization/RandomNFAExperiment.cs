@@ -23,7 +23,7 @@ namespace RunExperiments
         public static void RunTest()
         {
             CharSetSolver solver = new CharSetSolver(BitWidth.BV7);  //new solver using ASCII encoding
-
+            
 
             
         }

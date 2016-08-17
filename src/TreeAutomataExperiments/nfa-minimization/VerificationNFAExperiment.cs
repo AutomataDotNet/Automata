@@ -27,10 +27,7 @@ namespace RunExperiments
             DirectoryInfo detDir = new DirectoryInfo(nfaPath);
 
             if (startAt == 0)
-                using (System.IO.StreamWriter outfile = new System.IO.StreamWriter(Program.path + Program.verifNFAOutputFile))
-                {
-                    outfile.WriteLine("ID, StateCount, RuleCount, MinStateCount, MinRuleCount, quadratic, n log n");
-                }
+                NFAUtil.PrintHeader(Program.verifNFAOutputFile);                
 
             int count = 0;
             foreach (var file in detDir.GetFiles("*", SearchOption.AllDirectories))

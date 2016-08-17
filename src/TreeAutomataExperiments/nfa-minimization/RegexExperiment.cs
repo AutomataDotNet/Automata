@@ -22,10 +22,8 @@ namespace RunExperiments
 
         public static void RunTest()
         {
-            using (System.IO.StreamWriter outfile = new System.IO.StreamWriter(Program.path + Program.regexOutputFile, false))
-            {
-                outfile.WriteLine("ID, StateCount, RuleCount, MinStateCount, MinRuleCount, quadratic, n log n");
-            }
+
+            NFAUtil.PrintHeader(Program.regexOutputFile);
 
             var lines = File.ReadAllLines(Program.path + Program.regexInputFile);
 

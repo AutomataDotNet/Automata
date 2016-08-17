@@ -2914,11 +2914,15 @@ namespace Microsoft.Automata
         /// Minimization of SFAs.
         /// Can also be applied to nondeterministic SFAs.
         /// </summary>
-        public Automaton<T> NonDetGetMinAut(bool useQuadratic)
+        public Automaton<T> NonDetGetMinAut(int which)
         {
-            if (useQuadratic)
+            if (which==1)
                 return MinSFA(this);
-            return MinSFANew(this);
+            if (which == 2)
+                return MinSFANew(this);
+            if (which==3)
+                return MinSFACount(this);
+            throw new AutomataException("which is different than 1,2,3 ");
         }
 
         /// <summary>
@@ -3067,7 +3071,8 @@ namespace Microsoft.Automata
                 #region apply initial splitting without using guards
                 var relevant = new HashSet<Block>();
                 foreach (var q in Gamma.Keys)
-                    relevant.Add(Blocks[q]);
+                    if (Blocks[q].Count > 1)
+                        relevant.Add(Blocks[q]);
 
                 var KeySet = new HashSet<int>(Gamma.Keys);
                 foreach (var P in relevant)
@@ -3321,6 +3326,9 @@ namespace Microsoft.Automata
             ComplementBlock[finalBlock] = nonfinalBlock;
             ComplementBlock[nonfinalBlock] = finalBlock;
 
+            var startTime = 0;
+            var timer =0;
+
             //Computes and memoizes BlockPre
             Func<Block, Dictionary<int, IteBag<T>>> GetBlockPre = (B) =>
             {
@@ -3328,22 +3336,22 @@ namespace Microsoft.Automata
                     return BlockPre[B];
                 else
                 {
+                    startTime = System.Environment.TickCount;
                     var dicB = new Dictionary<int, IteBag<T>>();
+
                     foreach (var q in B)
-                    {
-                        IteBag<T> qBag = null;
                         foreach (var move in fa.deltaInv[q]) //moves leading to q
                         {
                             var moveBag = iteBuilder.MkSingleton(move.Label);
-                            if (qBag == null)
-                                qBag = moveBag;
+                            if(dicB.ContainsKey(move.SourceState)){
+                                var oldBag= dicB[move.SourceState];
+                                dicB[move.SourceState]= oldBag.Plus(moveBag);
+                            }
                             else
-                                qBag = qBag.Plus(moveBag);
+                                dicB[move.SourceState] = moveBag;
                         }
-                        if (qBag != null)
-                            dicB[q] = qBag;
-                    }
                     BlockPre[B] = dicB;
+                    timer += System.Environment.TickCount -startTime;
                     return dicB;
                 }
             };
@@ -3354,8 +3362,10 @@ namespace Microsoft.Automata
                 foreach (var q in dic1.Keys)
                 {
                     IteBag<T> qBag = dic1[q];
+                    startTime = System.Environment.TickCount;
                     if (dic2.ContainsKey(q))
                         qBag = qBag.Minus(dic2[q]);
+                    timer += System.Environment.TickCount -startTime;
                     dicNew[q] = qBag;
                 }
                 return dicNew;
@@ -3427,6 +3437,10 @@ namespace Microsoft.Automata
             };
             #endregion
 
+
+            GetBlockPre(nonfinalBlock);
+            GetBlockPre(finalBlock);
+
             Func<T, T, T> MkDiff = (x, y) => solver.MkAnd(x, solver.MkNot(y));
             while (!W.IsEmpty)
             {
@@ -3435,236 +3449,243 @@ namespace Microsoft.Automata
                 //Gamma is a bag
                 var Gamma = GetBlockPre(B);
 
-                #region apply initial splitting without using guards
+                
                 var relevant = new HashSet<Block>();
                 foreach (var q in Gamma.Keys)
-                    relevant.Add(Blocks[q]);
-
-                var KeySet = new HashSet<int>(Gamma.Keys);
-                foreach (var P in relevant)
-                {
-                    var P1 = new Block();
-                    var P2 = new Block();
-
-                    foreach (var p in P)
-                        if (KeySet.Contains(p))
-                            P1.Add(p);
-                        else
-                            P2.Add(p);
-
-                    if (P1.Count > 0 && P2.Count > 0)
-                    {
-                        // Something was split
-                        //Compute the updated pre efficiently doing the difference and update W
-                        BlockSplit(P, P1, P2);
-                        UpdateBlocks(P, P1, P2);
-                    }
-                }
-                #endregion
-
-
-                //in each relevant block all states lead to B due to the initial splitting
-                var relevant2 = new HashSet<Block>();
-                foreach (var q in Gamma.Keys)
                     if (Blocks[q].Count > 1)
-                        relevant2.Add(Blocks[q]); //collect the relevant blocks
+                        relevant.Add(Blocks[q]);
 
-                var relevantList = new List<Block>(relevant2);
-                var gammaHatList = new List<Block>();
-
-                Dictionary<int, IteBag<T>> GammaHat = null;
-
-                //only relevant blocks are potentially split               
-                while (relevantList.Count > 0)
+                if (relevant.Count > 0)
                 {
+                    #region apply initial splitting without using guards
+                    foreach (var P in relevant)
+                    {
+                        var P1 = new Block();
+                        var P2 = new Block();
+
+                        foreach (var p in P)
+                            if (Gamma.ContainsKey(p))
+                                P1.Add(p);
+                            else
+                                P2.Add(p);
+
+                        if (P1.Count > 0 && P2.Count > 0)
+                        {
+                            // Something was split
+                            //Compute the updated pre efficiently doing the difference and update W
+                            BlockSplit(P, P1, P2);
+                            UpdateBlocks(P, P1, P2);
+                        }
+                    }
+                    #endregion
+
+                    //in each relevant block all states lead to B due to the initial splitting
+                    var relevant2 = new HashSet<Block>();
+                    foreach (var q in Gamma.Keys)
+                        if (Blocks[q].Count > 1)
+                            relevant2.Add(Blocks[q]); //collect the relevant blocks
+
+                    var relevantList = new List<Block>(relevant2);
+                    var gammaHatList = new List<Block>();
+
+                    Dictionary<int, IteBag<T>> GammaHat = null;
+
                     //only relevant blocks are potentially split               
                     while (relevantList.Count > 0)
                     {
-                        var P = relevantList[0];
-                        relevantList.RemoveAt(0);
-
-                        var PE = P.GetEnumerator();
-                        PE.MoveNext();
-
-                        var P1 = new Block();
-                        var P2 = new Block();
-
-                        int p = PE.Current;
-                        P1.Add(p);
-
-                        bool splitFound = false;
-                        var psi = Gamma[p].ToSet();
-
-                        var witness = solver.False;
-
-                        #region compute P1 and P2 as subblocks
-                        while (PE.MoveNext())
+                        //only relevant blocks are potentially split               
+                        while (relevantList.Count > 0)
                         {
-                            var q = PE.Current;
-                            var phi = Gamma[q].ToSet();
+                            var P = relevantList[0];
+                            relevantList.RemoveAt(0);
 
-                            //Have a witness for splitting
-                            if (splitFound)
+                            var PE = P.GetEnumerator();
+                            PE.MoveNext();
+
+                            var P1 = new Block();
+                            var P2 = new Block();
+
+                            int p = PE.Current;
+                            P1.Add(p);
+
+                            bool splitFound = false;
+                            startTime = System.Environment.TickCount;
+                            var psi = Gamma[p].ToSet();
+                            timer += System.Environment.TickCount - startTime;
+
+                            var witness = solver.False;
+
+                            #region compute P1 and P2 as subblocks
+                            while (PE.MoveNext())
                             {
-                                var inters = solver.MkAnd(witness, phi);
-                                if (solver.IsSatisfiable(inters))
-                                    P1.Add(q);
+                                var q = PE.Current;
+                                startTime = System.Environment.TickCount;
+                                var phi = Gamma[q].ToSet();
+                                timer += System.Environment.TickCount - startTime;
+
+                                //Have a witness for splitting
+                                if (splitFound)
+                                {
+                                    var inters = solver.MkAnd(witness, phi);
+                                    if (solver.IsSatisfiable(inters))
+                                        P1.Add(q);
+                                    else
+                                        P2.Add(q);
+                                }
                                 else
-                                    P2.Add(q);
+                                {
+                                    // Look for a splitter                                    
+                                    witness = MkDiff(psi, phi);
+                                    if (solver.IsSatisfiable(witness))
+                                    {
+                                        //there is some a: p --a--> B and q --a--> compl(B) 
+                                        splitFound = true;
+
+                                        P2.Add(q);
+                                    }
+                                    else // [[psi]] is subset of [[phi]]
+                                    {
+                                        witness = MkDiff(phi, psi);
+                                        if (solver.IsSatisfiable(witness))
+                                        {
+                                            //there is some a: q --a--> B and p --a--> compl(B) for all p in C1
+                                            var tmp = P1;
+                                            P1 = P2;
+                                            P2 = tmp;
+
+                                            P1.Add(q);
+
+                                            splitFound = true;
+                                        }
+                                        else
+                                            P1.Add(q); //psi and phi are equivalent
+                                    }
+                                }
+                            }
+                            #endregion
+
+                            #region split P
+                            //If nothing changed, copy the pre-function
+                            if (!splitFound)
+                            {
+                                gammaHatList.Add(P);
                             }
                             else
                             {
-                                // Look for a splitter
-                                witness = MkDiff(psi, phi);
-                                if (solver.IsSatisfiable(witness))
-                                {
-                                    //there is some a: p --a--> B and q --a--> compl(B) 
-                                    splitFound = true;
+                                if (P1.Count > 1)
+                                    relevantList.Add(P1);
+                                if (P2.Count > 1)
+                                    relevantList.Add(P2);
 
-                                    P2.Add(q);
-                                }
-                                else // [[psi]] is subset of [[phi]]
+                                // Something was split
+                                //Compute the updated pre efficiently doing the difference and update W
+                                BlockSplit(P, P1, P2);
+                                UpdateBlocks(P, P1, P2);
+                            }
+
+                            #endregion
+                        }
+                        #region GammaHatSplit
+                        //do splitting with respect to GammaHat                               
+                        while (gammaHatList.Count > 0)
+                        {
+                            if (GammaHat == null)
+                                GammaHat = GetBlockPre(ComplementBlock[B]);
+
+                            var P = gammaHatList[0];
+                            gammaHatList.RemoveAt(0);
+
+                            var PE = P.GetEnumerator();
+                            PE.MoveNext();
+
+                            var P1 = new Block();
+                            var P2 = new Block();
+
+                            int p = PE.Current;
+                            P1.Add(p);
+
+                            bool splitFound = false;
+
+                            var psi = Gamma[p].ToSet();
+                            var psihat = solver.False;
+                            if (GammaHat.ContainsKey(p))
+                                psihat = GammaHat[p].ToSet();
+
+                            var psi_and_psihat = solver.MkAnd(psi, psihat);
+                            var witness = solver.False;
+
+                            #region compute P1 and P2 as subblocks
+                            while (PE.MoveNext())
+                            {
+                                var q = PE.Current;
+                                var phi = Gamma[q].ToSet();
+                                var phihat = solver.False;
+                                if (GammaHat.ContainsKey(q))
+                                    phihat = GammaHat[q].ToSet();
+
+                                var phi_and_phihat = solver.MkAnd(phi, phihat);
+
+                                //Have a witness for splitting
+                                if (splitFound)
                                 {
-                                    witness = MkDiff(phi, psi);
+                                    var inters = solver.MkAnd(witness, phi_and_phihat);
+                                    if (solver.IsSatisfiable(inters))
+                                        P1.Add(q);
+                                    else
+                                        P2.Add(q);
+                                }
+                                else
+                                {
+                                    witness = MkDiff(psi_and_psihat, phi_and_phihat);
                                     if (solver.IsSatisfiable(witness))
                                     {
-                                        //there is some a: q --a--> B and p --a--> compl(B) for all p in C1
-                                        var tmp = P1;
-                                        P1 = P2;
-                                        P2 = tmp;
-
-                                        P1.Add(q);
-
+                                        //there is some a: p --a--> B p--a--> compl(b) and q--a--> B  but not q--a--> compl(B)
                                         splitFound = true;
+
+                                        P2.Add(q);
                                     }
                                     else
-                                        P1.Add(q); //psi and phi are equivalent
+                                    {
+                                        witness = MkDiff(phi_and_phihat, psi_and_psihat);
+                                        if (solver.IsSatisfiable(witness))
+                                        {
+                                            //there is some a: q --a--> B q--a--> compl(b) and p--a--> B  but not p--a--> compl(B)
+                                            var tmp = P1;
+                                            P1 = P2;
+                                            P2 = tmp;
+
+                                            P1.Add(q);
+
+                                            splitFound = true;
+                                        }
+                                        else
+                                            P1.Add(q); //p and q go to gammahat with same symbols
+                                    }
+
                                 }
                             }
-                        }
-                        #endregion
+                            #endregion
 
-                        #region split P
-                        //If nothing changed, copy the pre-function
-                        if (!splitFound)
-                        {
-                            gammaHatList.Add(P);
-                        }
-                        else
-                        {
-                            if (P1.Count > 1)
-                                relevantList.Add(P1);
-                            if (P2.Count > 1)
-                                relevantList.Add(P2);
-
-                            // Something was split
-                            //Compute the updated pre efficiently doing the difference and update W
-                            BlockSplit(P, P1, P2);
-                            UpdateBlocks(P, P1, P2);
-                        }
-
-                        #endregion
-                    }
-                    #region GammaHatSplit
-                    //do splitting with respect to GammaHat                               
-                    while (gammaHatList.Count > 0)
-                    {
-                        if (GammaHat == null)
-                            GammaHat = GetBlockPre(ComplementBlock[B]);
-
-                        var P = gammaHatList[0];
-                        gammaHatList.RemoveAt(0);
-
-                        var PE = P.GetEnumerator();
-                        PE.MoveNext();
-
-                        var P1 = new Block();
-                        var P2 = new Block();
-
-                        int p = PE.Current;
-                        P1.Add(p);
-
-                        bool splitFound = false;
-
-                        var psi = Gamma[p].ToSet();
-                        var psihat = solver.False;
-                        if (GammaHat.ContainsKey(p))
-                            psihat = GammaHat[p].ToSet();
-
-                        var psi_and_psihat = solver.MkAnd(psi, psihat);
-                        var witness = solver.False;
-
-                        #region compute P1 and P2 as subblocks
-                        while (PE.MoveNext())
-                        {
-                            var q = PE.Current;
-                            var phi = Gamma[q].ToSet();
-                            var phihat = solver.False;
-                            if (GammaHat.ContainsKey(q))
-                                phihat = GammaHat[q].ToSet();
-
-                            var phi_and_phihat = solver.MkAnd(phi, phihat);
-
-                            //Have a witness for splitting
+                            #region split P
                             if (splitFound)
                             {
-                                var inters = solver.MkAnd(witness, phi_and_phihat);
-                                if (solver.IsSatisfiable(inters))
-                                    P1.Add(q);
-                                else
-                                    P2.Add(q);
+                                if (P1.Count > 1)
+                                    relevantList.Add(P1);
+                                if (P2.Count > 1)
+                                    relevantList.Add(P2);
+
+                                // Something was split
+                                //Compute the updated pre efficiently doing the difference and update W
+                                BlockSplit(P, P1, P2);
+                                UpdateBlocks(P, P1, P2);
                             }
-                            else
-                            {
-                                witness = MkDiff(psi_and_psihat, phi_and_phihat);
-                                if (solver.IsSatisfiable(witness))
-                                {
-                                    //there is some a: p --a--> B p--a--> compl(b) and q--a--> B  but not q--a--> compl(B)
-                                    splitFound = true;
-
-                                    P2.Add(q);
-                                }
-                                else
-                                {
-                                    witness = MkDiff(phi_and_phihat, psi_and_psihat);
-                                    if (solver.IsSatisfiable(witness))
-                                    {
-                                        //there is some a: q --a--> B q--a--> compl(b) and p--a--> B  but not p--a--> compl(B)
-                                        var tmp = P1;
-                                        P1 = P2;
-                                        P2 = tmp;
-
-                                        P1.Add(q);
-
-                                        splitFound = true;
-                                    }
-                                    else
-                                        P1.Add(q); //p and q go to gammahat with same symbols
-                                }
-
-                            }
-                        }
-                        #endregion
-
-                        #region split P
-                        if (splitFound)
-                        {
-                            if (P1.Count > 1)
-                                relevantList.Add(P1);
-                            if (P2.Count > 1)
-                                relevantList.Add(P2);
-
-                            // Something was split
-                            //Compute the updated pre efficiently doing the difference and update W
-                            BlockSplit(P, P1, P2);
-                            UpdateBlocks(P, P1, P2);
+                            #endregion
                         }
                         #endregion
                     }
-                    #endregion
                 }
             }
-
+            Console.WriteLine(timer);
             Func<int, int> GetRepresentative = (q => Blocks[q].GetRepresentative());
             return autom.JoinStates(GetRepresentative, solver.MkOr);
         }
@@ -3715,7 +3736,8 @@ namespace Microsoft.Automata
                 #region apply initial splitting without using guards
                 var relevant = new HashSet<Block>();
                 foreach (var q in Gamma.Keys)
-                    relevant.Add(Blocks[q]);
+                    if (Blocks[q].Count > 1)
+                        relevant.Add(Blocks[q]);
 
                 foreach (var P in relevant)
                 {
@@ -4428,7 +4450,8 @@ namespace Microsoft.Automata
                 #region apply initial splitting without using guards
                 var relevant = new HashSet<Block>();
                 foreach (var q in Gamma.Keys)
-                    relevant.Add(Blocks[q]);
+                    if (Blocks[q].Count > 1)
+                        relevant.Add(Blocks[q]);
 
                 foreach (var P in relevant)
                 {

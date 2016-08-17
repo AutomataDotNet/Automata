@@ -23,14 +23,23 @@ namespace RunExperiments
             return (double)(t-max) / (double)(Program.numTests-1);
         }
 
+        public static void PrintHeader(string outputFileName)
+        {
+            using (System.IO.StreamWriter outfile = new System.IO.StreamWriter(Program.path +outputFileName, false))
+            {
+                outfile.WriteLine("ID, StateCount, RuleCount, MinStateCount, MinRuleCount, quadratic, new, n log n");
+            }
+        }
+
         //Runs the three algorithms. It requires the deterministic automton, the total automaton, and the output file
         public static void RunAllAlgorithms(Automaton<BDD> automaton, 
             string exampleName, string outputFileName, CharSetSolver rex)
         {
             Automaton<BDD> algo1Min = null;
             Automaton<BDD> algo2Min = null;
+            Automaton<BDD> algo3Min = null;
 
-            var noEps = automaton.RemoveEpsilons().MakeTotal();
+            var noEps = automaton.RemoveEpsilons().MakeTotal().RemoveEpsilonLoops();
             noEps.isDeterministic = false;
 
             if (noEps == null)
@@ -42,7 +51,7 @@ namespace RunExperiments
             for (int i = 0; i < Program.numTests; i++)
             {
                 int tLoc = System.Environment.TickCount;
-                algo1Min = noEps.NonDetGetMinAut(true);
+                algo1Min = noEps.NonDetGetMinAut(1);
                 maxTime = Math.Max(System.Environment.TickCount - tLoc, maxTime);
 
                 //Console.WriteLine(System.Environment.TickCount - tLoc);
@@ -50,13 +59,13 @@ namespace RunExperiments
 
             var timeAlgo1 = GetAvgTime(System.Environment.TickCount - time,maxTime);
 
-            // Logarithmic algorithm
+            // New algorithm
             time = System.Environment.TickCount;
             maxTime = 0;
             for (int i = 0; i < Program.numTests; i++)
             {
                 int tLoc = System.Environment.TickCount;
-                algo2Min = noEps.NonDetGetMinAut(false);
+                algo2Min = noEps.NonDetGetMinAut(2);
                 maxTime = Math.Max(System.Environment.TickCount - tLoc, maxTime);
 
                 //Console.WriteLine(System.Environment.TickCount - tLoc);
@@ -64,9 +73,23 @@ namespace RunExperiments
 
             var timeAlgo2 = GetAvgTime(System.Environment.TickCount - time, maxTime);
 
+            // Count algorithm
+            time = System.Environment.TickCount;
+            maxTime = 0;
+            for (int i = 0; i < Program.numTests; i++)
+            {
+                int tLoc = System.Environment.TickCount;
+                algo3Min = noEps.NonDetGetMinAut(3);
+                maxTime = Math.Max(System.Environment.TickCount - tLoc, maxTime);
+
+                //Console.WriteLine(System.Environment.TickCount - tLoc);
+            }
+
+            var timeAlgo3 = GetAvgTime(System.Environment.TickCount - time, maxTime);
+
             
             //Check that results are correct
-            if (algo1Min != null && algo2Min != null)
+            if (algo1Min != null && algo2Min != null && algo3Min != null)
             {
                 //bool eq = rex.AreEquivalent(algo1Min, algo2Min);
                 //eq = eq && rex.AreEquivalent(automaton, algo2Min);
@@ -75,21 +98,23 @@ namespace RunExperiments
 
                 if (algo2Min.StateCount!= algo1Min.StateCount)
                     Console.WriteLine("size differ by " + (algo2Min.StateCount - algo1Min.StateCount));
-                
+                if (algo1Min.StateCount != algo3Min.StateCount)
+                    Console.WriteLine("size differ by " + (algo3Min.StateCount - algo1Min.StateCount));
             }
 
             // Append results on file 
             // ID, StateCount, RuleCount, CompleteRuleCount, MinStateCount, MinRuleCount, PTime, CTime
             using (System.IO.StreamWriter outfile = new System.IO.StreamWriter(Program.path + outputFileName, true))
             {
-                outfile.WriteLine("{0}, {1}, {2}, {3}, {4}, {5}, {6}",
+                outfile.WriteLine("{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}",
                     exampleName,
                     noEps.StateCount,
                     noEps.MoveCount,
                     algo1Min.StateCount,
                     algo1Min.MoveCount,
                     timeAlgo1+0.1,
-                    timeAlgo2+0.1);
+                    timeAlgo2+0.1,
+                    timeAlgo3 + 0.1);
             }
 
         }
