@@ -3328,62 +3328,27 @@ namespace Microsoft.Automata
 
             var startTime = 0;
             var timer =0;
+            
+            var minusTimer = 0;
+
+
+            Dictionary<Block, Tuple<Block, Block>> MinusStructure = new Dictionary<Block, Tuple<Block, Block>>();
 
             //Computes and memoizes BlockPre
-            Func<Block, Dictionary<int, IteBag<T>>> GetBlockPre = (B) =>
-            {
-                if (BlockPre.ContainsKey(B))
-                    return BlockPre[B];
-                else
-                {
-                    startTime = System.Environment.TickCount;
-                    var dicB = new Dictionary<int, IteBag<T>>();
-
-                    foreach (var q in B)
-                        foreach (var move in fa.deltaInv[q]) //moves leading to q
-                        {
-                            var moveBag = iteBuilder.MkSingleton(move.Label);
-                            if(dicB.ContainsKey(move.SourceState)){
-                                var oldBag= dicB[move.SourceState];
-                                dicB[move.SourceState]= oldBag.Plus(moveBag);
-                            }
-                            else
-                                dicB[move.SourceState] = moveBag;
-                        }
-                    BlockPre[B] = dicB;
-                    timer += System.Environment.TickCount -startTime;
-                    return dicB;
-                }
-            };
-            //Computes the state-wise subtraction of blocks
-            Func<Dictionary<int, IteBag<T>>, Dictionary<int, IteBag<T>>, Dictionary<int, IteBag<T>>> DicMinus = (dic1, dic2) =>
-            {
-                var dicNew = new Dictionary<int, IteBag<T>>();
-                foreach (var q in dic1.Keys)
-                {
-                    IteBag<T> qBag = dic1[q];
-                    startTime = System.Environment.TickCount;
-                    if (dic2.ContainsKey(q))
-                        qBag = qBag.Minus(dic2[q]);
-                    timer += System.Environment.TickCount -startTime;
-                    dicNew[q] = qBag;
-                }
-                return dicNew;
-            };
+            Func<Block, Dictionary<int, IteBag<T>>> GetBlockPre = (B) => AuxGetBlockPre(B,BlockPre,MinusStructure,fa.deltaInv, iteBuilder);
+            
 
             //Computes the state-wise subtraction of blocks
             Func<Block, Block, Block, bool> BlockSplit = (b, b1, b2) =>
             {
-                var bDic = BlockPre[b];
+                //var bDic = BlockPre[b];
                 if (b1.Count < b2.Count)
                 {
-                    BlockPre[b1] = GetBlockPre(b1);
-                    BlockPre[b2] = DicMinus(bDic, BlockPre[b1]);
+                    MinusStructure[b2] = new Tuple<Block, Block>(b, b1);
                 }
                 else
                 {
-                    BlockPre[b2] = GetBlockPre(b2);
-                    BlockPre[b1] = DicMinus(bDic, BlockPre[b2]);
+                    MinusStructure[b1] = new Tuple<Block, Block>(b, b2);
                 }
                 return true;
             };
@@ -3442,6 +3407,7 @@ namespace Microsoft.Automata
             GetBlockPre(finalBlock);
 
             Func<T, T, T> MkDiff = (x, y) => solver.MkAnd(x, solver.MkNot(y));
+            Func<IteBag<T>, bool> IsSat = (b) => b.IntersectsWith(iteBuilder.MkSingleton(solver.True));
             while (!W.IsEmpty)
             {
                 var B = W.Pop();
@@ -3510,43 +3476,48 @@ namespace Microsoft.Automata
 
                             bool splitFound = false;
                             startTime = System.Environment.TickCount;
-                            var psi = Gamma[p].ToSet();
+                            var psi = Gamma[p];
                             timer += System.Environment.TickCount - startTime;
 
-                            var witness = solver.False;
+                            IteBag<T> witness = null;
 
                             #region compute P1 and P2 as subblocks
                             while (PE.MoveNext())
                             {
                                 var q = PE.Current;
                                 startTime = System.Environment.TickCount;
-                                var phi = Gamma[q].ToSet();
+                                var phi = Gamma[q];
                                 timer += System.Environment.TickCount - startTime;
 
                                 //Have a witness for splitting
                                 if (splitFound)
                                 {
-                                    var inters = solver.MkAnd(witness, phi);
-                                    if (solver.IsSatisfiable(inters))
+                                    startTime = System.Environment.TickCount;
+                                    if (witness.IntersectsWith(phi))
                                         P1.Add(q);
                                     else
                                         P2.Add(q);
+
+                                    timer += System.Environment.TickCount - startTime;
                                 }
                                 else
                                 {
-                                    // Look for a splitter                                    
-                                    witness = MkDiff(psi, phi);
-                                    if (solver.IsSatisfiable(witness))
+                                    // Look for a splitter   
+                                    startTime = System.Environment.TickCount;
+                                    witness = psi.SetMinus(phi);
+                                    timer += System.Environment.TickCount - startTime;
+                                    if (IsSat(witness))
                                     {
                                         //there is some a: p --a--> B and q --a--> compl(B) 
                                         splitFound = true;
-
                                         P2.Add(q);
                                     }
                                     else // [[psi]] is subset of [[phi]]
                                     {
-                                        witness = MkDiff(phi, psi);
-                                        if (solver.IsSatisfiable(witness))
+                                        startTime = System.Environment.TickCount;
+                                        witness = phi.SetMinus(psi);
+                                        timer += System.Environment.TickCount - startTime;
+                                        if (IsSat(witness))
                                         {
                                             //there is some a: q --a--> B and p --a--> compl(B) for all p in C1
                                             var tmp = P1;
@@ -3606,38 +3577,43 @@ namespace Microsoft.Automata
 
                             bool splitFound = false;
 
-                            var psi = Gamma[p].ToSet();
-                            var psihat = solver.False;
+                            var psi = Gamma[p];
+                            IteBag<T> psihat = null;
                             if (GammaHat.ContainsKey(p))
-                                psihat = GammaHat[p].ToSet();
+                                psihat = GammaHat[p];
 
-                            var psi_and_psihat = solver.MkAnd(psi, psihat);
-                            var witness = solver.False;
+                            var psi_and_psihat = psi.Min(psihat);
+                            IteBag<T> witness = null;
 
                             #region compute P1 and P2 as subblocks
                             while (PE.MoveNext())
                             {
                                 var q = PE.Current;
-                                var phi = Gamma[q].ToSet();
-                                var phihat = solver.False;
+                                var phi = Gamma[q];
+                                IteBag<T> phihat = null;
                                 if (GammaHat.ContainsKey(q))
-                                    phihat = GammaHat[q].ToSet();
+                                    phihat = GammaHat[q];
 
-                                var phi_and_phihat = solver.MkAnd(phi, phihat);
+                                startTime = System.Environment.TickCount;
+                                var phi_and_phihat = phi.Min(phihat);
+                                timer += System.Environment.TickCount - startTime;
 
                                 //Have a witness for splitting
                                 if (splitFound)
                                 {
-                                    var inters = solver.MkAnd(witness, phi_and_phihat);
-                                    if (solver.IsSatisfiable(inters))
+                                    startTime = System.Environment.TickCount;
+                                    if (witness.IntersectsWith(phi_and_phihat))
                                         P1.Add(q);
                                     else
                                         P2.Add(q);
+                                    timer += System.Environment.TickCount - startTime;
                                 }
                                 else
                                 {
-                                    witness = MkDiff(psi_and_psihat, phi_and_phihat);
-                                    if (solver.IsSatisfiable(witness))
+                                    startTime = System.Environment.TickCount;
+                                    witness = psi_and_psihat.SetMinus(phi_and_phihat);
+                                    timer += System.Environment.TickCount - startTime;
+                                    if (IsSat(witness))
                                     {
                                         //there is some a: p --a--> B p--a--> compl(b) and q--a--> B  but not q--a--> compl(B)
                                         splitFound = true;
@@ -3646,8 +3622,10 @@ namespace Microsoft.Automata
                                     }
                                     else
                                     {
-                                        witness = MkDiff(phi_and_phihat, psi_and_psihat);
-                                        if (solver.IsSatisfiable(witness))
+                                        startTime = System.Environment.TickCount;
+                                        witness = phi_and_phihat.SetMinus(psi_and_psihat);
+                                        timer += System.Environment.TickCount - startTime;
+                                        if (IsSat(witness))
                                         {
                                             //there is some a: q --a--> B q--a--> compl(b) and p--a--> B  but not p--a--> compl(B)
                                             var tmp = P1;
@@ -3686,11 +3664,68 @@ namespace Microsoft.Automata
                 }
             }
             Console.WriteLine(timer);
+            Console.WriteLine("Minus Time: "+minusTimer);
             Func<int, int> GetRepresentative = (q => Blocks[q].GetRepresentative());
             return autom.JoinStates(GetRepresentative, solver.MkOr);
         }
 
+        //Computes the state-wise subtraction of blocks
+        private static Dictionary<int, IteBag<T>> DicMinus(Dictionary<int, IteBag<T>> dic1, Dictionary<int, IteBag<T>> dic2)
+        {
+            var dicNew = new Dictionary<int, IteBag<T>>();
+            foreach (var q in dic1.Keys)
+            {
+                IteBag<T> qBag = dic1[q];
+                if (dic2.ContainsKey(q))
+                    qBag = qBag.Minus(dic2[q]);
+                
+                dicNew[q] = qBag;
+            }
+            return dicNew;
+        }
 
+        //Computes and memoizes BlockPre
+        private static Dictionary<int, IteBag<T>> AuxGetBlockPre(
+            Block B, 
+            Dictionary<Block, Dictionary<int, IteBag<T>>> BlockPre,
+            Dictionary<Block, Tuple<Block, Block>> MinusStructure,
+            Dictionary<int, List<Move<T>>> deltaInv,
+            IteBagBuilder<T> iteBuilder)
+        {
+            if (BlockPre.ContainsKey(B))
+                return BlockPre[B];
+            else
+            {
+                if (MinusStructure.ContainsKey(B))
+                {
+                    var tup = MinusStructure[B];
+                    var big = tup.Item1;
+                    var small = tup.Item2;
+                    return DicMinus(
+                        AuxGetBlockPre(big, BlockPre, MinusStructure, deltaInv,iteBuilder), 
+                        AuxGetBlockPre(small, BlockPre, MinusStructure, deltaInv,iteBuilder));
+                }
+                else
+                {
+                    var dicB = new Dictionary<int, IteBag<T>>();
+
+                    foreach (var q in B)
+                        foreach (var move in deltaInv[q]) //moves leading to q
+                        {
+                            var moveBag = iteBuilder.MkSingleton(move.Label);
+                            if (dicB.ContainsKey(move.SourceState))
+                            {
+                                var oldBag = dicB[move.SourceState];
+                                dicB[move.SourceState] = oldBag.Plus(moveBag);
+                            }
+                            else
+                                dicB[move.SourceState] = moveBag;
+                        }
+                    BlockPre[B] = dicB;
+                    return dicB;
+                }
+            }
+        }
 
         /// <summary>
         /// Algorithm MinSFA from POPL14.
