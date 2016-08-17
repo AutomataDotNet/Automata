@@ -42,6 +42,27 @@ namespace Microsoft.Automata
             return builder.Op(BagOpertion.MINUS, this, bag);
         }
 
+        public IteBag<T> SetMinus(IteBag<T> bag)
+        {
+            if (bag.builder != builder)
+                throw new AutomataException(AutomataExceptionKind.IteBagError);
+            return builder.Op(BagOpertion.SETMINUS, this, bag);
+        }
+
+        public IteBag<T> Min(IteBag<T> bag)
+        {
+            if (bag.builder != builder)
+                throw new AutomataException(AutomataExceptionKind.IteBagError);
+            return builder.Op(BagOpertion.MIN, this, bag);
+        }
+
+        public bool IntersectsWith(IteBag<T> bag)
+        {
+            if (bag.builder != builder)
+                throw new AutomataException(AutomataExceptionKind.IteBagError);
+            return builder.IsNonemptyIntersection(this, bag);
+        }
+
         public T ToSet()
         {
             if (IsLeaf)
@@ -57,7 +78,7 @@ namespace Microsoft.Automata
 
     internal enum BagOpertion
     {
-        PLUS, MINUS
+        PLUS, MINUS, SETMINUS, MIN, MAX
     }
 
     public class IteBagBuilder<T>
@@ -68,6 +89,8 @@ namespace Microsoft.Automata
             new Dictionary<Tuple<T, IteBag<T>, IteBag<T>>, IteBag<T>>();
         Dictionary<Tuple<BagOpertion, T, IteBag<T>, IteBag<T>>, IteBag<T>> opCache = 
             new Dictionary<Tuple<BagOpertion, T, IteBag<T>, IteBag<T>>, IteBag<T>>();
+        Dictionary<Tuple<T, IteBag<T>, IteBag<T>>, bool> intersectionEmptinessTestCache =
+            new Dictionary<Tuple<T, IteBag<T>, IteBag<T>>, bool>();
 
         public IteBagBuilder(IBooleanAlgebra<T> algebra)
         {
@@ -128,7 +151,9 @@ namespace Microsoft.Automata
             var context1 = algebra.MkAnd(context, bag1.Predicate);
             var context2 = algebra.MkAnd(context, algebra.MkNot(bag1.Predicate));
 
-            bag = MkNode(bag1.Predicate, OpInContext(op, context1, bag1.TrueCase, bag2), OpInContext(op, context2, bag1.FalseCase, bag2));
+            var t = OpInContext(op, context1, bag1.TrueCase, bag2);
+            var f = OpInContext(op, context2, bag1.FalseCase, bag2);
+            bag = MkNode(bag1.Predicate, t, f);
             opCache[key] = bag;
             return bag;
         }
@@ -136,7 +161,10 @@ namespace Microsoft.Automata
         private IteBag<T> OpInContext2(BagOpertion op, T context, IteBag<T> leaf, IteBag<T> bag2)
         {
             if (bag2.IsLeaf)
-                return MkLeaf(ApplyOp(op, leaf.Count, bag2.Count));
+            {
+                var newleaf = MkLeaf(ApplyOp(op, leaf.Count, bag2.Count));
+                return newleaf;
+            }
 
             IteBag<T> bag;
             var key = new Tuple<BagOpertion, T, IteBag<T>, IteBag<T>>(op, context, leaf, bag2);
@@ -164,8 +192,91 @@ namespace Microsoft.Automata
             {
                 case BagOpertion.PLUS:
                     return p1 + p2;
-                default:
+                case BagOpertion.MINUS:
                     return Math.Max(0, p1 - p2);
+                case BagOpertion.SETMINUS:
+                    return Math.Max(0, Math.Min(1, p1) - p2);
+                case BagOpertion.MIN:
+                    return Math.Min(p1, p2);
+                case BagOpertion.MAX:
+                    return Math.Max(p1, p2);
+                default:
+                    throw new AutomataException(AutomataExceptionKind.IteBagError);
+            }
+        }
+
+        internal bool IsNonemptyIntersection(IteBag<T> bag1, IteBag<T> bag2)
+        {
+            return IsNonemptyIntersection_1(algebra.True, bag1, bag2);
+        }
+
+        private bool IsNonemptyIntersection_1(T context, IteBag<T> bag1, IteBag<T> bag2)
+        {
+            bool res;
+            var key = new Tuple<T, IteBag<T>, IteBag<T>>(context, bag1, bag2);
+            if (intersectionEmptinessTestCache.TryGetValue(key, out res))
+                return res;
+            else
+            {
+                if (bag1.IsLeaf)
+                    res = IsNonemptyIntersection_2(context, bag1, bag2);
+                else
+                {
+                    var context1 = algebra.MkAnd(context, bag1.Predicate);
+                    if (IsNonemptyIntersection_1(context1, bag1.TrueCase, bag2))
+                        res = true;
+                    else
+                    {
+                        var context2 = algebra.MkAnd(context, algebra.MkNot(bag1.Predicate));
+                        if (IsNonemptyIntersection_1(context2, bag1.FalseCase, bag2))
+                            res = true;
+                        else 
+                            res = false;
+                    }
+                }
+                intersectionEmptinessTestCache[key] = res;
+                return res;
+            }
+        }
+
+        private bool IsNonemptyIntersection_2(T context, IteBag<T> leaf, IteBag<T> bag2)
+        {
+            bool res;
+            var key = new Tuple<T, IteBag<T>, IteBag<T>>(context, leaf, bag2);
+            if (intersectionEmptinessTestCache.TryGetValue(key, out res))
+                return res;
+            else
+            {
+                if (bag2.IsLeaf)
+                {
+                    if (leaf.Count > 0 && bag2.Count > 0)
+                        res = true;
+                    else
+                        res = false;
+                }
+                else
+                {
+                    var context_t = algebra.MkAnd(context, bag2.Predicate);
+                    if (algebra.IsSatisfiable(context_t))
+                    {
+                        var context_f = algebra.MkAnd(context, algebra.MkNot(bag2.Predicate));
+                        if (algebra.IsSatisfiable(context_f))
+                        {
+                            if (IsNonemptyIntersection_2(context_t, leaf, bag2.TrueCase))
+                                res = true;
+                            else if (IsNonemptyIntersection_2(context_f, leaf, bag2.FalseCase))
+                                res = true;
+                            else 
+                                res = false;
+                        }
+                        else //~IsSat(context & ~ bag2.Predicate) ---> IsValid(context ==> bag2.Predicate)  
+                            res = IsNonemptyIntersection_2(context, leaf, bag2.TrueCase);
+                    }
+                    else //~IsSat(context & bag2.Predicate) ---> IsValid(context ==> ~ bag2.Predicate)          
+                        res = IsNonemptyIntersection_2(context, leaf, bag2.FalseCase);
+                }
+                intersectionEmptinessTestCache[key] = res;
+                return res;
             }
         }
     }
