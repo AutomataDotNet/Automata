@@ -3699,22 +3699,21 @@ namespace Microsoft.Automata
                     }
                 }
             }
-            //Console.WriteLine("Calls IntersEmp: " + iteBuilder.GetCallCount(BagOpertion.ISNONEMPTYINTERSECTION));
-            //Console.WriteLine("Time IntersEmp: " + iteBuilder.GetElapsedMilliseconds(BagOpertion.ISNONEMPTYINTERSECTION));
+            Console.WriteLine();
+            Console.WriteLine("Calls IntersEmp: " + iteBuilder.GetCallCount(BagOpertion.ISNONEMPTYINTERSECTION));
+            Console.WriteLine("Time IntersEmp: " + iteBuilder.GetElapsedMilliseconds(BagOpertion.ISNONEMPTYINTERSECTION));
 
-            //Console.WriteLine("Calls Minus: " + iteBuilder.GetCallCount(BagOpertion.MINUS));
-            //Console.WriteLine("Time Minus: " + iteBuilder.GetElapsedMilliseconds(BagOpertion.MINUS));
+            Console.WriteLine("Calls Minus: " + iteBuilder.GetCallCount(BagOpertion.MINUS));
+            Console.WriteLine("Time Minus: " + iteBuilder.GetElapsedMilliseconds(BagOpertion.MINUS));
 
-            //Console.WriteLine("Calls SETMINUS: " + iteBuilder.GetCallCount(BagOpertion.SETMINUS));
-            //Console.WriteLine("Time SETMINUS: " + iteBuilder.GetElapsedMilliseconds(BagOpertion.SETMINUS));
+            Console.WriteLine("Calls SETMINUS: " + iteBuilder.GetCallCount(BagOpertion.SETMINUS));
+            Console.WriteLine("Time SETMINUS: " + iteBuilder.GetElapsedMilliseconds(BagOpertion.SETMINUS));
 
-            //Console.WriteLine("Calls Min: " + iteBuilder.GetCallCount(BagOpertion.MIN));
-            //Console.WriteLine("Time Min: " + iteBuilder.GetElapsedMilliseconds(BagOpertion.MIN));
+            Console.WriteLine("Calls Min: " + iteBuilder.GetCallCount(BagOpertion.MIN));
+            Console.WriteLine("Time Min: " + iteBuilder.GetElapsedMilliseconds(BagOpertion.MIN));
 
             Console.WriteLine("N log N Explored blocks: "+totalExploredBlocks);
             Console.WriteLine("N log N PRES: " + totalPreCount);
-            //Console.WriteLine("N log N Minus: " + iteBuilder.GetCallCount(BagOpertion.MINUS));
-            //Console.WriteLine("N log N should be same as explored: " + (totalPreCount+iteBuilder.GetCallCount(BagOpertion.MINUS)));
             Func<int, int> GetRepresentative = (q => Blocks[q].GetRepresentative());
             return autom.JoinStates(GetRepresentative, solver.MkOr);
         }
@@ -3750,7 +3749,7 @@ namespace Microsoft.Automata
                 return BlockPre[B];
             else
             {
-                if (MinusStructure.ContainsKey(B) && BlockPre.ContainsKey(MinusStructure[B].Item1))
+                if (B.Count>1 && MinusStructure.ContainsKey(B) && BlockPre.ContainsKey(MinusStructure[B].Item1))
                 {
                     var tup = MinusStructure[B];
                     var big = tup.Item1;
