@@ -2987,21 +2987,26 @@ namespace Microsoft.Automata
             var ComplementBlock = new Dictionary<Block, Block>();
             var BlockPre = new Dictionary<Block, Dictionary<int, T>>();     //BlockPre[B][q]= all symbols that go from q to B                       
 
+            int totalPre = 0;
+
             //Computes and memoizes BlockPre
             Func<Block, Dictionary<int, T>> GetBlockPre = (B) =>
-            {
+            {                
                 if (BlockPre.ContainsKey(B))
                     return BlockPre[B];
                 else
-                {
-                    var dicB = new Dictionary<int, T>();                    
+                {                    
+                    var dicB = new Dictionary<int, T>();
                     foreach (var q in B)
+                    {
+                        totalPre++;
                         foreach (var move in fa.deltaInv[q]) //moves leading to q
                             if (Blocks[move.SourceState].Count > 1) //singleton blocks cannot be further split
                                 if (dicB.ContainsKey(move.SourceState))
                                     dicB[move.SourceState] = solver.MkOr(dicB[move.SourceState], move.Label);
                                 else
                                     dicB[move.SourceState] = move.Label;
+                    }
                     BlockPre[B] = dicB;
                     return dicB;
                 }
@@ -3062,8 +3067,11 @@ namespace Microsoft.Automata
             };
             #endregion
 
+            int totalExploredBlocks = 0;            
             while (!W.IsEmpty)
-            {                
+            {
+                totalExploredBlocks++;
+             
                 var B = W.Pop();
 
                 var Gamma = GetBlockPre(B);                
@@ -3103,8 +3111,8 @@ namespace Microsoft.Automata
                 var relevantList = new List<Block>(relevant2);
                 var gammaHatList = new List<Block>();
                                                
-                Dictionary<int, T> GammaHat = null;
-                
+                Dictionary<int, T> GammaHat = null;                
+
                 //only relevant blocks are potentially split               
                 while (relevantList.Count > 0)
                 {                    
@@ -3295,15 +3303,21 @@ namespace Microsoft.Automata
                 }
             }
 
+            Console.WriteLine("NEW Explored blocks: " + totalExploredBlocks);
+            Console.WriteLine("NEW PRE: " + totalPre);
+
             Func<int, int> GetRepresentative = (q => Blocks[q].GetRepresentative());
             return autom.JoinStates(GetRepresentative, solver.MkOr);
         }
 
+
+        static int totalPreCount = 0;
         /// <summary>
         /// NFA minimization algorithm based on counting
         /// </summary>
         static Automaton<T> MinSFACount(Automaton<T> autom)
         {
+            totalPreCount = 0;
             var solver = autom.algebra;
             var fa = autom.MakeTotal();
 
@@ -3326,21 +3340,18 @@ namespace Microsoft.Automata
             ComplementBlock[finalBlock] = nonfinalBlock;
             ComplementBlock[nonfinalBlock] = finalBlock;
 
-            var startTime = 0;
-            var timer =0;
-            
-            var minusTimer = 0;
-
 
             Dictionary<Block, Tuple<Block, Block>> MinusStructure = new Dictionary<Block, Tuple<Block, Block>>();
 
             //Computes and memoizes BlockPre
-            Func<Block, Dictionary<int, IteBag<T>>> GetBlockPre = (B) => AuxGetBlockPre(B,BlockPre,MinusStructure,fa.deltaInv, iteBuilder);
+            Func<Block, Dictionary<int, IteBag<T>>> GetBlockPre = (B) => 
+                AuxGetBlockPre(B,BlockPre,MinusStructure,fa.deltaInv, iteBuilder,solver);
             
 
             //Computes the state-wise subtraction of blocks
             Func<Block, Block, Block, bool> BlockSplit = (b, b1, b2) =>
             {
+                var ratio = ((double)b1.Count) / ((double)b2.Count);
                 //var bDic = BlockPre[b];
                 if (b1.Count < b2.Count)
                 {
@@ -3350,6 +3361,7 @@ namespace Microsoft.Automata
                 {
                     MinusStructure[b1] = new Tuple<Block, Block>(b, b2);
                 }
+
                 return true;
             };
 
@@ -3403,13 +3415,15 @@ namespace Microsoft.Automata
             #endregion
 
 
-            GetBlockPre(nonfinalBlock);
-            GetBlockPre(finalBlock);
-
             Func<T, T, T> MkDiff = (x, y) => solver.MkAnd(x, solver.MkNot(y));
             Func<IteBag<T>, bool> IsSat = (b) => b.IntersectsWith(iteBuilder.MkSingleton(solver.True));
+
+            int totalExploredBlocks = 0;
+
             while (!W.IsEmpty)
             {
+                totalExploredBlocks++;
+
                 var B = W.Pop();
 
                 //Gamma is a bag
@@ -3456,6 +3470,7 @@ namespace Microsoft.Automata
 
                     Dictionary<int, IteBag<T>> GammaHat = null;
 
+                    
                     //only relevant blocks are potentially split               
                     while (relevantList.Count > 0)
                     {
@@ -3475,37 +3490,30 @@ namespace Microsoft.Automata
                             P1.Add(p);
 
                             bool splitFound = false;
-                            startTime = System.Environment.TickCount;
                             var psi = Gamma[p];
-                            timer += System.Environment.TickCount - startTime;
 
                             IteBag<T> witness = null;
 
                             #region compute P1 and P2 as subblocks
                             while (PE.MoveNext())
                             {
-                                var q = PE.Current;
-                                startTime = System.Environment.TickCount;
+                                var q = PE.Current;                               
                                 var phi = Gamma[q];
-                                timer += System.Environment.TickCount - startTime;
 
                                 //Have a witness for splitting
                                 if (splitFound)
                                 {
-                                    startTime = System.Environment.TickCount;
+                                    
                                     if (witness.IntersectsWith(phi))
                                         P1.Add(q);
                                     else
                                         P2.Add(q);
 
-                                    timer += System.Environment.TickCount - startTime;
                                 }
                                 else
                                 {
                                     // Look for a splitter   
-                                    startTime = System.Environment.TickCount;
                                     witness = psi.SetMinus(phi);
-                                    timer += System.Environment.TickCount - startTime;
                                     if (IsSat(witness))
                                     {
                                         //there is some a: p --a--> B and q --a--> compl(B) 
@@ -3514,9 +3522,7 @@ namespace Microsoft.Automata
                                     }
                                     else // [[psi]] is subset of [[phi]]
                                     {
-                                        startTime = System.Environment.TickCount;
                                         witness = phi.SetMinus(psi);
-                                        timer += System.Environment.TickCount - startTime;
                                         if (IsSat(witness))
                                         {
                                             //there is some a: q --a--> B and p --a--> compl(B) for all p in C1
@@ -3579,10 +3585,13 @@ namespace Microsoft.Automata
 
                             var psi = Gamma[p];
                             IteBag<T> psihat = null;
+                            IteBag<T> psi_and_psihat = null;
                             if (GammaHat.ContainsKey(p))
+                            {
                                 psihat = GammaHat[p];
+                                psi_and_psihat = psi.Min(psihat);
+                            }
 
-                            var psi_and_psihat = psi.Min(psihat);
                             IteBag<T> witness = null;
 
                             #region compute P1 and P2 as subblocks
@@ -3591,53 +3600,80 @@ namespace Microsoft.Automata
                                 var q = PE.Current;
                                 var phi = Gamma[q];
                                 IteBag<T> phihat = null;
+                                IteBag<T> phi_and_phihat = null;
                                 if (GammaHat.ContainsKey(q))
+                                {
                                     phihat = GammaHat[q];
-
-                                startTime = System.Environment.TickCount;
-                                var phi_and_phihat = phi.Min(phihat);
-                                timer += System.Environment.TickCount - startTime;
+                                    phi_and_phihat = phi.Min(phihat);
+                                }
 
                                 //Have a witness for splitting
                                 if (splitFound)
                                 {
-                                    startTime = System.Environment.TickCount;
-                                    if (witness.IntersectsWith(phi_and_phihat))
+                                    if (phi_and_phihat!=null && witness.IntersectsWith(phi_and_phihat))
                                         P1.Add(q);
                                     else
                                         P2.Add(q);
-                                    timer += System.Environment.TickCount - startTime;
                                 }
                                 else
                                 {
-                                    startTime = System.Environment.TickCount;
-                                    witness = psi_and_psihat.SetMinus(phi_and_phihat);
-                                    timer += System.Environment.TickCount - startTime;
-                                    if (IsSat(witness))
+                                    if (phi_and_phihat != null || psi_and_psihat != null)
                                     {
-                                        //there is some a: p --a--> B p--a--> compl(b) and q--a--> B  but not q--a--> compl(B)
-                                        splitFound = true;
+                                        if (phi_and_phihat != null && psi_and_psihat != null)
+                                        {
+                                            witness = psi_and_psihat.SetMinus(phi_and_phihat);
+                                            if (phi_and_phihat != null && IsSat(witness))
+                                            {
+                                                //there is some a: p --a--> B p--a--> compl(b) and q--a--> B  but not q--a--> compl(B)
+                                                splitFound = true;
+                                                P2.Add(q);
+                                            }
+                                            else
+                                            {
+                                                witness = phi_and_phihat.SetMinus(psi_and_psihat);
+                                                if (IsSat(witness))
+                                                {
+                                                    //there is some a: q --a--> B q--a--> compl(b) and p--a--> B  but not p--a--> compl(B)
+                                                    var tmp = P1;
+                                                    P1 = P2;
+                                                    P2 = tmp;
 
-                                        P2.Add(q);
+                                                    P1.Add(q);
+
+                                                    splitFound = true;
+                                                }
+                                                else
+                                                    P1.Add(q); //p and q go to gammahat with same symbols
+                                            }
+                                        }
+                                        else
+                                        {
+                                            //One is null and the other one isn't
+                                            splitFound = true;
+                                            if (psi_and_psihat != null)
+                                            {
+                                                //there is some a: p --a--> B p--a--> compl(b) and q--a--> B  but not q--a--> compl(B)
+                                                witness = psi_and_psihat;
+                                                P2.Add(q);
+                                            }
+                                            else
+                                            {
+                                                //phi_and_phihat is not null
+                                                //there is some a: q --a--> B q--a--> compl(b) and p--a--> B  but not p--a--> compl(B)
+                                                witness = phi_and_phihat;
+                                                var tmp = P1;
+                                                P1 = P2;
+                                                P2 = tmp;
+                                                P1.Add(q);                                                
+                                            }
+
+
+                                        }
                                     }
                                     else
                                     {
-                                        startTime = System.Environment.TickCount;
-                                        witness = phi_and_phihat.SetMinus(psi_and_psihat);
-                                        timer += System.Environment.TickCount - startTime;
-                                        if (IsSat(witness))
-                                        {
-                                            //there is some a: q --a--> B q--a--> compl(b) and p--a--> B  but not p--a--> compl(B)
-                                            var tmp = P1;
-                                            P1 = P2;
-                                            P2 = tmp;
-
-                                            P1.Add(q);
-
-                                            splitFound = true;
-                                        }
-                                        else
-                                            P1.Add(q); //p and q go to gammahat with same symbols
+                                        //Both null means they don't go anywhere else on gammahat
+                                        P1.Add(q); //p and q go to gammahat with same symbols
                                     }
 
                                 }
@@ -3663,26 +3699,43 @@ namespace Microsoft.Automata
                     }
                 }
             }
-            Console.WriteLine(timer);
-            Console.WriteLine("Minus Time: "+minusTimer);
+            //Console.WriteLine("Calls IntersEmp: " + iteBuilder.GetCallCount(BagOpertion.ISNONEMPTYINTERSECTION));
+            //Console.WriteLine("Time IntersEmp: " + iteBuilder.GetElapsedMilliseconds(BagOpertion.ISNONEMPTYINTERSECTION));
+
+            //Console.WriteLine("Calls Minus: " + iteBuilder.GetCallCount(BagOpertion.MINUS));
+            //Console.WriteLine("Time Minus: " + iteBuilder.GetElapsedMilliseconds(BagOpertion.MINUS));
+
+            //Console.WriteLine("Calls SETMINUS: " + iteBuilder.GetCallCount(BagOpertion.SETMINUS));
+            //Console.WriteLine("Time SETMINUS: " + iteBuilder.GetElapsedMilliseconds(BagOpertion.SETMINUS));
+
+            //Console.WriteLine("Calls Min: " + iteBuilder.GetCallCount(BagOpertion.MIN));
+            //Console.WriteLine("Time Min: " + iteBuilder.GetElapsedMilliseconds(BagOpertion.MIN));
+
+            Console.WriteLine("N log N Explored blocks: "+totalExploredBlocks);
+            Console.WriteLine("N log N PRES: " + totalPreCount);
+            //Console.WriteLine("N log N Minus: " + iteBuilder.GetCallCount(BagOpertion.MINUS));
+            //Console.WriteLine("N log N should be same as explored: " + (totalPreCount+iteBuilder.GetCallCount(BagOpertion.MINUS)));
             Func<int, int> GetRepresentative = (q => Blocks[q].GetRepresentative());
             return autom.JoinStates(GetRepresentative, solver.MkOr);
         }
 
         //Computes the state-wise subtraction of blocks
-        private static Dictionary<int, IteBag<T>> DicMinus(Dictionary<int, IteBag<T>> dic1, Dictionary<int, IteBag<T>> dic2)
+        private static Dictionary<int, IteBag<T>> DicMinus(Dictionary<int, IteBag<T>> dic1, Dictionary<int, 
+            IteBag<T>> dic2, IteBagBuilder<T> itebuilder,
+            IBooleanAlgebra<T> solver)
         {
             var dicNew = new Dictionary<int, IteBag<T>>();
             foreach (var q in dic1.Keys)
-            {
+            {                
                 IteBag<T> qBag = dic1[q];
                 if (dic2.ContainsKey(q))
                     qBag = qBag.Minus(dic2[q]);
-                
-                dicNew[q] = qBag;
+                if(qBag.IntersectsWith(itebuilder.MkSingleton(solver.True)))
+                    dicNew[q] = qBag;
             }
             return dicNew;
         }
+
 
         //Computes and memoizes BlockPre
         private static Dictionary<int, IteBag<T>> AuxGetBlockPre(
@@ -3690,26 +3743,30 @@ namespace Microsoft.Automata
             Dictionary<Block, Dictionary<int, IteBag<T>>> BlockPre,
             Dictionary<Block, Tuple<Block, Block>> MinusStructure,
             Dictionary<int, List<Move<T>>> deltaInv,
-            IteBagBuilder<T> iteBuilder)
+            IteBagBuilder<T> iteBuilder,
+            IBooleanAlgebra<T> solver)
         {
             if (BlockPre.ContainsKey(B))
                 return BlockPre[B];
             else
             {
-                if (MinusStructure.ContainsKey(B))
+                if (MinusStructure.ContainsKey(B) && BlockPre.ContainsKey(MinusStructure[B].Item1))
                 {
                     var tup = MinusStructure[B];
                     var big = tup.Item1;
                     var small = tup.Item2;
                     return DicMinus(
-                        AuxGetBlockPre(big, BlockPre, MinusStructure, deltaInv,iteBuilder), 
-                        AuxGetBlockPre(small, BlockPre, MinusStructure, deltaInv,iteBuilder));
+                        AuxGetBlockPre(big, BlockPre, MinusStructure, deltaInv,iteBuilder, solver),
+                        AuxGetBlockPre(small, BlockPre, MinusStructure, deltaInv, iteBuilder, solver),
+                        iteBuilder,solver);
                 }
                 else
-                {
+                {                    
                     var dicB = new Dictionary<int, IteBag<T>>();
 
                     foreach (var q in B)
+                    {
+                        totalPreCount++;                    
                         foreach (var move in deltaInv[q]) //moves leading to q
                         {
                             var moveBag = iteBuilder.MkSingleton(move.Label);
@@ -3721,6 +3778,7 @@ namespace Microsoft.Automata
                             else
                                 dicB[move.SourceState] = moveBag;
                         }
+                    }
                     BlockPre[B] = dicB;
                     return dicB;
                 }
@@ -3753,20 +3811,26 @@ namespace Microsoft.Automata
                 W.Push(finalBlock);
 
             Func<T, T, T> MkDiff = (x, y) => solver.MkAnd(x, solver.MkNot(y));            
+            int totalExploredBlocks = 0;
+            int totalPre = 0;
             while (!W.IsEmpty)
             {
+                totalExploredBlocks++;
 
                 var B = W.Pop();
 
                 var Bcopy = new Block(B);                //make a copy of B for iterating over its elemenents
                 var Gamma = new Dictionary<int, T>();     //joined conditions leading to B from states leading to B
                 foreach (var q in Bcopy)
+                {
+                    totalPre++;
                     foreach (var move in fa.deltaInv[q]) //moves leading to q
                         if (Blocks[move.SourceState].Count > 1) //singleton blocks cannot be further split
                             if (Gamma.ContainsKey(move.SourceState))
                                 Gamma[move.SourceState] = solver.MkOr(Gamma[move.SourceState], move.Label);
                             else
                                 Gamma[move.SourceState] = move.Label;
+                }
 
                 #region apply initial splitting without using guards
                 var relevant = new HashSet<Block>();
@@ -3892,6 +3956,9 @@ namespace Microsoft.Automata
                 }
 
             }
+
+            Console.WriteLine("OLD Explored blocks: " + totalExploredBlocks);
+            Console.WriteLine("OLD PRES: " + totalPre);
 
             Func<int, int> GetRepresentative = (q => Blocks[q].GetRepresentative());
             return autom.JoinStates(GetRepresentative, solver.MkOr);

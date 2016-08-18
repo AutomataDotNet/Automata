@@ -18,7 +18,7 @@ namespace RunExperiments
     class RandomNFAExperiment
     {
         static int startAt=0;
-        static int endAt = 5000;
+        static int endAt = 10;
 
         public static void RunTest()
         {

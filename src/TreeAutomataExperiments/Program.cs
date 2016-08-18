@@ -20,7 +20,7 @@ namespace RunExperiments
 
         static internal string path = @"..\..\benchmark\";
         static internal int timeOut = 299999; // 5 minutes
-        static internal int numTests = 11;
+        static internal int numTests = 2;
 
         static internal string timbukFile = "timbukResults.txt";
         static internal string timbukFileDM = "dtaminrestimbuk.txt";
@@ -59,7 +59,7 @@ namespace RunExperiments
             //Util.GatherResultsTimbuk(timbukFile, timbukFileDM, timbukPrefix);
             VerificationNFAExperiment.RunTest();
 
-            RegexExperiment.RunTest();
+            //RegexExperiment.RunTest();
         }
 
     }
