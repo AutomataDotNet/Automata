@@ -32,12 +32,12 @@ namespace RunExperiments
         }
 
         //Runs the three algorithms. It requires the deterministic automton, the total automaton, and the output file
-        public static void RunAllAlgorithms(Automaton<BDD> automaton, 
-            string exampleName, string outputFileName, CharSetSolver rex)
+        public static void RunAllAlgorithms<S>(Automaton<S> automaton, 
+            string exampleName, string outputFileName, IBooleanAlgebra<S> rex)
         {
-            Automaton<BDD> algo1Min = null;
-            Automaton<BDD> algo2Min = null;
-            Automaton<BDD> algo3Min = null;
+            Automaton<S> algo1Min = null;
+            Automaton<S> algo2Min = null;
+            Automaton<S> algo3Min = null;
 
             var noEps = automaton.RemoveEpsilons().MakeTotal().RemoveEpsilonLoops();
             noEps.isDeterministic = false;

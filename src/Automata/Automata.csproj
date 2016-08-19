@@ -70,6 +70,7 @@
     <Compile Include="BDD.cs" />
     <Compile Include="BDDAlgebra.cs" />
     <Compile Include="BigInt.cs" />
+    <Compile Include="BooleanAlgebras\FiniteSetAlgebra.cs" />
     <Compile Include="CharacterEncoding.cs" />
     <Compile Include="CharSetSolver.cs" />
     <Compile Include="Chooser.cs" />

@@ -18,7 +18,7 @@ namespace RunExperiments
     class VerificationNFAExperiment
     {
         static int startAt = 0;
-        static int endAt = 8;
+        static int endAt = 50;
 
         public static void RunTest()
         {
@@ -43,17 +43,26 @@ namespace RunExperiments
 
         }
 
-        public static Automaton<BDD> fadoToSFA(string description, CharSetSolver solver)
+        public static void RunFinAlphTest()
         {
+            var nfaPath = Program.path + @"NFA\";
+            DirectoryInfo detDir = new DirectoryInfo(nfaPath);
 
-            var finalStates = new HashSet<int>();
-            var moves = new List<Move<BDD>>();
+            if (startAt == 0)
+                NFAUtil.PrintHeader(Program.verifNFAOutputFile);
 
-            moves.Add(new Move<BDD>(0, 1, solver.MkCharConstraint('a')));
+            int count = 0;
+            foreach (var file in detDir.GetFiles("*", SearchOption.AllDirectories))
+            {
+                if (startAt <= count && count <= endAt)
+                {
+                    var res = TimbukNFAParser.ParseVataFileFinSet(file.FullName);
+                    NFAUtil.RunAllAlgorithms(res.Item1, file.Name, Program.verifNFAOutputFile, res.Item2);
 
+                }
+                count++;
+            }
 
-
-            return Automaton<BDD>.Create(solver, 0, finalStates, moves).RemoveEpsilonLoops(); //This causes normalization
-        }
+        }        
     }
 }
