@@ -3712,6 +3712,9 @@ namespace Microsoft.Automata
             Console.WriteLine("Calls Min: " + iteBuilder.GetCallCount(BagOpertion.MIN));
             Console.WriteLine("Time Min: " + iteBuilder.GetElapsedMilliseconds(BagOpertion.MIN));
 
+            Console.WriteLine("Calls plus: " + iteBuilder.GetCallCount(BagOpertion.PLUS));
+            Console.WriteLine("Time plus: " + iteBuilder.GetElapsedMilliseconds(BagOpertion.PLUS));
+
             Console.WriteLine("N log N Explored blocks: "+totalExploredBlocks);
             Console.WriteLine("N log N PRES: " + totalPreCount);
             Func<int, int> GetRepresentative = (q => Blocks[q].GetRepresentative());
