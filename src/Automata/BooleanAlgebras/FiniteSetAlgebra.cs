@@ -5,98 +5,101 @@ using System.Text;
 
 namespace Microsoft.Automata
 {
-    public class FiniteSetAlgebra<S> : IBooleanAlgebra<HashSet<S>>
-    {
-        readonly HashSet<S> universe;
-        readonly HashSet<S> empty;
+    public class FiniteSetAlgebra<S> : IBooleanAlgebra<UIntW>
+    {        
+        readonly Dictionary<S,UIntW> alph;
 
-        MintermGenerator<HashSet<S>> mtg;
+        readonly int size;
+        readonly UIntW full;
+        readonly UIntW empty;
+
+        MintermGenerator<UIntW> mtg;
 
         public FiniteSetAlgebra(HashSet<S> universe)
         {
-            this.universe = universe;
-            this.empty = new HashSet<S>();
-            mtg = new MintermGenerator<HashSet<S>>(this);
+            if (universe.Count > 32)
+                throw new AutomataException("for now only supports alphabets of size<=32");
+            var alphDic = new Dictionary<S,UIntW>();
+            foreach (var v in universe)
+                alphDic[v] = new UIntW(((UInt64)1) << alphDic.Count);
+            alph = alphDic;
+            this.size=universe.Count;
+            this.empty = new UIntW(0);
+            this.full = new UIntW((((UInt64)1) << size) - 1);
+
+            mtg = new MintermGenerator<UIntW>(this);
         }
 
-        public bool AreEquivalent(HashSet<S> a, HashSet<S> b)
+        public bool AreEquivalent(UIntW a, UIntW b)
         {
-            return a.SetEquals(b);
+            return a==b;
         }
 
-        public bool CheckImplication(HashSet<S> a, HashSet<S> b)
+        public bool CheckImplication(UIntW a, UIntW b)
         {
-            return a.IsSubsetOf(b);
+            return MkDiff(a,b).val==0;
         }
 
-        public HashSet<S> True
+        public UIntW True
         {
-            get { return new HashSet<S>(universe); }
+            get { return full; }
         }
 
-        public HashSet<S> False
+        public UIntW False
         {
-            get { return new HashSet<S>(); }
+            get { return empty; }
         }
 
-        public HashSet<S> MkOr(IEnumerable<HashSet<S>> sets)
+        public UIntW MkOr(IEnumerable<UIntW> sets)
         {
-            var res = False;
+            var res = False.val;
             foreach (var set in sets)
-                res.UnionWith(set);
-            return res;
+                res = res | set.val;
+            return new UIntW(res);
         }
 
-        public HashSet<S> MkAnd(IEnumerable<HashSet<S>> sets)
+        public UIntW MkAnd(IEnumerable<UIntW> sets)
         {
-            var res = True;
+            var res = True.val;
             foreach (var set in sets)
-                res.IntersectWith(set);
-            return res;
+                res = res & set.val;
+            return new UIntW(res);
         }
 
-        public HashSet<S> MkAnd(params HashSet<S>[] sets)
+        public UIntW MkAnd(params UIntW[] sets)
         {
-            var res = True;
+            var res = True.val;
             foreach (var set in sets)
-                res.IntersectWith(set);
-            return res;
+                res = res & set.val;
+            return new UIntW(res);
         }
 
-        public HashSet<S> MkNot(HashSet<S> set)
+        public UIntW MkNot(UIntW set)
         {
-            var res = True;
-            res.RemoveWhere(el => set.Contains(el));
-            return res;
+            return new UIntW(True.val & ~(set.val));
         }
 
-        public HashSet<S> MkOr(HashSet<S> s1, HashSet<S> s2)
+        public UIntW MkOr(UIntW s1, UIntW s2)
         {
-            var res = False;
-            res.UnionWith(s1);
-            res.UnionWith(s2);           
-            return res;
+            return new UIntW(s1.val | s2.val);
         }
 
-        public HashSet<S> MkAnd(HashSet<S> s1, HashSet<S> s2)
+        public UIntW MkAnd(UIntW s1, UIntW s2)
         {
-            var res = True;
-            res.IntersectWith(s1);
-            res.IntersectWith(s2);
-            return res;
+            return new UIntW(s1.val & s2.val);
         }
 
-        public bool IsSatisfiable(HashSet<S> s)
+        public bool IsSatisfiable(UIntW s)
         {
-            return s.Count>0;
+            return s.val > 0;
         }
 
-        public IEnumerable<Pair<bool[], HashSet<S>>> GenerateMinterms(params HashSet<S>[] constraints)
+        public IEnumerable<Pair<bool[], UIntW>> GenerateMinterms(params UIntW[] constraints)
         {
             return mtg.GenerateMinterms(constraints);
         }
 
-        public HashSet<S> Simplify(HashSet<S> s)
+        public UIntW Simplify(UIntW s)
         {
             return s;
         }
@@ -106,7 +109,7 @@ namespace Microsoft.Automata
             get { return false; }
         }
 
-        public HashSet<S> MkSymmetricDifference(HashSet<S> p1, HashSet<S> p2)
+        public UIntW MkSymmetricDifference(UIntW p1, UIntW p2)
         {
             return MkOr(MkAnd(p1, MkNot(p2)), MkAnd(p2, MkNot(p1)));
         }
@@ -116,42 +119,56 @@ namespace Microsoft.Automata
             get { return true; }
         }
 
-        public HashSet<S> GetAtom(HashSet<S> set)
+        private UIntW IthOnly(UIntW var, int pos){
+            return new UIntW((UInt64)(var.val & (uint)(1<<pos)));
+        }
+
+        public UIntW GetAtom(UIntW set)
         {
             if (!IsSatisfiable(set))
                 return set;
 
-            foreach(var v in set){
-                var res = new HashSet<S>();
-                res.Add(v);
-                return res;
-            }
+            for(int i=0;i<size;i++){
+                var ith = IthOnly(set,i);
+                if(ith.val>0)
+                    return ith;
+            }                
 
             //This shouldn't happen
-            return null;
+            return new UIntW(0);
         }
 
-        public HashSet<S> MkAtom(S atom)
+        public UIntW MkAtom(S atom)
         {
-            if (!universe.Contains(atom))
+            if (!alph.ContainsKey(atom))
                 throw new AutomataException("Not a member of universe "+ atom);
 
-            var set = new HashSet<S>();
-            set.Add(atom);
-
-            return set;
+            return alph[atom];
         }
 
 
-        public bool EvaluateAtom(HashSet<S> atom, HashSet<S> psi)
+        public bool EvaluateAtom(UIntW atom, UIntW psi)
         {
             throw new NotImplementedException();
         }
 
 
-        public HashSet<S> MkDiff(HashSet<S> predicate1, HashSet<S> predicate2)
+        public UIntW MkDiff(UIntW predicate1, UIntW predicate2)
         {
             return MkAnd(predicate1, MkNot(predicate2));
+        }
+    }
+
+    public class UIntW
+    {
+        public UInt64 val;
+        public UIntW(UInt64 val)
+        {
+            this.val = val; 
+        }
+        public override string ToString()
+        {
+            return Convert.ToString((int)val, 2);
         }
     }
 }

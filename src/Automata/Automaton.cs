@@ -3303,8 +3303,8 @@ namespace Microsoft.Automata
                 }
             }
 
-            Console.WriteLine("NEW Explored blocks: " + totalExploredBlocks);
-            Console.WriteLine("NEW PRE: " + totalPre);
+            //Console.WriteLine("NEW Explored blocks: " + totalExploredBlocks);
+            //Console.WriteLine("NEW PRE: " + totalPre);
 
             Func<int, int> GetRepresentative = (q => Blocks[q].GetRepresentative());
             return autom.JoinStates(GetRepresentative, solver.MkOr);
@@ -3699,24 +3699,24 @@ namespace Microsoft.Automata
                     }
                 }
             }
-            Console.WriteLine();
-            Console.WriteLine("Calls IntersEmp: " + iteBuilder.GetCallCount(BagOpertion.ISNONEMPTYINTERSECTION));
-            Console.WriteLine("Time IntersEmp: " + iteBuilder.GetElapsedMilliseconds(BagOpertion.ISNONEMPTYINTERSECTION));
+            //Console.WriteLine();
+            //Console.WriteLine("Calls IntersEmp: " + iteBuilder.GetCallCount(BagOpertion.ISNONEMPTYINTERSECTION));
+            //Console.WriteLine("Time IntersEmp: " + iteBuilder.GetElapsedMilliseconds(BagOpertion.ISNONEMPTYINTERSECTION));
 
-            Console.WriteLine("Calls Minus: " + iteBuilder.GetCallCount(BagOpertion.MINUS));
-            Console.WriteLine("Time Minus: " + iteBuilder.GetElapsedMilliseconds(BagOpertion.MINUS));
+            //Console.WriteLine("Calls Minus: " + iteBuilder.GetCallCount(BagOpertion.MINUS));
+            //Console.WriteLine("Time Minus: " + iteBuilder.GetElapsedMilliseconds(BagOpertion.MINUS));
 
-            Console.WriteLine("Calls SETMINUS: " + iteBuilder.GetCallCount(BagOpertion.SETMINUS));
-            Console.WriteLine("Time SETMINUS: " + iteBuilder.GetElapsedMilliseconds(BagOpertion.SETMINUS));
+            //Console.WriteLine("Calls SETMINUS: " + iteBuilder.GetCallCount(BagOpertion.SETMINUS));
+            //Console.WriteLine("Time SETMINUS: " + iteBuilder.GetElapsedMilliseconds(BagOpertion.SETMINUS));
 
-            Console.WriteLine("Calls Min: " + iteBuilder.GetCallCount(BagOpertion.MIN));
-            Console.WriteLine("Time Min: " + iteBuilder.GetElapsedMilliseconds(BagOpertion.MIN));
+            //Console.WriteLine("Calls Min: " + iteBuilder.GetCallCount(BagOpertion.MIN));
+            //Console.WriteLine("Time Min: " + iteBuilder.GetElapsedMilliseconds(BagOpertion.MIN));
 
-            Console.WriteLine("Calls plus: " + iteBuilder.GetCallCount(BagOpertion.PLUS));
-            Console.WriteLine("Time plus: " + iteBuilder.GetElapsedMilliseconds(BagOpertion.PLUS));
+            //Console.WriteLine("Calls plus: " + iteBuilder.GetCallCount(BagOpertion.PLUS));
+            //Console.WriteLine("Time plus: " + iteBuilder.GetElapsedMilliseconds(BagOpertion.PLUS));
 
-            Console.WriteLine("N log N Explored blocks: "+totalExploredBlocks);
-            Console.WriteLine("N log N PRES: " + totalPreCount);
+            //Console.WriteLine("N log N Explored blocks: "+totalExploredBlocks);
+            //Console.WriteLine("N log N PRES: " + totalPreCount);
             Func<int, int> GetRepresentative = (q => Blocks[q].GetRepresentative());
             return autom.JoinStates(GetRepresentative, solver.MkOr);
         }
@@ -3959,8 +3959,8 @@ namespace Microsoft.Automata
 
             }
 
-            Console.WriteLine("OLD Explored blocks: " + totalExploredBlocks);
-            Console.WriteLine("OLD PRES: " + totalPre);
+            //Console.WriteLine("OLD Explored blocks: " + totalExploredBlocks);
+            //Console.WriteLine("OLD PRES: " + totalPre);
 
             Func<int, int> GetRepresentative = (q => Blocks[q].GetRepresentative());
             return autom.JoinStates(GetRepresentative, solver.MkOr);

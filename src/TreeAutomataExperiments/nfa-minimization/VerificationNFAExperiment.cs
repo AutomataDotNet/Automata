@@ -18,7 +18,7 @@ namespace RunExperiments
     class VerificationNFAExperiment
     {
         static int startAt = 0;
-        static int endAt = 50;
+        static int endAt = 1000;
 
         public static void RunTest()
         {

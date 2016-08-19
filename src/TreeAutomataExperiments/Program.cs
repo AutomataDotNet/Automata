@@ -57,8 +57,8 @@ namespace RunExperiments
             //Util.GatherResults(largeAlphabetFile, largeAlphabetPrefix);
             //Util.GatherResults(fastFile, fastPrefix);
             //Util.GatherResultsTimbuk(timbukFile, timbukFileDM, timbukPrefix);
-            VerificationNFAExperiment.RunTest();
-            //VerificationNFAExperiment.RunFinAlphTest();
+            //VerificationNFAExperiment.RunTest();
+            VerificationNFAExperiment.RunFinAlphTest();
 
             //RegexExperiment.RunTest();
         }
