@@ -29,9 +29,10 @@ namespace MSO.Eval
 
             //ex x1 x2... a(x1) /\ a(x2).../\ x1<x2...
             using (System.IO.StreamWriter file =
-            new System.IO.StreamWriter(@"..\mso-minterm-p1.csv"))
+            new System.IO.StreamWriter(@"mso-minterm-p1.csv"))
             {
-                file.WriteLine("k, old, cartesian, trie, minterm");
+                Console.WriteLine("k, old, cartesian, generic-bdd, minterm");
+                file.WriteLine("k, old, cartesian, generic-bdd, minterm");
                 for (int size = 2; size < kminterm; size++)
                 {
                     var solver = new CharSetSolver(BitWidth.BV64);
@@ -40,7 +41,7 @@ namespace MSO.Eval
                     //x1<x2 /\...
                     for (int k = 1; k < size; k++)
                     {
-                        var leq = new MSOSuccN<BDD>(new Variable("x" + (k - 1), true), new Variable("x" + k, true),1);
+                        var leq = new MSOSuccN<BDD>(new Variable("x" + (k - 1), true), new Variable("x" + k, true), 1);
                         phi = new MSOAnd<BDD>(phi, leq);
 
                     }
@@ -67,53 +68,82 @@ namespace MSO.Eval
 
                     var told = sw.ElapsedMilliseconds;
 
-                    //BDD
-                    sw.Restart();
-                    for (int t = 0; t < numTests; t++)
+                    //classic MSO old
+                    var t1 = 60000L * numTests;
+                    bool oom = false;
+                    try
                     {
-                        var aut =phi.GetAutomaton(new CartesianAlgebraBDD<BDD>(solver));
+                        sw.Restart();
+                        for (int t = 0; t < numTests; t++)
+                        {
+                            var aut = phi.GetAutomaton(new CartesianAlgebraBDD<BDD>(solver));
+                        }
+                        sw.Stop();
                     }
-                    sw.Stop();
-
-                    var t1 = sw.ElapsedMilliseconds;
+                    catch (OutOfMemoryException e)
+                    {
+                        oom = true;
+                    }
+                    if (!oom)
+                        t1 = sw.ElapsedMilliseconds;
 
                     //Trie
-                    sw.Restart();
-                    for (int t = 0; t < numTests; t++)
+                    var t2 = 60000L * numTests;
+                    oom = false;
+                    try
                     {
-                        var aut = phi.GetAutomaton(new BDDAlgebra<BDD>(solver), false);
+                        sw.Restart();
+                        for (int t = 0; t < numTests; t++)
+                        {
+                            var aut = phi.GetAutomaton(new BDDAlgebra<BDD>(solver), false);
+                        }
                     }
-
-                    var t2 = sw.ElapsedMilliseconds;
+                    catch (OutOfMemoryException e)
+                    {
+                        oom = true;
+                    }
+                    if (!oom)
+                        t2 = sw.ElapsedMilliseconds;
 
                     //Tminterm
+                    var t3 = 60000L * numTests;
+                    oom = false;
+
                     solver = new CharSetSolver(BitWidth.BV64);
                     BDD[] predicates = new BDD[size];
                     solver.GenerateMinterms();
                     for (int k = 0; k < size; k++)
                         predicates[k] = solver.MkBitTrue(k);
 
-                    var t3 = 60000L * numTests;
+
                     if (size <= maxmint)
                     {
-                        sw.Restart();
-                        for (int t = 0; t < numTests; t++)
+                        try
                         {
-                            var mint = solver.GenerateMinterms(predicates).ToList();
+                            sw.Restart();
+                            for (int t = 0; t < numTests; t++)
+                            {
+                                var mint = solver.GenerateMinterms(predicates).ToList();
+                            }
+                            sw.Stop();
                         }
-                        sw.Stop();
-                        t3 = sw.ElapsedMilliseconds;
+                        catch (OutOfMemoryException e)
+                        {
+                            oom = true;
+                        }
+                        if (!oom)
+                            t3 = sw.ElapsedMilliseconds;
                     }
-
-                    file.WriteLine(size + ", " + (double)told / numTests+ ", " + (double)t1 / numTests + ", " + (double)t2 / numTests + ", " + (double)t3 / numTests);
+                    file.WriteLine(size + ", " + (double)told / numTests + ", " + (double)t1 / numTests + ", " + (double)t2 / numTests + ", " + (double)t3 / numTests);
                     Console.WriteLine(size + ", " + (double)told / numTests + ", " + (double)t1 / numTests + ", " + (double)t2 / numTests + ", " + (double)t3 / numTests);
                 }
             }
 
             //ex x1 x2... a(x1) /\ a(x2)...
             using (System.IO.StreamWriter file =
-           new System.IO.StreamWriter(@"..\mso-minterm-p2.csv"))
+           new System.IO.StreamWriter(@"mso-minterm-p2.csv"))
             {
+                Console.WriteLine("k, old, cartesian, trie, minterm");
                 file.WriteLine("k, old, cartesian, trie, minterm");
                 for (int size = 2; size < 10; size++)
                 {
@@ -144,8 +174,10 @@ namespace MSO.Eval
                     var told = sw.ElapsedMilliseconds;
 
                     //Cartesian
+                    //classic MSO old
                     var t1 = 60000L * numTests;
-                    if (size <= 7)
+                    bool oom = false;
+                    try
                     {
                         sw.Restart();
                         for (int t = 0; t < numTests; t++)
@@ -153,21 +185,33 @@ namespace MSO.Eval
                             phi.GetAutomaton(new CartesianAlgebraBDD<BDD>(solver));
                         }
                         sw.Stop();
-
-                        t1 = sw.ElapsedMilliseconds;
                     }
+                    catch (OutOfMemoryException e)
+                    {
+                        oom = true;
+                    }
+                    if (!oom)
+                        t1 = sw.ElapsedMilliseconds;
 
 
                     //Trie
                     var t2= 60000L * numTests;
-                    sw.Restart();
-                    for (int t = 0; t < numTests; t++)
+                    oom = false;
+                    try
                     {
-                        phi.GetAutomaton(new BDDAlgebra<BDD>(solver), false);
+                        sw.Restart();
+                        for (int t = 0; t < numTests; t++)
+                        {
+                            phi.GetAutomaton(new BDDAlgebra<BDD>(solver), false);
+                        }
+                        sw.Stop();
                     }
-                    sw.Stop();
-
-                    t2 = sw.ElapsedMilliseconds;
+                    catch (OutOfMemoryException e)
+                    {
+                        oom = true;
+                    }
+                    if (!oom)
+                         t2 = sw.ElapsedMilliseconds;
 
                     //Tminterm
                     solver = new CharSetSolver(BitWidth.BV64);
@@ -177,7 +221,8 @@ namespace MSO.Eval
                         predicates[k] = solver.MkBitTrue(k);
 
                     var t3 = 60000L * numTests;
-                    if (size <= maxmint)
+                    oom = false;
+                    try
                     {
                         sw.Restart();
                         for (int t = 0; t < numTests; t++)
@@ -185,8 +230,13 @@ namespace MSO.Eval
                             var mint = solver.GenerateMinterms(predicates).ToList();
                         }
                         sw.Stop();
-                        t3 = sw.ElapsedMilliseconds;
                     }
+                    catch (OutOfMemoryException e)
+                    {
+                        oom = true;
+                    }
+                    if (!oom)
+                        t3 = sw.ElapsedMilliseconds;
 
                     file.WriteLine(size + ", " + (double)told / numTests + ", " + (double)t1 / numTests + ", " + (double)t2 / numTests + ", " + (double)t3 / numTests);
                     Console.WriteLine(size + ", " + (double)told / numTests + ", " + (double)t1 / numTests + ", " + (double)t2 / numTests + ", " + (double)t3 / numTests);

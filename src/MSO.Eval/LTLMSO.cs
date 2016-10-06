@@ -25,18 +25,18 @@ namespace MSO.Eval
 
         public static void RunM2LSTR()
         {
-            string outF = outF = @"..\ltltest.csv";
+            string outF = outF = @"ltltest.csv";
             var inpD = @"C:\github\automatark\m2l-str\LTL-finite\";
 
-            LTLTest(inpD, outF);           
+            AutomatarkMsoFormulasTest(inpD, outF);           
         }
 
         public static void RunWS1S()
         {
-            string outF = @"..\ws1s-generated.csv";
+            string outF = @"ws1s-generated.csv";
             string inpD = @"C:\github\automatark\ws1s\generated-formulae\";
 
-            LTLTest(inpD, outF);
+            AutomatarkMsoFormulasTest(inpD, outF);
 
             //outF = @"..\ws1s-STRAND.csv";
             //inpD = @"C:\github\automatark\ws1s\STRAND\";
@@ -45,8 +45,9 @@ namespace MSO.Eval
 
 
         //LTL over finite traces
-        private static void LTLTest(string inputDir, string outFile)
+        private static void AutomatarkMsoFormulasTest(string inputDir, string outFile)
         {
+            Console.WriteLine("fileName , generic-bdd, product");
             using (System.IO.StreamWriter file =
                new System.IO.StreamWriter(outFile))
             {

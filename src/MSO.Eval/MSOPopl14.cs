@@ -50,7 +50,7 @@ namespace MSO.Eval
                 phis.Add(new Pair<MSOFormula<BDD>, CharSetSolver>(phi, solver));
             }
 
-            RunTest(new StreamWriter(@"..\popl14-1.csv"), phis);
+            RunTest(new StreamWriter(@"popl14-1.csv"), phis);
 
 
             // all x1...xn. xi<xi+1 and a(xi)
@@ -79,7 +79,7 @@ namespace MSO.Eval
                 }
                 phis.Add(new Pair<MSOFormula<BDD>, CharSetSolver>(phi, solver));
             }
-            RunTest(new StreamWriter(@"..\popl14-2.csv"), phis);
+            RunTest(new StreamWriter(@"popl14-2.csv"), phis);
 
             // all x1...xn. (xi<xi+1 and a(xi)) and ex y. c(y)
             phis = new List<Pair<MSOFormula<BDD>, CharSetSolver>>();
@@ -111,7 +111,7 @@ namespace MSO.Eval
                 phis.Add(new Pair<MSOFormula<BDD>, CharSetSolver>(phi, solver));
             }
 
-            RunTest(new StreamWriter(@"..\popl14-3.csv"), phis);
+            RunTest(new StreamWriter(@"popl14-3.csv"), phis);
 
             // all x1...xn. (xi<xi+1 and a(xi) \/ c(xi))
 
@@ -141,19 +141,20 @@ namespace MSO.Eval
                 phis.Add(new Pair<MSOFormula<BDD>, CharSetSolver>(phi, solver));
             }
 
-            RunTest(new StreamWriter(@"..\popl14-4.csv"), phis, 10, 10, 11);
+            RunTest(new StreamWriter(@"popl14-4.csv"), phis, 11, 11, 11);
         }
 
 
         //Run the test on each phi in phis and store result in infFile
-        static void RunTest(System.IO.StreamWriter outFile, List<Pair<MSOFormula<BDD>,CharSetSolver>> phis, int stop1At = 100, int stop2At = 100, int stop3At = 100)
+        static void RunTest(System.IO.StreamWriter outFile, List<Pair<MSOFormula<BDD>, CharSetSolver>> phis, int stop1At = 100, int stop2At = 100, int stop3At = 100)
         {
 
             var sw = new Stopwatch();
 
             using (System.IO.StreamWriter file = outFile)
             {
-                file.WriteLine("k, old, cartesian-bdd, cartesian-product");
+                Console.WriteLine("k, old, cartesian, generic-bdd");
+                file.WriteLine("k, old, cartesian, generic-bdd");
                 int to = 2;
                 foreach (var p in phis)
                 {
@@ -161,28 +162,43 @@ namespace MSO.Eval
                     var t1 = timeout;
                     if (to < stop1At)
                     {
-                        sw.Restart();
-                        for (int t = 0; t < numTests; t++)
+                        try
                         {
-                            p.First.GetAutomaton(p.Second);
+                            sw.Restart();
+                            for (int t = 0; t < numTests; t++)
+                            {
+                                p.First.GetAutomaton(p.Second);
+                            }
+                            sw.Stop();
+                            t1 = sw.ElapsedMilliseconds;
                         }
-                        sw.Stop();
-                        t1 = sw.ElapsedMilliseconds;
+                        catch (OutOfMemoryException)
+                        {
+                            t1 = timeout * numTests;
+                        }
                     }
-                
+
                     //T2
                     var t2 = timeout;
                     if (to < stop1At)
                     {
                         var cartesianBDD = new CartesianAlgebraBDD<BDD>(p.Second);
 
-                        sw.Restart();
-                        for (int t = 0; t < numTests; t++)
+                        try
                         {
-                            p.First.GetAutomaton(cartesianBDD);
+                            sw.Restart();
+                            for (int t = 0; t < numTests; t++)
+                            {
+                                p.First.GetAutomaton(cartesianBDD);
+                            }
+                            sw.Stop();
+                            t2 = sw.ElapsedMilliseconds;
+
                         }
-                        sw.Stop();
-                        t2 = sw.ElapsedMilliseconds;
+                        catch (OutOfMemoryException)
+                        {
+                            t2 = timeout * numTests;
+                        }
                     }
 
                     // T3
@@ -191,14 +207,21 @@ namespace MSO.Eval
                     {
                         BDDAlgebra<BDD> cartesianProduct = new BDDAlgebra<BDD>(p.Second);
 
-                        sw.Restart();
-                        for (int t = 0; t < numTests; t++)
+                        try
                         {
-                            p.First.GetAutomaton(cartesianProduct, false);
-                        }
-                        sw.Stop();
+                            sw.Restart();
+                            for (int t = 0; t < numTests; t++)
+                            {
+                                p.First.GetAutomaton(cartesianProduct, false);
+                            }
+                            sw.Stop();
 
-                        t3 = sw.ElapsedMilliseconds;
+                            t3 = sw.ElapsedMilliseconds;
+                        }
+                        catch (OutOfMemoryException)
+                        {
+                            t3 = timeout * numTests;
+                        }
                     }
 
                     file.WriteLine(to + "," + (double)t1 / numTests + "," + (double)t2 / numTests + "," + (double)t3 / numTests);

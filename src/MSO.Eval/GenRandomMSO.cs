@@ -32,9 +32,10 @@ namespace MSO.Eval
 
 
             using (System.IO.StreamWriter file =
-               new System.IO.StreamWriter(@"..\randomMSOInt.csv", false))
+               new System.IO.StreamWriter(@"randomMSOInt.csv", false))
             {
-                file.WriteLine("num-predicates, num-minterms, minterm-time, generic-BDD, product ");
+                Console.WriteLine("num-predicates, num-minterms, minterm-time, generic-bdd, product ");
+                file.WriteLine("num-predicates, num-minterms, minterm-time, generic-bdd, product ");
             }
             random = new Random(0);
 
@@ -44,7 +45,7 @@ namespace MSO.Eval
             for (int maxConst = 3; maxConst < 4; maxConst++)
                 for (int phisize = 5; phisize < 8; phisize += 1)
                 {
-                    Console.WriteLine(maxConst + "," + phisize);
+                    //Console.WriteLine(maxConst + "," + phisize);
 
 
                     for (int i = 0; i < howMany; i++)
@@ -131,26 +132,32 @@ namespace MSO.Eval
                                         tminterm = timeout;
 
                                     }
-                                    using (System.IO.StreamWriter file = new System.IO.StreamWriter(@"..\randomMSOInt.csv", true))
+                                    using (System.IO.StreamWriter file = new System.IO.StreamWriter(@"randomMSOInt.csv", true))
                                     {
-                                        Console.WriteLine("#phi: " + predicates.Count + ", #mint: " + (tminterm == timeout ? (int)Math.Pow(2, predicates.Count) : mint.Count) + ", time mint: " + (double)tminterm + ", generic-bdd: " + (double)tbdd + ", product: " + (double)tcart);
+                                        Console.WriteLine(predicates.Count + ", " + (tminterm == timeout ? (int)Math.Pow(2, predicates.Count) : mint.Count) + ",  " + (double)tminterm + ", " + (double)tbdd + ", " + (double)tcart);
                                         file.WriteLine(predicates.Count + ", " + (tminterm == timeout ? (int)Math.Pow(2, predicates.Count) : mint.Count) + ", " + (double)tminterm + ", " + (double)tbdd + ", " + (double)tcart);
                                     }
                                 }
                                 else {
-                                    Console.WriteLine("moving to next one");
+                                    //Console.WriteLine("moving to next one");
 
                                 }
                             }
                             else
                             {
-                                Console.WriteLine("moving to next one");
+                               // Console.WriteLine("moving to next one");
 
                             }
                         }
                         catch (Z3Exception e)
                         {
-                            Console.WriteLine("Z3 out of memory , time to stop");
+                            Console.WriteLine("Z3 out of memory");
+                            return;
+
+                        }
+                        catch (OutOfMemoryException e)
+                        {
+                            Console.WriteLine("Out of memory");
                             return;
 
                         }
