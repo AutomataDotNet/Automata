@@ -1,4 +1,4 @@
-#################
+bench#################
 ## Eclipse
 #################
 
@@ -225,8 +225,3 @@ pip-log.txt
 
 #ignore installed nuget packages
 packages/*/
-
-
-
-
-src/TreeAutomataExperiments/benchmark/
