@@ -27,7 +27,7 @@ namespace RunExperiments
         {
             using (System.IO.StreamWriter outfile = new System.IO.StreamWriter(Program.path +outputFileName, false))
             {
-                outfile.WriteLine("ID, StateCount, RuleCount, MinStateCount, MinRuleCount, quadratic, new, n log n");
+                outfile.WriteLine("ID, StateCount, RuleCount, MinStateCount, MinRuleCount, quadratic, new, n log n, explore quadratic, epxlored new, explored n log n");
             }
         }
 
@@ -56,7 +56,7 @@ namespace RunExperiments
 
                 //Console.WriteLine(System.Environment.TickCount - tLoc);
             }
-
+            var expBlocks1 = Automaton<S>.totalExploredBlocks;
             var timeAlgo1 = GetAvgTime(System.Environment.TickCount - time,maxTime);
 
             // New algorithm
@@ -71,6 +71,7 @@ namespace RunExperiments
                 //Console.WriteLine(System.Environment.TickCount - tLoc);
             }
 
+            var expBlocks2 = Automaton<S>.totalExploredBlocks;
             var timeAlgo2 = GetAvgTime(System.Environment.TickCount - time, maxTime);
 
             // Count algorithm
@@ -84,7 +85,7 @@ namespace RunExperiments
 
                 //Console.WriteLine(System.Environment.TickCount - tLoc);
             }
-
+            var expBlocks3 = Automaton<S>.totalExploredBlocks;
             var timeAlgo3 = GetAvgTime(System.Environment.TickCount - time, maxTime);
 
             
@@ -111,7 +112,7 @@ namespace RunExperiments
             // ID, StateCount, RuleCount, CompleteRuleCount, MinStateCount, MinRuleCount, PTime, CTime
             using (System.IO.StreamWriter outfile = new System.IO.StreamWriter(Program.path + outputFileName, true))
             {
-                outfile.WriteLine("{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}",
+                outfile.WriteLine("{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}",
                     exampleName,
                     noEps.StateCount,
                     noEps.MoveCount,
@@ -119,7 +120,10 @@ namespace RunExperiments
                     algo1Min.MoveCount,
                     timeAlgo1+0.1,
                     timeAlgo2+0.1,
-                    timeAlgo3 + 0.1);
+                    timeAlgo3 + 0.1,
+                    expBlocks1,
+                     expBlocks2,
+                     expBlocks3);
             }
 
         }

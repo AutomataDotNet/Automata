@@ -2969,11 +2969,14 @@ namespace Microsoft.Automata
             }
         }
 
+        public static int totalExploredBlocks = 0;
+
         /// <summary>
         /// Algorithm MinSFA from POPL14.
         /// </summary>
         static Automaton<T> MinSFANew(Automaton<T> autom)
         {
+            totalExploredBlocks = 0;
             var solver = autom.algebra;
             var fa = autom.MakeTotal();
 
@@ -3067,7 +3070,7 @@ namespace Microsoft.Automata
             };
             #endregion
 
-            int totalExploredBlocks = 0;            
+                     
             while (!W.IsEmpty)
             {
                 totalExploredBlocks++;
@@ -3310,14 +3313,13 @@ namespace Microsoft.Automata
             return autom.JoinStates(GetRepresentative, solver.MkOr);
         }
 
-
-        static int totalPreCount = 0;
+        
         /// <summary>
         /// NFA minimization algorithm based on counting
         /// </summary>
         static Automaton<T> MinSFACount(Automaton<T> autom)
         {
-            totalPreCount = 0;
+            totalExploredBlocks = 0;
             var solver = autom.algebra;
             var fa = autom.MakeTotal();
 
@@ -3417,8 +3419,7 @@ namespace Microsoft.Automata
 
             Func<T, T, T> MkDiff = (x, y) => solver.MkAnd(x, solver.MkNot(y));
             Func<IteBag<T>, bool> IsSat = (b) => b.IntersectsWith(iteBuilder.MkSingleton(solver.True));
-
-            int totalExploredBlocks = 0;
+            
 
             while (!W.IsEmpty)
             {
@@ -3750,7 +3751,6 @@ namespace Microsoft.Automata
 
                     foreach (var q in B)
                     {
-                        totalPreCount++;
                         foreach (var move in deltaInv[q]) //moves leading to q
                         {
                             var moveBag = iteBuilder.MkSingleton(move.Label);
@@ -3775,6 +3775,7 @@ namespace Microsoft.Automata
         /// </summary>
         static Automaton<T> MinSFA(Automaton<T> autom)
         {
+            totalExploredBlocks = 0;
             var solver = autom.algebra;
             var fa = autom.MakeTotal();
 
@@ -3796,7 +3797,6 @@ namespace Microsoft.Automata
                 W.Push(finalBlock);
 
             Func<T, T, T> MkDiff = (x, y) => solver.MkAnd(x, solver.MkNot(y));            
-            int totalExploredBlocks = 0;
             int totalPre = 0;
             while (!W.IsEmpty)
             {

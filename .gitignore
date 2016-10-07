@@ -226,6 +226,3 @@ pip-log.txt
 #ignore installed nuget packages
 packages/*/
 src/TreeAutomataExperiments/benchmark/NFA/
-src/TreeAutomataExperiments/benchmark/nfaRegexMinResults.txt
-src/TreeAutomataExperiments/benchmark/nfaVerificationMinResults.txt
-src/TreeAutomataExperiments/benchmark/regexlib-clean.txt
