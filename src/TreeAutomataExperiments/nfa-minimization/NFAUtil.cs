@@ -96,10 +96,15 @@ namespace RunExperiments
                 //if(!eq)
                 //    Console.WriteLine("wrong mini");
 
-                if (algo2Min.StateCount!= algo1Min.StateCount)
+                if (algo2Min.StateCount != algo1Min.StateCount)
+                {
                     Console.WriteLine("size differ by " + (algo2Min.StateCount - algo1Min.StateCount));
+                }
                 if (algo1Min.StateCount != algo3Min.StateCount)
+                {
                     Console.WriteLine("size differ by " + (algo3Min.StateCount - algo1Min.StateCount));
+                    Console.WriteLine("exname: " + exampleName);
+                }
             }
 
             // Append results on file 

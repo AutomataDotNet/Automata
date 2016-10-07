@@ -17,7 +17,7 @@ namespace Microsoft.Automata
 
         public FiniteSetAlgebra(HashSet<S> universe)
         {
-            if (universe.Count > 32)
+            if (universe.Count > 63)
                 throw new AutomataException("for now only supports alphabets of size<=32");
             var alphDic = new Dictionary<S,UIntW>();
             foreach (var v in universe)

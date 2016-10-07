@@ -30,7 +30,7 @@ namespace RunExperiments
         static internal string regexOutputFile = "nfaRegexMinResults.txt";
         static internal string verifNFAOutputFile = "nfaVerificationMinResults.txt";
 
-        static internal string regexInputFile = "regexes.txt";
+        static internal string regexInputFile = "regexlib-clean.txt";
 
         static internal string timbukPrefix = "timbuk";
         static internal string largeAlphabetPrefix = "large";
@@ -59,10 +59,14 @@ namespace RunExperiments
             //Util.GatherResultsTimbuk(timbukFile, timbukFileDM, timbukPrefix);
 
 
-            RegexExperiment.RunTest();
+            //RegexExperiment.RunTest();
 
             //VerificationNFAExperiment.RunTest();
+            Console.WriteLine("regex");
+            RegexExperiment.RunTest();
+            Console.WriteLine("nfa-verification");
             VerificationNFAExperiment.RunFinAlphTest();
+            
 
         }
 

@@ -36,7 +36,7 @@ namespace RunExperiments
                     string regex = lines[i].Trim();
                     try
                     {
-                        var sfa = rex.CreateFromRegexes(regex);
+                        var sfa = rex.CreateFromRegexes(regex).RemoveEpsilons().MakeTotal();
                         NFAUtil.RunAllAlgorithms(sfa, i.ToString(), Program.regexOutputFile, solver);
                     }
                     catch (Exception e)
