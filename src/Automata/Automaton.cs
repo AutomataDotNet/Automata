@@ -3212,6 +3212,7 @@ namespace Microsoft.Automata
                     //do splitting with respect to GammaHat                               
                     while (gammaHatList.Count > 0)
                     {
+                        totalExploredBlocks++;
                         if (GammaHat == null)
                             GammaHat = GetBlockPre(ComplementBlock[B]);
 
