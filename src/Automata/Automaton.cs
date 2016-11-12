@@ -4162,7 +4162,7 @@ namespace Microsoft.Automata
                 if (solver.IsExtensional)
                     GetCanonicalPredicate = (psi => psi);
                 else if (solver.IsAtomic)
-                    GetCanonicalPredicate = new PredicateTrie<T>(solver).GetId;
+                    GetCanonicalPredicate = new PredicateTrie<T>(solver).Search;
                 else
                     GetCanonicalPredicate = new PredicateIdMapper<T>(solver).GetId;
                 zero = new MultiSet(this, 0);

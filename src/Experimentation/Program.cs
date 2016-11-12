@@ -62,12 +62,15 @@ namespace RunExperiments
             //RegexExperiment.RunTest();
 
             //VerificationNFAExperiment.RunTest();
+            
+            /*
             Console.WriteLine("regex");
             RegexExperiment.RunTest();
             Console.WriteLine("nfa-verification");
             VerificationNFAExperiment.RunFinAlphTest();
-            
+             */
 
+            trie.PredicateTrieExperiments.RunRandom();         
         }
 
     }
