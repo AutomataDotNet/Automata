@@ -800,7 +800,7 @@ program RegexEscape(_){ replace {
             int MAX = 1000;
             while (k < MAX)
             {
-                char c = (char)rnd.Next(0x100);
+                char c = (char)rnd.Next(0xFF);
                 if (!char.IsSurrogate(c)) //ignore surrogates
                 {
                     k += 1;
@@ -815,5 +815,66 @@ program RegexEscape(_){ replace {
                 Assert.Fail();
         }
 
+        [TestMethod]
+        public void TestAntiXSSHtmlEncodeSemantics()
+        {
+            //characters in this range are safe and are thus mapped to themselves
+            Predicate<int> safe = x => ((32 <= x && x <= 33) |
+                                        (35 <= x && x <= 37) |
+                                        (40 <= x && x <= 59) |
+                                        (x == 61) |
+                                        (63 <= x && x <= 126) |
+                                        (161 <= x && x <= 172) |
+                                        (174 <= x && x <= 879));
+            //these special characters are encoded as follows
+            var specials = new Dictionary<int, string>();
+            specials[(int)'<'] = "&lt;";
+            specials[(int)'>'] = "&gt;";
+            specials[(int)'&'] = "&amp;";
+            specials[(int)'\"'] = "&quot;";
+            //all other nonsurrogate characters are encoded with decimals using format &#dd...;
+            for (int i = 0; i <= 0xFFFF; i++)
+            {
+                char c = (char)i;
+                string s = c.ToString();
+                if (!char.IsSurrogate(c))
+                {
+                    var e = System.Web.Security.AntiXss.AntiXssEncoder.HtmlEncode(s, false);
+                    if (safe(i))
+                        Assert.IsTrue(s == e);
+                    else if (specials.ContainsKey(i))
+                        Assert.IsTrue(specials[i] == e);
+                    else
+                        Assert.IsTrue(e == "&#" + i.ToString() + ";");
+                }
+            }
+            //all misplaced surrogates are encoded as the replacement character FFFD
+            for (int i = 0xD800; i <= 0xDFFF; i++)
+            {
+                string s = ((char)i).ToString();
+                var e = System.Web.Security.AntiXss.AntiXssEncoder.HtmlEncode(s, false);
+                Assert.IsTrue(e == "&#" + 0xFFFD.ToString() + ";");
+            }
+            //all surrogate pairs are encoded using the corresponding codepoint number
+            //for all high surrogates hs
+            for (int hs = 0xD800; hs <= 0xDBFF; hs++)
+            {
+                //for all low surrogates ls
+                for (int ls = 0xDC00; ls <= 0xDFFF; ls++)
+                {
+                    //construct surrogate pair s
+                    string s = new string(new char[] {(char)hs,(char)ls});
+                    string e = System.Web.Security.AntiXss.AntiXssEncoder.HtmlEncode(s, false);
+                    //Unicode codepoint corresponding to the (hs,ls) pair
+                    int cp = char.ConvertToUtf32((char)hs, (char)ls);
+                    //cp is the same as cp_
+                    int hs_10_bits = hs & 0x3FF;
+                    int ls_10_bits = ls & 0x3FF;
+                    int cp_ = (((hs_10_bits + 0x40) << 10) | ls_10_bits);
+                    Assert.IsTrue(cp == cp_);
+                    Assert.IsTrue(e ==  "&#" + cp.ToString() + ";");
+                }
+            }
+        }
     }
 }
