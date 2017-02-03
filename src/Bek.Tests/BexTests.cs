@@ -840,6 +840,9 @@ program RegexEscape(_){ replace {
                 if (!char.IsSurrogate(c))
                 {
                     var e = System.Web.Security.AntiXss.AntiXssEncoder.HtmlEncode(s, false);
+                    var e2 = Bek4funSample.Rep_o_HtmlEncode.Apply(s);
+                    Assert.IsTrue(e == e2);
+
                     if (safe(i))
                         Assert.IsTrue(s == e);
                     else if (specials.ContainsKey(i))
@@ -853,6 +856,9 @@ program RegexEscape(_){ replace {
             {
                 string s = ((char)i).ToString();
                 var e = System.Web.Security.AntiXss.AntiXssEncoder.HtmlEncode(s, false);
+                var e2 = Bek4funSample.Rep_o_HtmlEncode.Apply(s);
+                Assert.IsTrue(e == e2);
+
                 Assert.IsTrue(e == "&#" + 0xFFFD.ToString() + ";");
             }
             //all surrogate pairs are encoded using the corresponding codepoint number
@@ -865,6 +871,9 @@ program RegexEscape(_){ replace {
                     //construct surrogate pair s
                     string s = new string(new char[] {(char)hs,(char)ls});
                     string e = System.Web.Security.AntiXss.AntiXssEncoder.HtmlEncode(s, false);
+                    var e2 = Bek4funSample.Rep_o_HtmlEncode.Apply(s);
+                    Assert.IsTrue(e == e2);
+
                     //Unicode codepoint corresponding to the (hs,ls) pair
                     int cp = char.ConvertToUtf32((char)hs, (char)ls);
                     //cp is the same as cp_
@@ -875,6 +884,361 @@ program RegexEscape(_){ replace {
                     Assert.IsTrue(e ==  "&#" + cp.ToString() + ";");
                 }
             }
+        }
+    }
+}
+
+/// <summary>
+/// Autiomatically generated from bex
+/// </summary>
+namespace Bek4funSample
+{
+    public class Rep_o_HtmlEncode
+    {
+        static int CP(int _0, int _1) { return ((((_0 & 0x3FF) + 0x40) << 0xA) | (_1 & 0x3FF)); }
+        static int D5(int _0) { return ((((_0 / 0x64) / 0x3E8) % 0xA) + 0x30); }
+        static int D4(int _0) { return (((_0 / 0x2710) % 0xA) + 0x30); }
+        static int D3(int _0) { return (((_0 / 0x3E8) % 0xA) + 0x30); }
+        static int D2(int _0) { return (((_0 / 0x64) % 0xA) + 0x30); }
+        static int D1(int _0) { return (((_0 / 0xA) % 0xA) + 0x30); }
+        static int D0(int _0) { return ((_0 % 0xA) + 0x30); }
+
+        public static string Apply(string input)
+        {
+            var output = new System.Text.StringBuilder();
+            int r0 = 0; int r1 = 0; int state = 0;
+            var chars = input.ToCharArray();
+            for (int i = 0; i < chars.Length; i++)
+            {
+                int c = (int)chars[i];
+                switch (state)
+                {
+                    case (0):
+                        {
+                            if ((((c <= 0xD7FF) || (0xE000 <= c)) && (((0x2710 <= c) && (c <= 0xD7FF)) || (0xE000 <= c))))
+                            {
+                                output.Append(new char[] { (char)0x26, (char)0x23, (char)D4(c), (char)D3(c), (char)D2(c), (char)D1(c), (char)D0(c), (char)0x3B });
+                                r0 = 0; r1 = 0;
+                                state = 0;
+                            }
+                            else
+                            {
+                                if ((((c <= 0xD7FF) || (0xE000 <= c)) && (0x3E8 <= c) && (((c >> 14) & 0x3) == 0) && ((c & 0x3FFF) <= 0x270F)))
+                                {
+                                    output.Append(new char[] { (char)0x26, (char)0x23, (char)D3(c), (char)D2(c), (char)D1(c), (char)D0(c), (char)0x3B });
+                                    r0 = 0; r1 = 0;
+                                    state = 0;
+                                }
+                                else
+                                {
+                                    if ((((c <= 0xD7FF) || (0xE000 <= c)) && (((0x7F <= c) && (((c >> 8) & 0xFF) == 0) && ((c & 0xFF) <= 0xA0)) || (c == 0xAD) || ((0x370 <= c) && (((c >> 10) & 0x3F) == 0) && ((c & 0x3FF) <= 0x3E7)))))
+                                    {
+                                        output.Append(new char[] { (char)0x26, (char)0x23, (char)D2(c), (char)D1(c), (char)D0(c), (char)0x3B });
+                                        r0 = 0; r1 = 0;
+                                        state = 0;
+                                    }
+                                    else
+                                    {
+                                        if ((((c <= 0xD7FF) || (0xE000 <= c)) && (((0xA <= c) && (((c >> 5) & 0x7FF) == 0)) || (c == 0x27))))
+                                        {
+                                            output.Append(new char[] { (char)0x26, (char)0x23, (char)D1(c), (char)D0(c), (char)0x3B });
+                                            r0 = 0; r1 = 0;
+                                            state = 0;
+                                        }
+                                        else
+                                        {
+                                            if ((((c <= 0xD7FF) || (0xE000 <= c)) && (((c >> 4) & 0xFFF) == 0) && ((c & 0xF) <= 9)))
+                                            {
+                                                output.Append(new char[] { (char)0x26, (char)0x23, (char)D0(c), (char)0x3B });
+                                                r0 = 0; r1 = 0;
+                                                state = 0;
+                                            }
+                                            else
+                                            {
+                                                if ((((c <= 0xD7FF) || (0xE000 <= c)) && (c == 0x22)))
+                                                {
+                                                    output.Append(new char[] { (char)0x26, (char)0x71, (char)0x75, (char)0x6F, (char)0x74, (char)0x3B });
+                                                    r0 = 0; r1 = 0;
+                                                    state = 0;
+                                                }
+                                                else
+                                                {
+                                                    if ((((c <= 0xD7FF) || (0xE000 <= c)) && (c == 0x26)))
+                                                    {
+                                                        output.Append(new char[] { (char)0x26, (char)0x61, (char)0x6D, (char)0x70, (char)0x3B });
+                                                        r0 = 0; r1 = 0;
+                                                        state = 0;
+                                                    }
+                                                    else
+                                                    {
+                                                        if ((((c <= 0xD7FF) || (0xE000 <= c)) && (c == 0x3E)))
+                                                        {
+                                                            output.Append(new char[] { (char)0x26, (char)0x67, (char)0x74, (char)0x3B });
+                                                            r0 = 0; r1 = 0;
+                                                            state = 0;
+                                                        }
+                                                        else
+                                                        {
+                                                            if ((((c <= 0xD7FF) || (0xE000 <= c)) && (c == 0x3C)))
+                                                            {
+                                                                output.Append(new char[] { (char)0x26, (char)0x6C, (char)0x74, (char)0x3B });
+                                                                r0 = 0; r1 = 0;
+                                                                state = 0;
+                                                            }
+                                                            else
+                                                            {
+                                                                if ((((c <= 0xD7FF) || (0xE000 <= c)) && (((0x64 <= c) && (((c >> 7) & 0x1FF) == 0) && ((c & 0x7F) <= 0x7E)) || ((0xA1 <= c) && (((c >> 8) & 0xFF) == 0) && ((c & 0xFF) <= 0xAC)) || ((0xAE <= c) && (((c >> 10) & 0x3F) == 0) && ((c & 0x3FF) <= 0x36F)))))
+                                                                {
+                                                                    output.Append((char)c);
+                                                                    r0 = 0; r1 = 0;
+                                                                    state = 0;
+                                                                }
+                                                                else
+                                                                {
+                                                                    if ((((c <= 0xD7FF) || (0xE000 <= c)) && (((0x20 <= c) && (((c >> 6) & 0x3FF) == 0) && ((c & 0x3F) <= 0x21)) || ((0x23 <= c) && (((c >> 6) & 0x3FF) == 0) && ((c & 0x3F) <= 0x25)) || ((0x28 <= c) && (((c >> 6) & 0x3FF) == 0) && ((c & 0x3F) <= 0x3B)) || (c == 0x3D) || ((0x3F <= c) && (((c >> 7) & 0x1FF) == 0) && ((c & 0x7F) <= 0x63)))))
+                                                                    {
+                                                                        output.Append((char)c);
+                                                                        r0 = 0; r1 = 0;
+                                                                        state = 0;
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        if (((0xDC00 <= c) && (c <= 0xDFFF)))
+                                                                        {
+                                                                            output.Append(new char[] { (char)0x26, (char)0x23, (char)D4(0xFFFD), (char)D3(0xFFFD), (char)D2(0xFFFD), (char)D1(0xFFFD), (char)D0(0xFFFD), (char)0x3B });
+                                                                            r0 = 0; r1 = 0;
+                                                                            state = 0;
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            if (((0xD800 <= c) && (c <= 0xDBFF)))
+                                                                            {
+                                                                                r0 = c;
+                                                                                state = 1;
+                                                                            }
+                                                                            else
+                                                                            {
+                                                                                throw new System.Exception("Rep_o_HtmlEncode");
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            break;
+                        }
+                    default:
+                        {
+                            if (((0xDC00 <= c) && (c <= 0xDFFF) && (0xDB91 <= r0) && (r0 <= 0xDBFF)))
+                            {
+                                output.Append(new char[] { (char)0x26, (char)0x23, (char)0x31, (char)D5(CP(r0, c)), (char)D4(CP(r0, c)), (char)D3(CP(r0, c)), (char)D2(CP(r0, c)), (char)D1(CP(r0, c)), (char)D0(CP(r0, c)), (char)0x3B });
+                                r0 = 0; r1 = 0;
+                                state = 0;
+                            }
+                            else
+                            {
+                                if (((0xDC00 <= c) && (c <= 0xDFFF) && (r0 == 0xDB90) && (0xDE40 <= c)))
+                                {
+                                    output.Append(new char[] { (char)0x26, (char)0x23, (char)0x31, (char)0x30, (char)0x30, (char)0x30, (char)D2(CP(0xDB90, c)), (char)D1(CP(0xDB90, c)), (char)D0(CP(0xDB90, c)), (char)0x3B });
+                                    r0 = 0; r1 = 0;
+                                    state = 0;
+                                }
+                                else
+                                {
+                                    if (((0xDC00 <= c) && (c <= 0xDFFF) && (r0 == 0xDB90) && (c <= 0xDE3F)))
+                                    {
+                                        output.Append(new char[] { (char)0x26, (char)0x23, (char)D5(CP(0xDB90, c)), (char)D4(CP(0xDB90, c)), (char)D3(CP(0xDB90, c)), (char)D2(CP(0xDB90, c)), (char)D1(CP(0xDB90, c)), (char)D0(CP(0xDB90, c)), (char)0x3B });
+                                        r0 = 0; r1 = 0;
+                                        state = 0;
+                                    }
+                                    else
+                                    {
+                                        if (((0xDC00 <= c) && (c <= 0xDFFF) && (0xD822 <= r0) && (r0 <= 0xDB8F)))
+                                        {
+                                            output.Append(new char[] { (char)0x26, (char)0x23, (char)D5(CP(r0, c)), (char)D4(CP(r0, c)), (char)D3(CP(r0, c)), (char)D2(CP(r0, c)), (char)D1(CP(r0, c)), (char)D0(CP(r0, c)), (char)0x3B });
+                                            r0 = 0; r1 = 0;
+                                            state = 0;
+                                        }
+                                        else
+                                        {
+                                            if (((0xDC00 <= c) && (c <= 0xDFFF) && (r0 == 0xD821) && (0xDEA0 <= c)))
+                                            {
+                                                output.Append(new char[] { (char)0x26, (char)0x23, (char)0x31, (char)0x30, (char)0x30, (char)D2(CP(0xD821, c)), (char)D1(CP(0xD821, c)), (char)D0(CP(0xD821, c)), (char)0x3B });
+                                                r0 = 0; r1 = 0;
+                                                state = 0;
+                                            }
+                                            else
+                                            {
+                                                if (((0xDC00 <= c) && (c <= 0xDFFF) && (r0 == 0xD821) && (c <= 0xDE9F)))
+                                                {
+                                                    output.Append(new char[] { (char)0x26, (char)0x23, (char)D4(CP(0xD821, c)), (char)D3(CP(0xD821, c)), (char)D2(CP(0xD821, c)), (char)D1(CP(0xD821, c)), (char)D0(CP(0xD821, c)), (char)0x3B });
+                                                    r0 = 0; r1 = 0;
+                                                    state = 0;
+                                                }
+                                                else
+                                                {
+                                                    if (((0xDC00 <= c) && (c <= 0xDFFF) && (0xD800 <= r0) && (r0 <= 0xD820)))
+                                                    {
+                                                        output.Append(new char[] { (char)0x26, (char)0x23, (char)D4(CP(r0, c)), (char)D3(CP(r0, c)), (char)D2(CP(r0, c)), (char)D1(CP(r0, c)), (char)D0(CP(r0, c)), (char)0x3B });
+                                                        r0 = 0; r1 = 0;
+                                                        state = 0;
+                                                    }
+                                                    else
+                                                    {
+                                                        if ((((c <= 0xD7FF) || (0xE000 <= c)) && (((0x2710 <= c) && (c <= 0xD7FF)) || (0xE000 <= c))))
+                                                        {
+                                                            output.Append(new char[] { (char)0x26, (char)0x23, (char)D4(0xFFFD), (char)D3(0xFFFD), (char)D2(0xFFFD), (char)D1(0xFFFD), (char)D0(0xFFFD), (char)0x3B, (char)0x26, (char)0x23, (char)D4(c), (char)D3(c), (char)D2(c), (char)D1(c), (char)D0(c), (char)0x3B });
+                                                            r0 = 0; r1 = 0;
+                                                            state = 0;
+                                                        }
+                                                        else
+                                                        {
+                                                            if ((((c <= 0xD7FF) || (0xE000 <= c)) && (0x3E8 <= c) && (((c >> 14) & 0x3) == 0) && ((c & 0x3FFF) <= 0x270F)))
+                                                            {
+                                                                output.Append(new char[] { (char)0x26, (char)0x23, (char)D4(0xFFFD), (char)D3(0xFFFD), (char)D2(0xFFFD), (char)D1(0xFFFD), (char)D0(0xFFFD), (char)0x3B, (char)0x26, (char)0x23, (char)D3(c), (char)D2(c), (char)D1(c), (char)D0(c), (char)0x3B });
+                                                                r0 = 0; r1 = 0;
+                                                                state = 0;
+                                                            }
+                                                            else
+                                                            {
+                                                                if ((((c <= 0xD7FF) || (0xE000 <= c)) && (((0x7F <= c) && (((c >> 8) & 0xFF) == 0) && ((c & 0xFF) <= 0xA0)) || (c == 0xAD) || ((0x370 <= c) && (((c >> 10) & 0x3F) == 0) && ((c & 0x3FF) <= 0x3E7)))))
+                                                                {
+                                                                    output.Append(new char[] { (char)0x26, (char)0x23, (char)D4(0xFFFD), (char)D3(0xFFFD), (char)D2(0xFFFD), (char)D1(0xFFFD), (char)D0(0xFFFD), (char)0x3B, (char)0x26, (char)0x23, (char)D2(c), (char)D1(c), (char)D0(c), (char)0x3B });
+                                                                    r0 = 0; r1 = 0;
+                                                                    state = 0;
+                                                                }
+                                                                else
+                                                                {
+                                                                    if ((((c <= 0xD7FF) || (0xE000 <= c)) && (((0xA <= c) && (((c >> 5) & 0x7FF) == 0)) || (c == 0x27))))
+                                                                    {
+                                                                        output.Append(new char[] { (char)0x26, (char)0x23, (char)D4(0xFFFD), (char)D3(0xFFFD), (char)D2(0xFFFD), (char)D1(0xFFFD), (char)D0(0xFFFD), (char)0x3B, (char)0x26, (char)0x23, (char)D1(c), (char)D0(c), (char)0x3B });
+                                                                        r0 = 0; r1 = 0;
+                                                                        state = 0;
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        if ((((c <= 0xD7FF) || (0xE000 <= c)) && (((c >> 4) & 0xFFF) == 0) && ((c & 0xF) <= 9)))
+                                                                        {
+                                                                            output.Append(new char[] { (char)0x26, (char)0x23, (char)D4(0xFFFD), (char)D3(0xFFFD), (char)D2(0xFFFD), (char)D1(0xFFFD), (char)D0(0xFFFD), (char)0x3B, (char)0x26, (char)0x23, (char)D0(c), (char)0x3B });
+                                                                            r0 = 0; r1 = 0;
+                                                                            state = 0;
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            if ((((c <= 0xD7FF) || (0xE000 <= c)) && (c == 0x22)))
+                                                                            {
+                                                                                output.Append(new char[] { (char)0x26, (char)0x23, (char)D4(0xFFFD), (char)D3(0xFFFD), (char)D2(0xFFFD), (char)D1(0xFFFD), (char)D0(0xFFFD), (char)0x3B, (char)0x26, (char)0x71, (char)0x75, (char)0x6F, (char)0x74, (char)0x3B });
+                                                                                r0 = 0; r1 = 0;
+                                                                                state = 0;
+                                                                            }
+                                                                            else
+                                                                            {
+                                                                                if ((((c <= 0xD7FF) || (0xE000 <= c)) && (c == 0x26)))
+                                                                                {
+                                                                                    output.Append(new char[] { (char)0x26, (char)0x23, (char)D4(0xFFFD), (char)D3(0xFFFD), (char)D2(0xFFFD), (char)D1(0xFFFD), (char)D0(0xFFFD), (char)0x3B, (char)0x26, (char)0x61, (char)0x6D, (char)0x70, (char)0x3B });
+                                                                                    r0 = 0; r1 = 0;
+                                                                                    state = 0;
+                                                                                }
+                                                                                else
+                                                                                {
+                                                                                    if ((((c <= 0xD7FF) || (0xE000 <= c)) && (c == 0x3E)))
+                                                                                    {
+                                                                                        output.Append(new char[] { (char)0x26, (char)0x23, (char)D4(0xFFFD), (char)D3(0xFFFD), (char)D2(0xFFFD), (char)D1(0xFFFD), (char)D0(0xFFFD), (char)0x3B, (char)0x26, (char)0x67, (char)0x74, (char)0x3B });
+                                                                                        r0 = 0; r1 = 0;
+                                                                                        state = 0;
+                                                                                    }
+                                                                                    else
+                                                                                    {
+                                                                                        if ((((c <= 0xD7FF) || (0xE000 <= c)) && (c == 0x3C)))
+                                                                                        {
+                                                                                            output.Append(new char[] { (char)0x26, (char)0x23, (char)D4(0xFFFD), (char)D3(0xFFFD), (char)D2(0xFFFD), (char)D1(0xFFFD), (char)D0(0xFFFD), (char)0x3B, (char)0x26, (char)0x6C, (char)0x74, (char)0x3B });
+                                                                                            r0 = 0; r1 = 0;
+                                                                                            state = 0;
+                                                                                        }
+                                                                                        else
+                                                                                        {
+                                                                                            if ((((c <= 0xD7FF) || (0xE000 <= c)) && (((0x64 <= c) && (((c >> 7) & 0x1FF) == 0) && ((c & 0x7F) <= 0x7E)) || ((0xA1 <= c) && (((c >> 8) & 0xFF) == 0) && ((c & 0xFF) <= 0xAC)) || ((0xAE <= c) && (((c >> 10) & 0x3F) == 0) && ((c & 0x3FF) <= 0x36F)))))
+                                                                                            {
+                                                                                                output.Append(new char[] { (char)0x26, (char)0x23, (char)D4(0xFFFD), (char)D3(0xFFFD), (char)D2(0xFFFD), (char)D1(0xFFFD), (char)D0(0xFFFD), (char)0x3B, (char)c });
+                                                                                                r0 = 0; r1 = 0;
+                                                                                                state = 0;
+                                                                                            }
+                                                                                            else
+                                                                                            {
+                                                                                                if ((((c <= 0xD7FF) || (0xE000 <= c)) && (((0x20 <= c) && (((c >> 6) & 0x3FF) == 0) && ((c & 0x3F) <= 0x21)) || ((0x23 <= c) && (((c >> 6) & 0x3FF) == 0) && ((c & 0x3F) <= 0x25)) || ((0x28 <= c) && (((c >> 6) & 0x3FF) == 0) && ((c & 0x3F) <= 0x3B)) || (c == 0x3D) || ((0x3F <= c) && (((c >> 7) & 0x1FF) == 0) && ((c & 0x7F) <= 0x63)))))
+                                                                                                {
+                                                                                                    output.Append(new char[] { (char)0x26, (char)0x23, (char)D4(0xFFFD), (char)D3(0xFFFD), (char)D2(0xFFFD), (char)D1(0xFFFD), (char)D0(0xFFFD), (char)0x3B, (char)c });
+                                                                                                    r0 = 0; r1 = 0;
+                                                                                                    state = 0;
+                                                                                                }
+                                                                                                else
+                                                                                                {
+                                                                                                    if (((0xD800 <= c) && (c <= 0xDBFF)))
+                                                                                                    {
+                                                                                                        output.Append(new char[] { (char)0x26, (char)0x23, (char)D4(0xFFFD), (char)D3(0xFFFD), (char)D2(0xFFFD), (char)D1(0xFFFD), (char)D0(0xFFFD), (char)0x3B });
+                                                                                                        r0 = c; r1 = 0;
+                                                                                                        state = 1;
+                                                                                                    }
+                                                                                                    else
+                                                                                                    {
+                                                                                                        throw new System.Exception("Rep_o_HtmlEncode");
+                                                                                                    }
+                                                                                                }
+                                                                                            }
+                                                                                        }
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            break;
+                        }
+                }
+            }
+            switch (state)
+            {
+                case (0):
+                    {
+                        if (true)
+                        {
+                        }
+                        else
+                        {
+                            throw new System.Exception("Rep_o_HtmlEncode");
+                        }
+                        break;
+                    }
+                default:
+                    {
+                        if (true)
+                        {
+                            output.Append(new char[] { (char)0x26, (char)0x23, (char)D4(0xFFFD), (char)D3(0xFFFD), (char)D2(0xFFFD), (char)D1(0xFFFD), (char)D0(0xFFFD), (char)0x3B });
+                        }
+                        else
+                        {
+                            throw new System.Exception("Rep_o_HtmlEncode");
+                        }
+                        break;
+                    }
+            }
+            return output.ToString();
         }
     }
 }

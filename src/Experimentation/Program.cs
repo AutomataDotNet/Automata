@@ -62,7 +62,7 @@ namespace RunExperiments
             //RegexExperiment.RunTest();
 
             //VerificationNFAExperiment.RunTest();
-            
+
             /*
             Console.WriteLine("regex");
             RegexExperiment.RunTest();
@@ -70,7 +70,9 @@ namespace RunExperiments
             VerificationNFAExperiment.RunFinAlphTest();
              */
 
-            trie.PredicateTrieExperiments.RunRandom();         
+            //trie.PredicateTrieExperiments.RunRandom();         
+
+            Experimentation.HtmlEncode.CompareHtmlEncode.CompareHtmlEncodePerformance();
         }
 
     }

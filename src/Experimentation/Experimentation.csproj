@@ -16,14 +16,14 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
+    <Optimize>true</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
+    <PlatformTarget>x86</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
@@ -32,12 +32,15 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Microsoft.Z3">
+    <Reference Include="Microsoft.Z3, Version=4.3.2.0, Culture=neutral, processorArchitecture=x86">
       <HintPath>..\..\packages\z3x86win.4.3.2.1\lib\Microsoft.Z3.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Web" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="HtmlEncode\CompareHtmlEncode.cs" />
     <Compile Include="NFA\NFAUtil.cs" />
     <Compile Include="NFA\RandomNFAExperiment.cs" />
     <Compile Include="NFA\RegexExperiment.cs" />
@@ -67,10 +70,15 @@
     <ProjectReference Include="..\Automata.Z3\Automata.Z3.csproj">
       <Project>{7fe1092a-83f9-4f34-a04c-815cab2bd35b}</Project>
       <Name>Automata.Z3</Name>
+      <Private>True</Private>
     </ProjectReference>
     <ProjectReference Include="..\Automata\Automata.csproj">
       <Project>{bc861e29-027d-4ac6-ab24-a7b0cd0fb5e8}</Project>
       <Name>Automata</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Bek\Bek.csproj">
+      <Project>{a8751d84-45e8-4d0a-88b4-1551115ae2e2}</Project>
+      <Name>Bek</Name>
     </ProjectReference>
     <ProjectReference Include="..\Fast\Fast.csproj">
       <Project>{21e2408a-72b8-4c78-9d9e-1d65152ff655}</Project>
