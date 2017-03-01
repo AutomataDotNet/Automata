@@ -65,7 +65,9 @@
     </When>
     <Otherwise>
       <ItemGroup>
-        <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework" />
+        <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework">
+          <Private>False</Private>
+        </Reference>
       </ItemGroup>
     </Otherwise>
   </Choose>
@@ -85,6 +87,7 @@
     <Compile Include="ThreeAutomataTest.cs" />
     <Compile Include="CodeGenTests.cs" />
     <Compile Include="SpecialRegexTests.cs" />
+    <Compile Include="DeterminizationTests.cs" />
     <Compile Include="UtilitiesTests.cs" />
   </ItemGroup>
   <ItemGroup>

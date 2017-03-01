@@ -2453,7 +2453,7 @@ namespace Microsoft.Automata
                         witnessTree[move.TargetState] = move;
                     }
                 }
-                state = stack.Pop();
+                state = stack.Pop();      
             }
 
             ConsList<Move<T>> path = null;
@@ -2480,7 +2480,7 @@ namespace Microsoft.Automata
 
         public Automaton<T> DeterminizeOld(int timeout = 0)
         {
-            IBooleanAlgebra<T> solver = algebra;
+            IBooleanAlgebra<T> solver = algebra;       
 
             if (IsDeterministic)
                 return this;
@@ -2490,7 +2490,7 @@ namespace Microsoft.Automata
             //{
             //    var disjuncts_det = Array.ConvertAll(disjuncts, d => d.Determinize().Minimize());
             //    var disjuncts_comp = Array.ConvertAll(disjuncts_det, d => d.Complement().Minimize());
-            //    var prod = Automaton<T>.MkProductOfDeterministicAutomata(disjuncts_comp);
+            //    var prod = Automaton<T>.MkProductOfDeterministicAutomata(disjuncts_comp); 
             //    var union = prod.Complement();
             //    return union;
             //}
@@ -2515,6 +2515,16 @@ namespace Microsoft.Automata
 
             if (IsDeterministic)
                 return this;
+
+            Automaton<T>[] disjuncts;
+            if (TryDecompose(out disjuncts))  
+            {
+                var disjuncts_det = Array.ConvertAll(disjuncts, d => d.Determinize().Minimize());
+                var disjuncts_comp = Array.ConvertAll(disjuncts_det, d => d.Complement().Minimize());
+                var prod = Automaton<T>.MkProductOfDeterministicAutomata(disjuncts_comp);
+                var union = prod.Complement();
+                return union;
+            }
 
 
             long timeout1 = Microsoft.Automata.Internal.Utilities.HighTimer.Frequency * ((long)timeout / (long)1000);

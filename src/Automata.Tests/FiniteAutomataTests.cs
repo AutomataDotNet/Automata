@@ -737,5 +737,5 @@ namespace Microsoft.Automata.Tests
         }
 
         #endregion
-    }
+    } 
 }

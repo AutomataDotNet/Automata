@@ -70,8 +70,9 @@
     <Reference Include="Antlr3.Runtime">
       <HintPath>..\..\packages\Antlr34.3.4.19004.1\lib\Antlr3.Runtime.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.Z3">
-      <HintPath>..\..\packages\z3x86win.4.3.2.1\lib\Microsoft.Z3.dll</HintPath>
+    <Reference Include="Microsoft.Z3, Version=4.5.0.0, Culture=neutral, PublicKeyToken=9c8d792caae602a2, processorArchitecture=x86">
+      <HintPath>..\..\packages\z3x86win.4.5.0.1\lib\Microsoft.Z3.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="System" />
     <Reference Include="Microsoft.CSharp" />
