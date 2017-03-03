@@ -691,7 +691,10 @@ namespace Microsoft.Automata
             //    string res1 = res.Replace(@"\p{Nd}", @"\d").Replace(@"\P{Nd}", @"\D");
             //    return res1;
             //}
-
+            if (this.categorizer.CategoryCondition(8) == label)
+                return @"\d";
+            if (this.Solver.MkNot(this.categorizer.CategoryCondition(8)) == label)
+                return @"\D";
             if (this.categorizer.WordLetterCondition == label)
                 return @"\w";
             if (this.Solver.MkNot(this.categorizer.WordLetterCondition) == label)
@@ -702,7 +705,9 @@ namespace Microsoft.Automata
                 return @"\S";
             for (int i = 0; i < this.categorizer.UnicodeCategoryStandardAbbreviations.Length; i++)
                 if (this.categorizer.CategoryCondition(i) == label)
+                {
                     return @"\P{" + this.categorizer.UnicodeCategoryStandardAbbreviations[i] + "}";
+                }
 
             var ranges = bddBuilder.ToRanges(label);
             if (ranges.Length == 1 && ranges[0].First == ranges[0].Second)

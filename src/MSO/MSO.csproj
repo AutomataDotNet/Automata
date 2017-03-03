@@ -7,8 +7,8 @@
     <ProjectGuid>{6B1713D0-9960-471C-812C-3E1FC9918182}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>MSO</RootNamespace>
-    <AssemblyName>MSO</AssemblyName>
+    <RootNamespace>Microsoft.Automata.MSO</RootNamespace>
+    <AssemblyName>Microsoft.Automata.MSO</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>

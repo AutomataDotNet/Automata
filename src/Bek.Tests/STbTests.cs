@@ -573,7 +573,7 @@ program A(t) {
       yield();
     } end {
    case (true):
-      yield (r + '0');
+      yield ('-', r + '0');
 };
 }";
             Z3Provider solver = new Z3Provider();
@@ -582,7 +582,7 @@ program A(t) {
 
             var AA_exe = AA.Compile();
             var s = AA_exe.Apply("0123");
-            Assert.AreEqual<string>("0000111122223333449",s);
+            Assert.AreEqual<string>("000011112222333344-9",s);
         }
 
         [TestMethod]

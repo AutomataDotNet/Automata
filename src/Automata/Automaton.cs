@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using Microsoft.Automata.Internal;
+using Microsoft.Automata.Internal.Utilities;
 
 namespace Microsoft.Automata
 {
@@ -5321,14 +5322,112 @@ namespace Microsoft.Automata
             return null;
         }
 
-
         public bool IsState(int q)
         {
             return this.delta.ContainsKey(q);
         }
+
+        /// <summary>
+        ///States are counted consequtively from q0 to q0+n is there are n states (the automaton is made total).
+        ///If the original automaton was partial then q0+n is a nonaccepting sink state.
+        ///Automaton is assumed to be epsilon free.
+        /// </summary>
+        /// <param name="q0">the id of the initial state default is 0</param>
+        /// <returns></returns>
+        public Automaton<T> Normalize(int q0 = 0) 
+        {
+            IBooleanAlgebra<T> solver = this.algebra;
+            if (!this.isEpsilonFree)
+                throw new AutomataException(AutomataExceptionKind.AutomatonIsNotEpsilonfree);
+
+            Dictionary<int, int> state2norm = new Dictionary<int, int>();
+            state2norm[this.initialState] = q0;
+            int nextState = q0 + 1;
+            Func<int, int> Norm = q =>
+            {
+                int n;
+                if (state2norm.TryGetValue(q, out n))
+                    return n;
+                n = nextState;
+                nextState += 1;
+                state2norm[q] = n;
+                return n;
+            };
+
+            bool deadStateIsUsed = false;
+            int deadState = q0 + this.StateCount;
+
+            var normMoves = new List<Move<T>>();
+
+            foreach (int state in this.States)
+            {
+                foreach (var move in this.GetMovesFrom(state))
+                    normMoves.Add(Move<T>.Create(Norm(move.SourceState), Norm(move.TargetState), move.Label));
+
+                var conds = new List<T>(this.EnumerateConditions(state));
+                var or_conds = solver.MkOr(conds);
+                var cond = solver.MkNot(or_conds);
+                if (solver.IsSatisfiable(cond))
+                {
+                    normMoves.Add(Move<T>.Create(Norm(state), deadState, cond));
+                    deadStateIsUsed = true;
+                }
+            }
+            if (deadStateIsUsed)
+                normMoves.Add(Move<T>.Create(deadState, deadState, solver.True));
+
+            List<int> normFinalStates = new List<int>();
+            foreach (var q in this.finalStateSet)
+                normFinalStates.Add(Norm(q));
+
+            var norm = Automaton<T>.Create(this.Algebra, q0, normFinalStates, normMoves, false, false, this.isDeterministic);
+            return norm;
+        }
+
+        /// <summary>
+        /// Normalizes and compiles the automaton to 
+        /// C# code that is exposed through the IFiniteAutomaton interface.
+        /// The automaton must be deterministic and the algebra must be CharSetSolver.
+        /// </summary>
+        public ICompiledStringMatcher Compile(string classname = null, string namespacename = null)
+        {
+            if (!(algebra is CharSetSolver))
+                throw new AutomataException(AutomataExceptionKind.AlgebraMustBeCharSetSolver);
+            if (!this.IsDeterministic)
+                throw new AutomataException(AutomataExceptionKind.AutomatonIsNondeterministic);
+
+            var compiler = new AutomataCSharpCompiler(this as Automaton<BDD>, algebra as CharSetSolver, classname, namespacename, true);
+            var res = compiler.Compile();
+            return res;
+        }
     }
 
-    #region Helper classes used in minimization and determinization algorithms
+    #region Helper classes used in various algorithms
+    internal class CompiledFiniteAutomaton : ICompiledStringMatcher
+    {
+        public IFiniteAutomaton Automaton { get; }
+
+        public string SourceCode { get; }
+
+        System.Reflection.MethodInfo ismatch;
+
+        internal CompiledFiniteAutomaton(string source, IFiniteAutomaton automaton, System.Reflection.MethodInfo ismatch = null)
+        {
+            this.SourceCode = source;
+            this.Automaton = automaton;
+            this.ismatch = ismatch;
+        }
+
+        public bool IsMatch(string input)
+        {
+            if (ismatch == null)
+                return Automaton.IsFinalState(Automaton.Transition(0, input.ToCharArray()));
+            else
+                return (bool) ismatch.Invoke(null, new object[] { input });
+        }
+    }
+
+
     public class Block : IEnumerable<int>
     {
         int representative = -1;

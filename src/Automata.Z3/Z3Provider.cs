@@ -3577,7 +3577,10 @@ namespace Microsoft.Automata.Z3
         /// <param name="logic">given logic</param>
         public ISolver<Expr> MkSolver(string logic = null)
         {
-            return new Z3Solver(z3.MkSolver(logic),this);
+            if (logic == null)
+                return new Z3Solver(z3.MkSolver(), this);
+            else
+                return new Z3Solver(z3.MkSolver(logic), this);
         }
 
         /// <summary>

@@ -74,7 +74,6 @@ namespace Microsoft.Automata.Tests
             Assert.AreEqual<uint>((uint)'_', ranges[2].Second);
             Assert.AreEqual<uint>((uint)'a', ranges[3].First);
             Assert.AreEqual<uint>((uint)'z', ranges[3].Second);
-            Assert.AreEqual<int>(426, ranges.Length);
         }
 
         [TestMethod]
@@ -100,12 +99,12 @@ namespace Microsoft.Automata.Tests
             Assert.AreEqual<int>(nodes, nodes2);
             Assert.AreSame(set,set2);
 
-            set.ToDot("digits.dot"); 
+            //set.ToDot("digits.dot"); 
 
             //check equivalence
             bool equiv = solver.MkOr(solver.MkAnd(cond, solver.MkNot(set)), solver.MkAnd(set, solver.MkNot(cond))) == solver.False;
 
-            Assert.AreEqual<int>(31, ranges.Length);
+            Assert.IsTrue(equiv);
         }
 
         [TestMethod]

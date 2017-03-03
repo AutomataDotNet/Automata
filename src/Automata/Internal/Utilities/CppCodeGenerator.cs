@@ -155,7 +155,7 @@ namespace Microsoft.Automata.Internal.Utilities
             {
                 return @"
 
-extern ""C""__declspec(dllexport) int IsMatch(int index, int size, unsigned char* str)
+extern ""C"" __declspec(dllexport) int IsMatch(int index, int size, unsigned char* str)
 {
 	bool status = " + namespacename + "::" + classname + @"::IsMatchByIndex(index, size, str);
     if (status)
@@ -192,7 +192,7 @@ extern ""C""__declspec(dllexport) int IsMatch(int index, int size, unsigned char
         static bool IsMatch{0}(int k, unsigned char* str)
         {{
             unsigned short r = 0;
-            unsigned short c = 0;
+            unsigned short x = 0;
             int i = 0;", (index == 0 ? "" : index.ToString())));
             sb.Append(GenerateTransitionsFor(index));
             sb.Append(@"
@@ -241,7 +241,7 @@ extern ""C""__declspec(dllexport) int IsMatch(int index, int size, unsigned char
                     if (automaton.GetMovesCountFrom(q) > 0) //q is a sink
                     {
                         transitions.Append(String.Format(@"
-            if (!UTF8toUTF16(&r, &i, &c, k, str))
+            if (!UTF8toUTF16(&r, &i, &x, k, str))
                 return false;"));
                         //---------------------------------------------------------------------
                         //many potential optimizations can be made in generating the conditions

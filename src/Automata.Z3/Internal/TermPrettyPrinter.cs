@@ -54,7 +54,17 @@ namespace Microsoft.Automata.Z3.Internal
                  declKind == Z3_decl_kind.Z3_OP_BAND ||
                  declKind == Z3_decl_kind.Z3_OP_BOR ||
                  declKind == Z3_decl_kind.Z3_OP_BUDIV ||
+                 declKind == Z3_decl_kind.Z3_OP_BUDIV0 ||
+                 declKind == Z3_decl_kind.Z3_OP_BUDIV_I ||
+                 declKind == Z3_decl_kind.Z3_OP_BSDIV ||
+                 declKind == Z3_decl_kind.Z3_OP_BSDIV0 ||
+                 declKind == Z3_decl_kind.Z3_OP_BSDIV_I ||
                  declKind == Z3_decl_kind.Z3_OP_BUREM ||
+                 declKind == Z3_decl_kind.Z3_OP_BUREM0 ||
+                 declKind == Z3_decl_kind.Z3_OP_BUREM_I ||
+                 declKind == Z3_decl_kind.Z3_OP_BSREM ||
+                 declKind == Z3_decl_kind.Z3_OP_BSREM0 ||
+                 declKind == Z3_decl_kind.Z3_OP_BSREM_I ||
                  declKind == Z3_decl_kind.Z3_OP_DIV || 
                  declKind == Z3_decl_kind.Z3_OP_REM ||
                  declKind == Z3_decl_kind.Z3_OP_BLSHR ||
@@ -109,9 +119,19 @@ namespace Microsoft.Automata.Z3.Internal
                     return "&";
                 case Z3_decl_kind.Z3_OP_BOR:
                     return "|";
+                case Z3_decl_kind.Z3_OP_BSDIV0:
+                case Z3_decl_kind.Z3_OP_BSDIV:
+                case Z3_decl_kind.Z3_OP_BSDIV_I:
+                case Z3_decl_kind.Z3_OP_BUDIV0:
                 case Z3_decl_kind.Z3_OP_BUDIV:
+                case Z3_decl_kind.Z3_OP_BUDIV_I:
                     return "/";
+                case Z3_decl_kind.Z3_OP_BSREM0:
+                case Z3_decl_kind.Z3_OP_BSREM:
+                case Z3_decl_kind.Z3_OP_BSREM_I:
+                case Z3_decl_kind.Z3_OP_BUREM0:
                 case Z3_decl_kind.Z3_OP_BUREM:
+                case Z3_decl_kind.Z3_OP_BUREM_I:
                     return "%";
                 case Z3_decl_kind.Z3_OP_DIV:
                     return "/";

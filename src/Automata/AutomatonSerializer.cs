@@ -5,7 +5,6 @@ namespace Microsoft.Automata
     /// <summary>
     /// Is used as a base class of automata classes that implement the IAutomaton interface
     /// and the INameProvider interface.
-    /// Implements the IAutomatonSerializer interface.
     /// </summary>
     public class AutomatonSerializer<TERM>
     {

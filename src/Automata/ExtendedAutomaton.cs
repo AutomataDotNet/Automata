@@ -5,10 +5,6 @@ using Microsoft.Automata.Internal;
 
 namespace Microsoft.Automata
 {
-    /// <summary>
-    /// Symbolic Finite Automaton, provides basic generic algorithms for manipulating SFAs
-    /// </summary>
-    /// <typeparam name="S">type of the move condition</typeparam>
     public class ExtendedAutomaton<S> 
     {
         private Dictionary<int, List<ExtendedNormalMove<S>>> delta;

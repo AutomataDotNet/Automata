@@ -93,7 +93,7 @@ namespace Microsoft.Automata.Internal.Utilities
                     {
                         var asciiCase = RangesToCode(predascii_ranges);
                         var nonasciiCase = GeneratePredicateHelper(prednonascii);
-                        res = string.Format("(c <= 0x7F ? {0} : {1})", asciiCase, nonasciiCase);
+                        res = string.Format("(x <= 0x7F ? {0} : {1})", asciiCase, nonasciiCase);
                     }
                 }
                 else
@@ -123,7 +123,7 @@ namespace Microsoft.Automata.Internal.Utilities
                     //if there is a single node in the BDD then 
                     //just inline the corresponding bit mask operation
                     if (pred.One.IsLeaf && pred.Zero.IsLeaf)
-                        res = string.Format("c & 0x{0:X} {1} 0", 1 << pred.Ordinal, (pred.One.IsFull ? "!=" : "=="));
+                        res = string.Format("x & 0x{0:X} {1} 0", 1 << pred.Ordinal, (pred.One.IsFull ? "!=" : "=="));
                     else
                     {
                         var ranges = pred.ToRanges();
@@ -139,7 +139,7 @@ namespace Microsoft.Automata.Internal.Utilities
                             int methid = helper_predicates.Count;
                             helper_method.Append(String.Format(@"
 
-        static bool P{0}(int c)
+        static bool P{0}(int x)
         {{
             return ", methid));
 
@@ -147,7 +147,7 @@ namespace Microsoft.Automata.Internal.Utilities
                             helper_method.Append(@";
         }");
                             helper_predicates.Add(helper_method.ToString());
-                            res = string.Format("P{0}(c)", methid);
+                            res = string.Format("P{0}(x)", methid);
                         }
                     }
                 }
@@ -191,20 +191,20 @@ namespace Microsoft.Automata.Internal.Utilities
             if (first == last)
             {
                 if (ranges[first].Item1 == ranges[first].Item2)
-                    return string.Format("(c == 0x{0:X})", ranges[first].Item1);
+                    return string.Format("(x == 0x{0:X})", ranges[first].Item1);
                 else
-                    return string.Format("(0x{0:X} <= c && c <= 0x{1:X})", ranges[first].Item1, ranges[first].Item2);
+                    return string.Format("(0x{0:X} <= x && x <= 0x{1:X})", ranges[first].Item1, ranges[first].Item2);
             }
             else if ((last == (first + 1)) && (ranges[first].Item1 == ranges[first].Item2) && (ranges[last].Item1 == ranges[last].Item2))
             {
-                return string.Format("(c == 0x{0:X} || c == 0x{1:X})", ranges[first].Item1, ranges[last].Item1);
+                return string.Format("(x == 0x{0:X} || x == 0x{1:X})", ranges[first].Item1, ranges[last].Item1);
             }
             else
             {
                 int middle = (first + last + 1) / 2;
                 string s1 = RangesToCode2(ranges, first, middle - 1);
                 string s2 = RangesToCode3(ranges, middle, last);
-                return string.Format("(c < 0x{0:X} ? {1} : {2})", ranges[middle].Item1, s1, s2);
+                return string.Format("(x < 0x{0:X} ? {1} : {2})", ranges[middle].Item1, s1, s2);
             }
         }
 
@@ -212,13 +212,13 @@ namespace Microsoft.Automata.Internal.Utilities
         {
             //we know that c >= ranges[first].Item1
             if (first == last)
-                return string.Format("(c <= 0x{0:X})", ranges[first].Item2);
+                return string.Format("(x <= 0x{0:X})", ranges[first].Item2);
             else
             {
                 int middle = (first + last + 1) / 2;
                 string s1 = RangesToCode3(ranges, first, middle - 1);
                 string s2 = RangesToCode3(ranges, middle, last);
-                return string.Format("(c < 0x{0:X} ? {1} : {2})", ranges[middle].Item1, s1, s2);
+                return string.Format("(x < 0x{0:X} ? {1} : {2})", ranges[middle].Item1, s1, s2);
             }
         }
     }

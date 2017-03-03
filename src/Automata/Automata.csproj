@@ -8,7 +8,7 @@
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Microsoft.Automata</RootNamespace>
-    <AssemblyName>Automata</AssemblyName>
+    <AssemblyName>Microsoft.Automata</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -111,7 +111,7 @@
     <Compile Include="Internal\UnicodeCategoryTheory.cs" />
     <Compile Include="Internal\UnicodeCategoryTheoryProviders.cs" />
     <Compile Include="Internal\Utilities\CppCodeGenerator.cs" />
-    <Compile Include="Internal\Utilities\CSharpStringMatcher.cs" />
+    <Compile Include="Internal\Utilities\AutomataCSharpCompiler.cs" />
     <Compile Include="Internal\Utilities\CommandLineParser.cs" />
     <Compile Include="Internal\Utilities\HelperPredicates.cs" />
     <Compile Include="Internal\Utilities\HighTimer.cs" />

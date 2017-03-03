@@ -383,7 +383,7 @@ namespace Automata.Tests
                     var autDet = aut.Determinize(2000);
                     var autMin = autDet.Minimize();
                     var autMinC = aut.Complement();
-                    if (autMin.IsEmpty || autMinC.IsEmpty)
+                    if (autMin.IsEmpty || autMinC.IsEmpty || autMinC.IsEpsilon)
                         continue;
 
                     CheckIsClean(autMin);
@@ -411,7 +411,7 @@ namespace Automata.Tests
                                 tries++;
                     }
                     tries = 0;
-                    int k2 = autMinC.FindShortestFinalPath(autMin.InitialState).Item1.Length;
+                    int k2 = autMinC.FindShortestFinalPath(autMinC.InitialState).Item1.Length;
                     var maxLengthAut2 = solver.Convert("^.{0," + (3 * k2) + "}$").Determinize().Minimize();
                     var autMinCprefix = autMinC.Intersect(maxLengthAut2);
                     while (negSamples.Count < K && tries < 10 * K)

@@ -1369,9 +1369,7 @@ namespace Microsoft.Automata
 
         public ICompiledStringMatcher ToCS(Automaton<BDD> automaton, bool OptimzeForAsciiInput = true, string classname = null, string namespacename = null)
         {
-            var c = (classname == null ? "RegexMatcher" :  classname);
-            var n = (namespacename == null ? "GeneratedRegexMatchers" :  namespacename);
-            return new Microsoft.Automata.Internal.Utilities.CSharpStringMatcher(automaton, this, c, n, OptimzeForAsciiInput);
+            return new Microsoft.Automata.Internal.Utilities.AutomataCSharpCompiler(automaton, this, classname, namespacename, OptimzeForAsciiInput).Compile();
         }
 
         public string ToCpp(Automaton<BDD>[] automata, bool exportIsMatch, bool OptimzeForAsciiInput = true, string classname = null, string namespacename = null)
