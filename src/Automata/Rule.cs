@@ -1056,9 +1056,19 @@ namespace Microsoft.Automata
         internal STbRule<TERM> ToIteForVisualization()
         {
             var res = defaultcase;
-            for (int i = 0; i < cases.Length; i++)
+            for (int i = cases.Length-1; i >= 0; i--)
             {
                 res = new IteRule<TERM>(cases[i].Key, cases[i].Value, res);
+            }
+            return res;
+        }
+
+        internal STbRule<TERM> ToIte(Func<TERM, TERM, TERM> mkEq)
+        {
+            var res = defaultcase;
+            for (int i = cases.Length - 1; i >= 0; i--)
+            {
+                res = new IteRule<TERM>(mkEq(input, cases[i].Key), cases[i].Value, res);
             }
             return res;
         }

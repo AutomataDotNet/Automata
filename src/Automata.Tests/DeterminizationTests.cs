@@ -15,8 +15,8 @@ namespace Automata.Tests
             string regex = @"^[0-9]+(?i:[a-d])$|^[0-9]+[a-dA-D]{2}$";
             var fa = solver.Convert(regex, System.Text.RegularExpressions.RegexOptions.Singleline);
             //fa.ShowGraph("fa");
-            var fadet = fa.Determinize();
-            //fadet.ShowGraph("fadet");
+            var fadet = fa.Determinize().Normalize();
+            fadet.ShowGraph("fadet");
             //fadet.Normalize().ShowGraph("fadet_norm");
             var cs = fadet.Compile();
             var aut = cs.Automaton;

@@ -88,6 +88,7 @@
     <Compile Include="CodeGenTests.cs" />
     <Compile Include="SpecialRegexTests.cs" />
     <Compile Include="DeterminizationTests.cs" />
+    <Compile Include="CompileTests.cs" />
     <Compile Include="UtilitiesTests.cs" />
   </ItemGroup>
   <ItemGroup>

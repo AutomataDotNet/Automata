@@ -72,9 +72,10 @@ namespace RunExperiments
 
             //trie.PredicateTrieExperiments.RunRandom();         
 
-            // Experimentation.HtmlEncode.CompareHtmlEncode.CompareHtmlEncodePerformance(true); 
-            Console.WriteLine("CheckDeterminize");
-            CheckDeterminize();
+            Console.WriteLine("start here");
+            Experimentation.HtmlEncode.CompareHtmlEncode.CompareHtmlEncodePerformance(); 
+            //Console.WriteLine("CheckDeterminize");
+            //CheckDeterminize();
             //GenerateUnicodeCategories();
             //GenerateIgnoreCaseRelation();
         }

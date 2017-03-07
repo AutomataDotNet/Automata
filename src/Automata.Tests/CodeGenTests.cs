@@ -513,7 +513,7 @@ cl /LD " + SourceFile); //option /O2 takes too much time
             p.StartInfo.UseShellExecute = true;
             p.StartInfo.CreateNoWindow = true;
             var res = p.Start();
-            p.WaitForExit();
+            p.WaitForExit(5000);
             p.Close();
         }
 

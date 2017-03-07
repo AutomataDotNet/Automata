@@ -273,7 +273,11 @@ namespace Microsoft.Automata
                 return UndefRule<TERM>.Default;
 
             if (ruleB is SwitchRule<TERM>)
-                throw new NotImplementedException(ruleB.ToString());
+            {
+                var sw = ruleB as SwitchRule<TERM>;
+                var ite = sw.ToIte(solver.MkEq);
+                return EvalB_Rule(ite, qA, regA, pathCond, inputs, regB, stateComposer, outputFromB, isFinal);
+            }
 
             var br = ruleB as BaseRule<TERM>;
             if (br != null)
