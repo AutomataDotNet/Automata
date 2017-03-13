@@ -11,6 +11,7 @@
     <AssemblyName>Microsoft.Automata</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -20,6 +21,7 @@
     <DefineConstants>DEBUG;TRACE;REX,EXPORT_GPPG</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -110,8 +112,8 @@
     <Compile Include="Internal\IntSet.cs" />
     <Compile Include="Internal\UnicodeCategoryTheory.cs" />
     <Compile Include="Internal\UnicodeCategoryTheoryProviders.cs" />
-    <Compile Include="Internal\Utilities\CppCodeGenerator.cs" />
     <Compile Include="Internal\Utilities\AutomataCSharpCompiler.cs" />
+    <Compile Include="Internal\Utilities\CppCodeGenerator.cs" />
     <Compile Include="Internal\Utilities\CommandLineParser.cs" />
     <Compile Include="Internal\Utilities\HelperPredicates.cs" />
     <Compile Include="Internal\Utilities\HighTimer.cs" />
@@ -160,6 +162,9 @@
     <Compile Include="StringUtility.cs" />
     <Compile Include="ThreeAutomaton.cs" />
     <Compile Include="UnionFindHopKarp.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ClassDiagram1.cd" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

@@ -5396,7 +5396,7 @@ namespace Microsoft.Automata
             if (!this.IsDeterministic)
                 throw new AutomataException(AutomataExceptionKind.AutomatonIsNondeterministic);
 
-            var compiler = new AutomataCSharpCompiler(this as Automaton<BDD>, algebra as CharSetSolver, classname, namespacename, true);
+            var compiler = new AutomataCSharpCompiler(this as Automaton<BDD>, classname, namespacename, true);
             var res = compiler.Compile();
             return res;
         }

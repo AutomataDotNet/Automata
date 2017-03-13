@@ -1369,7 +1369,7 @@ namespace Microsoft.Automata
 
         public ICompiledStringMatcher ToCS(Automaton<BDD> automaton, bool OptimzeForAsciiInput = true, string classname = null, string namespacename = null)
         {
-            return new Microsoft.Automata.Internal.Utilities.AutomataCSharpCompiler(automaton, this, classname, namespacename, OptimzeForAsciiInput).Compile();
+            return new Microsoft.Automata.Internal.Utilities.AutomataCSharpCompiler(automaton, classname, namespacename, OptimzeForAsciiInput).Compile();
         }
 
         public string ToCpp(Automaton<BDD>[] automata, bool exportIsMatch, bool OptimzeForAsciiInput = true, string classname = null, string namespacename = null)

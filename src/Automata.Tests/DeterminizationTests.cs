@@ -16,7 +16,7 @@ namespace Automata.Tests
             var fa = solver.Convert(regex, System.Text.RegularExpressions.RegexOptions.Singleline);
             //fa.ShowGraph("fa");
             var fadet = fa.Determinize().Normalize();
-            fadet.ShowGraph("fadet");
+            //fadet.ShowGraph("fadet");
             //fadet.Normalize().ShowGraph("fadet_norm");
             var cs = fadet.Compile();
             var aut = cs.Automaton;

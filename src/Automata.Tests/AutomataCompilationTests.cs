@@ -1,13 +1,12 @@
 ﻿using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Microsoft.Automata;
-using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
 namespace Automata.Tests
 {
     [TestClass]
-    public class CompileTests
+    public class AutomataCompilationTests
     {
         [TestMethod]
         public void CompileTest()
@@ -16,9 +15,9 @@ namespace Automata.Tests
             string regex = @"ab|ac";
             var fa = solver.Convert(regex);
             var fadet = fa.Determinize().Minimize();
-            fadet.ShowGraph("fadet");
+            //fadet.ShowGraph("fadet");
             var cs = fadet.Compile();
-            var aut = cs.Automaton;
+            var aut = cs.Automaton; 
             Assert.AreEqual<int>(aut.Transition(0, 'd'), 0);
             Assert.AreEqual<int>(aut.Transition(0, 'c', 'a'), 1);
             Assert.AreEqual<int>(aut.Transition(1, 'b', 'f', 'o', 'o'), 2);
@@ -50,8 +49,5 @@ namespace Automata.Tests
             var cs = fadet.Compile();
             //fadet.ShowGraph("EvilRegex");
         }
-
-
-
     }
 }

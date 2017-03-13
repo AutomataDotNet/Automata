@@ -1,22 +1,24 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{AE968077-ED72-442D-A4AF-10A031CA3990}</ProjectGuid>
+    <ProjectGuid>{9AE68B3B-2E5F-40C8-8BB1-7B0D05E9FD4F}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Experimentation</RootNamespace>
-    <AssemblyName>Experimentation</AssemblyName>
+    <RootNamespace>Experiments</RootNamespace>
+    <AssemblyName>Experiments</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
-    <Optimize>true</Optimize>
+    <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
@@ -30,7 +32,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Z3, Version=4.5.0.0, Culture=neutral, PublicKeyToken=9c8d792caae602a2, processorArchitecture=x86">
@@ -38,38 +40,25 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Web" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="NFA\NFAUtil.cs" />
-    <Compile Include="NFA\RandomNFAExperiment.cs" />
-    <Compile Include="NFA\RegexExperiment.cs" />
-    <Compile Include="NFA\TimbukNFAParser.cs" />
-    <Compile Include="NFA\VerificationNFAExperiment.cs" />
+    <Compile Include="HtmlEncode\Test.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="STA\FastExperiment.cs" />
-    <Compile Include="STA\GenerateTAs.cs" />
-    <Compile Include="STA\LargeAlphabetExperiment.cs" />
-    <Compile Include="STA\ParsingUtil.cs" />
-    <Compile Include="STA\RecognizerGenerator.cs" />
-    <Compile Include="STA\TestMinLoris.cs" />
-    <Compile Include="STA\TimbukExperiment.cs" />
-    <Compile Include="STA\Util.cs" />
+    <Compile Include="Trie\Test.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.config" />
+    <None Include="App.config">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Automata.Tests\Automata.Tests.csproj">
-      <Project>{d437274d-5bfd-42fd-bbe5-96c4c0ffba05}</Project>
-      <Name>Automata.Tests</Name>
-    </ProjectReference>
     <ProjectReference Include="..\Automata.Z3\Automata.Z3.csproj">
       <Project>{7fe1092a-83f9-4f34-a04c-815cab2bd35b}</Project>
       <Name>Automata.Z3</Name>
-      <Private>True</Private>
     </ProjectReference>
     <ProjectReference Include="..\Automata\Automata.csproj">
       <Project>{bc861e29-027d-4ac6-ab24-a7b0cd0fb5e8}</Project>
@@ -78,10 +67,6 @@
     <ProjectReference Include="..\Bek\Bek.csproj">
       <Project>{a8751d84-45e8-4d0a-88b4-1551115ae2e2}</Project>
       <Name>Bek</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Fast\Fast.csproj">
-      <Project>{21e2408a-72b8-4c78-9d9e-1d65152ff655}</Project>
-      <Name>Fast</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

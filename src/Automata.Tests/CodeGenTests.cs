@@ -188,6 +188,7 @@ namespace Automata.Tests
             #endregion
 
             #region generate c++
+
             int t2 = System.Environment.TickCount;
             CppTest.Compile(automata, solver, true);
             t2 = System.Environment.TickCount - t2;

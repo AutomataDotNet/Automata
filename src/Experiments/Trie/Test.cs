@@ -1,14 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 using Microsoft.Automata;
 
-namespace RunExperiments.trie
+namespace Experiments.Trie
 {
-    internal class PredicateTrieExperiments
+    internal class Test
     {
         static PredicateTrie<BV128> CreateRandomTrie(BV128Algebra alg, int k)
         {
@@ -22,8 +18,9 @@ namespace RunExperiments.trie
             return trie;
         }
 
-        internal static void RunRandom()
+        internal static void Run()
         {
+            Console.WriteLine("Trie.Test.RunRandom");
             BV128Algebra alg = new BV128Algebra();
 
             Console.WriteLine("log2(n),  depth, avg depth, depth/log2(n), avg-log2(n)");
@@ -35,7 +32,7 @@ namespace RunExperiments.trie
             double ACC2 = 0;
             double X = 0;
 
-            for (double d = 5; d <= 30; d += 0.5)
+            for (double d = 5; d <= 12; d += 0.5)
             {
                 int n = (int)Math.Pow(2.0, d);
                 double count = 0;
@@ -58,7 +55,7 @@ namespace RunExperiments.trie
                 double log2n = Math.Log((double)n, (double)2);
 
                 ACC += (avg - log2n);
-                ACC2 += (depth/log2n);
+                ACC2 += (depth / log2n);
                 X += 1;
 
                 Console.WriteLine("{0:F2},   {1:F2},   {2:F5},   {3:F5}, {4:F5}", log2n, depth, avg, depth / log2n, avg - log2n);
@@ -69,3 +66,4 @@ namespace RunExperiments.trie
         }
     }
 }
+

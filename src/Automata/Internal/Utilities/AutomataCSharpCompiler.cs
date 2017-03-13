@@ -11,17 +11,23 @@ namespace Microsoft.Automata.Internal.Utilities
         string namespacename;
         string classname;
         Automaton<BDD> automaton;
-        CharSetSolver solver;
+        CharSetSolver solver
+        {
+            get
+            {
+                return automaton.Algebra as CharSetSolver;
+            }
+        }
         string source;
 
         internal ICompiledStringMatcher Compile()
         {
             var csc = new CSharpCodeProvider();
-            var parameters = new CompilerParameters();
+            var parameters = new CompilerParameters();  
             parameters.GenerateInMemory = true;
             parameters.CompilerOptions = "/o";  //optimize the code
             parameters.ReferencedAssemblies.Add("System.dll");
-            parameters.ReferencedAssemblies.Add(System.Environment.CurrentDirectory + @"\Microsoft.Automata.dll");
+            parameters.ReferencedAssemblies.Add(typeof(IFiniteAutomaton).GetTypeInfo().Assembly.Location);
             CompilerResults results = csc.CompileAssemblyFromSource(parameters, source);
             if (results.Errors.HasErrors)
             {
@@ -29,18 +35,17 @@ namespace Microsoft.Automata.Internal.Utilities
             }
             else
             {
-                var cls = results.CompiledAssembly.GetTypes()[0];
-                var cons = cls.GetConstructors();
-                IFiniteAutomaton compiledAutomaton = cons[0].Invoke(new object[] { }) as IFiniteAutomaton;
+                var cls = results.CompiledAssembly.GetType(string.Format("{0}.{1}",namespacename,classname));
+                var cons = cls.GetConstructor(new Type[] { });
+                IFiniteAutomaton compiledAutomaton = cons.Invoke(new object[] { }) as IFiniteAutomaton;
                 var ismatch = cls.GetMethod("IsMatch", BindingFlags.Static | BindingFlags.Public);
                 return new CompiledFiniteAutomaton(this.source, compiledAutomaton, ismatch);
             }
         }
 
-        internal AutomataCSharpCompiler(Automaton<BDD> automaton, CharSetSolver solver, string classname, string namespacename, bool OptimzeForAsciiInput)
+        internal AutomataCSharpCompiler(Automaton<BDD> automaton, string classname, string namespacename, bool OptimzeForAsciiInput)
         {
             this.automaton = automaton;
-            this.solver = solver;
             this.classname = (String.IsNullOrEmpty(classname) ? "RegexMatcher" : classname);
             this.namespacename = (String.IsNullOrEmpty(namespacename) ? "GeneratedRegexMatchers" : namespacename);
             this.source = new CSharpGenerator(automaton, solver, this.classname, this.namespacename, OptimzeForAsciiInput).GenerateCS();

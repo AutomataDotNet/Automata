@@ -5,12 +5,12 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("Microsoft.Automata")]
-[assembly: AssemblyDescription("Symbolic Automata Analysis Framework")]
+[assembly: AssemblyTitle("Experiments")]
+[assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Microsoft Corporation")]
-[assembly: AssemblyProduct("Microsoft.Automata")]
-[assembly: AssemblyCopyright("Copyright (c) Microsoft Corporation. All rights reserved.")]
+[assembly: AssemblyCompany("")]
+[assembly: AssemblyProduct("Experiments")]
+[assembly: AssemblyCopyright("Copyright ©  2017")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("b3657b04-c0a8-43f7-a27e-578beb19723a")]
+[assembly: Guid("9ae68b3b-2e5f-40c8-8bb1-7b0d05e9fd4f")]
 
 // Version information for an assembly consists of the following four values:
 //

@@ -25,6 +25,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -88,7 +89,7 @@
     <Compile Include="CodeGenTests.cs" />
     <Compile Include="SpecialRegexTests.cs" />
     <Compile Include="DeterminizationTests.cs" />
-    <Compile Include="CompileTests.cs" />
+    <Compile Include="AutomataCompilationTests.cs" />
     <Compile Include="UtilitiesTests.cs" />
   </ItemGroup>
   <ItemGroup>

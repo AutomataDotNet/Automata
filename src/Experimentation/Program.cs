@@ -16,8 +16,6 @@ namespace RunExperiments
 {
     class Program
     {
-        
-
         static internal string path = @"..\..\benchmark\";
         static internal int timeOut = 299999; // 5 minutes
         static internal int numTests = 2;
@@ -48,7 +46,7 @@ namespace RunExperiments
             //DTAMINParsing.RunLargeGeneration();
             //DTAMINParsing.RunGeneration();
 
-            // Rune experiments                    
+            // Run experiments                    
             //LargeAlphabetExperiment.RunTest();
             //FastExperiment.RunTest();
             //TimbukExperiment.RunTest();
@@ -68,53 +66,7 @@ namespace RunExperiments
             RegexExperiment.RunTest();
             Console.WriteLine("nfa-verification");
             VerificationNFAExperiment.RunFinAlphTest();
-             */
-
-            //trie.PredicateTrieExperiments.RunRandom();         
-
-            Console.WriteLine("start here");
-            Experimentation.HtmlEncode.CompareHtmlEncode.CompareHtmlEncodePerformance(); 
-            //Console.WriteLine("CheckDeterminize");
-            //CheckDeterminize();
-            //GenerateUnicodeCategories();
-            //GenerateIgnoreCaseRelation();
-        }
-
-        static void CheckDeterminize()
-        {
-            var solver = new CharSetSolver();
-            string regex = @"abd|abc";
-            var fa = solver.Convert(regex);
-            int t = System.Environment.TickCount;
-            var fadet = fa.Determinize().Minimize();
-            t = System.Environment.TickCount - t;
-            Console.WriteLine("time = {0}ms, states = {1}", t, fadet.StateCount);
-            var cs = fadet.Compile();
-            //sanity check the generated cs 
-            foreach (string passw in new string[] { "foordPa$$w0rdbar", "foordP$$w0rdbar", "marP@ssw0rd1gus" })
-            {
-                Console.WriteLine("{0}={1}", System.Text.RegularExpressions.Regex.IsMatch(passw, regex), cs.Automaton.IsFinalState(cs.Automaton.Transition(0,passw.ToCharArray())));
-            }
-            //Console.ReadLine();
-            //fa.ShowGraph();
-            //Console.WriteLine("Showgraph");
-            fadet.ShowGraph();
-        }
-
-        static void GenerateUnicodeCategories()
-        {
-            Microsoft.Automata.Internal.Utilities.UnicodeCategoryRangesGenerator.Generate("Microsoft.Automata.Internal.Generated", "UnicodeCategoryRanges", "");
-            Console.WriteLine("done");
-            Console.ReadLine();
-        }
-
-        //IgnoreCaseRelation
-
-        static void GenerateIgnoreCaseRelation()
-        {
-            Microsoft.Automata.Internal.Utilities.IgnoreCaseRelationGenerator.Generate("Microsoft.Automata.Internal.Generated", "IgnoreCaseRelation", "");
-            Console.WriteLine("done");
-            Console.ReadLine();
+             */     
         }
 
     }
