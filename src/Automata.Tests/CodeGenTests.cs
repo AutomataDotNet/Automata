@@ -19,7 +19,7 @@ namespace Automata.Tests
         internal static int Repetitions = 10;
 
         [TestMethod]
-        public void gen_cpp_TestRegex2cpp()
+        public void gen_cpp_TestRegex2cpp() 
         {
             Regex Regex9 = new Regex(@"^(?i:www\.bing\.com)$", RegexOptions.Compiled | (RegexOptions.Singleline));
             Regex Regex10 = new Regex(@"^(?i:SERP|Web|Auth|FacebookConnect)$", RegexOptions.Compiled | (RegexOptions.Singleline));
@@ -35,11 +35,11 @@ namespace Automata.Tests
             Regex wdplusASCII = new Regex(@"^([\w-[\x80-\uFFFF]][\d-[\x80-\uFFFF]])+$");
             Regex wdplus = new Regex(@"^(\w\d\s)+$");
 
-            //var regexes = new Regex[] {Regex9, Regex10, Regex11, Regex12, Regex13, Regex14, Regex15, Regex16, EvilRegex, abplus, margus, wdplusASCII, wdplus};
+            var regexes = new Regex[] {Regex9, Regex10, Regex11, Regex12, Regex13, Regex14, Regex15, Regex16, EvilRegex, abplus, margus, wdplusASCII, wdplus};
 
-            var regexes = new Regex[] {  wdplus };
+            //var regexes = new Regex[] {  wdplus };
 
-            TestCppCodeGen(regexes);
+            TestCppCodeGen(regexes);  
 
             //TestRegex(Regex16);
 

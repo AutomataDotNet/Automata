@@ -259,6 +259,7 @@ namespace Microsoft.Automata
         InvalidPath,
         InvalidArgument_MustBeNonempty,
         NotCartesianAlgebra,
-        IteBagError
+        IteBagError,
+        AutomataConversionFailed
     }
 }

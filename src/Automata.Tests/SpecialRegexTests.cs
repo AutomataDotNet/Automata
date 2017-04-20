@@ -108,6 +108,24 @@ namespace Automata.Tests
         }
 
         [TestMethod]
+        public void TestEvilRegex2()
+        {
+            Regex EvilRegex = new Regex(@"^(([^\0])+.)+[\0]([^\0])+$", RegexOptions.Compiled | (RegexOptions.Singleline));
+            string a = "text....with 35.....xxxxx.....chars";
+            //takes time exponential in the length of a
+            int t = 0;
+            for (int i = 0; i < 5; i++)
+            {
+                t = System.Environment.TickCount;
+                bool res = EvilRegex.IsMatch(a);
+                t = System.Environment.TickCount - t;
+                TestContext.WriteLine("{0}, {1}", a.Length, t);
+                a += "a";
+            }
+            Assert.IsTrue(t > 1000);
+        }
+
+        [TestMethod]
         public void TestIgnoreCaseBug()
         {
             //ignore case option has implementation errors

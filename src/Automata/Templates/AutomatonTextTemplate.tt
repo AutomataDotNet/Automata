@@ -1,0 +1,31 @@
+﻿<#@ template language="C#" compilerOptions="optimize+" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="Microsoft.Automata" #>
+
+    static bool <#= name #>(const <#= manager.CppStringTypeName #> & str) {
+        unsigned short r = 0;
+        unsigned short c = 0;
+        UINT i = 0;
+        UINT size = str.size();
+        const unsigned char* buffer = reinterpret_cast<const unsigned char*>(str.buffer());
+<#= new AutomatonMovesTextTemplate(manager.Solver, helperPredicates, automaton,
+                              isAtEndConditionText: "i == size",
+                              readNextCharText:
+@"              if (!UTF8toUTF16(&r, &i, &c, size, buffer)) {
+                    return false;
+                }
+").TransformText() #>
+    }
+<#+ public AutomatonTextTemplate(BREXManager manager, BDDHelperPredicates helperPredicates, string name, Automaton<BDD> automaton)
+    {
+        this.manager = manager;
+        this.helperPredicates = helperPredicates;
+        this.name = name;
+        this.automaton = automaton;
+    }
+
+    BREXManager manager;
+    BDDHelperPredicates helperPredicates;
+    string name;
+    Automaton<BDD> automaton;
+#>

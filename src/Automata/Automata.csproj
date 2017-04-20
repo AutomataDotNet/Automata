@@ -34,16 +34,15 @@
     <GenerateSerializationAssemblies>Off</GenerateSerializationAssemblies>
   </PropertyGroup>
   <PropertyGroup>
-    <SignAssembly>false</SignAssembly>
+    <SignAssembly>true</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
-    <AssemblyOriginatorKeyFile>
-    </AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>AutomataKey.pfx</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <DebugSymbols>true</DebugSymbols>
     <OutputPath>bin\x64\Debug\</OutputPath>
-    <DefineConstants>TRACE;REX</DefineConstants>
+    <DefineConstants>TRACE;REX,EXPORT_GPPG</DefineConstants>
     <Optimize>true</Optimize>
     <DebugType>full</DebugType>
     <PlatformTarget>x64</PlatformTarget>
@@ -51,8 +50,8 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
-    <OutputPath>bin\x64\Release\</OutputPath>
-    <DefineConstants>TRACE;REX</DefineConstants>
+    <OutputPath>..\..\x64\Release\</OutputPath>
+    <DefineConstants>TRACE;REX,EXPORT_GPPG</DefineConstants>
     <Optimize>true</Optimize>
     <DebugType>pdbonly</DebugType>
     <PlatformTarget>x64</PlatformTarget>
@@ -74,6 +73,8 @@
     <Compile Include="BigInt.cs" />
     <Compile Include="BooleanAlgebras\FiniteSetAlgebra.cs" />
     <Compile Include="BooleanAlgebras\BV128Algebra.cs" />
+    <Compile Include="BREX.cs" />
+    <Compile Include="BREXManager.cs" />
     <Compile Include="CharacterEncoding.cs" />
     <Compile Include="CharSetSolver.cs" />
     <Compile Include="Chooser.cs" />
@@ -160,11 +161,44 @@
     <Compile Include="STbSimulator.cs" />
     <Compile Include="STBuilder.cs" />
     <Compile Include="StringUtility.cs" />
+    <Compile Include="Templates\AutomataTextTemplate.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>AutomataTextTemplate.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Templates\AutomatonMovesTextTemplate.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>AutomatonMovesTextTemplate.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Templates\AutomatonTextTemplate.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>AutomatonTextTemplate.tt</DependentUpon>
+    </Compile>
     <Compile Include="ThreeAutomaton.cs" />
     <Compile Include="UnionFindHopKarp.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="ClassDiagram1.cd" />
+    <None Include="AutomataKey.pfx" />
+  </ItemGroup>
+  <ItemGroup />
+  <ItemGroup>
+    <Content Include="Templates\AutomataTextTemplate.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>AutomataTextTemplate.cs</LastGenOutput>
+    </Content>
+    <Content Include="Templates\AutomatonMovesTextTemplate.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>AutomatonMovesTextTemplate.cs</LastGenOutput>
+    </Content>
+    <Content Include="Templates\AutomatonTextTemplate.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>AutomatonTextTemplate.cs</LastGenOutput>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

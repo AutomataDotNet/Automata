@@ -1,0 +1,149 @@
+﻿<#@ template language="C#" compilerOptions="optimize+" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="Microsoft.Automata" #>
+
+#if !defined(REGEX_MATCHER_TYPES_AND_CONSTRUCTORS)
+#define REGEX_MATCHER_TYPES_AND_CONSTRUCTORS
+
+<#  var matchers = new StringBuilder();
+
+    foreach (var entry in automata)
+    {
+        matchers.Append(new AutomatonTextTemplate(manager, helperPredicates, entry.Key, entry.Value).TransformText());
+    }
+
+    if (automata.Count > 0)
+    {
+        OutputUTF8ToUTF16Decoder();
+    }#>
+
+<#= helperPredicates.Format((name, body) => {
+    return string.Format(@"
+    static bool {0}(int c)
+    {{
+{1}
+    }}", name, body);
+}) #>
+<#= matchers #>
+
+#endif
+
+<#+ void OutputUTF8ToUTF16Decoder() 
+    {#>
+    //*i is the current idex of str, size is the length of str, *i must be in [0..size-1], initially 0
+    //*r is the the leftover lowsurrogate portion from first three bytes in 4byte encoding, intially 0
+    //*c is the next UTF16 character code if the return value is true and *i is the index to the next character encoding
+    //if the return value is false then the UTF8 encoding was incorrect
+    static bool UTF8toUTF16(unsigned short* r, UINT* i, unsigned short* c, UINT size, const unsigned char* str)
+    {
+        if (*r == 0)
+        {   //*r==0 means that we are not in the middle of 4byte encoding
+            unsigned short b1 = str[*i];
+            if (b1 <= 0x7F)
+            {
+                *c = b1; 
+                *i += 1;
+                return true;
+            }
+            else if (0xC2 <= b1 && b1 <= 0xDF) //two byte encoding
+            {
+                *i += 1;
+                if (*i == size)
+                    return false; 
+                else {
+                    unsigned short b2 = str[*i];
+                    if (0x80 <= b2 && b2 <= 0xBF)
+                    {
+                        *c = ((b1 & 0x3F) << 6) | (b2 & 0x3F);
+                        *i += 1;
+                        return true;
+                    }
+                    return false;
+                }
+            }
+            else if (0xE0 <= b1 && b1 <= 0xEF)  //three byte encoding
+            {
+                *i += 1;
+                if (*i + 1 >= size)
+                    return false; 
+                else
+                {
+                    unsigned short b2 = str[*i];
+                    if ((b1 == 0xE0 && 0xA0 <= b2 && b2 <= 0xBF) ||
+                        (b1 == 0xED && 0x80 <= b2 && b2 <= 0x9F) ||
+                        (0x80 <= b2 && b2 <= 0xBF))
+                    {
+                        *i += 1;
+                        unsigned short b3 = str[*i];
+                        if (0x80 <= b3 && b3 <= 0xBF)
+                        {
+                            *c = ((b1 & 0xF) << 12) | ((b2 & 0x3F) << 6) | (b3 & 0x3F); //utf8decode the bytes
+                            *i += 1;
+                            return true;
+                        }
+                        return false; //invalid third byte
+                    }
+                    return false; //invalid second byte
+                }
+            }
+            else if (0xF0 <= b1 && b1 <= 0xF4) //4 byte encoding decoded and reencoded into UTF16 surrogate pair (high, low)
+            {
+                *i += 1;
+                if (*i + 2 >= size) //(4 byte check)
+                    return false;  //second byte, third byte or fourth byte is missing
+                else
+                {
+                    unsigned short b2 = str[*i];
+                    if ((b1 == 0xF0 && (0x90 <= b2 && b2 <= 0xBF)) ||
+                        (b1 == 0xF4 && (0x80 <= b2 && b2 <= 0x8F)) ||
+                        (0x80 <= b2 && b2 <= 0xBF))
+                    {
+                        *i += 1;
+                        unsigned short b3 = str[*i];
+                        if (0x80 <= b3 && b3 <= 0xBF)
+                        {
+                            //set *c to high surrogate
+                            *c = 0xD800 | (((((b1 & 7) << 2) | ((b2 & 0x30) >> 4)) - 1) << 6) | ((b2 & 0x0F) << 2) | ((b3 >> 4) & 3);
+                            *r = 0xDC00 | ((b3 & 0xF) << 6); //set the low surrogate register
+                            *i += 1;
+                            return true;
+                        }
+                        else
+                            return false; //incorrect third byte
+                    }
+                    else
+                        return false; //incorrect second byte
+                }
+            }
+            else
+                return false; //incorrect first byte
+        }
+        else //compute the low surrogate
+        {
+            unsigned short b4 = str[*i]; //we know *i < size due to the above check (4 byte check)
+            if (0x80 <= b4 && b4 <= 0xBF)
+            {
+                *i += 1;
+                *c = (*r | (b4 & 0x3F)); //set *c to low surrogate
+                *r = 0;                  //reset the low surrogate register
+                return true;
+            }
+            return false; //incorrect fourth byte
+        }
+    }
+
+<#+ }
+
+    public AutomataTextTemplate(BREXManager manager, Dictionary<string, Automaton<BDD>> automata)
+    {
+        this.manager = manager;
+        this.automata = automata;
+        this.helperPredicates = new BDDHelperPredicates(manager.Solver, true /*Optimize for ascii*/);
+    }
+
+    BREXManager manager;
+    Dictionary<string, Automaton<BDD>> automata; 
+    BDDHelperPredicates helperPredicates; 
+#>

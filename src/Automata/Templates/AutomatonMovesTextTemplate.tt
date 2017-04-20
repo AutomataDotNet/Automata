@@ -1,0 +1,90 @@
+﻿<#@ template language="C#" compilerOptions="optimize+" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="Microsoft.Automata" #>
+
+<#  // This template generates valid C# or C++ depending on the isAtEndConditionText and readNextCharText parameters passed in
+
+    var stack = new Stack<int>();
+    var set = new HashSet<int>();
+    stack.Push(automaton.InitialState);
+    set.Add(automaton.InitialState);
+        
+    Predicate<int> isFinalSink = (q =>
+        (automaton.GetMovesCountFrom(q) == 1 && automaton.IsLoopState(q)
+        && automaton.IsFinalState(q) && automaton.GetMoveFrom(q).Label.IsFull));
+
+    Predicate<int> isNonfinalSink = (q =>
+        (!automaton.IsFinalState(q) &&
+            (automaton.GetMovesCountFrom(q) == 0 ||
+            (automaton.GetMovesCountFrom(q) == 1 && automaton.IsLoopState(q)))));
+
+    while (stack.Count > 0)
+    {
+        int q = stack.Pop();
+        bool qIsComplete = false;
+        if (automaton.InDegree(q) > 0) {#>
+            State<#= q #>:
+<#      }
+        if (isFinalSink(q))
+        {#>
+                return true;
+<#      }
+        else if (isNonfinalSink(q))
+        {#>
+                return false;
+<#      }
+        else
+        {#>
+                if (<#= isAtEndConditionText #>) {
+                    return <#= automaton.IsFinalState(q) ? "true" : "false" #>;
+                }
+<#          if (automaton.GetMovesCountFrom(q) > 0) //q is a sink
+            {
+                #><#= readNextCharText #><#                  
+                //---------------------------------------------------------------------
+                //many potential optimizations can be made in generating the conditions
+                //---------------------------------------------------------------------
+                var path = solver.True;
+                foreach (var move in automaton.GetMovesFrom(q))
+                {
+                    path = solver.MkDiff(path, move.Label);
+                    if (path == solver.False) //this is the last else case
+                    {#>
+                goto State<#= move.TargetState #>;
+<# 
+                        qIsComplete = true;
+                    }
+                    else
+                    {#>
+                if (<#= helperPredicates.GeneratePredicate(move.Label) #>)
+                    goto State<#= move.TargetState #>;
+<#                  }
+                    if (set.Add(move.TargetState))
+                        stack.Push(move.TargetState);
+                }
+            }
+            if (!qIsComplete) {
+                //reject the input, this corresponds to q being a partial state 
+                //the implicit transition is to a deadend sink state
+#>
+                return false;
+<#          }
+        }
+    }#>
+<#+
+    public AutomatonMovesTextTemplate(CharSetSolver solver, BDDHelperPredicates helperPredicates, Automaton<BDD> automaton,
+        string isAtEndConditionText, string readNextCharText)
+    {
+        this.solver = solver;
+        this.helperPredicates = helperPredicates;
+        this.automaton = automaton;
+        this.isAtEndConditionText = isAtEndConditionText;
+        this.readNextCharText = readNextCharText;
+    }
+
+    CharSetSolver solver;
+    BDDHelperPredicates helperPredicates;
+    Automaton<BDD> automaton;
+    string isAtEndConditionText;
+    string readNextCharText;
+#>
