@@ -54,7 +54,7 @@ namespace Microsoft.Automata.Z3
         }
 
 
-        public IEnumerable<Pair<bool[], BoolExpr>> GenerateMinterms(params BoolExpr[] constraints)
+        public IEnumerable<Tuple<bool[], BoolExpr>> GenerateMinterms(params BoolExpr[] constraints)
         {
             return mtg.GenerateMinterms(constraints);
         }

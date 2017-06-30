@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Microsoft.Automata
+namespace Microsoft.Automata.BooleanAlgebras
 {
     public class BV128Algebra : IBooleanAlgebra<BV128>
     {
@@ -266,7 +266,7 @@ namespace Microsoft.Automata
             return (atom & psi).Equals(atom);
         }
 
-        public IEnumerable<Pair<bool[], BV128>> GenerateMinterms(params BV128[] constraints)
+        public IEnumerable<Tuple<bool[], BV128>> GenerateMinterms(params BV128[] constraints)
         {
             return mtg.GenerateMinterms(constraints);
         }
@@ -308,14 +308,19 @@ namespace Microsoft.Automata
     /// </summary>
     public class BV128 : Tuple<ulong,ulong>
     {
+        /// <summary></summary>
         public override bool Equals(object obj)
         {
             return base.Equals(obj);
         }
+
+        /// <summary></summary>
         public override int GetHashCode()
         {
             return base.GetHashCode();
         }
+
+        /// <summary></summary>
         public override string ToString()
         {
             return String.Format("{0:X16}{1:X16}", this.Item1, Item2);

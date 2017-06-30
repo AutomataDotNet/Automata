@@ -136,14 +136,17 @@ namespace Microsoft.Automata
         }
     }
 
-
-    public enum STbRuleKind { Ite, Base, Undef, Switch};
     /// <summary>
-    /// Abstract base class of STb rules.
+    /// There are four kinds of branching rules
+    /// </summary>
+    public enum BranchingRuleKind { Ite, Base, Undef, Switch};
+
+    /// <summary>
+    /// Abstract base class of branching rules.
     /// STbs have branching rules.
     /// </summary>
     /// <typeparam name="TERM">the type of terms</typeparam>
-    public abstract class STbRule<TERM>
+    public abstract class BranchingRule<TERM>
     {
         /// <summary>
         /// Enumerates the underlying branches as moves from the give source state and guard. 
@@ -168,7 +171,7 @@ namespace Microsoft.Automata
         {
             switch (RuleKind)
             {
-                case STbRuleKind.Base:
+                case BranchingRuleKind.Base:
                     {
                         if (State == targetState)
                         {
@@ -183,13 +186,13 @@ namespace Microsoft.Automata
                             return false;
                         }
                     }
-                case STbRuleKind.Undef:
+                case BranchingRuleKind.Undef:
                     {
                         guard = default(TERM);
                         update = default(TERM);
                         return false;
                     }
-                case STbRuleKind.Ite:
+                case BranchingRuleKind.Ite:
                     {
                         TERM t_guard;
                         TERM t;
@@ -229,11 +232,11 @@ namespace Microsoft.Automata
                         }
                     }
                 default:
-                    throw new NotImplementedException(STbRuleKind.Switch.ToString());
+                    throw new NotImplementedException(BranchingRuleKind.Switch.ToString());
             }
         }
 
-        public abstract STbRuleKind RuleKind { get; }
+        public abstract BranchingRuleKind RuleKind { get; }
 
         public bool IsNotUndef
         {
@@ -251,14 +254,14 @@ namespace Microsoft.Automata
                 throw new AutomataException(AutomataExceptionKind.InvalidSTbRuleOperation);
             }
         }
-        public virtual STbRule<TERM> TrueCase
+        public virtual BranchingRule<TERM> TrueCase
         {
             get
             {
                 throw new AutomataException(AutomataExceptionKind.InvalidSTbRuleOperation);
             }
         }
-        public virtual STbRule<TERM> FalseCase
+        public virtual BranchingRule<TERM> FalseCase
         {
             get
             {
@@ -326,7 +329,7 @@ namespace Microsoft.Automata
         /// <summary>
         /// Concretize the rule with respect to the given values.
         /// </summary>
-        public STbRule<TERM> Concretize(IContextCore<TERM> solver, Func<TERM, TERM> fBP, 
+        public BranchingRule<TERM> Concretize(IContextCore<TERM> solver, Func<TERM, TERM> fBP, 
             Func<TERM, TERM> fNBP, Func<int, TERM, int> stateMap, TERM newReg, TERM inputVar)
         {
             return Concretize1(solver.True, solver, fBP, fNBP, stateMap, newReg, inputVar);
@@ -337,20 +340,20 @@ namespace Microsoft.Automata
         /// </summary>
         /// <param name="q">given state</param>
         /// <param name="r">given register value</param>
-        public STbRule<TERM> ReplaceAllStatesAndRegisters(int q, TERM r)
+        public BranchingRule<TERM> ReplaceAllStatesAndRegisters(int q, TERM r)
         {
             return ReplaceAllStates1(q, r);
         }
 
-        internal abstract STbRule<TERM> ReplaceAllStates1(int q, TERM r);
+        internal abstract BranchingRule<TERM> ReplaceAllStates1(int q, TERM r);
 
-        internal abstract STbRule<TERM> Concretize1(TERM path, IContextCore<TERM> solver, Func<TERM, TERM> fBP, 
+        internal abstract BranchingRule<TERM> Concretize1(TERM path, IContextCore<TERM> solver, Func<TERM, TERM> fBP, 
             Func<TERM, TERM> fNBP, Func<int, TERM, int> stateMap, TERM newReg, TERM inputVar);
 
         /// <summary>
         /// Create an instance of the rule by applying the substitution to all the components
         /// </summary>
-        public STbRule<TERM> Subst(IContextCore<TERM> solver, params TERM[] substitution)
+        public BranchingRule<TERM> Subst(IContextCore<TERM> solver, params TERM[] substitution)
         {
             if (substitution.Length % 2 != 0)
                 throw new AutomataException(AutomataExceptionKind.InvalidSubstitution);
@@ -363,7 +366,7 @@ namespace Microsoft.Automata
         /// <summary>
         /// Create an instance of the rule by applying the substitution to all the components
         /// </summary>
-        public STbRule<TERM> Subst(TERM pathCondition, IContextCore<TERM> solver, params TERM[] substitution)
+        public BranchingRule<TERM> Subst(TERM pathCondition, IContextCore<TERM> solver, params TERM[] substitution)
         {
             if (substitution.Length % 2 != 0)
                 throw new AutomataException(AutomataExceptionKind.InvalidSubstitution);
@@ -376,19 +379,19 @@ namespace Microsoft.Automata
         /// <summary>
         /// Create an instance of the rule by replacing the input variable x with the new input term t
         /// </summary>
-        public STbRule<TERM> ApplyInput(IContextCore<TERM> solver, TERM x, TERM t)
+        public BranchingRule<TERM> ApplyInput(IContextCore<TERM> solver, TERM x, TERM t)
         {
             return ApplyInp(solver.True, solver, x, t);
         }
 
-        internal abstract STbRule<TERM> ApplyInp(TERM pred, IContextCore<TERM> solver, TERM x, TERM t);
+        internal abstract BranchingRule<TERM> ApplyInp(TERM pred, IContextCore<TERM> solver, TERM x, TERM t);
 
         /// <summary>
         /// Returns true iff the rule contains a RaiseRule.
         /// </summary>
         public abstract bool IsPartial { get; }
 
-        internal abstract STbRule<TERM> Subst1(TERM path, IContextCore<TERM> solver, Dictionary<TERM, TERM> subst);
+        internal abstract BranchingRule<TERM> Subst1(TERM path, IContextCore<TERM> solver, Dictionary<TERM, TERM> subst);
 
         internal abstract void ToBek(bool writeState, string tabs, Action<string> WriteLine, 
             Func<TERM, string> DescribeCond, Func<TERM, string> DescribeReg, Func<Sequence<TERM>, string> DescribeYields);
@@ -440,13 +443,13 @@ namespace Microsoft.Automata
                 return solver.MkNot(pred);
         }
 
-        public STbRule<TERM> Prune(Predicate<BaseRule<TERM>> RemoveIfTrue)
+        public BranchingRule<TERM> Prune(Predicate<BaseRule<TERM>> RemoveIfTrue)
         {
             switch (this.RuleKind)
             {
-                case STbRuleKind.Undef:
+                case BranchingRuleKind.Undef:
                     return this;
-                case STbRuleKind.Base:
+                case BranchingRuleKind.Base:
                     {
                         if (RemoveIfTrue((BaseRule<TERM>)this))
                             return UndefRule<TERM>.Default;
@@ -454,19 +457,19 @@ namespace Microsoft.Automata
                             return this;
 
                     }
-                case STbRuleKind.Ite:
+                case BranchingRuleKind.Ite:
                     {
                         var t = this.TrueCase.Prune(RemoveIfTrue);
                         var f = this.FalseCase.Prune(RemoveIfTrue);
                         if (f == this.FalseCase && t == this.TrueCase)
                             return this;
-                        else if (t.RuleKind == STbRuleKind.Undef && f.RuleKind == STbRuleKind.Undef)
+                        else if (t.RuleKind == BranchingRuleKind.Undef && f.RuleKind == BranchingRuleKind.Undef)
                             return t;
                         else
                             return new IteRule<TERM>(this.Condition, t, f);
                     }
                 default:
-                    throw new NotImplementedException(STbRuleKind.Switch.ToString());
+                    throw new NotImplementedException(BranchingRuleKind.Switch.ToString());
             }
         }
     }
@@ -475,7 +478,7 @@ namespace Microsoft.Automata
     /// Basic rule of an STb. 
     /// </summary>
     /// <typeparam name="TERM">the type of terms on the labels</typeparam>
-    public class BaseRule<TERM> : STbRule<TERM>
+    public class BaseRule<TERM> : BranchingRule<TERM>
     {
         Sequence<TERM> yields;
         TERM register;
@@ -543,7 +546,7 @@ namespace Microsoft.Automata
             get { return false; }
         }
 
-        internal override STbRule<TERM> Concretize1(TERM path, IContextCore<TERM> solver, 
+        internal override BranchingRule<TERM> Concretize1(TERM path, IContextCore<TERM> solver, 
             Func<TERM, TERM> fBP, Func<TERM, TERM> fNBP, 
             Func<int, TERM, int> stateMap, TERM newReg, TERM inputVar)
         {
@@ -579,7 +582,7 @@ namespace Microsoft.Automata
 
             var newRegister = fNBP(register);
             var newState = stateMap(state, abstr_vals.First);
-            STbRule<TERM> rule = new BaseRule<TERM>(yields, newRegister, newState);
+            BranchingRule<TERM> rule = new BaseRule<TERM>(yields, newRegister, newState);
 
             abstr_vals = abstr_vals.Rest;
             while (abstr_vals != null)
@@ -595,7 +598,7 @@ namespace Microsoft.Automata
             return rule;
         }
 
-        internal override STbRule<TERM> Subst1(TERM path, IContextCore<TERM> solver, Dictionary<TERM, TERM> subst)
+        internal override BranchingRule<TERM> Subst1(TERM path, IContextCore<TERM> solver, Dictionary<TERM, TERM> subst)
         {
             Sequence<TERM> newYields
                 = new Sequence<TERM>(Array.ConvertAll(yields.ToArray(), y => solver.Simplify(solver.ApplySubstitution(y, subst))));
@@ -641,12 +644,12 @@ namespace Microsoft.Automata
             return res;
         }
 
-        internal override STbRule<TERM> ReplaceAllStates1(int q, TERM r)
+        internal override BranchingRule<TERM> ReplaceAllStates1(int q, TERM r)
         {
             return new BaseRule<TERM>(yields, r, q);
         }
 
-        public STbRule<TERM> Compose(int q, STbRule<TERM> rule, TERM y1, TERM y2, TERM y, TERM predicate, IContextCore<TERM> solver, Func<int, int, int> stateComposer)
+        public BranchingRule<TERM> Compose(int q, BranchingRule<TERM> rule, TERM y1, TERM y2, TERM y, TERM predicate, IContextCore<TERM> solver, Func<int, int, int> stateComposer)
         {
             if (rule is UndefRule<TERM>)
                 return rule;
@@ -673,7 +676,7 @@ namespace Microsoft.Automata
             return null;
         }
 
-        internal override STbRule<TERM> ApplyInp(TERM pred, IContextCore<TERM> solver, TERM x, TERM t)
+        internal override BranchingRule<TERM> ApplyInp(TERM pred, IContextCore<TERM> solver, TERM x, TERM t)
         {
             Sequence<TERM> newYields
                 = new Sequence<TERM>(Array.ConvertAll(yields.ToArray(), y => solver.Simplify(solver.ApplySubstitution(y, x, t))));
@@ -681,22 +684,22 @@ namespace Microsoft.Automata
             return new BaseRule<TERM>(newYields, newRegister, state);
         }
 
-        public override STbRuleKind RuleKind
+        public override BranchingRuleKind RuleKind
         {
-            get { return STbRuleKind.Base; }
+            get { return BranchingRuleKind.Base; }
         }
     }
 
     /// <summary>
     /// If-then-else rule of an STb.
     /// </summary>
-    public class IteRule<TERM> : STbRule<TERM>
+    public class IteRule<TERM> : BranchingRule<TERM>
     {
         TERM condition;
-        STbRule<TERM> trueCase;
-        STbRule<TERM> falseCase;
+        BranchingRule<TERM> trueCase;
+        BranchingRule<TERM> falseCase;
 
-        public IteRule(TERM condition, STbRule<TERM> trueCase, STbRule<TERM> falseCase)
+        public IteRule(TERM condition, BranchingRule<TERM> trueCase, BranchingRule<TERM> falseCase)
         {
             this.condition = condition;
             this.trueCase = trueCase;
@@ -722,7 +725,7 @@ namespace Microsoft.Automata
         /// <summary>
         /// The branch taken when branch condition evaluates to true.
         /// </summary>
-        public override STbRule<TERM> TrueCase
+        public override BranchingRule<TERM> TrueCase
         {
             get { return trueCase; }
         }
@@ -730,7 +733,7 @@ namespace Microsoft.Automata
         /// <summary>
         /// The branch taken when branch condition evaluates to false.
         /// </summary>
-        public override STbRule<TERM> FalseCase
+        public override BranchingRule<TERM> FalseCase
         {
             get { return falseCase; }
         }
@@ -759,7 +762,7 @@ namespace Microsoft.Automata
                 yield return state;
         }
 
-        internal override STbRule<TERM> Concretize1(TERM path, IContextCore<TERM> solver, 
+        internal override BranchingRule<TERM> Concretize1(TERM path, IContextCore<TERM> solver, 
             Func<TERM, TERM> fBP, Func<TERM, TERM> fNBP, 
             Func<int, TERM, int> stateMap, TERM newReg, TERM inputVar)
         {
@@ -771,7 +774,7 @@ namespace Microsoft.Automata
         }
 
 
-        internal override STbRule<TERM> Subst1(TERM path, IContextCore<TERM> solver, Dictionary<TERM,TERM> subst)
+        internal override BranchingRule<TERM> Subst1(TERM path, IContextCore<TERM> solver, Dictionary<TERM,TERM> subst)
         {
             TERM condInst = solver.Simplify(solver.ApplySubstitution(condition, subst));
             TERM path_and_condInst = And(solver, path, condInst);
@@ -844,19 +847,19 @@ namespace Microsoft.Automata
             return (trueCase.IsTrueForAllRegisterUpdates(pred) && falseCase.IsTrueForAllRegisterUpdates(pred));
         }
 
-        internal override STbRule<TERM> ReplaceAllStates1(int q, TERM r)
+        internal override BranchingRule<TERM> ReplaceAllStates1(int q, TERM r)
         {
             return new IteRule<TERM>(this.condition, trueCase.ReplaceAllStates1(q, r), falseCase.ReplaceAllStates1(q, r));
         }
 
-        internal override STbRule<TERM> ApplyInp(TERM pred, IContextCore<TERM> solver, TERM x, TERM input)
+        internal override BranchingRule<TERM> ApplyInp(TERM pred, IContextCore<TERM> solver, TERM x, TERM input)
         {
             throw new NotImplementedException();
         }
 
-        public override STbRuleKind RuleKind
+        public override BranchingRuleKind RuleKind
         {
-            get { return STbRuleKind.Ite; }
+            get { return BranchingRuleKind.Ite; }
         }
     }
 
@@ -864,7 +867,7 @@ namespace Microsoft.Automata
     /// Rule that raises an exception. The resulting state is a nonaccepting state.
     /// </summary>
     /// <typeparam name="TERM">the type of terms on the labels</typeparam>
-    public class UndefRule<TERM> : STbRule<TERM>
+    public class UndefRule<TERM> : BranchingRule<TERM>
     {
         readonly string exc;
         private static int __RaiseRuleId__ = 2;
@@ -938,14 +941,14 @@ namespace Microsoft.Automata
             yield break;
         }
 
-        internal override STbRule<TERM> Concretize1(TERM path, IContextCore<TERM> solver, 
+        internal override BranchingRule<TERM> Concretize1(TERM path, IContextCore<TERM> solver, 
             Func<TERM, TERM> fBP, Func<TERM, TERM> fNBP, 
             Func<int, TERM, int> stateMap, TERM newReg, TERM inputVar)
         {
             return this;
         }
 
-        internal override STbRule<TERM> Subst1(TERM path, IContextCore<TERM> solver, Dictionary<TERM,TERM> subst)
+        internal override BranchingRule<TERM> Subst1(TERM path, IContextCore<TERM> solver, Dictionary<TERM,TERM> subst)
         {
             return this;
         }
@@ -981,19 +984,19 @@ namespace Microsoft.Automata
             return true;
         }
 
-        internal override STbRule<TERM> ReplaceAllStates1(int q, TERM r)
+        internal override BranchingRule<TERM> ReplaceAllStates1(int q, TERM r)
         {
             return this;
         }
 
-        internal override STbRule<TERM> ApplyInp(TERM pred, IContextCore<TERM> solver, TERM x, TERM input)
+        internal override BranchingRule<TERM> ApplyInp(TERM pred, IContextCore<TERM> solver, TERM x, TERM input)
         {
             throw new NotImplementedException();
         }
 
-        public override STbRuleKind RuleKind
+        public override BranchingRuleKind RuleKind
         {
-            get { return STbRuleKind.Undef; }
+            get { return BranchingRuleKind.Undef; }
         }
     }
 
@@ -1001,13 +1004,13 @@ namespace Microsoft.Automata
     /// Describes a switch statement.
     /// </summary>
     /// <typeparam name="TERM"></typeparam>
-    public class SwitchRule<TERM> : STbRule<TERM>
+    public class SwitchRule<TERM> : BranchingRule<TERM>
     {
         public TERM input;
-        public KeyValuePair<TERM, STbRule<TERM>>[] cases;
-        public STbRule<TERM> defaultcase;
+        public KeyValuePair<TERM, BranchingRule<TERM>>[] cases;
+        public BranchingRule<TERM> defaultcase;
 
-        public SwitchRule(TERM input, STbRule<TERM> defaultcase, params KeyValuePair<TERM, STbRule<TERM>>[] cases)
+        public SwitchRule(TERM input, BranchingRule<TERM> defaultcase, params KeyValuePair<TERM, BranchingRule<TERM>>[] cases)
         {
             this.input = input;
             this.defaultcase = defaultcase;
@@ -1053,7 +1056,7 @@ namespace Microsoft.Automata
                 yield return st;
         }
 
-        internal STbRule<TERM> ToIteForVisualization()
+        internal BranchingRule<TERM> ToIteForVisualization()
         {
             var res = defaultcase;
             for (int i = cases.Length-1; i >= 0; i--)
@@ -1063,7 +1066,7 @@ namespace Microsoft.Automata
             return res;
         }
 
-        internal STbRule<TERM> ToIte(Func<TERM, TERM, TERM> mkEq)
+        internal BranchingRule<TERM> ToIte(Func<TERM, TERM, TERM> mkEq)
         {
             var res = defaultcase;
             for (int i = cases.Length - 1; i >= 0; i--)
@@ -1073,23 +1076,23 @@ namespace Microsoft.Automata
             return res;
         }
 
-        internal override STbRule<TERM> ReplaceAllStates1(int q, TERM r)
+        internal override BranchingRule<TERM> ReplaceAllStates1(int q, TERM r)
         {
-            var cases1 = Array.ConvertAll(cases, c => new KeyValuePair<TERM,STbRule<TERM>>(c.Key, c.Value.ReplaceAllStates1(q, r)));
+            var cases1 = Array.ConvertAll(cases, c => new KeyValuePair<TERM,BranchingRule<TERM>>(c.Key, c.Value.ReplaceAllStates1(q, r)));
             var defaultcase1 = defaultcase.ReplaceAllStates1(q, r);
             var rule = new SwitchRule<TERM>(input, defaultcase1, cases1);
             return rule;
         }
 
-        internal override STbRule<TERM> Concretize1(TERM path, IContextCore<TERM> solver, Func<TERM, TERM> fBP, Func<TERM, TERM> fNBP, Func<int, TERM, int> stateMap, TERM newReg, TERM inputVar)
+        internal override BranchingRule<TERM> Concretize1(TERM path, IContextCore<TERM> solver, Func<TERM, TERM> fBP, Func<TERM, TERM> fNBP, Func<int, TERM, int> stateMap, TERM newReg, TERM inputVar)
         {
             TERM defaultcond = solver.True;
-            var cases1 = new KeyValuePair<TERM, STbRule<TERM>>[cases.Length];
+            var cases1 = new KeyValuePair<TERM, BranchingRule<TERM>>[cases.Length];
             for (int i = 0; i < cases.Length; i++)
             {
                 var cond = solver.MkEq(input, cases[i].Key);
                 defaultcond = And(solver, defaultcond, solver.MkNot(cond));
-                cases1[i] = new KeyValuePair<TERM, STbRule<TERM>>(cases[i].Key, cases[i].Value.Concretize1(And(solver, path, cond), solver, fBP, fNBP, stateMap, newReg, inputVar));
+                cases1[i] = new KeyValuePair<TERM, BranchingRule<TERM>>(cases[i].Key, cases[i].Value.Concretize1(And(solver, path, cond), solver, fBP, fNBP, stateMap, newReg, inputVar));
             }
             var defaultcase1 = defaultcase.Concretize1(And(solver, path, defaultcond), solver, fBP, fNBP, stateMap, newReg, inputVar);
             var rule = new SwitchRule<TERM>(input, defaultcase1, cases1);
@@ -1108,15 +1111,15 @@ namespace Microsoft.Automata
             }
         }
 
-        internal override STbRule<TERM> Subst1(TERM path, IContextCore<TERM> solver, Dictionary<TERM,TERM> subst)
+        internal override BranchingRule<TERM> Subst1(TERM path, IContextCore<TERM> solver, Dictionary<TERM,TERM> subst)
         {
             TERM defaultcond = solver.True;
-            var cases1 = new KeyValuePair<TERM, STbRule<TERM>>[cases.Length];
+            var cases1 = new KeyValuePair<TERM, BranchingRule<TERM>>[cases.Length];
             for (int i = 0; i < cases.Length; i++)
             {
                 var cond = solver.MkEq(input, cases[i].Key);
                 defaultcond = And(solver, defaultcond, solver.MkNot(cond));
-                cases1[i] = new KeyValuePair<TERM, STbRule<TERM>>(cases[i].Key, cases[i].Value.Subst1(And(solver, path, cond), solver, subst));
+                cases1[i] = new KeyValuePair<TERM, BranchingRule<TERM>>(cases[i].Key, cases[i].Value.Subst1(And(solver, path, cond), solver, subst));
             }
             var defaultcase1 = defaultcase.Subst1(And(solver, path, defaultcond), solver, subst);
             var rule = new SwitchRule<TERM>(input, defaultcase1, cases1);
@@ -1194,14 +1197,14 @@ namespace Microsoft.Automata
             WriteLine("}"); //end of switch
         }
 
-        internal override STbRule<TERM> ApplyInp(TERM pred, IContextCore<TERM> solver, TERM x, TERM input)
+        internal override BranchingRule<TERM> ApplyInp(TERM pred, IContextCore<TERM> solver, TERM x, TERM input)
         {
             throw new NotImplementedException();
         }
 
-        public override STbRuleKind RuleKind
+        public override BranchingRuleKind RuleKind
         {
-            get { return STbRuleKind.Switch; }
+            get { return BranchingRuleKind.Switch; }
         }
     }
 

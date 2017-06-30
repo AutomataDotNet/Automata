@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using Microsoft.Automata;
-using Microsoft.Automata.Internal;
 
 namespace Microsoft.Automata.Tests
 {
@@ -16,10 +15,10 @@ namespace Microsoft.Automata.Tests
         {
             CharSetSolver solver = new CharSetSolver(BitWidth.BV16);
             BDD cond = solver.MkCharSetFromRange('A', 'Y');
-            Pair<uint, uint>[] ranges = solver.ToRanges(cond);
+            Tuple<uint, uint>[] ranges = solver.ToRanges(cond);
             Assert.AreEqual<int>(1, ranges.Length);
-            Assert.AreEqual<uint>((uint)'A', ranges[0].First);
-            Assert.AreEqual<uint>((uint)'Y', ranges[0].Second);
+            Assert.AreEqual<uint>((uint)'A', ranges[0].Item1);
+            Assert.AreEqual<uint>((uint)'Y', ranges[0].Item2);
         }
 
         [TestMethod]
@@ -38,18 +37,18 @@ namespace Microsoft.Automata.Tests
             CharSetSolver solver = new CharSetSolver(enc);
             BDD cond = solver.MkCharSetFromRegexCharClass(@"\w");
             int nodes = cond.CountNodes();
-            Pair<uint, uint>[] ranges = solver.ToRanges(cond);
+            Tuple<uint, uint>[] ranges = solver.ToRanges(cond);
             BDD cond2 = solver.MkCharSetFromRanges(ranges);
             Assert.AreSame(cond, cond2);
             int nodes2 = cond2.CountNodes();
-            Assert.AreEqual<uint>((uint)'0', ranges[0].First);
-            Assert.AreEqual<uint>((uint)'9', ranges[0].Second);
-            Assert.AreEqual<uint>((uint)'A', ranges[1].First);
-            Assert.AreEqual<uint>((uint)'Z', ranges[1].Second);
-            Assert.AreEqual<uint>((uint)'_', ranges[2].First);
-            Assert.AreEqual<uint>((uint)'_', ranges[2].Second);
-            Assert.AreEqual<uint>((uint)'a', ranges[3].First);
-            Assert.AreEqual<uint>((uint)'z', ranges[3].Second);
+            Assert.AreEqual<uint>((uint)'0', ranges[0].Item1);
+            Assert.AreEqual<uint>((uint)'9', ranges[0].Item2);
+            Assert.AreEqual<uint>((uint)'A', ranges[1].Item1);
+            Assert.AreEqual<uint>((uint)'Z', ranges[1].Item2);
+            Assert.AreEqual<uint>((uint)'_', ranges[2].Item1);
+            Assert.AreEqual<uint>((uint)'_', ranges[2].Item2);
+            Assert.AreEqual<uint>((uint)'a', ranges[3].Item1);
+            Assert.AreEqual<uint>((uint)'z', ranges[3].Item2);
             Assert.AreEqual<int>(4, ranges.Length);
         }
 
@@ -61,19 +60,19 @@ namespace Microsoft.Automata.Tests
             BDD cond = solver.MkCharSetFromRegexCharClass(@"\w");
             var ranges1 = solver.ToRanges(cond);
             var cond1 = solver.MkCharSetFromRanges(ranges1);
-            Pair<uint, uint>[] ranges = solver.ToRanges(cond1);
+            Tuple<uint, uint>[] ranges = solver.ToRanges(cond1);
             var cond2 = solver.MkCharSetFromRanges(ranges);
             Assert.AreSame(cond1, cond2);
             Assert.AreSame(cond, cond1);
             //cond.ToDot("cond.dot");
-            Assert.AreEqual<uint>((uint)'0', ranges[0].First);
-            Assert.AreEqual<uint>((uint)'9', ranges[0].Second);
-            Assert.AreEqual<uint>((uint)'A', ranges[1].First);
-            Assert.AreEqual<uint>((uint)'Z', ranges[1].Second);
-            Assert.AreEqual<uint>((uint)'_', ranges[2].First);
-            Assert.AreEqual<uint>((uint)'_', ranges[2].Second);
-            Assert.AreEqual<uint>((uint)'a', ranges[3].First);
-            Assert.AreEqual<uint>((uint)'z', ranges[3].Second);
+            Assert.AreEqual<uint>((uint)'0', ranges[0].Item1);
+            Assert.AreEqual<uint>((uint)'9', ranges[0].Item2);
+            Assert.AreEqual<uint>((uint)'A', ranges[1].Item1);
+            Assert.AreEqual<uint>((uint)'Z', ranges[1].Item2);
+            Assert.AreEqual<uint>((uint)'_', ranges[2].Item1);
+            Assert.AreEqual<uint>((uint)'_', ranges[2].Item2);
+            Assert.AreEqual<uint>((uint)'a', ranges[3].Item1);
+            Assert.AreEqual<uint>((uint)'z', ranges[3].Item2);
         }
 
         [TestMethod]
@@ -82,10 +81,10 @@ namespace Microsoft.Automata.Tests
             CharSetSolver solver = new CharSetSolver(BitWidth.BV16);
             BDD cond = solver.MkCharSetFromRegexCharClass(@"\d");
             int cnt = cond.CountNodes();
-            Pair<uint, uint>[] ranges = solver.ToRanges(cond);
+            Tuple<uint, uint>[] ranges = solver.ToRanges(cond);
             BDD set = solver.MkCharSetFromRanges(ranges);
             int nodes = set.CountNodes();
-            var ranges2 = new List<Pair<uint, uint>>(ranges);
+            var ranges2 = new List<Tuple<uint, uint>>(ranges);
             ranges2.Reverse();
             BDD set2 = solver.MkCharSetFromRanges(ranges2);
             int nodes2 = set.CountNodes();
@@ -113,13 +112,13 @@ namespace Microsoft.Automata.Tests
             CharSetSolver solver = new CharSetSolver(BitWidth.BV16);
             BDD cond = solver.MkCharSetFromRegexCharClass(@"\d");
             int cnt = cond.CountNodes();
-            Pair<uint, uint>[] ranges = solver.ToRanges(cond);
+            Tuple<uint, uint>[] ranges = solver.ToRanges(cond);
             BDD set = solver.MkCharSetFromRanges(ranges);
             int nodes = set.CountNodes();
             int size = (int)solver.ComputeDomainSize(set);
             int expected = 0;
             foreach (var range in ranges)
-                expected += ((int)(range.Second - range.First) + 1);
+                expected += ((int)(range.Item2 - range.Item1) + 1);
             Assert.AreEqual<int>(expected, size);
             int digitCnt = 0;
             for (int i = 0; i <= 0xFFFF; i++)
@@ -136,13 +135,13 @@ namespace Microsoft.Automata.Tests
             CharSetSolver solver = new CharSetSolver(BitWidth.BV16);
             BDD cond = solver.MkCharSetFromRegexCharClass(@"\w");
             int cnt = cond.CountNodes();
-            Pair<uint, uint>[] ranges = solver.ToRanges(cond);
+            Tuple<uint, uint>[] ranges = solver.ToRanges(cond);
             BDD set = solver.MkCharSetFromRanges(ranges);
             int nodes = set.CountNodes();
             int size = (int)solver.ComputeDomainSize(set);
             int expected = 0;
             foreach (var range in ranges)
-                expected += ((int)(range.Second - range.First) + 1);
+                expected += ((int)(range.Item2 - range.Item1) + 1);
             Assert.AreEqual<int>(expected, size);
             int wCnt = 0;
             for (int i = 0; i <= 0xFFFF; i++)
@@ -161,13 +160,13 @@ namespace Microsoft.Automata.Tests
             CharSetSolver solver = new CharSetSolver(BitWidth.BV16);
             BDD cond = solver.MkCharSetFromRegexCharClass(@"[\w-[\d]]");
             int cnt = cond.CountNodes();
-            Pair<uint, uint>[] ranges = solver.ToRanges(cond);
+            Tuple<uint, uint>[] ranges = solver.ToRanges(cond);
             BDD set = solver.MkCharSetFromRanges(ranges);
             int nodes = set.CountNodes();
             int size = (int)solver.ComputeDomainSize(set);
             int expected = 0;
             foreach (var range in ranges)
-                expected += ((int)(range.Second - range.First) + 1);
+                expected += ((int)(range.Item2 - range.Item1) + 1);
             Assert.AreEqual<int>(expected, size);
             int wCnt = 0;
             for (int i = 0; i <= 0xFFFF; i++)
@@ -269,10 +268,10 @@ namespace Microsoft.Automata.Tests
 
             var ranges = solver.ToRanges(_0_3_u_10_13, 6);
             Assert.AreEqual<int>(2, ranges.Length);
-            Assert.AreEqual<uint>(0, ranges[0].First);
-            Assert.AreEqual<uint>(3, ranges[0].Second);
-            Assert.AreEqual<uint>(0x40, ranges[1].First);
-            Assert.AreEqual<uint>(0x43, ranges[1].Second);
+            Assert.AreEqual<uint>(0, ranges[0].Item1);
+            Assert.AreEqual<uint>(3, ranges[0].Item2);
+            Assert.AreEqual<uint>(0x40, ranges[1].Item1);
+            Assert.AreEqual<uint>(0x43, ranges[1].Item2);
         }
 
         [TestMethod]
@@ -313,14 +312,14 @@ namespace Microsoft.Automata.Tests
 
             var ranges = solver.ToRanges(u, 6);
             Assert.AreEqual<int>(4, ranges.Length);
-            Assert.AreEqual<uint>(0, ranges[0].First);
-            Assert.AreEqual<uint>(3, ranges[0].Second);
-            Assert.AreEqual<uint>(0x20, ranges[1].First);
-            Assert.AreEqual<uint>(0x23, ranges[1].Second);
-            Assert.AreEqual<uint>(0x40, ranges[2].First);
-            Assert.AreEqual<uint>(0x43, ranges[2].Second);
-            Assert.AreEqual<uint>(0x60, ranges[3].First);
-            Assert.AreEqual<uint>(0x63, ranges[3].Second);
+            Assert.AreEqual<uint>(0, ranges[0].Item1);
+            Assert.AreEqual<uint>(3, ranges[0].Item2);
+            Assert.AreEqual<uint>(0x20, ranges[1].Item1);
+            Assert.AreEqual<uint>(0x23, ranges[1].Item2);
+            Assert.AreEqual<uint>(0x40, ranges[2].Item1);
+            Assert.AreEqual<uint>(0x43, ranges[2].Item2);
+            Assert.AreEqual<uint>(0x60, ranges[3].Item1);
+            Assert.AreEqual<uint>(0x63, ranges[3].Item2);
         }
 
         [TestMethod]
@@ -333,10 +332,10 @@ namespace Microsoft.Automata.Tests
             Assert.AreEqual<int>(14, nodes);
             var ranges = solver.ToRanges(cond);
             Assert.AreEqual<int>(2, ranges.Length);
-            Assert.AreEqual<uint>(ranges[0].First, 0);
-            Assert.AreEqual<uint>(ranges[0].Second, 0x7FFF);
-            Assert.AreEqual<uint>(ranges[1].First, 0xA000);
-            Assert.AreEqual<uint>(ranges[1].Second, 0xA00F);
+            Assert.AreEqual<uint>(ranges[0].Item1, 0);
+            Assert.AreEqual<uint>(ranges[0].Item2, 0x7FFF);
+            Assert.AreEqual<uint>(ranges[1].Item1, 0xA000);
+            Assert.AreEqual<uint>(ranges[1].Item2, 0xA00F);
             Assert.AreEqual<uint>(((uint)1 << 15) + ((uint)1 << 4), elems);
         }
 
@@ -352,8 +351,8 @@ namespace Microsoft.Automata.Tests
             Assert.AreEqual<int>(7, nodes); //highly compact BDD representation
             var ranges = solver.ToRanges(cond);
             Assert.AreEqual<int>(1, ranges.Length);
-            Assert.AreEqual<uint>(ranges[0].First, 0xd800);
-            Assert.AreEqual<uint>(ranges[0].Second, 0xdFFF);
+            Assert.AreEqual<uint>(ranges[0].Item1, 0xd800);
+            Assert.AreEqual<uint>(ranges[0].Item2, 0xdFFF);
             //the total number of surrogates (there are 1024 low surrogates and 1024 high surrogates)
             Assert.AreEqual<int>(2048, elems); 
         }
@@ -379,7 +378,7 @@ namespace Microsoft.Automata.Tests
             BDD cond2 = solver.MkSetFromElements(new uint[] {9, 10, 12, 15}, 3);
             BDD cond = solver.MkOr(cond1, cond2);
             Assert.AreEqual<int>(8, cond.CountNodes());
-            //Automata.Internal.DirectedGraphs.DotWriter.CharSetToDot(cond, "TestShiftRight", "c:/tmp/TestShiftRight1.dot", Internal.DirectedGraphs.DotWriter.RANKDIR.TB, 12);
+            //Automata.DirectedGraphs.DotWriter.CharSetToDot(cond, "TestShiftRight", "c:/tmp/TestShiftRight1.dot", DirectedGraphs.DotWriter.RANKDIR.TB, 12);
             BDD sr = solver.ShiftRight(cond);
             Assert.AreEqual<BDD>(solver.True, sr);
         }
@@ -390,10 +389,10 @@ namespace Microsoft.Automata.Tests
             BDDAlgebra solver = new BDDAlgebra();
             BDD cond = solver.MkSetFromElements(new uint[] {0, 15}, 3);
             Assert.AreEqual<int>(9, cond.CountNodes());
-            //Automata.Internal.DirectedGraphs.DotWriter.CharSetToDot(cond, "TestShiftRight", "c:/tmp/TestShiftRight2.dot", Internal.DirectedGraphs.DotWriter.RANKDIR.TB, 12);
+            //Automata.DirectedGraphs.DotWriter.CharSetToDot(cond, "TestShiftRight", "c:/tmp/TestShiftRight2.dot", DirectedGraphs.DotWriter.RANKDIR.TB, 12);
             var sr = solver.ShiftRight(cond);
             Assert.AreEqual<int>(7, sr.CountNodes());
-            //Automata.Internal.DirectedGraphs.DotWriter.CharSetToDot(sr, "TestShiftRight", "c:/tmp/TestShiftRight2res.dot", Internal.DirectedGraphs.DotWriter.RANKDIR.TB, 12);
+            //Automata.DirectedGraphs.DotWriter.CharSetToDot(sr, "TestShiftRight", "c:/tmp/TestShiftRight2res.dot", DirectedGraphs.DotWriter.RANKDIR.TB, 12);
         }
 
         [TestMethod]
@@ -401,12 +400,12 @@ namespace Microsoft.Automata.Tests
         {
             BDDAlgebra solver = new BDDAlgebra();
             BDD cond = solver.MkSetFromElements(new uint[] { 0, 15 }, 3);
-            //Automata.Internal.DirectedGraphs.DotWriter.CharSetToDot(cond, "TestShiftLeft", "c:/tmp/TestShiftLeftIn.dot", Internal.DirectedGraphs.DotWriter.RANKDIR.TB, 12);
+            //Automata.DirectedGraphs.DotWriter.CharSetToDot(cond, "TestShiftLeft", "c:/tmp/TestShiftLeftIn.dot", DirectedGraphs.DotWriter.RANKDIR.TB, 12);
             //BvSet bvs = solver.ShiftLeft(cond, 30);
             //Assert.AreEqual<int>(5, bvs.CountNodes());
             BDD bvs2 = solver.ShiftLeft(cond, 28);
             Assert.AreEqual<int>(9, bvs2.CountNodes());
-            //Automata.Internal.DirectedGraphs.DotWriter.CharSetToDot(bvs, "TestShiftLeft", "c:/tmp/TestShiftLeftOut.dot", Internal.DirectedGraphs.DotWriter.RANKDIR.TB, 12);
+            //Automata.DirectedGraphs.DotWriter.CharSetToDot(bvs, "TestShiftLeft", "c:/tmp/TestShiftLeftOut.dot", DirectedGraphs.DotWriter.RANKDIR.TB, 12);
         }
 
         [TestMethod]
@@ -414,13 +413,13 @@ namespace Microsoft.Automata.Tests
         {
             BDDAlgebra solver = new BDDAlgebra();
             BDD cond = solver.MkSetFromElements(new uint[] { 0, 15 }, 3);
-            //Automata.Internal.DirectedGraphs.DotWriter.CharSetToDot(cond, "TestShiftLeft2_cond", "c:/tmp/TestShiftLeft2_cond.dot", Internal.DirectedGraphs.DotWriter.RANKDIR.TB, 12);
+            //Automata.DirectedGraphs.DotWriter.CharSetToDot(cond, "TestShiftLeft2_cond", "c:/tmp/TestShiftLeft2_cond.dot", DirectedGraphs.DotWriter.RANKDIR.TB, 12);
             BDD bvs = solver.ShiftLeft(cond, 4);
             BDD concat = solver.MkAnd(bvs, cond);
             Assert.AreEqual<int>(16, concat.CountNodes());
             BDD cond1 = solver.ShiftRight(solver.ShiftRight(solver.ShiftRight(solver.ShiftRight(concat))));
             Assert.AreEqual<BDD>(cond1, cond);
-            //Automata.Internal.DirectedGraphs.DotWriter.CharSetToDot(concat, "TestShiftLeft2_concat", "c:/tmp/TestShiftLeft2_concat.dot", Internal.DirectedGraphs.DotWriter.RANKDIR.TB, 12);
+            //Automata.DirectedGraphs.DotWriter.CharSetToDot(concat, "TestShiftLeft2_concat", "c:/tmp/TestShiftLeft2_concat.dot", DirectedGraphs.DotWriter.RANKDIR.TB, 12);
         }
 
         [TestMethod]
@@ -431,10 +430,10 @@ namespace Microsoft.Automata.Tests
             BDD bvs = solver.ShiftLeft(cond, 4);
             var ranges = solver.ToRanges64(bvs, bvs.Ordinal);
             Assert.AreEqual<int>(2, ranges.Length);
-            Assert.AreEqual<ulong>(0UL, ranges[0].First);
-            Assert.AreEqual<ulong>(0xFUL, ranges[0].Second);
-            Assert.AreEqual<ulong>((ulong)0xFFFFFFFF0, ranges[1].First);
-            Assert.AreEqual<ulong>((ulong)0xFFFFFFFFF, ranges[1].Second);
+            Assert.AreEqual<ulong>(0UL, ranges[0].Item1);
+            Assert.AreEqual<ulong>(0xFUL, ranges[0].Item2);
+            Assert.AreEqual<ulong>((ulong)0xFFFFFFFF0, ranges[1].Item1);
+            Assert.AreEqual<ulong>((ulong)0xFFFFFFFFF, ranges[1].Item2);
         }
 
 

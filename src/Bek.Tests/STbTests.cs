@@ -25,7 +25,7 @@ namespace Microsoft.Bek.Query.Tests
     public class STbTests
     {
 
-        static string sampleDir = "../../Samples/";
+        static string sampleDir = "../../../Samples/";
 
         [TestMethod]
         public void TestTrivial()

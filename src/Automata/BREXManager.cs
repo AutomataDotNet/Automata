@@ -7,7 +7,7 @@ using Microsoft.Automata.Templates;
 namespace Microsoft.Automata
 {
     /// <summary>
-    /// BoolRegExp code generator
+    /// Manages BREX expressions
     /// </summary>
     public class BREXManager
     {
@@ -37,7 +37,7 @@ namespace Microsoft.Automata
         internal LikePatternToAutomatonConverter<BDD> LikeConverter { get; }
 
         /// <summary>
-        /// Add boolean regex expression to the matchers, returns the name of the matcher.
+        /// Add BREX expression to the pool of existing ones, returns a name that will identify the expression.
         /// </summary>
         public string AddBoolRegExp(BREX boolRegExp)
         {
@@ -57,18 +57,32 @@ namespace Microsoft.Automata
         /// </summary>
         public string CppStringTypeName { get; }
 
+        /// <summary>
+        /// The maximum number of states allowed in a generated automaton.
+        /// </summary>
+        internal int MaxNrOfStates { get; }
+
+        /// <summary>
+        /// Timeout for automata constructions.
+        /// </summary>
+        internal int Timeout { get; }
+
 
         /// <summary>
         /// Constructs an instance of the manager
         /// </summary>
-        /// <param name="matcherPrefix">prefix of generated matcher method names</param>
-        /// <param name="cppStringTypeName">identifier in C++ for string type</param>
-        public BREXManager(string matcherPrefix = "Matcher", string cppStringTypeName = "FString")
+        /// <param name="matcherPrefix">prefix of generated matcher method names, default is "Matcher"</param>
+        /// <param name="cppStringTypeName">identifier in C++ for string type, default is "FString"</param>
+        /// <param name="maxNrOfStates">maximum number of allowed states in a generated automaton, default is 1000, 0 or negative number implies there is no bound</param>
+        /// <param name="timeout">timeout in ms for automata constructions, default is 1000, 0 or negative number implies there is no bound</param>
+        public BREXManager(string matcherPrefix = "Matcher", string cppStringTypeName = "FString", int maxNrOfStates = 1000, int timeout = 1000)
         {
             this.Solver = new CharSetSolver();
             this.LikeConverter = new LikePatternToAutomatonConverter<BDD>(this.Solver);
             this.MatcherPrefix = matcherPrefix;
             this.CppStringTypeName = cppStringTypeName;
+            this.MaxNrOfStates = (maxNrOfStates <= 0 ? int.MaxValue : maxNrOfStates);
+            this.Timeout = timeout;
         }
 
         /// <summary>
@@ -409,7 +423,7 @@ namespace Microsoft.Automata
             return sb.ToString();
         }
 
-        //private static string RangesToCode(Pair<uint, uint>[] ranges)
+        //private static string RangesToCode(Tuple<uint, uint>[] ranges)
         //{
         //    StringBuilder cond = new StringBuilder();
         //    foreach (var range in ranges)
@@ -427,7 +441,7 @@ namespace Microsoft.Automata
         /// <summary>
         /// Convert the pairs into a range condition expression
         /// </summary>
-        private static string RangesToCode(Pair<uint, uint>[] ranges)
+        private static string RangesToCode(Tuple<uint, uint>[] ranges)
         {
             if (ranges.Length == 0)
             {
@@ -440,7 +454,7 @@ namespace Microsoft.Automata
         /// <summary>
         /// Convert the pairs into a range condition expression helper function
         /// </summary>
-        private static string RangesToCode2(Pair<uint, uint>[] ranges, int first, int last)
+        private static string RangesToCode2(Tuple<uint, uint>[] ranges, int first, int last)
         {
             if (first == last)
             {
@@ -469,7 +483,7 @@ namespace Microsoft.Automata
         /// <summary>
         /// Helper method for ranges to code generation that uses binary search in intervals
         /// </summary>
-        private static string RangesToCode3(Pair<uint, uint>[] ranges, int first, int last)
+        private static string RangesToCode3(Tuple<uint, uint>[] ranges, int first, int last)
         {
             //we know that c >= ranges[first].Item1
             if (first == last)
@@ -489,7 +503,7 @@ namespace Microsoft.Automata
     /// <summary>
     /// Converts like expressions to Automata
     /// </summary>
-    class LikePatternToAutomatonConverter<S>
+    internal class LikePatternToAutomatonConverter<S>
     {
         /// <summary>
         /// Automaton converter.
@@ -691,6 +705,9 @@ namespace Microsoft.Automata
         {
             this.solver = solver;
             this.builder = new RegexToAutomatonBuilder<ILikeNode, S>(solver, this.TokenToAutomaton);
+            //add implicit start and end anchors
+            this.builder.isBeg = false;
+            this.builder.isEnd = false;
         }
 
         /// <summary>

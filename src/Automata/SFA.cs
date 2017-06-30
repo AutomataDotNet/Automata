@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-using Microsoft.Automata.Internal;
+using Microsoft.Automata;
 
 namespace Microsoft.Automata
 {
@@ -253,7 +253,7 @@ namespace Microsoft.Automata
         {
             if (nrOfElements <= 0)
             {
-                Microsoft.Automata.Internal.DirectedGraphs.DgmlWriter.ShowGraph<TERM>(-1, this, name);
+                Microsoft.Automata.DirectedGraphs.DgmlWriter.ShowGraph<TERM>(-1, this, name);
             }
             else
             {
@@ -267,7 +267,7 @@ namespace Microsoft.Automata
         ///// </summary>
         //public void SaveAsDgml()
         //{
-        //    Microsoft.Automata.Internal.DirectedGraphs.DgmlWriter.AutomatonToDgml<TERM>(this, name);
+        //    Microsoft.Automata.DirectedGraphs.DgmlWriter.AutomatonToDgml<TERM>(this, name);
         //}
 
         ///// <summary>
@@ -275,7 +275,7 @@ namespace Microsoft.Automata
         ///// </summary>
         //public void SaveAsDot()
         //{
-        //    Microsoft.Automata.Internal.DirectedGraphs.DotWriter.AutomatonToDot<TERM>(this.DescribeLabel, this, name, name, Internal.DirectedGraphs.DotWriter.RANKDIR.TB, 12);
+        //    Microsoft.Automata.DirectedGraphs.DotWriter.AutomatonToDot<TERM>(this.DescribeLabel, this, name, name, DirectedGraphs.DotWriter.RANKDIR.TB, 12);
         //}
 
         ///// <summary>
@@ -283,7 +283,7 @@ namespace Microsoft.Automata
         ///// </summary>
         //public void SaveAsDgml(System.IO.TextWriter tw)
         //{
-        //    Microsoft.Automata.Internal.DirectedGraphs.DgmlWriter.AutomatonToDgml<TERM>(this, tw);
+        //    Microsoft.Automata.DirectedGraphs.DgmlWriter.AutomatonToDgml<TERM>(this, tw);
         //}
 
         ///// <summary>
@@ -291,7 +291,7 @@ namespace Microsoft.Automata
         ///// </summary>
         //public void SaveAsDot(System.IO.TextWriter tw)
         //{
-        //    Microsoft.Automata.Internal.DirectedGraphs.DotWriter.AutomatonToDot<TERM>(this.DescribeLabel, this, name, tw, Internal.DirectedGraphs.DotWriter.RANKDIR.TB, 12, true);
+        //    Microsoft.Automata.DirectedGraphs.DotWriter.AutomatonToDot<TERM>(this.DescribeLabel, this, name, tw, DirectedGraphs.DotWriter.RANKDIR.TB, 12, true);
         //}
         //#endregion
 
@@ -436,7 +436,7 @@ namespace Microsoft.Automata
         //                throw new Exception("unexpected character solution");
         //        }
         //        solutions.Sort();
-        //        var ranges = new Microsoft.Automata.Internal.Utilities.UnicodeCategoryRangesGenerator.Ranges();
+        //        var ranges = new Microsoft.Automata.Utilities.UnicodeCategoryRangesGenerator.Ranges();
         //        foreach (char c in solutions)
         //            ranges.Add((int)c);
         //        List<TERM> rangeConds = new List<TERM>();
@@ -664,11 +664,11 @@ namespace Microsoft.Automata
 
             var concrete_moves = new List<Move<BDD>>();
 
-            var moveMap = new Dictionary<Pair<int, int>, BDD>();
+            var moveMap = new Dictionary<Tuple<int, int>, BDD>();
             Action<int,int,BDD> AddMove = (from,to,guard) =>
                 {
                     BDD pred;
-                    var key = new Pair<int,int>(from, to);
+                    var key = new Tuple<int,int>(from, to);
                     if (moveMap.TryGetValue(key, out pred))
                         pred = solver.CharSetProvider.MkOr(pred, guard);
                     else
@@ -732,7 +732,7 @@ namespace Microsoft.Automata
                 }
             }
             foreach (var entry in moveMap)
-                concrete_moves.Add(Move<BDD>.Create(entry.Key.First, entry.Key.Second, entry.Value));
+                concrete_moves.Add(Move<BDD>.Create(entry.Key.Item1, entry.Key.Item2, entry.Value));
 
             var res = Automaton<BDD>.Create(this.solver.CharSetProvider, this.automaton.InitialState, this.automaton.GetFinalStates(), concrete_moves);
             return res;

@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using Microsoft.Automata.Internal.Generated;
+using Microsoft.Automata.Generated;
 
-namespace Microsoft.Automata.Internal
+namespace Microsoft.Automata
 {
     internal class UnicodeCategoryToCharSetProvider : IUnicodeCategoryTheory<BDD>
     {
@@ -74,7 +74,7 @@ namespace Microsoft.Automata.Internal
         }
     }
 
-    internal class UnicodeCategoryToRangesProvider : IUnicodeCategoryTheory<HashSet<Pair<char, char>>>
+    internal class UnicodeCategoryToRangesProvider : IUnicodeCategoryTheory<HashSet<Tuple<char, char>>>
     {
         CharRangeSolver solver;
         CharSetSolver solverBDD;
@@ -82,9 +82,9 @@ namespace Microsoft.Automata.Internal
         BDD whiteSpaceConditionBDD = null;
         BDD wordLetterConditionBDD = null;
 
-        HashSet<Pair<char, char>>[] catConditions = new HashSet<Pair<char, char>>[30];
-        HashSet<Pair<char, char>> whiteSpaceCondition = null;
-        HashSet<Pair<char, char>> wordLetterCondition = null;
+        HashSet<Tuple<char, char>>[] catConditions = new HashSet<Tuple<char, char>>[30];
+        HashSet<Tuple<char, char>> whiteSpaceCondition = null;
+        HashSet<Tuple<char, char>> wordLetterCondition = null;
         BitWidth encoding;
 
         public UnicodeCategoryToRangesProvider(CharRangeSolver solver)
@@ -129,36 +129,36 @@ namespace Microsoft.Automata.Internal
             for (int i = 0; i < 30; i++)
             {
                 var ranges = solverBDD.ToRanges(catConditionsBDD[i]);
-                catConditions[i] = new HashSet<Pair<char, char>>();
+                catConditions[i] = new HashSet<Tuple<char, char>>();
                 foreach (var range in ranges)
-                    catConditions[i].Add(new Pair<char, char>((char)range.First, (char)range.Second));
+                    catConditions[i].Add(new Tuple<char, char>((char)range.Item1, (char)range.Item2));
             }
 
             var ranges1 = solverBDD.ToRanges(whiteSpaceConditionBDD);
-            whiteSpaceCondition = new HashSet<Pair<char, char>>();
+            whiteSpaceCondition = new HashSet<Tuple<char, char>>();
             foreach (var range in ranges1)
-                whiteSpaceCondition.Add(new Pair<char, char>((char)range.First, (char)range.Second));
+                whiteSpaceCondition.Add(new Tuple<char, char>((char)range.Item1, (char)range.Item2));
 
             ranges1 = solverBDD.ToRanges(wordLetterConditionBDD); //new Utilities.UnicodeCategoryRangesGenerator.Ranges();
-            wordLetterCondition = new HashSet<Pair<char, char>>();
+            wordLetterCondition = new HashSet<Tuple<char, char>>();
             foreach (var range in ranges1)
-                wordLetterCondition.Add(new Pair<char, char>((char)range.First, (char)range.Second));
+                wordLetterCondition.Add(new Tuple<char, char>((char)range.Item1, (char)range.Item2));
             #endregion
         }
 
-        #region IUnicodeCategoryTheory<HashSet<Pair<char,char>>> Members
+        #region IUnicodeCategoryTheory<HashSet<Tuple<char,char>>> Members
 
-        public HashSet<Pair<char, char>> CategoryCondition(int cat)
+        public HashSet<Tuple<char, char>> CategoryCondition(int cat)
         {
             return catConditions[cat];
         }
 
-        public HashSet<Pair<char, char>> WhiteSpaceCondition
+        public HashSet<Tuple<char, char>> WhiteSpaceCondition
         {
             get { return whiteSpaceCondition; }
         }
 
-        public HashSet<Pair<char, char>> WordLetterCondition
+        public HashSet<Tuple<char, char>> WordLetterCondition
         {
             get { return wordLetterCondition; }
         }
@@ -230,7 +230,7 @@ namespace Microsoft.Automata.Internal
             #endregion
         }
 
-        #region IUnicodeCategoryTheory<HashSet<Pair<char,char>>> Members
+        #region IUnicodeCategoryTheory<HashSet<Tuple<char,char>>> Members
 
         public HashSet<char> CategoryCondition(int cat)
         {

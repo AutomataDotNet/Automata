@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using Microsoft.Automata.Internal;
-using Microsoft.Automata.Internal.Utilities;
+using Microsoft.Automata;
+using Microsoft.Automata.Utilities;
+using Microsoft.Automata.BooleanAlgebras;
 
 namespace Microsoft.Automata
 {
@@ -151,9 +152,9 @@ namespace Microsoft.Automata
         ///// <returns></returns>
         //public int GetDepth()
         //{
-        //    var S = new Stack<Pair<int,int>>();
+        //    var S = new Stack<Tuple<int,int>>();
         //    var V = new HashSet<int>();
-        //    S.Push(new Pair<int,int>(initialState,0));
+        //    S.Push(new Tuple<int,int>(initialState,0));
         //    V.Add(initialState);
         //    var dist = new Dictionary<int, int>();
         //    foreach (int st in States)
@@ -167,7 +168,7 @@ namespace Microsoft.Automata
         //            var q = move.TargetState;
         //            var d = Math.Max(dist[q], pair.Second + 1);
         //            if (V.Add(q))
-        //                S.Push(new Pair<int, int>(q, pair.Second + 1));
+        //                S.Push(new Tuple<int, int>(q, pair.Second + 1));
         //            dist[q] = ;
         //        }
         //    }
@@ -354,7 +355,7 @@ namespace Microsoft.Automata
             if (css != null)
                 css.ShowGraph(this as Automaton<BDD>, name);
             else
-                Internal.DirectedGraphs.DgmlWriter.ShowGraph<T>(-1, this, name);
+                DirectedGraphs.DgmlWriter.ShowGraph<T>(-1, this, name);
         }
 
         /// <summary>
@@ -968,18 +969,19 @@ namespace Microsoft.Automata
 
         static Automaton<T> MkProduct(Automaton<T> a, Automaton<T> b, IBooleanAlgebraPositive<T> solver, int timeout)
         {
+            long timeout1 = Microsoft.Automata.Utilities.HighTimer.Frequency * ((long)timeout / (long)1000);
             long timeoutLimit;
             if (timeout > 0)
-                timeoutLimit = Internal.Utilities.HighTimer.Now + timeout;
+                timeoutLimit = Utilities.HighTimer.Now + timeout1;
             else
                 timeoutLimit = 0;
 
             a = a.RemoveEpsilons(solver.MkOr);
             b = b.RemoveEpsilons(solver.MkOr);
 
-            var stateIdMap = new Dictionary<Pair<int, int>, int>();
-            var initPair = new Pair<int, int>(a.InitialState, b.InitialState);
-            var frontier = new Stack<Pair<int, int>>();
+            var stateIdMap = new Dictionary<Tuple<int, int>, int>();
+            var initPair = new Tuple<int, int>(a.InitialState, b.InitialState);
+            var frontier = new Stack<Tuple<int, int>>();
             frontier.Push(initPair);
             stateIdMap[initPair] = 0;
 
@@ -999,14 +1001,14 @@ namespace Microsoft.Automata
                 int source = stateIdMap[currPair];
                 var outTransitions = delta[source];
 
-                foreach (var t1 in a.GetMovesFrom(currPair.First))
-                    foreach (var t2 in b.GetMovesFrom(currPair.Second))
+                foreach (var t1 in a.GetMovesFrom(currPair.Item1))
+                    foreach (var t2 in b.GetMovesFrom(currPair.Item2))
                     {
                         var cond = solver.MkAnd(t1.Label, t2.Label);
                         if (!solver.IsSatisfiable(cond))
                             continue; //ignore the unsatisfiable move
 
-                        Pair<int, int> targetPair = new Pair<int, int>(t1.TargetState, t2.TargetState);
+                        Tuple<int, int> targetPair = new Tuple<int, int>(t1.TargetState, t2.TargetState);
                         int target;
                         if (!stateIdMap.TryGetValue(targetPair, out target))
                         {
@@ -1082,9 +1084,9 @@ namespace Microsoft.Automata
                 return a;
             }
 
-            var stateIdMap = new Dictionary<Pair<int, int>, int>();
-            var initPair = new Pair<int, int>(a.InitialState, a.InitialState);
-            var frontier = new Stack<Pair<int, int>>();
+            var stateIdMap = new Dictionary<Tuple<int, int>, int>();
+            var initPair = new Tuple<int, int>(a.InitialState, a.InitialState);
+            var frontier = new Stack<Tuple<int, int>>();
             frontier.Push(initPair);
             stateIdMap[initPair] = 0;
 
@@ -1102,19 +1104,19 @@ namespace Microsoft.Automata
             {
                 var currPair = frontier.Pop();
                 int source = stateIdMap[currPair];
-                if (currPair.First != currPair.Second)
+                if (currPair.Item1 != currPair.Item2)
                     ambiguousStates.Add(source);
 
                 var outTransitions = delta[source];
 
-                foreach (var t1 in a.GetMovesFrom(currPair.First))
-                    foreach (var t2 in a.GetMovesFrom(currPair.Second))
+                foreach (var t1 in a.GetMovesFrom(currPair.Item1))
+                    foreach (var t2 in a.GetMovesFrom(currPair.Item2))
                     {
                         var cond = solver.MkAnd(t1.Label, t2.Label);
                         if (!solver.IsSatisfiable(cond))
                             continue; //ignore the unsatisfiable move
 
-                        Pair<int, int> targetPair = new Pair<int, int>(t1.TargetState, t2.TargetState);
+                        Tuple<int, int> targetPair = new Tuple<int, int>(t1.TargetState, t2.TargetState);
                         int target;
                         if (!stateIdMap.TryGetValue(targetPair, out target))
                         {
@@ -1272,7 +1274,7 @@ namespace Microsoft.Automata
                 var eClosure = new IntSet(GetEpsilonClosure(state));
                 eEquiv[state] = eClosure.Intersect(GetInvEpsilonClosure(state)).Choice;
             }
-            Dictionary<Pair<int, int>, T> conditionMap = new Dictionary<Pair<int, int>, T>();
+            Dictionary<Tuple<int, int>, T> conditionMap = new Dictionary<Tuple<int, int>, T>();
             HashSet<Move<T>> eMoves = new HashSet<Move<T>>();
 
             #region combine the moves using eEquiv representatives
@@ -1289,7 +1291,7 @@ namespace Microsoft.Automata
                 }
                 else
                 {
-                    var p = new Pair<int, int>(s, t);
+                    var p = new Tuple<int, int>(s, t);
                     T cond;
                     if (conditionMap.TryGetValue(p, out cond))
                         conditionMap[p] = disj(cond, move.Label);
@@ -1307,10 +1309,10 @@ namespace Microsoft.Automata
             return Automaton<T>.Create(this.algebra, initialState, finalStates, EnumerateMoves(conditionMap, eMoves));
         }
 
-        private IEnumerable<Move<T>> EnumerateMoves(Dictionary<Pair<int, int>, T> conditionMap, HashSet<Move<T>> eMoves)
+        private IEnumerable<Move<T>> EnumerateMoves(Dictionary<Tuple<int, int>, T> conditionMap, HashSet<Move<T>> eMoves)
         {
             foreach (var kv in conditionMap)
-                yield return Move<T>.Create(kv.Key.First, kv.Key.Second, kv.Value);
+                yield return Move<T>.Create(kv.Key.Item1, kv.Key.Item2, kv.Value);
             foreach (var move in eMoves)
                 yield return move;
         }
@@ -1335,12 +1337,12 @@ namespace Microsoft.Automata
                 return fa;
 
             #region collect all conditions on non-epsilon transitions
-            Dictionary<Pair<int, int>, T> conditions = new Dictionary<Pair<int, int>, T>();
+            Dictionary<Tuple<int, int>, T> conditions = new Dictionary<Tuple<int, int>, T>();
             foreach (Move<T> t in fa.GetMoves())
                 if (!t.IsEpsilon)
                 {
                     T cond;
-                    var pair = new Pair<int, int>(t.SourceState, t.TargetState);
+                    var pair = new Tuple<int, int>(t.SourceState, t.TargetState);
                     if (conditions.TryGetValue(pair, out cond))
                         conditions[pair] = disj(t.Label, cond);
                     else
@@ -1356,7 +1358,7 @@ namespace Microsoft.Automata
                             if (!t.IsEpsilon)
                             {
                                 T cond;
-                                var pair = new Pair<int, int>(q, t.TargetState);
+                                var pair = new Tuple<int, int>(q, t.TargetState);
                                 if (conditions.TryGetValue(pair, out cond) && !cond.Equals(t.Label))
                                     conditions[pair] = disj(t.Label, cond);
                                 else
@@ -1369,7 +1371,7 @@ namespace Microsoft.Automata
             foreach (int s in fa.States)
                 outgoingTransitions[s] = new List<Move<T>>();
             foreach (var kv in conditions)
-                outgoingTransitions[kv.Key.First].Add(Move<T>.Create(kv.Key.First, kv.Key.Second, kv.Value));
+                outgoingTransitions[kv.Key.Item1].Add(Move<T>.Create(kv.Key.Item1, kv.Key.Item2, kv.Value));
             #endregion
 
             #region collect all states reachable from the initial state
@@ -1495,9 +1497,10 @@ namespace Microsoft.Automata
         /// </summary>
         /// <param name="B">another automaton</param>
         /// <param name="solver">boolean algebra solver over S</param>
-        public Automaton<T> Intersect(Automaton<T> B)
+        /// <param name="timeout">timeout in ms</param>
+        public Automaton<T> Intersect(Automaton<T> B, int timeout = 0)
         {
-            return MkProduct(this, B);
+            return MkProduct(this, B, algebra, timeout);
         }
 
         /// <summary>
@@ -1564,13 +1567,13 @@ namespace Microsoft.Automata
             if (this.isDeterministic && B.isDeterministic)
             {
                 var res1 = areHKEquivalentDeterministic(this.MakeTotal(), B.MakeTotal());
-                witness = res1.Second;
-                return res1.First;
+                witness = res1.Item2;
+                return res1.Item1;
             }
 
             var res = areHKEquivalent(this.RemoveEpsilons().MakeTotal(), B.RemoveEpsilons().MakeTotal());
-            witness = res.Second;
-            return res.First;
+            witness = res.Item2;
+            return res.Item1;
         }
 
         /// <summary>
@@ -1582,23 +1585,23 @@ namespace Microsoft.Automata
             CheckIdentityOfAlgebras(algebra, B.algebra);      
       
             if(this.isDeterministic && B.isDeterministic)
-                return areHKEquivalentDeterministic(this.MakeTotal(), B.MakeTotal()).First;
+                return areHKEquivalentDeterministic(this.MakeTotal(), B.MakeTotal()).Item1;
 
-            return areHKEquivalent(this.RemoveEpsilons().MakeTotal(), B.RemoveEpsilons().MakeTotal()).First;
+            return areHKEquivalent(this.RemoveEpsilons().MakeTotal(), B.RemoveEpsilons().MakeTotal()).Item1;
         }
 
         /**
 	     * Checks whether laut and raut are equivalent using HopcroftKarp on the SFA
 	     * accepting the reverse language
 	    */
-        public static Pair<Boolean, List<T>> areHKEquivalent(Automaton<T> aut1, Automaton<T> aut2)
+        public static Tuple<Boolean, List<T>> areHKEquivalent(Automaton<T> aut1, Automaton<T> aut2)
         {
             var ds = new UnionFindHopKarp<T>();
 
             var reached1 = new Dictionary<int, int>();
             var reached2 = new Dictionary<int, int>();
 
-            var toVisit = new List<Pair<int, int>>();
+            var toVisit = new List<Tuple<int, int>>();
 
             List<int> aut1States = new List<int>(aut1.States);
             PowerSetStateBuilder dfaStateBuilderForAut1 = PowerSetStateBuilder.Create(aut1States.ToArray());
@@ -1626,12 +1629,12 @@ namespace Microsoft.Automata
             reached1[st1] = 0;
             reached2[st2] = 1;
 
-            toVisit.Add(new Pair<int, int>(st1, st2));
+            toVisit.Add(new Tuple<int, int>(st1, st2));
 
             bool isIn1Final = IsDFAFinalStateForAut1(st1);
             bool isIn2Final = IsDFAFinalStateForAut2(st2);
             if (isIn1Final != isIn2Final)
-                return new Pair<bool, List<T>>(false, new List<T>());
+                return new Tuple<bool, List<T>>(false, new List<T>());
 
             ds.add(0, isIn1Final, new List<T>());
             ds.add(1, isIn2Final, new List<T>());
@@ -1643,8 +1646,8 @@ namespace Microsoft.Automata
                 var curr = toVisit[0];
                 toVisit.RemoveAt(0);
 
-                var curr1 = dfaStateBuilderForAut1.GetMembers(curr.First);
-                var curr2 = dfaStateBuilderForAut2.GetMembers(curr.Second);
+                var curr1 = dfaStateBuilderForAut1.GetMembers(curr.Item1);
+                var curr2 = dfaStateBuilderForAut2.GetMembers(curr.Item2);
 
                 var movesFromCurr1 = new List<Move<T>>(aut1.GetMovesFromStates(curr1));
                 var movesFromCurr2 = new List<Move<T>>(aut2.GetMovesFromStates(curr2));
@@ -1659,24 +1662,24 @@ namespace Microsoft.Automata
                 {                    
                     foreach (var minterm2 in minterms2)
                     {
-                        var conj = aut1.algebra.MkAnd(minterm1.Second, minterm2.Second);
+                        var conj = aut1.algebra.MkAnd(minterm1.Item2, minterm2.Item2);
                         if (aut1.algebra.IsSatisfiable(conj))
                         {
                             var to1 = new HashSet<int>();
-                            for (int i = 0; i < minterm1.First.Length; i++)
-                                if (minterm1.First[i])
+                            for (int i = 0; i < minterm1.Item1.Length; i++)
+                                if (minterm1.Item1[i])
                                     to1.Add(movesFromCurr1[i].TargetState);
                             var to1st = dfaStateBuilderForAut1.MakePowerSetState(to1);
 
                             var to2 = new HashSet<int>();
-                            for (int i = 0; i < minterm2.First.Length; i++)
-                                if (minterm2.First[i])
+                            for (int i = 0; i < minterm2.Item1.Length; i++)
+                                if (minterm2.Item1[i])
                                     to2.Add(movesFromCurr2[i].TargetState);
                                 
                             var to2st = dfaStateBuilderForAut2.MakePowerSetState(to2);
 
 
-                            var wit = ds.getWitness(reached1[curr.First]);
+                            var wit = ds.getWitness(reached1[curr.Item1]);
                             var pref = new List<T>(wit);
                             pref.Add(conj);
 
@@ -1705,39 +1708,39 @@ namespace Microsoft.Automata
                             if (!ds.areInSameSet(r1, r2))
                             {
                                 if (!ds.mergeSets(r1, r2))
-                                    return new Pair<Boolean, List<T>>(false, pref);
+                                    return new Tuple<Boolean, List<T>>(false, pref);
 
-                                toVisit.Add(new Pair<int, int>(to1st, to2st));
+                                toVisit.Add(new Tuple<int, int>(to1st, to2st));
                             }
                         }
                     }
                 }
             }
-            return new Pair<bool, List<T>>(true, null);
+            return new Tuple<bool, List<T>>(true, null);
         }
 
         /**
 	     * Checks whether laut and raut are equivalent using HopcroftKarp on the SFA
 	     * accepting the reverse language
 	    */
-        public static Pair<Boolean, List<T>> areHKEquivalentDeterministic(Automaton<T> aut1, Automaton<T> aut2)
+        public static Tuple<Boolean, List<T>> areHKEquivalentDeterministic(Automaton<T> aut1, Automaton<T> aut2)
         {
             var ds = new UnionFindHopKarp<T>();
 
             var reached1 = new Dictionary<int, int>();
             var reached2 = new Dictionary<int, int>();
 
-            var toVisit = new List<Pair<int, int>>();
+            var toVisit = new List<Tuple<int, int>>();
 
             reached1[aut1.initialState] = 0;
             reached2[aut2.initialState] = 1;
 
-            toVisit.Add(new Pair<int, int>(aut1.initialState, aut2.initialState));
+            toVisit.Add(new Tuple<int, int>(aut1.initialState, aut2.initialState));
 
             bool isIn1Final = aut1.IsFinalState(aut1.initialState);
             bool isIn2Final = aut2.IsFinalState(aut2.initialState);
             if (isIn1Final != isIn2Final)
-                return new Pair<bool, List<T>>(false, new List<T>());
+                return new Tuple<bool, List<T>>(false, new List<T>());
 
             ds.add(0, isIn1Final, new List<T>());
             ds.add(1, isIn2Final, new List<T>());
@@ -1749,8 +1752,8 @@ namespace Microsoft.Automata
                 var curr = toVisit[0];
                 toVisit.RemoveAt(0);
 
-                var curr1 = curr.First;
-                var curr2 = curr.Second;
+                var curr1 = curr.Item1;
+                var curr2 = curr.Item2;
 
                 var movesFromCurr1 = new List<Move<T>>(aut1.GetMovesFrom(curr1));
                 var movesFromCurr2 = new List<Move<T>>(aut2.GetMovesFrom(curr2));
@@ -1766,7 +1769,7 @@ namespace Microsoft.Automata
                             var to2 = move2.TargetState;
 
 
-                            var wit = ds.getWitness(reached1[curr.First]);
+                            var wit = ds.getWitness(reached1[curr.Item1]);
                             var pref = new List<T>(wit);
                             pref.Add(conj);
 
@@ -1795,14 +1798,14 @@ namespace Microsoft.Automata
                             if (!ds.areInSameSet(r1, r2))
                             {
                                 if (!ds.mergeSets(r1, r2))
-                                    return new Pair<Boolean, List<T>>(false, pref);
+                                    return new Tuple<Boolean, List<T>>(false, pref);
 
-                                toVisit.Add(new Pair<int, int>(to1, to2));
+                                toVisit.Add(new Tuple<int, int>(to1, to2));
                             }
                         }
                     }
             }
-            return new Pair<bool, List<T>>(true, null);
+            return new Tuple<bool, List<T>>(true, null);
         }
 
         /// <summary>
@@ -1817,10 +1820,10 @@ namespace Microsoft.Automata
         {
             CheckIdentityOfAlgebras(A.algebra, B.algebra);
             var solver = A.algebra;
-            long timeout1 = Microsoft.Automata.Internal.Utilities.HighTimer.Frequency * ((long)timeout / (long)1000);
+            long timeout1 = Microsoft.Automata.Utilities.HighTimer.Frequency * ((long)timeout / (long)1000);
             long timeoutLimit;
             if (timeout > 0)
-                timeoutLimit = Internal.Utilities.HighTimer.Now + timeout1;
+                timeoutLimit = Utilities.HighTimer.Now + timeout1;
             else
                 timeoutLimit = 0;
 
@@ -1860,7 +1863,7 @@ namespace Microsoft.Automata
             //    }
             //}
 
-            //Func<Pair<int, int>, bool> IsPotentialState = pair =>
+            //Func<Tuple<int, int>, bool> IsPotentialState = pair =>
             //{
             //    foreach (int BState in dfaStateBuilderForB.GetNfaStates(pair.Second))
             //        if (!potentialStatesInB.Contains(BState))
@@ -1871,25 +1874,25 @@ namespace Microsoft.Automata
             //#endregion
 
             //returns true if the first element is a final state in A and none of the B states represented by the second dfa state is final in B
-            Func<Pair<int, int>, bool> IsFinalState = pair =>
+            Func<Tuple<int, int>, bool> IsFinalState = pair =>
             {
-                if (!A.IsFinalState(pair.First))
+                if (!A.IsFinalState(pair.Item1))
                     return false;
-                if (pair.Second == -1)
+                if (pair.Item2 == -1)
                     return true; //the implicit sink state in determinization of B is a final state in the complement
-                foreach (int BState in dfaStateBuilderForB.GetMembers(pair.Second))
+                foreach (int BState in dfaStateBuilderForB.GetMembers(pair.Item2))
                     if (B.IsFinalState(BState))
                         return false;
                 return true;
             };
 
-            var stack = new Stack<Pair<int, int>>();
+            var stack = new Stack<Tuple<int, int>>();
 
-            var prodStartState = new Pair<int, int>(A.InitialState, dfaStateBuilderForB.MakePowerSetState(new int[] { B.InitialState }));
+            var prodStartState = new Tuple<int, int>(A.InitialState, dfaStateBuilderForB.MakePowerSetState(new int[] { B.InitialState }));
             stack.Push(prodStartState);
 
             int prodInitialStateId = 0;
-            var prodStateIdMap = new Dictionary<Pair<int, int>, int>();
+            var prodStateIdMap = new Dictionary<Tuple<int, int>, int>();
             prodStateIdMap[prodStartState] = prodInitialStateId; //initial state
             int prodStateId = prodInitialStateId + 1;
             var prodDelta = new Dictionary<int, List<Move<T>>>();
@@ -1898,7 +1901,7 @@ namespace Microsoft.Automata
             if (IsFinalState(prodStartState))
                 prodFinalStateIds.Add(prodInitialStateId);
 
-            Func<Pair<int, int>, int> GetProdStateID = pair =>
+            Func<Tuple<int, int>, int> GetProdStateID = pair =>
             {
                 int stateId;
                 if (!prodStateIdMap.TryGetValue(pair, out stateId))
@@ -1913,13 +1916,13 @@ namespace Microsoft.Automata
             {
 
                 var prodSourceState = stack.Pop();
-                if (prodSourceState.Second == -1) //sink state, that is a final state in the complement of B
+                if (prodSourceState.Item2 == -1) //sink state, that is a final state in the complement of B
                 {
-                    foreach (var move in A.GetMovesFrom(prodSourceState.First))
+                    foreach (var move in A.GetMovesFrom(prodSourceState.Item1))
                     {
                         CheckTimeout(timeoutLimit);
                         var prodSrcStateId = GetProdStateID(prodSourceState);
-                        var prodTgtWithSink = new Pair<int, int>(move.TargetState, -1);
+                        var prodTgtWithSink = new Tuple<int, int>(move.TargetState, -1);
                         int prodTgtWithSinkId = GetProdStateID(prodTgtWithSink);
                         prodDelta[prodSrcStateId].Add(Move<T>.Create(prodSrcStateId, prodTgtWithSinkId, move.Label));
                         if (!prodDelta.ContainsKey(prodTgtWithSinkId))
@@ -1933,23 +1936,23 @@ namespace Microsoft.Automata
                 }
                 else
                 {
-                    var Amoves = A.delta[prodSourceState.First];
-                    var Bmoves = new List<Move<T>>(B.GetMovesFromStates(dfaStateBuilderForB.GetMembers(prodSourceState.Second)));
+                    var Amoves = A.delta[prodSourceState.Item1];
+                    var Bmoves = new List<Move<T>>(B.GetMovesFromStates(dfaStateBuilderForB.GetMembers(prodSourceState.Item2)));
                     var Aconds = Array.ConvertAll(Amoves.ToArray(), move => { return move.Label; });
                     var Bconds = Array.ConvertAll(Bmoves.ToArray(), move => { return move.Label; });
 
                     int m = Amoves.Count;
                     int n = Bmoves.Count;
 
-                    var ABcombinations = new List<Pair<int, Pair<bool[], T>>>();
-                    //var Bcombinations = ConsList<Pair<bool[],S>>.Create(solver.GenerateMinterms(Bconds));
+                    var ABcombinations = new List<Tuple<int, Tuple<bool[], T>>>();
+                    //var Bcombinations = ConsList<Tuple<bool[],S>>.Create(solver.GenerateMinterms(Bconds));
                     foreach (var Bcomb in solver.GenerateMinterms(Bconds))
                         for (int i = 0; i < m; i++)
                         {
                             CheckTimeout(timeoutLimit);
-                            var ABcond = solver.MkAnd(Aconds[i], Bcomb.Second);
+                            var ABcond = solver.MkAnd(Aconds[i], Bcomb.Item2);
                             if (solver.IsSatisfiable(ABcond))
-                                ABcombinations.Add(new Pair<int, Pair<bool[], T>>(i, new Pair<bool[], T>(Bcomb.First, ABcond)));
+                                ABcombinations.Add(new Tuple<int, Tuple<bool[], T>>(i, new Tuple<bool[], T>(Bcomb.Item1, ABcond)));
                         }
 
                     //construct and push the new product states
@@ -1960,10 +1963,10 @@ namespace Microsoft.Automata
                     foreach (var solution in ABcombinations)
                     {
                         CheckTimeout(timeoutLimit);
-                        var Amove = Amoves[solution.First];
+                        var Amove = Amoves[solution.Item1];
                         var nfaTargetStates = new List<int>();
                         for (int j = 0; j < n; j++)
-                            if (solution.Second.First[j])
+                            if (solution.Item2.Item1[j])
                                 nfaTargetStates.Add(Bmoves[j].TargetState);
                         //if all B-conditions are false then this leads to the sink state -1
                         int dfaTargetState;
@@ -1971,9 +1974,9 @@ namespace Microsoft.Automata
                             dfaTargetState = dfaStateBuilderForB.MakePowerSetState(nfaTargetStates);
                         else
                             dfaTargetState = -1; //sink state
-                        var prodTargetState = new Pair<int, int>(Amove.TargetState, dfaTargetState);
+                        var prodTargetState = new Tuple<int, int>(Amove.TargetState, dfaTargetState);
                         int prodTargetStateId = GetProdStateID(prodTargetState);
-                        T prodCondition = solution.Second.Second;
+                        T prodCondition = solution.Item2.Item2;
                         var prodMove = Move<T>.Create(prodSourceStateId, prodTargetStateId, prodCondition);
                         prodDelta[prodSourceStateId].Add(prodMove);
                         if (!prodDelta.ContainsKey(prodTargetStateId))
@@ -2019,10 +2022,10 @@ namespace Microsoft.Automata
         {
             CheckIdentityOfAlgebras(A.algebra, B.algebra);
             IBooleanAlgebra<T> solver = A.algebra;
-            long timeout1 = Microsoft.Automata.Internal.Utilities.HighTimer.Frequency * ((long)timeout / (long)1000);
+            long timeout1 = Microsoft.Automata.Utilities.HighTimer.Frequency * ((long)timeout / (long)1000);
             long timeoutLimit;
             if (timeout > 0)
-                timeoutLimit = Internal.Utilities.HighTimer.Now + timeout1;
+                timeoutLimit = Utilities.HighTimer.Now + timeout1;
             else
                 timeoutLimit = 0;
 
@@ -2049,22 +2052,22 @@ namespace Microsoft.Automata
             PowerSetStateBuilder dfaStateBuilderForB = PowerSetStateBuilder.Create(bStates.ToArray());
 
             //returns true if the first element is a final state in A and none of the B states represented by the second dfa state is final in B
-            Func<Pair<int, int>, bool> IsFinalState = pair =>
+            Func<Tuple<int, int>, bool> IsFinalState = pair =>
             {
-                if (!A.IsFinalState(pair.First))
+                if (!A.IsFinalState(pair.Item1))
                     return false;
-                if (pair.Second == -1)
+                if (pair.Item2 == -1)
                     return true; //the implicit sink state in determinization of B is a final state in the complement
-                foreach (int BState in dfaStateBuilderForB.GetMembers(pair.Second))
+                foreach (int BState in dfaStateBuilderForB.GetMembers(pair.Item2))
                     if (B.IsFinalState(BState))
                         return false;
                 return true;
             };
 
-            var stack = new Stack<Pair<int, int>>();
-            var prodStartState = new Pair<int, int>(A.InitialState, dfaStateBuilderForB.MakePowerSetState(new int[] { B.InitialState }));
+            var stack = new Stack<Tuple<int, int>>();
+            var prodStartState = new Tuple<int, int>(A.InitialState, dfaStateBuilderForB.MakePowerSetState(new int[] { B.InitialState }));
             stack.Push(prodStartState);
-            var witnessTree = new Dictionary<Pair<int, int>, Pair<T, Pair<int, int>>>();
+            var witnessTree = new Dictionary<Tuple<int, int>, Tuple<T, Tuple<int, int>>>();
             witnessTree[prodStartState] = null;
 
             if (IsFinalState(prodStartState))
@@ -2077,12 +2080,12 @@ namespace Microsoft.Automata
             {
                 var prodSourceState = stack.Pop();
 
-                if (prodSourceState.Second == -1) //sink state, that is a final state in the complement of B
+                if (prodSourceState.Item2 == -1) //sink state, that is a final state in the complement of B
                 {
                     #region implicit sink
-                    foreach (var move in A.GetMovesFrom(prodSourceState.First))
+                    foreach (var move in A.GetMovesFrom(prodSourceState.Item1))
                     {
-                        var prodTgtWithSink = new Pair<int, int>(move.TargetState, -1);
+                        var prodTgtWithSink = new Tuple<int, int>(move.TargetState, -1);
 
                         if (!witnessTree.ContainsKey(prodTgtWithSink))
                         {
@@ -2095,15 +2098,15 @@ namespace Microsoft.Automata
                                 var parent = witnessTree[prodSourceState];
                                 while (parent != null)
                                 {
-                                    w.Add(parent.First);
-                                    parent = witnessTree[parent.Second];
+                                    w.Add(parent.Item1);
+                                    parent = witnessTree[parent.Item2];
                                 }
                                 w.Reverse();
                                 witness = w;
                                 return true;
                                 #endregion
                             }
-                            witnessTree[prodTgtWithSink] = new Pair<T, Pair<int, int>>(move.Label, prodSourceState);
+                            witnessTree[prodTgtWithSink] = new Tuple<T, Tuple<int, int>>(move.Label, prodSourceState);
                             stack.Push(prodTgtWithSink);
                         }
                     }
@@ -2112,23 +2115,23 @@ namespace Microsoft.Automata
                 else
                 {
                     #region explicit moves
-                    var Amoves = A.delta[prodSourceState.First];
-                    var Bmoves = new List<Move<T>>(B.GetMovesFromStates(dfaStateBuilderForB.GetMembers(prodSourceState.Second)));
+                    var Amoves = A.delta[prodSourceState.Item1];
+                    var Bmoves = new List<Move<T>>(B.GetMovesFromStates(dfaStateBuilderForB.GetMembers(prodSourceState.Item2)));
                     var Aconds = Array.ConvertAll(Amoves.ToArray(), move => { return move.Label; });
                     var Bconds = Array.ConvertAll(Bmoves.ToArray(), move => { return move.Label; });
 
                     int m = Amoves.Count;
                     int n = Bmoves.Count;
 
-                    var ABcombinations = new List<Pair<int, Pair<bool[], T>>>();
-                    //var Bcombinations = ConsList<Pair<bool[],S>>.Create(solver.GenerateMinterms(Bconds));
+                    var ABcombinations = new List<Tuple<int, Tuple<bool[], T>>>();
+                    //var Bcombinations = ConsList<Tuple<bool[],S>>.Create(solver.GenerateMinterms(Bconds));
                     foreach (var Bcomb in solver.GenerateMinterms(Bconds))
                         for (int i = 0; i < m; i++)
                         {
                             CheckTimeout(timeoutLimit);
-                            var ABcond = solver.MkAnd(Aconds[i], Bcomb.Second);
+                            var ABcond = solver.MkAnd(Aconds[i], Bcomb.Item2);
                             if (solver.IsSatisfiable(ABcond))
-                                ABcombinations.Add(new Pair<int, Pair<bool[], T>>(i, new Pair<bool[], T>(Bcomb.First, ABcond)));
+                                ABcombinations.Add(new Tuple<int, Tuple<bool[], T>>(i, new Tuple<bool[], T>(Bcomb.Item1, ABcond)));
                         }
 
                     //construct and push the new product states
@@ -2136,10 +2139,10 @@ namespace Microsoft.Automata
                     foreach (var solution in ABcombinations)
                     {
                         CheckTimeout(timeoutLimit);
-                        var Amove = Amoves[solution.First];
+                        var Amove = Amoves[solution.Item1];
                         var nfaTargetStates = new List<int>();
                         for (int j = 0; j < n; j++)
-                            if (solution.Second.First[j])
+                            if (solution.Item2.Item1[j])
                                 nfaTargetStates.Add(Bmoves[j].TargetState);
                         //if all B-conditions are false then this leads to the sink state -1
                         int dfaTargetState;
@@ -2147,9 +2150,9 @@ namespace Microsoft.Automata
                             dfaTargetState = dfaStateBuilderForB.MakePowerSetState(nfaTargetStates);
                         else
                             dfaTargetState = -1; //sink state
-                        var prodTargetState = new Pair<int, int>(Amove.TargetState, dfaTargetState);
+                        var prodTargetState = new Tuple<int, int>(Amove.TargetState, dfaTargetState);
 
-                        T prodCondition = solution.Second.Second;
+                        T prodCondition = solution.Item2.Item2;
                         if (!witnessTree.ContainsKey(prodTargetState))
                         {
                             if (IsFinalState(prodTargetState))
@@ -2161,15 +2164,15 @@ namespace Microsoft.Automata
                                 var parent = witnessTree[prodSourceState];
                                 while (parent != null)
                                 {
-                                    w.Add(parent.First);
-                                    parent = witnessTree[parent.Second];
+                                    w.Add(parent.Item1);
+                                    parent = witnessTree[parent.Item2];
                                 }
                                 w.Reverse();
                                 witness = w;
                                 return true;
                                 #endregion
                             }
-                            witnessTree[prodTargetState] = new Pair<T, Pair<int, int>>(prodCondition, prodSourceState);
+                            witnessTree[prodTargetState] = new Tuple<T, Tuple<int, int>>(prodCondition, prodSourceState);
                             stack.Push(prodTargetState);
                         }
                     }
@@ -2352,7 +2355,7 @@ namespace Microsoft.Automata
         {
             if (timeoutLimit > 0)
             {
-                if (Internal.Utilities.HighTimer.Now > timeoutLimit)
+                if (Utilities.HighTimer.Now > timeoutLimit)
                     throw new TimeoutException();
             }
         }
@@ -2378,13 +2381,13 @@ namespace Microsoft.Automata
 
             long timeoutLimit;
             if (timeout > 0)
-                timeoutLimit = Internal.Utilities.HighTimer.Now + timeout;
+                timeoutLimit = Utilities.HighTimer.Now + timeout;
             else
                 timeoutLimit = 0;
 
-            var witnessTree = new Dictionary<Pair<int, int>, Pair<T, Pair<int, int>>>();
-            var initPair = new Pair<int, int>(A.InitialState, B.InitialState);
-            var frontier = new Stack<Pair<int, int>>();
+            var witnessTree = new Dictionary<Tuple<int, int>, Tuple<T, Tuple<int, int>>>();
+            var initPair = new Tuple<int, int>(A.InitialState, B.InitialState);
+            var frontier = new Stack<Tuple<int, int>>();
             frontier.Push(initPair);
             witnessTree[initPair] = null;
 
@@ -2394,32 +2397,32 @@ namespace Microsoft.Automata
 
                 var sourcePair = frontier.Pop();
 
-                if (A.IsFinalState(sourcePair.First) && B.IsFinalState(sourcePair.Second))
+                if (A.IsFinalState(sourcePair.Item1) && B.IsFinalState(sourcePair.Item2))
                 {
                     //final state was found, extract the witness from the witness tree
                     List<T> w = new List<T>();
                     var parent = witnessTree[sourcePair];
                     while (parent != null)
                     {
-                        w.Add(parent.First);
-                        parent = witnessTree[parent.Second];
+                        w.Add(parent.Item1);
+                        parent = witnessTree[parent.Item2];
                     }
                     w.Reverse();
                     witness = w;
                     return true;
                 }
 
-                foreach (var t1 in A.GetMovesFrom(sourcePair.First))
-                    foreach (var t2 in B.GetMovesFrom(sourcePair.Second))
+                foreach (var t1 in A.GetMovesFrom(sourcePair.Item1))
+                    foreach (var t2 in B.GetMovesFrom(sourcePair.Item2))
                     {
                         T cond = solver.MkAnd(t1.Label, t2.Label);
                         if (!solver.IsSatisfiable(cond))
                             continue; //ignore the transition
 
-                        Pair<int, int> targetPair = new Pair<int, int>(t1.TargetState, t2.TargetState);
+                        Tuple<int, int> targetPair = new Tuple<int, int>(t1.TargetState, t2.TargetState);
                         if (!witnessTree.ContainsKey(targetPair))
                         {
-                            witnessTree.Add(targetPair, new Pair<T, Pair<int, int>>(cond, sourcePair));
+                            witnessTree.Add(targetPair, new Tuple<T, Tuple<int, int>>(cond, sourcePair));
                             frontier.Push(targetPair);
                         }
                     }
@@ -2528,10 +2531,10 @@ namespace Microsoft.Automata
             }
 
 
-            long timeout1 = Microsoft.Automata.Internal.Utilities.HighTimer.Frequency * ((long)timeout / (long)1000);
+            long timeout1 = Microsoft.Automata.Utilities.HighTimer.Frequency * ((long)timeout / (long)1000);
             long timeoutLimit;
             if (timeout > 0)
-                timeoutLimit = Internal.Utilities.HighTimer.Now + timeout1;
+                timeoutLimit = Utilities.HighTimer.Now + timeout1;
             else
                 timeoutLimit = 0;
 
@@ -2578,7 +2581,7 @@ namespace Microsoft.Automata
                     CheckTimeout(timeoutLimit);
                     var nfaTargetStates = new List<int>();
                     for (int j = 0; j < n; j++)
-                        if (solution.First[j])
+                        if (solution.Item1[j])
                             nfaTargetStates.Add(moves[j].TargetState);
 
                     //if all conditions are false then this leads to the sink state -1
@@ -2587,7 +2590,7 @@ namespace Microsoft.Automata
                     {
                         targetState = dfaStateBuilder.MakePowerSetState(nfaTargetStates);
 
-                        T prodCondition = solution.Second;
+                        T prodCondition = solution.Item2;
                         var prodMove = Move<T>.Create(sourceState, targetState, prodCondition);
                         delta[sourceState].Add(prodMove);
                         if (!delta.ContainsKey(targetState))
@@ -2690,10 +2693,10 @@ namespace Microsoft.Automata
 
             fa = fa.MakeTotal();
 
-            Func<int, int, Pair<int, int>> MkPair = (x, y) => (x < y ? new Pair<int, int>(x, y) : new Pair<int, int>(y, x));
+            Func<int, int, Tuple<int, int>> MkPair = (x, y) => (x < y ? new Tuple<int, int>(x, y) : new Tuple<int, int>(y, x));
 
-            var distinguishable = new HashSet<Pair<int, int>>();
-            var stack = new Stack<Pair<int, int>>();
+            var distinguishable = new HashSet<Tuple<int, int>>();
+            var stack = new Stack<Tuple<int, int>>();
 
             foreach (var p in fa.GetStates())
                 if (!fa.IsFinalState(p))
@@ -2707,8 +2710,8 @@ namespace Microsoft.Automata
             while (stack.Count > 0)
             {
                 var pair = stack.Pop();
-                foreach (var m1 in fa.GetMovesTo(pair.First))
-                    foreach (var m2 in fa.GetMovesTo(pair.Second))
+                foreach (var m1 in fa.GetMovesTo(pair.Item1))
+                    foreach (var m2 in fa.GetMovesTo(pair.Item2))
                         if (m1.SourceState != m2.SourceState)
                             if (solver.IsSatisfiable(solver.MkAnd(m1.Label, m2.Label)))
                             {
@@ -2739,13 +2742,13 @@ namespace Microsoft.Automata
                 }
             }
 
-            var guards = new Dictionary<Pair<int, int>, T>();
+            var guards = new Dictionary<Tuple<int, int>, T>();
 
             foreach (var move in fa.GetMoves())
             {
                 var p = repr[move.SourceState];
                 var q = repr[move.TargetState];
-                var pq = new Pair<int, int>(p, q);
+                var pq = new Tuple<int, int>(p, q);
                 T guard;
                 if (guards.TryGetValue(pq, out guard))
                     guard = solver.MkOr(guard, move.Label);
@@ -2756,7 +2759,7 @@ namespace Microsoft.Automata
 
             var moves = new List<Move<T>>();
             foreach (var entry in guards)
-                moves.Add(Move<T>.Create(entry.Key.First, entry.Key.Second, entry.Value));
+                moves.Add(Move<T>.Create(entry.Key.Item1, entry.Key.Item2, entry.Value));
 
             var finals = new HashSet<int>();
             foreach (var final in fa.GetFinalStates())
@@ -2887,12 +2890,12 @@ namespace Microsoft.Automata
                 }
             }
 
-            Dictionary<Pair<int, int>, HashSet<T>> condMap = new Dictionary<Pair<int, int>, HashSet<T>>();
+            Dictionary<Tuple<int, int>, HashSet<T>> condMap = new Dictionary<Tuple<int, int>, HashSet<T>>();
             foreach (var move in GetMoves())
             {
                 int s = PR.GetPart(move.SourceState).Representative;
                 int t = PR.GetPart(move.TargetState).Representative;
-                var st = new Pair<int, int>(s, t);
+                var st = new Tuple<int, int>(s, t);
                 HashSet<T> condSet;
                 if (!condMap.TryGetValue(st, out condSet))
                 {
@@ -2910,7 +2913,7 @@ namespace Microsoft.Automata
             var newFinals = new HashSet<int>();
             foreach (var entry in condMap)
             {
-                newMoves.Add(Move<T>.Create(entry.Key.First, entry.Key.Second, solver.MkOr(entry.Value)));
+                newMoves.Add(Move<T>.Create(entry.Key.Item1, entry.Key.Item2, solver.MkOr(entry.Value)));
             }
             foreach (var f in GetFinalStates())
                 newFinals.Add(PR.GetPart(f).Representative);
@@ -4494,7 +4497,7 @@ namespace Microsoft.Automata
         //    //internal bool IsEmpty
 
 
-        public Dictionary<int, Block> GetStateEquivalenceClasses(bool makeTotal = true)
+        internal Dictionary<int, Block> GetStateEquivalenceClasses(bool makeTotal = true)
         {
             IBooleanAlgebra<T> solver = algebra;
 
@@ -4657,12 +4660,12 @@ namespace Microsoft.Automata
 
             return Blocks;
 
-            //Dictionary<Pair<int, int>, HashSet<T>> condMap = new Dictionary<Pair<int, int>, HashSet<T>>();
+            //Dictionary<Tuple<int, int>, HashSet<T>> condMap = new Dictionary<Tuple<int, int>, HashSet<T>>();
             //foreach (var move in GetMoves())
             //{
             //    int s = Blocks[move.SourceState].GetRepresentative();
             //    int t = Blocks[move.TargetState].GetRepresentative();
-            //    var st = new Pair<int, int>(s, t);
+            //    var st = new Tuple<int, int>(s, t);
             //    HashSet<T> condSet;
             //    if (!condMap.TryGetValue(st, out condSet))
             //    {
@@ -4759,9 +4762,9 @@ namespace Microsoft.Automata
                 for (int i = 0; i < statesList.Count; i++)
                     for (int j = 0; j < statesList.Count; j++)
                     {
-                        Pair<int, int> pq = new Pair<int, int>(statesList[i], statesList[j]);
+                        Tuple<int, int> pq = new Tuple<int, int>(statesList[i], statesList[j]);
                         if (E.Contains(pq))
-                            if (pq.First != pq.Second && AreDistinguishable(fa, E, pq))
+                            if (pq.Item1 != pq.Item2 && AreDistinguishable(fa, E, pq))
                             {
                                 E.Remove(pq);
                                 continueRefinement = true;
@@ -4773,18 +4776,18 @@ namespace Microsoft.Automata
             //create id's for equivalence classes
             Dictionary<int, int> equivIdMap = new Dictionary<int, int>();
             List<int> mfaStates = new List<int>();
-            foreach (Pair<int, int> pq in E)
+            foreach (Tuple<int, int> pq in E)
             {
                 int equivId;
-                if (equivIdMap.TryGetValue(pq.First, out equivId))
-                    equivIdMap[pq.Second] = equivId;
-                else if (equivIdMap.TryGetValue(pq.Second, out equivId))
-                    equivIdMap[pq.First] = equivId;
+                if (equivIdMap.TryGetValue(pq.Item1, out equivId))
+                    equivIdMap[pq.Item2] = equivId;
+                else if (equivIdMap.TryGetValue(pq.Item2, out equivId))
+                    equivIdMap[pq.Item1] = equivId;
                 else
                 {
-                    equivIdMap[pq.First] = pq.First;
-                    equivIdMap[pq.Second] = pq.First;
-                    mfaStates.Add(pq.First);
+                    equivIdMap[pq.Item1] = pq.Item1;
+                    equivIdMap[pq.Item2] = pq.Item1;
+                    mfaStates.Add(pq.Item1);
                 }
                 CheckTimeout(sw, timeoutLimit);
             }
@@ -4799,7 +4802,7 @@ namespace Microsoft.Automata
             int mfaInitialState = equivIdMap[fa.InitialState];
 
             //group together transition conditions for transitions on equivalent states
-            Dictionary<Pair<int, int>, T> combinedConditionMap = new Dictionary<Pair<int, int>, T>();
+            Dictionary<Tuple<int, int>, T> combinedConditionMap = new Dictionary<Tuple<int, int>, T>();
             foreach (int state in fa.States)
             {
                 int fromStateId = equivIdMap[state];
@@ -4807,7 +4810,7 @@ namespace Microsoft.Automata
                 {
                     int toStateId = equivIdMap[trans.TargetState];
                     T cond;
-                    var p = new Pair<int, int>(fromStateId, toStateId);
+                    var p = new Tuple<int, int>(fromStateId, toStateId);
                     if (combinedConditionMap.TryGetValue(p, out cond))
                         combinedConditionMap[p] = solver.MkOr(cond, trans.Label);
                     else
@@ -4820,7 +4823,7 @@ namespace Microsoft.Automata
             List<Move<T>> mfaTransitions = new List<Move<T>>();
             foreach (var kv in combinedConditionMap)
             {
-                mfaTransitions.Add(Move<T>.Create(kv.Key.First, kv.Key.Second, kv.Value));
+                mfaTransitions.Add(Move<T>.Create(kv.Key.Item1, kv.Key.Item2, kv.Value));
             }
 
             //final states
@@ -4880,11 +4883,11 @@ namespace Microsoft.Automata
             return solver.MkAnd(conds.ToArray());
         }
 
-        private bool AreDistinguishable(Automaton<T> fa, Equivalence E, Pair<int, int> pq)
+        private bool AreDistinguishable(Automaton<T> fa, Equivalence E, Tuple<int, int> pq)
         {
             IBooleanAlgebraPositive<T> solver = fa.algebra;
-            foreach (Move<T> from_p in fa.GetMovesFrom(pq.First))
-                foreach (Move<T> from_q in fa.GetMovesFrom(pq.Second))
+            foreach (Move<T> from_p in fa.GetMovesFrom(pq.Item1))
+                foreach (Move<T> from_q in fa.GetMovesFrom(pq.Item2))
                     if (from_p.TargetState != from_q.TargetState &&
                         !E.AreEquiv(from_p.TargetState, from_q.TargetState))
                         if (solver.IsSatisfiable(solver.MkAnd(from_p.Label, from_q.Label)))
@@ -5427,8 +5430,7 @@ namespace Microsoft.Automata
         }
     }
 
-
-    public class Block : IEnumerable<int>
+    internal class Block : IEnumerable<int>
     {
         int representative = -1;
         bool reprChosen = false;
@@ -5603,39 +5605,38 @@ namespace Microsoft.Automata
         }
     }
 
-
-    internal class Equivalence : IEnumerable<Pair<int, int>>
+    internal class Equivalence : IEnumerable<Tuple<int, int>>
     {
-        HashSet<Pair<int, int>> E = new HashSet<Pair<int, int>>();
+        HashSet<Tuple<int, int>> E = new HashSet<Tuple<int, int>>();
         public Equivalence() { }
         public void Add(int p, int q)
         {
             if (p < q)
-                E.Add(new Pair<int, int>(p, q));
+                E.Add(new Tuple<int, int>(p, q));
             else if (q < p)
-                E.Add(new Pair<int, int>(q, p));
+                E.Add(new Tuple<int, int>(q, p));
         }
         public bool AreEquiv(int p, int q)
         {
             if (p == q)
                 return true;
             else if (p < q)
-                return E.Contains(new Pair<int, int>(p, q));
+                return E.Contains(new Tuple<int, int>(p, q));
             else
-                return E.Contains(new Pair<int, int>(q, p));
+                return E.Contains(new Tuple<int, int>(q, p));
         }
 
         internal void Remove(int p, int q)
         {
             if (p < q)
-                E.Remove(new Pair<int, int>(p, q));
+                E.Remove(new Tuple<int, int>(p, q));
             else
-                E.Remove(new Pair<int, int>(q, p));
+                E.Remove(new Tuple<int, int>(q, p));
         }
 
-        #region IEnumerable<Pair<int,int>> Members
+        #region IEnumerable<Tuple<int,int>> Members
 
-        public IEnumerator<Pair<int, int>> GetEnumerator()
+        public IEnumerator<Tuple<int, int>> GetEnumerator()
         {
             return E.GetEnumerator();
         }
@@ -5651,12 +5652,12 @@ namespace Microsoft.Automata
 
         #endregion
 
-        internal void Remove(Pair<int, int> equivToBeRemoved)
+        internal void Remove(Tuple<int, int> equivToBeRemoved)
         {
             E.Remove(equivToBeRemoved);
         }
 
-        internal bool Contains(Pair<int, int> equiv)
+        internal bool Contains(Tuple<int, int> equiv)
         {
             return E.Contains(equiv);
         }

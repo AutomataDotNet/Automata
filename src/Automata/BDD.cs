@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Automata.BooleanAlgebras;
 
 namespace Microsoft.Automata
 {
@@ -103,7 +104,7 @@ namespace Microsoft.Automata
         public void ToDot(string file)
         {
             string fname = (file.EndsWith(".dot") ? file : file + ".dot");
-            Microsoft.Automata.Internal.DirectedGraphs.DotWriter.CharSetToDot(this, file, fname, Internal.DirectedGraphs.DotWriter.RANKDIR.TB, 12);
+            Microsoft.Automata.DirectedGraphs.DotWriter.CharSetToDot(this, file, fname, DirectedGraphs.DotWriter.RANKDIR.TB, 12);
         }
 
         protected virtual string PrintLeaf()
@@ -233,7 +234,7 @@ namespace Microsoft.Automata
             return algebra.MkDiff(this, other);
         }
 
-        public Pair<uint,uint>[] ToRanges(int bound = 0)
+        public Tuple<uint,uint>[] ToRanges(int bound = 0)
         {
             CharSetSolver solver = algebra as CharSetSolver;
             if (solver == null)

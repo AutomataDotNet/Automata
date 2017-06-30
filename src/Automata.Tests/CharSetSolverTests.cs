@@ -4,15 +4,29 @@ using System.Collections.Generic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using Microsoft.Automata;
-using Microsoft.Automata.Internal;
 
 namespace Microsoft.Automata.Tests
 {
     [TestClass]
     public class CharSetSolverTests
     {
+        //[TestMethod]
+        //public void TestBREXLikeExpression()
+        //{
+        //    var man = new BREXManager();
+        //    var like1 = man.MkLike(@"%[ab]_____");
+        //    var like2 = man.MkLike(@"%[bc]_____");
+        //    var and = man.MkAnd(like1, like2);
+        //    var dfa = and.Optimize();
+        //    var like = man.MkLike(@"%b_____");
+        //    var dfa2 = like.Optimize();
+        //    var equiv = dfa.IsEquivalentWith(dfa2);
+        //    Assert.IsTrue(equiv);
+        //}
+
+
         [TestMethod]
-        public void GenerateMembersTest()
+        public void GenerateMembersTest()  
         {
             foreach (var encoding in new BitWidth[]{
                 BitWidth.BV7, BitWidth.BV8, BitWidth.BV16})
@@ -196,7 +210,7 @@ namespace Microsoft.Automata.Tests
             BDD b = bddb.MkRangeConstraint( 'b', 'b');
             BDD c = bddb.MkRangeConstraint( 'c', 'c');
 
-            var combinations = new List<Pair<bool[], BDD>>(bddb.GenerateMinterms(new BDD[] { a, b, c }));
+            var combinations = new List<Tuple<bool[], BDD>>(bddb.GenerateMinterms(new BDD[] { a, b, c }));
             Assert.AreEqual<int>(4, combinations.Count);
         }
 
@@ -211,7 +225,7 @@ namespace Microsoft.Automata.Tests
             BDD c = bddb.MkRangeConstraint( 'c', 'c');
             BDD b3 = bddb.MkRangeConstraint( 'b', 'b');
 
-            var combinations = new List<Pair<bool[], BDD>>(bddb.GenerateMinterms(new BDD[] { a, b, b2, c, b3 }));
+            var combinations = new List<Tuple<bool[], BDD>>(bddb.GenerateMinterms(new BDD[] { a, b, b2, c, b3 }));
             Assert.AreEqual<int>(3, combinations.Count, "only three combinations are possible");
         }
 
@@ -226,7 +240,7 @@ namespace Microsoft.Automata.Tests
             BDD C = bddb.MkRangesConstraint(false, new char[][] { new char[] { '3', '4' }, new char[] { '6', '7' }, new char[] { '9', '9' } });
             BDD D = bddb.MkRangesConstraint(false, new char[][] { new char[] { '0', '0' }, new char[] { '8', '9' } });
 
-            var combinations = new List<Pair<bool[], BDD>>(bddb.GenerateMinterms(new BDD[] { A, B, C, A1, D }));
+            var combinations = new List<Tuple<bool[], BDD>>(bddb.GenerateMinterms(new BDD[] { A, B, C, A1, D }));
             Assert.AreEqual<int>(11, combinations.Count, "exactly 11 combinations must be possible");
         }
 
@@ -239,8 +253,8 @@ namespace Microsoft.Automata.Tests
             BDD b = solver.MkRangeConstraint( '1', '1');
             BDD c = solver.MkRangeConstraint( '1', '3');
 
-            var Z = new List<Pair<bool[], BDD>>(solver.GenerateMinterms(new BDD[] { a, b, c })).ToArray();
-            var Y = Array.ConvertAll(Z, x => x.Second);
+            var Z = new List<Tuple<bool[], BDD>>(solver.GenerateMinterms(new BDD[] { a, b, c })).ToArray();
+            var Y = Array.ConvertAll(Z, x => x.Item2);
             var X = new HashSet<BDD>(Y);
             Assert.AreEqual<int>(4, X.Count);
             

@@ -5,7 +5,6 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.IO;
 
 using Microsoft.Automata;
-using Microsoft.Automata.Internal;
 
 using System.Text.RegularExpressions;
 
@@ -432,7 +431,7 @@ namespace Microsoft.Automata.Tests
                     string regexA = regexes[i];
                     string regexB = regexes[j];
 
-                    long start = Microsoft.Automata.Internal.Utilities.HighTimer.Now;
+                    long start = Microsoft.Automata.Utilities.HighTimer.Now;
 
                     var A = converter.Convert(regexA, System.Text.RegularExpressions.RegexOptions.None);
                     var B = converter.Convert(regexB, System.Text.RegularExpressions.RegexOptions.None);
@@ -475,7 +474,7 @@ namespace Microsoft.Automata.Tests
 
             string[] regexes = SampleRegexes.regexes;
 
-            long timeout = 60 * Microsoft.Automata.Internal.Utilities.HighTimer.Frequency; //1 minute
+            long timeout = 60 * Microsoft.Automata.Utilities.HighTimer.Frequency; //1 minute
 
             int nonemptyCnt = 0;
 
@@ -485,7 +484,7 @@ namespace Microsoft.Automata.Tests
                     string regexA = regexes[i];
                     string regexB = regexes[j];
 
-                    long start = Microsoft.Automata.Internal.Utilities.HighTimer.Now;
+                    long start = Microsoft.Automata.Utilities.HighTimer.Now;
 
                     var A = converter.Convert(regexA, System.Text.RegularExpressions.RegexOptions.None);
                     var B = converter.Convert(regexB, System.Text.RegularExpressions.RegexOptions.None);
@@ -724,7 +723,7 @@ namespace Microsoft.Automata.Tests
 
         private static void ShowAsGraph<S>(Func<S,string> descr, Automaton<S> fa, string file)
         {
-            //Internal.DirectedGraphs.DgmlWriter.AutomatonToDgml<S>(descr, fa, file);
+            //DirectedGraphs.DgmlWriter.AutomatonToDgml<S>(descr, fa, file);
             //OpenFileInVS(file);
         }
 

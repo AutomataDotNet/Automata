@@ -6,6 +6,7 @@ namespace Microsoft.Automata
 {
     /// <summary>
     /// Nonnegative big integers with restricted functionality.
+    /// Wraps System.Numerics.BigInteger.
     /// </summary>
     public class BigInt
     {
@@ -16,36 +17,39 @@ namespace Microsoft.Automata
         static readonly System.Numerics.BigInteger K_bigint = System.Numerics.BigInteger.Parse("1000000000000");
         static readonly double K_double = (double)System.Numerics.BigInteger.Parse("1000000000000");
 
-        System.Numerics.BigInteger bigint;
+        /// <summary>
+        /// Underlying BigInteger 
+        /// </summary>
+        public System.Numerics.BigInteger biginteger { get; }
 
-        BigInt(System.Numerics.BigInteger other)
+        BigInt(System.Numerics.BigInteger n)
         {
-            bigint = other;
+            biginteger = n;
         }
 
         internal BigInt(long m)
         {
-            bigint = new System.Numerics.BigInteger(m);
+            biginteger = new System.Numerics.BigInteger(m);
         }
 
         internal BigInt(ulong m)
         {
-            bigint = new System.Numerics.BigInteger((long)m);
+            biginteger = new System.Numerics.BigInteger((long)m);
         }
 
         internal BigInt Times(BigInt other)
         {
-            return new BigInt(bigint * other.bigint);
+            return new BigInt(biginteger * other.biginteger);
         }
 
         internal BigInt Plus(BigInt other)
         {
-            return new BigInt(bigint + other.bigint);
+            return new BigInt(biginteger + other.biginteger);
         }
 
         internal double DivideAsDouble(BigInt divider)
         {
-            double d = (((double)((K_bigint * bigint) / divider.bigint)) / K_double);
+            double d = (((double)((K_bigint * biginteger) / divider.biginteger)) / K_double);
             double d_rounded = Math.Round(d, NrOfDecimals); 
             return d_rounded;
         }
@@ -55,17 +59,17 @@ namespace Microsoft.Automata
             BigInt b = obj as BigInt;
             if (obj == null)
                 return false;
-            return bigint.Equals(b.bigint);
+            return biginteger.Equals(b.biginteger);
         }
 
         public override int GetHashCode()
         {
-            return bigint.GetHashCode();
+            return biginteger.GetHashCode();
         }
 
         public override string ToString()
         {
-            return bigint.ToString();
+            return biginteger.ToString();
         }
     }
 }

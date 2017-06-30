@@ -7,6 +7,7 @@ using System.Diagnostics;
 
 using Microsoft.Automata.MSO;
 using Microsoft.Automata;
+using Microsoft.Automata.BooleanAlgebras;
 using Microsoft.Automata.Z3;
 using Microsoft.Automata.Z3.Internal;
 using Microsoft.Z3;
@@ -62,8 +63,8 @@ namespace MSO.Eval
 
                         
 
-                            formula = pair.First;
-                            predicates = pair.Second;
+                            formula = pair.Item1;
+                            predicates = pair.Item2;
                             if (predicates.Count > 2)
                             {
                                 var bddsolver = new BDDAlgebra<BoolExpr>(z3);
@@ -117,7 +118,7 @@ namespace MSO.Eval
 
                                     sw.Restart();
                                     long tminterm = timeout;
-                                    List<Pair<bool[], BoolExpr>> mint = new List<Pair<bool[], BoolExpr>>();
+                                    List<Tuple<bool[], BoolExpr>> mint = new List<Tuple<bool[], BoolExpr>>();
                                     try
                                     {
                                         mint = z3.GenerateMinterms(predicates.ToArray()).ToList();
@@ -178,18 +179,18 @@ namespace MSO.Eval
 
 
         //Examples generated with params (6,15,1000), (10,12,1000),
-        public static Pair<MSOFormula<BoolExpr>, List<BoolExpr>> GenerateMSOZ3Formula()
+        public static Tuple<MSOFormula<BoolExpr>, List<BoolExpr>> GenerateMSOZ3Formula()
         {
             currSeed++;
             
 
             var pair =  GenerateMSOFormula(1);       
-            return new Pair<MSOFormula<BoolExpr>, List<BoolExpr>>(
-                new MSOExists<BoolExpr>(new Variable("x" + 0, true), pair.First), pair.Second);
+            return new Tuple<MSOFormula<BoolExpr>, List<BoolExpr>>(
+                new MSOExists<BoolExpr>(new Variable("x" + 0, true), pair.Item1), pair.Item2);
             
         }
 
-        private static Pair<MSOFormula<BoolExpr>, List<BoolExpr>> GenerateMSOFormula(int maxVarIndex)
+        private static Tuple<MSOFormula<BoolExpr>, List<BoolExpr>> GenerateMSOFormula(int maxVarIndex)
         {
             int randomNumber = random.Next(0, 8);
             size--;
@@ -199,43 +200,43 @@ namespace MSO.Eval
                 BoolExpr b = GeneratePredicateOut(200);
                 List<BoolExpr> l = new List<BoolExpr>();
                 l.Add(b);
-                return new Pair<MSOFormula<BoolExpr>, List<BoolExpr>>(new MSOPredicate<BoolExpr>(b, new Variable("x"+variable, true)), l);
+                return new Tuple<MSOFormula<BoolExpr>, List<BoolExpr>>(new MSOPredicate<BoolExpr>(b, new Variable("x"+variable, true)), l);
             }
             switch (randomNumber)
             {
                 case 0:
                     {
-                        Pair<MSOFormula<BoolExpr>, List<BoolExpr>> phi1 = GenerateMSOFormula(maxVarIndex + 1);
-                        MSOFormula<BoolExpr> phi = new MSOExists<BoolExpr>(new Variable("x"+maxVarIndex, true), phi1.First);
-                        return new Pair<MSOFormula<BoolExpr>, List<BoolExpr>>(phi, phi1.Second);
+                        Tuple<MSOFormula<BoolExpr>, List<BoolExpr>> phi1 = GenerateMSOFormula(maxVarIndex + 1);
+                        MSOFormula<BoolExpr> phi = new MSOExists<BoolExpr>(new Variable("x"+maxVarIndex, true), phi1.Item1);
+                        return new Tuple<MSOFormula<BoolExpr>, List<BoolExpr>>(phi, phi1.Item2);
                     }
                 case 1:
                     {
-                        Pair<MSOFormula<BoolExpr>, List<BoolExpr>> phi1 = GenerateMSOFormula(maxVarIndex + 1);
-                        MSOFormula<BoolExpr> phi = new MSOForall<BoolExpr>(new Variable("x" + maxVarIndex, true), phi1.First);
-                        return new Pair<MSOFormula<BoolExpr>, List<BoolExpr>>(phi, phi1.Second);
+                        Tuple<MSOFormula<BoolExpr>, List<BoolExpr>> phi1 = GenerateMSOFormula(maxVarIndex + 1);
+                        MSOFormula<BoolExpr> phi = new MSOForall<BoolExpr>(new Variable("x" + maxVarIndex, true), phi1.Item1);
+                        return new Tuple<MSOFormula<BoolExpr>, List<BoolExpr>>(phi, phi1.Item2);
                     }
                 case 2:
                 case 3:
                     {
-                        Pair<MSOFormula<BoolExpr>, List<BoolExpr>> phi1 = GenerateMSOFormula(maxVarIndex);
-                        Pair<MSOFormula<BoolExpr>, List<BoolExpr>> phi2 = GenerateMSOFormula(maxVarIndex);
-                        MSOFormula<BoolExpr> phi = new MSOAnd<BoolExpr>(phi1.First, phi2.First);
-                        return new Pair<MSOFormula<BoolExpr>, List<BoolExpr>>(phi, new List<BoolExpr>(phi1.Second.Union(phi2.Second)));
+                        Tuple<MSOFormula<BoolExpr>, List<BoolExpr>> phi1 = GenerateMSOFormula(maxVarIndex);
+                        Tuple<MSOFormula<BoolExpr>, List<BoolExpr>> phi2 = GenerateMSOFormula(maxVarIndex);
+                        MSOFormula<BoolExpr> phi = new MSOAnd<BoolExpr>(phi1.Item1, phi2.Item1);
+                        return new Tuple<MSOFormula<BoolExpr>, List<BoolExpr>>(phi, new List<BoolExpr>(phi1.Item2.Union(phi2.Item2)));
                     }
                 case 4:
                 case 5:
                     {
-                        Pair<MSOFormula<BoolExpr>, List<BoolExpr>> phi1 = GenerateMSOFormula(maxVarIndex);
-                        Pair<MSOFormula<BoolExpr>, List<BoolExpr>> phi2 = GenerateMSOFormula(maxVarIndex);
-                        MSOFormula<BoolExpr> phi = new MSOOr<BoolExpr>(phi1.First, phi2.First);
-                        return new Pair<MSOFormula<BoolExpr>, List<BoolExpr>>(phi, new List<BoolExpr>(phi1.Second.Union(phi2.Second)));
+                        Tuple<MSOFormula<BoolExpr>, List<BoolExpr>> phi1 = GenerateMSOFormula(maxVarIndex);
+                        Tuple<MSOFormula<BoolExpr>, List<BoolExpr>> phi2 = GenerateMSOFormula(maxVarIndex);
+                        MSOFormula<BoolExpr> phi = new MSOOr<BoolExpr>(phi1.Item1, phi2.Item1);
+                        return new Tuple<MSOFormula<BoolExpr>, List<BoolExpr>>(phi, new List<BoolExpr>(phi1.Item2.Union(phi2.Item2)));
                     }
                 case 6:
                     {
-                        Pair<MSOFormula<BoolExpr>, List<BoolExpr>> phi1 = GenerateMSOFormula(maxVarIndex);
-                        MSOFormula<BoolExpr> phi = new MSONot<BoolExpr>(phi1.First);
-                        return new Pair<MSOFormula<BoolExpr>, List<BoolExpr>>(phi, phi1.Second);
+                        Tuple<MSOFormula<BoolExpr>, List<BoolExpr>> phi1 = GenerateMSOFormula(maxVarIndex);
+                        MSOFormula<BoolExpr> phi = new MSONot<BoolExpr>(phi1.Item1);
+                        return new Tuple<MSOFormula<BoolExpr>, List<BoolExpr>>(phi, phi1.Item2);
                     }
                 case 7:
                     {
@@ -253,7 +254,7 @@ namespace MSO.Eval
 
                             //Successor
                             MSOFormula<BoolExpr> phi = new MSOSuccN<BoolExpr>(varOf(variable1),varOf(variable2),random.Next(1,4));
-                            return new Pair<MSOFormula<BoolExpr>, List<BoolExpr>>(phi, new List<BoolExpr>());
+                            return new Tuple<MSOFormula<BoolExpr>, List<BoolExpr>>(phi, new List<BoolExpr>());
                         }
                         else
                         {
@@ -261,7 +262,7 @@ namespace MSO.Eval
                             BoolExpr b = GeneratePredicate();
                             List<BoolExpr> l = new List<BoolExpr>();
                             l.Add(b);
-                            return new Pair<MSOFormula<BoolExpr>, List<BoolExpr>>(new MSOPredicate<BoolExpr>(b, new Variable("x" + variable, true)), l);
+                            return new Tuple<MSOFormula<BoolExpr>, List<BoolExpr>>(new MSOPredicate<BoolExpr>(b, new Variable("x" + variable, true)), l);
                         }
 
                     }
@@ -272,7 +273,7 @@ namespace MSO.Eval
 
                         //less than
                         MSOFormula<BoolExpr> phi = new MSOLe<BoolExpr>(varOf(variable1), varOf(variable2));
-                        return new Pair<MSOFormula<BoolExpr>, List<BoolExpr>>(phi, new List<BoolExpr>());
+                        return new Tuple<MSOFormula<BoolExpr>, List<BoolExpr>>(phi, new List<BoolExpr>());
                     }
             }
             return null;

@@ -7,6 +7,7 @@ using System.Diagnostics;
 
 using Microsoft.Automata.MSO;
 using Microsoft.Automata;
+using Microsoft.Automata.BooleanAlgebras;
 using Microsoft.Automata.Z3;
 using Microsoft.Automata.Z3.Internal;
 using Microsoft.Z3;
@@ -29,7 +30,7 @@ namespace MSO.Eval
         public static void RunPOPLTests()
         {
             //// all x1...xn. xi<xi+1
-            List<Pair<MSOFormula<BDD>, CharSetSolver>> phis = new List<Pair<MSOFormula<BDD>, CharSetSolver>>();
+            List<Tuple<MSOFormula<BDD>, CharSetSolver>> phis = new List<Tuple<MSOFormula<BDD>, CharSetSolver>>();
 
             for (int to = 2; to < kpopl; to++)
             {
@@ -47,14 +48,14 @@ namespace MSO.Eval
                     phi = new MSOExists<BDD>(new Variable("x" + k, true), phi);
                 }
 
-                phis.Add(new Pair<MSOFormula<BDD>, CharSetSolver>(phi, solver));
+                phis.Add(new Tuple<MSOFormula<BDD>, CharSetSolver>(phi, solver));
             }
 
             RunTest(new StreamWriter(@"popl14-1.csv"), phis);
 
 
             // all x1...xn. xi<xi+1 and a(xi)
-            phis = new List<Pair<MSOFormula<BDD>, CharSetSolver>>();
+            phis = new List<Tuple<MSOFormula<BDD>, CharSetSolver>>();
             for (int to = 2; to < kpopl; to++)
             {
                 var solver = new CharSetSolver(BitWidth.BV64);
@@ -77,12 +78,12 @@ namespace MSO.Eval
                 {
                     phi = new MSOExists<BDD>(new Variable("x" + k, true), phi);
                 }
-                phis.Add(new Pair<MSOFormula<BDD>, CharSetSolver>(phi, solver));
+                phis.Add(new Tuple<MSOFormula<BDD>, CharSetSolver>(phi, solver));
             }
             RunTest(new StreamWriter(@"popl14-2.csv"), phis);
 
             // all x1...xn. (xi<xi+1 and a(xi)) and ex y. c(y)
-            phis = new List<Pair<MSOFormula<BDD>, CharSetSolver>>();
+            phis = new List<Tuple<MSOFormula<BDD>, CharSetSolver>>();
             for (int to = 2; to < kpopl; to++)
             {
                 var solver = new CharSetSolver(BitWidth.BV64);
@@ -108,14 +109,14 @@ namespace MSO.Eval
                 var exycy = new MSOExists<BDD>(new Variable("y", true), new MSOPredicate<BDD>(solver.MkCharConstraint('c', false), new Variable("y", true)));
                 phi = new MSOAnd<BDD>(phi, exycy);
 
-                phis.Add(new Pair<MSOFormula<BDD>, CharSetSolver>(phi, solver));
+                phis.Add(new Tuple<MSOFormula<BDD>, CharSetSolver>(phi, solver));
             }
 
             RunTest(new StreamWriter(@"popl14-3.csv"), phis);
 
             // all x1...xn. (xi<xi+1 and a(xi) \/ c(xi))
 
-            phis = new List<Pair<MSOFormula<BDD>, CharSetSolver>>();
+            phis = new List<Tuple<MSOFormula<BDD>, CharSetSolver>>();
             for (int to = 2; to < kpopl; to++)
             {
                 var solver = new CharSetSolver(BitWidth.BV64);
@@ -138,7 +139,7 @@ namespace MSO.Eval
                 MSOFormula<BDD> exycy = new MSOExists<BDD>(new Variable("y", true), new MSOPredicate<BDD>(solver.MkCharConstraint('c', false), new Variable("y", true)));
                 phi = new MSOAnd<BDD>(phi, exycy);
 
-                phis.Add(new Pair<MSOFormula<BDD>, CharSetSolver>(phi, solver));
+                phis.Add(new Tuple<MSOFormula<BDD>, CharSetSolver>(phi, solver));
             }
 
             RunTest(new StreamWriter(@"popl14-4.csv"), phis, 11, 11, 11);
@@ -146,7 +147,7 @@ namespace MSO.Eval
 
 
         //Run the test on each phi in phis and store result in infFile
-        static void RunTest(System.IO.StreamWriter outFile, List<Pair<MSOFormula<BDD>, CharSetSolver>> phis, int stop1At = 100, int stop2At = 100, int stop3At = 100)
+        static void RunTest(System.IO.StreamWriter outFile, List<Tuple<MSOFormula<BDD>, CharSetSolver>> phis, int stop1At = 100, int stop2At = 100, int stop3At = 100)
         {
 
             var sw = new Stopwatch();
@@ -167,7 +168,7 @@ namespace MSO.Eval
                             sw.Restart();
                             for (int t = 0; t < numTests; t++)
                             {
-                                p.First.GetAutomaton(p.Second);
+                                p.Item1.GetAutomaton(p.Item2);
                             }
                             sw.Stop();
                             t1 = sw.ElapsedMilliseconds;
@@ -182,14 +183,14 @@ namespace MSO.Eval
                     var t2 = timeout;
                     if (to < stop1At)
                     {
-                        var cartesianBDD = new CartesianAlgebraBDD<BDD>(p.Second);
+                        var cartesianBDD = new CartesianAlgebraBDD<BDD>(p.Item2);
 
                         try
                         {
                             sw.Restart();
                             for (int t = 0; t < numTests; t++)
                             {
-                                p.First.GetAutomaton(cartesianBDD);
+                                p.Item1.GetAutomaton(cartesianBDD);
                             }
                             sw.Stop();
                             t2 = sw.ElapsedMilliseconds;
@@ -205,14 +206,14 @@ namespace MSO.Eval
                     var t3 = timeout;
                     if (to < stop3At)
                     {
-                        BDDAlgebra<BDD> cartesianProduct = new BDDAlgebra<BDD>(p.Second);
+                        BDDAlgebra<BDD> cartesianProduct = new BDDAlgebra<BDD>(p.Item2);
 
                         try
                         {
                             sw.Restart();
                             for (int t = 0; t < numTests; t++)
                             {
-                                p.First.GetAutomaton(cartesianProduct, false);
+                                p.Item1.GetAutomaton(cartesianProduct, false);
                             }
                             sw.Stop();
 

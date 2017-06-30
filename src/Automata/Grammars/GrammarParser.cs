@@ -189,7 +189,7 @@ namespace Microsoft.Automata.Grammars
                         currhs.Add(new Grammars.Nonterminal(cur.content));
                         break;
                     case TokenType.T:
-                        currhs.Add(new Exprinal<T>(mkExprinal(cur.content[0]),cur.content));
+                        currhs.Add(new Terminal<T>(mkExprinal(cur.content[0]),cur.content));
                         break;
                     case TokenType.OR:
                         productions.Add(new Grammars.Production(curlhs, currhs.ToArray()));

@@ -12,27 +12,15 @@ namespace Microsoft.Automata
     public abstract class BREX
     {
         /// <summary>
-        /// Evaluate the expression to an automaton
+        /// Returns true if an optimized DFA can be constructed.
         /// </summary>
-        internal abstract Automaton<BDD> ConvertToAutomaton();
+        /// <returns></returns>
+        public abstract bool CanBeOptimized();
 
         /// <summary>
-        /// If optimize has already been invoked, this is the result.
+        /// Construct an optimized DFA.
         /// </summary>
-        Automaton<BDD> optimizedAutomaton = null;
-
-        /// <summary>
-        /// Evaluate the expression to an automaton and optimize it for code generation.
-        /// </summary>
-        public Automaton<BDD> Optimize()
-        {
-            if (this.optimizedAutomaton == null)
-            {
-                this.optimizedAutomaton = this.ConvertToAutomaton().RemoveEpsilons().Determinize().Minimize();
-            }
-
-            return this.optimizedAutomaton;
-        }
+        public abstract Automaton<BDD> Optimize();
 
         /// <summary>
         /// Value equality
@@ -95,15 +83,71 @@ namespace Microsoft.Automata
     }
 
     /// <summary>
+    /// Leaf element of BREX
+    /// </summary>
+    public abstract class BREXLeaf : BREX
+    {
+        internal abstract Automaton<BDD> CreateNFA();
+
+        /// <summary>
+        /// The underlying DFA
+        /// </summary>
+        internal Automaton<BDD> automaton;
+
+        bool createAutomatonCalled = false;
+        /// <summary>
+        /// Returns true if DFA creation succeeds within the required state bounds
+        /// </summary>
+        bool CreateAutomaton()
+        {
+            if (this.createAutomatonCalled)
+            {
+                return this.automaton != null;  
+            }
+            else
+            {
+                this.createAutomatonCalled = true;
+                try
+                {
+                    var nfa = this.CreateNFA();
+                    //try to determinize with 1sec timeout
+                    var dfa = nfa.RemoveEpsilons().Determinize(Manager.Timeout);
+                    //minimize
+                    var mfa = dfa.Minimize();
+                    //return false if the state limit is violated
+                    if (mfa.StateCount > Manager.MaxNrOfStates)
+                    {
+                        return false;
+                    }
+                    this.automaton = mfa;
+                    return true;
+                }
+                catch (Exception)
+                {
+                    return false;
+                }
+            }
+        }
+
+        public override bool CanBeOptimized()
+        {
+            return CreateAutomaton();
+        }
+
+        public override Automaton<BDD> Optimize()
+        {
+            if (!CreateAutomaton())
+                throw new AutomataException(AutomataExceptionKind.AutomataConversionFailed);
+
+            return automaton;
+        }
+    }
+
+    /// <summary>
     /// Represents a like pattern
     /// </summary>
-    public class BREXLike : BREX
+    public class BREXLike : BREXLeaf
     {
-        /// <summary>
-        /// The underlying automaton
-        /// </summary>
-        Automaton<BDD> automaton;
-
         /// <summary>
         /// gets the manager
         /// </summary>
@@ -136,38 +180,6 @@ namespace Microsoft.Automata
         }
 
         /// <summary>
-        /// returns true if automaton creation succeeds
-        /// </summary>
-        public bool CreateAutomaton()
-        {
-            if (this.automaton != null)
-            {
-                return true;
-            }
-
-            try
-            {
-                this.automaton = this.manager.LikeConverter.Convert(this.like.Item1, this.like.Item2);
-                return true;
-            }
-            catch (AutomataException)
-            {
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// Returns the underlying automaton
-        /// </summary>
-        override internal Automaton<BDD> ConvertToAutomaton()
-        {
-            if (CreateAutomaton())
-                return this.automaton;
-            else
-                throw new AutomataException(AutomataExceptionKind.AutomataConversionFailed);
-        }
-
-        /// <summary>
         /// Display the literal Boolean regular expression
         /// </summary>
         public override string ToString()
@@ -197,18 +209,18 @@ namespace Microsoft.Automata
         {
             return base.GetHashCode();
         }
+
+        internal override Automaton<BDD> CreateNFA()
+        {
+            return this.manager.LikeConverter.Convert(this.like.Item1, this.like.Item2);
+        }
     }
 
     /// <summary>
     /// Represents a .NET regex pattern
     /// </summary>
-    public class BREXRegex : BREX
+    public class BREXRegex : BREXLeaf
     {
-        /// <summary>
-        /// The underlying automaton
-        /// </summary>
-        Automaton<BDD> automaton;
-
         /// <summary>
         /// gets the manager
         /// </summary>
@@ -241,39 +253,6 @@ namespace Microsoft.Automata
         }
 
         /// <summary>
-        /// returns true if automaton creation succeeds
-        /// </summary>
-        public bool CreateAutomaton()
-        {
-            if (this.automaton != null)
-            {
-                return true;
-            }
-
-            try
-            {
-                this.automaton = this.manager.Solver.Convert(this.regex.Item1, this.regex.Item2);
-                return true;
-            }
-            catch (AutomataException)
-            {
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// Returns the underlying automaton. 
-        /// Assumes that CreateAutomaton() returns true. 
-        /// </summary>
-        override internal Automaton<BDD> ConvertToAutomaton()
-        {
-            if (CreateAutomaton())
-                return this.automaton;
-            else
-                throw new AutomataException(AutomataExceptionKind.AutomataConversionFailed);
-        }
-
-        /// <summary>
         /// Display the literal Boolean regular expression
         /// </summary>
         public override string ToString()
@@ -287,6 +266,7 @@ namespace Microsoft.Automata
                 return string.Format("Regex({0},{1})", this.regex.Item1, this.regex.Item2);
             }
         }
+
 
         /// <summary>
         /// Value equality
@@ -302,6 +282,11 @@ namespace Microsoft.Automata
         public override int GetHashCode()
         {
             return base.GetHashCode();
+        }
+
+        internal override Automaton<BDD> CreateNFA()
+        {
+            return this.manager.Solver.Convert(this.regex.Item1, this.regex.Item2);
         }
     }
 
@@ -335,14 +320,6 @@ namespace Microsoft.Automata
         }
 
         /// <summary>
-        /// Returns the complement of the automaton of the expression being negated
-        /// </summary>
-        override internal Automaton<BDD> ConvertToAutomaton()
-        {
-            return this.Expr.ConvertToAutomaton().Complement();
-        }
-
-        /// <summary>
         /// Display this Boolean regular expression.
         /// </summary>
         public override string ToString()
@@ -364,6 +341,28 @@ namespace Microsoft.Automata
         public override int GetHashCode()
         {
             return base.GetHashCode();
+        }
+
+        /// <summary>
+        /// Returns true if Expr can be optimized
+        /// </summary>
+        /// <returns></returns>
+        public override bool CanBeOptimized()
+        {
+            return Expr.CanBeOptimized();
+        }
+
+        Automaton<BDD> not = null;
+        public override Automaton<BDD> Optimize()
+        {
+            if (not != null)
+                return not;
+
+            if (!Expr.CanBeOptimized())
+                throw new AutomataException(AutomataExceptionKind.AutomataConversionFailed);
+
+            not = Expr.Optimize().Complement();
+            return not;
         }
     }
 
@@ -403,14 +402,6 @@ namespace Microsoft.Automata
         }
 
         /// <summary>
-        /// Returns the intersection automaton
-        /// </summary>
-        override internal Automaton<BDD> ConvertToAutomaton()
-        {
-            return this.First.ConvertToAutomaton().Intersect(this.Second.ConvertToAutomaton());
-        }
-
-        /// <summary>
         /// Displays this Boolean regular expression.
         /// </summary>
         public override string ToString()
@@ -432,6 +423,46 @@ namespace Microsoft.Automata
         public override int GetHashCode()
         {
             return base.GetHashCode();
+        }
+
+        Automaton<BDD> product = null;
+        bool optimizeCalled = false;
+        public override bool CanBeOptimized()
+        {
+            if (optimizeCalled)
+                return product != null;
+
+            optimizeCalled = true;
+            if (!First.CanBeOptimized() || !Second.CanBeOptimized())
+                return false;
+
+            var first = First.Optimize();
+            var second = Second.Optimize();
+
+            Automaton<BDD> prod = null;
+            try
+            {
+                //one second timeout for the intersection to complete
+                prod = first.Intersect(second, Manager.Timeout).Minimize();
+                if (prod.StateCount > Manager.MaxNrOfStates)
+                    return false;
+            }
+            catch
+            {
+                //timeout
+                return false;
+            }
+
+            product = prod;
+            return true;
+        }
+
+        public override Automaton<BDD> Optimize()
+        {
+            if (!CanBeOptimized())
+                throw new AutomataException(AutomataExceptionKind.AutomataConversionFailed);
+
+            return product;
         }
     }
 
@@ -471,14 +502,6 @@ namespace Microsoft.Automata
         }
 
         /// <summary>
-        /// Returns the union automaton
-        /// </summary>
-        override internal Automaton<BDD> ConvertToAutomaton()
-        {
-            return this.First.ConvertToAutomaton().Union(this.Second.ConvertToAutomaton());
-        }
-
-        /// <summary>
         /// Displays this Boolean regular expression.
         /// </summary>
         public override string ToString()
@@ -500,6 +523,46 @@ namespace Microsoft.Automata
         public override int GetHashCode()
         {
             return base.GetHashCode();
+        }
+
+        Automaton<BDD> sum = null;
+        bool optimizeCalled = false;
+        public override bool CanBeOptimized()
+        {
+            if (optimizeCalled)
+                return sum != null;
+
+            optimizeCalled = true;
+            if (!First.CanBeOptimized() || !Second.CanBeOptimized())
+                return false;
+
+            var first = First.Optimize();
+            var second = Second.Optimize();
+
+            Automaton<BDD> s = null;
+            try
+            {
+
+                s = first.Complement().Intersect(second.Complement(), Manager.Timeout).Complement().Minimize();
+                if (s.StateCount > Manager.MaxNrOfStates)
+                    return false;
+            }
+            catch
+            {
+                //timeout occured
+                return false;
+            }
+
+            sum = s;
+            return true;
+        }
+
+        public override Automaton<BDD> Optimize()
+        {
+            if (!CanBeOptimized())
+                throw new AutomataException(AutomataExceptionKind.AutomataConversionFailed);
+
+            return sum;
         }
     }
 }

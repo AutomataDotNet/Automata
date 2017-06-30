@@ -8,7 +8,7 @@ using System.CodeDom.Compiler;
 using Microsoft.CSharp;
 using System.Reflection;
 
-using Microsoft.Automata.Internal;
+using Microsoft.Automata;
 
 namespace Microsoft.Automata
 {
@@ -22,23 +22,18 @@ namespace Microsoft.Automata
         /// Get the nonfinal rule from the given state.
         /// </summary>
         /// <param name="state">given start state</param>
-        STbRule<TERM> GetRuleFrom(int state);
+        BranchingRule<TERM> GetRuleFrom(int state);
 
         /// <summary>
         /// Get the final rule from the given state.
         /// </summary>
         /// <param name="state">given start state</param>
-        STbRule<TERM> GetFinalRuleFrom(int state);
+        BranchingRule<TERM> GetFinalRuleFrom(int state);
 
         /// <summary>
         /// Gets the initial state.
         /// </summary>
         int InitialState { get; }
-
-        /// <summary>
-        /// Gets the initial register.
-        /// </summary>
-        TERM InitialRegister { get; }
 
         /// <summary>
         /// List of all the states. 
@@ -60,6 +55,9 @@ namespace Microsoft.Automata
         /// </summary>
         bool IsTrueForAllRegisterUpdates(Predicate<TERM> pred);
 
+        /// <summary>
+        /// Gets the initial register.
+        /// </summary>
         TERM InitialRegister { get; }
     }
 
@@ -99,8 +97,8 @@ namespace Microsoft.Automata
         SORT inListSort;
         SORT outListSort;
         int initState;
-        Dictionary<int, STbRule<TERM>> ruleMap = new Dictionary<int, STbRule<TERM>>();
-        Dictionary<int, STbRule<TERM>> finalMap = new Dictionary<int, STbRule<TERM>>();
+        Dictionary<int, BranchingRule<TERM>> ruleMap = new Dictionary<int, BranchingRule<TERM>>();
+        Dictionary<int, BranchingRule<TERM>> finalMap = new Dictionary<int, BranchingRule<TERM>>();
         STBuilder<FUNC, TERM, SORT> stb;
         HashSet<int> stateSet;
         List<int> stateList;
@@ -214,9 +212,9 @@ namespace Microsoft.Automata
         /// </summary>
         /// <param name="state">start state</param>
         /// <param name="rule">the rule that applies from the given state</param>
-        public void AssignRule(int state, STbRule<TERM> rule)
+        public void AssignRule(int state, BranchingRule<TERM> rule)
         {
-            if (rule == null || rule.RuleKind == STbRuleKind.Undef)
+            if (rule == null || rule.RuleKind == BranchingRuleKind.Undef)
                 this.ruleMap.Remove(state);
             else
             {
@@ -234,9 +232,9 @@ namespace Microsoft.Automata
         /// </summary>
         /// <param name="state">start state</param>
         /// <param name="rule">the final rule that applies from the given state</param>
-        public void AssignFinalRule(int state, STbRule<TERM> rule)
+        public void AssignFinalRule(int state, BranchingRule<TERM> rule)
         {
-            if (rule == null || rule.RuleKind == STbRuleKind.Undef)
+            if (rule == null || rule.RuleKind == BranchingRuleKind.Undef)
                 this.finalMap.Remove(state);
             else
             {
@@ -261,9 +259,9 @@ namespace Microsoft.Automata
         /// Gets the nonfinal rule assigned to the given start state. 
         /// </summary>
         /// <param name="state">given start state</param>
-        public STbRule<TERM> GetRuleFrom(int state)
+        public BranchingRule<TERM> GetRuleFrom(int state)
         {
-            STbRule<TERM> rule;
+            BranchingRule<TERM> rule;
             if (!ruleMap.TryGetValue(state, out rule))
                 rule = UndefRule<TERM>.Default;
             return rule;
@@ -273,9 +271,9 @@ namespace Microsoft.Automata
         /// Gets the final rule assigned to the given start state. 
         /// </summary>
         /// <param name="state">given start state</param>
-        public STbRule<TERM> GetFinalRuleFrom(int state)
+        public BranchingRule<TERM> GetFinalRuleFrom(int state)
         {
-            STbRule<TERM> rule;
+            BranchingRule<TERM> rule;
             if (!finalMap.TryGetValue(state, out rule))
                 rule = UndefRule<TERM>.Default;
             return rule;
@@ -413,24 +411,24 @@ namespace Microsoft.Automata
                 yield return elem;
         }
 
-        IEnumerable<Tuple<ConsList<bool>, BaseRule<TERM>, Move<Rule<TERM>>>> EnumerateNonFinalMovesWithDirectionsFor(int state, STbRule<TERM> stbrule, TERM pathCondition)
+        IEnumerable<Tuple<ConsList<bool>, BaseRule<TERM>, Move<Rule<TERM>>>> EnumerateNonFinalMovesWithDirectionsFor(int state, BranchingRule<TERM> stbrule, TERM pathCondition)
         {
             switch (stbrule.RuleKind)
             {
-                case STbRuleKind.Undef:
+                case BranchingRuleKind.Undef:
                     yield break;
-                case STbRuleKind.Base:
+                case BranchingRuleKind.Base:
                     var rule1 = Rule<TERM>.Mk(pathCondition, stbrule.Register, stbrule.Yields.ToArray());
                     yield return new Tuple<ConsList<bool>, BaseRule<TERM>, Move<Rule<TERM>>>(null, (BaseRule<TERM>)stbrule, Move<Rule<TERM>>.Create(state, stbrule.State, rule1));
                     break;
-                case STbRuleKind.Ite:
+                case BranchingRuleKind.Ite:
                     foreach (var m in EnumerateNonFinalMovesWithDirectionsFor(state, stbrule.TrueCase, And(pathCondition, stbrule.Condition)))
                         yield return new Tuple<ConsList<bool>, BaseRule<TERM>, Move<Rule<TERM>>>(new ConsList<bool>(true, m.Item1), m.Item2, m.Item3);
                     foreach (var m in EnumerateNonFinalMovesWithDirectionsFor(state, stbrule.FalseCase, And(pathCondition, solver.MkNot(stbrule.Condition))))
                         yield return new Tuple<ConsList<bool>, BaseRule<TERM>, Move<Rule<TERM>>>(new ConsList<bool>(false, m.Item1), m.Item2, m.Item3);
                     break;
                 default:
-                    throw new NotImplementedException(STbRuleKind.Switch.ToString());
+                    throw new NotImplementedException(BranchingRuleKind.Switch.ToString());
             }
         }
 
@@ -440,24 +438,24 @@ namespace Microsoft.Automata
                 yield return elem;
         }
 
-        IEnumerable<Tuple<ConsList<bool>, BaseRule<TERM>, Move<Rule<TERM>>>> EnumerateFinalMovesWithDirectionsFor(int state, STbRule<TERM> stbrule, TERM pathCondition)
+        IEnumerable<Tuple<ConsList<bool>, BaseRule<TERM>, Move<Rule<TERM>>>> EnumerateFinalMovesWithDirectionsFor(int state, BranchingRule<TERM> stbrule, TERM pathCondition)
         {
             switch (stbrule.RuleKind)
             {
-                case STbRuleKind.Undef:
+                case BranchingRuleKind.Undef:
                     yield break;
-                case STbRuleKind.Base:
+                case BranchingRuleKind.Base:
                     var rule1 = Rule<TERM>.MkFinal(pathCondition, stbrule.Yields.ToArray());
                     yield return new Tuple<ConsList<bool>, BaseRule<TERM>, Move<Rule<TERM>>>(null, (BaseRule<TERM>)stbrule, Move<Rule<TERM>>.Create(state, state, rule1));
                     break;
-                case STbRuleKind.Ite:
+                case BranchingRuleKind.Ite:
                     foreach (var m in EnumerateFinalMovesWithDirectionsFor(state, stbrule.TrueCase, And(pathCondition, stbrule.Condition)))
                         yield return new Tuple<ConsList<bool>, BaseRule<TERM>, Move<Rule<TERM>>>(new ConsList<bool>(true, m.Item1), m.Item2, m.Item3);
                     foreach (var m in EnumerateFinalMovesWithDirectionsFor(state, stbrule.FalseCase, And(pathCondition, solver.MkNot(stbrule.Condition))))
                         yield return new Tuple<ConsList<bool>, BaseRule<TERM>, Move<Rule<TERM>>>(new ConsList<bool>(false, m.Item1), m.Item2, m.Item3);
                     break;
                 default:
-                    throw new NotImplementedException(STbRuleKind.Switch.ToString());
+                    throw new NotImplementedException(BranchingRuleKind.Switch.ToString());
             }
         }
 
@@ -534,7 +532,7 @@ namespace Microsoft.Automata
             }
         }
 
-        private TERM MkIteExpression(STbRule<TERM> rule)
+        private TERM MkIteExpression(BranchingRule<TERM> rule)
         {
             var br = rule as BaseRule<TERM>;
             if (br != null)
@@ -606,42 +604,42 @@ namespace Microsoft.Automata
 
         #region graph visualization
         /// <summary>
-        /// Saves the STb in dgml format in <paramref name="Name"/>.dgml file in the working directory and starts a process for viewing the file.
+        /// Saves the STb in dgml format in Name.dgml file in the working directory and starts a process for viewing the file.
         /// </summary>
         public void ShowGraph()
         {
-            Internal.DirectedGraphs.DgmlWriter.ShowSTb(-1, this);
+            DirectedGraphs.DgmlWriter.ShowSTb(-1, this);
         }
 
         /// <summary>
-        /// Saves the STb in dgml format in <paramref name="Name"/>.dgml file in the working directory and starts a process for viewing the file.
+        /// Saves the STb in dgml format in Name.dgml file in the working directory and starts a process for viewing the file.
         /// Restricts the edge labels to at most k characters.
         /// </summary>
         public void ShowGraph(int k)
         {
-            Internal.DirectedGraphs.DgmlWriter.ShowSTb(k, this);
+            DirectedGraphs.DgmlWriter.ShowSTb(k, this);
         }
 
         /// <summary>
-        /// Saves the STb in dgml format in <paramref name="Name"/>.dgml file in the working directory.
+        /// Saves the STb in dgml format in Name.dgml file in the working directory.
         /// </summary>
         public void ToDgml()
         {
             string filename = (Name.EndsWith(".dgml") ? name : name + ".dgml");
             StreamWriter sw = new StreamWriter(filename);
-            Internal.DirectedGraphs.DgmlWriter.STbToDgml(-1, this, sw);
+            DirectedGraphs.DgmlWriter.STbToDgml(-1, this, sw);
             sw.Close();
         }
 
         /// <summary>
-        /// Saves the STb in dgml format in <paramref name="Name"/>.dgml file in the working directory.
+        /// Saves the STb in dgml format in Name.dgml file in the working directory.
         /// Restricts the edge labels to at most k characters.
         /// </summary>
         public void ToDgml(int k)
         {
             string filename = (Name.EndsWith(".dgml") ? name : name + ".dgml");
             StreamWriter sw = new StreamWriter(filename);
-            Internal.DirectedGraphs.DgmlWriter.STbToDgml(k, this, sw);
+            DirectedGraphs.DgmlWriter.STbToDgml(k, this, sw);
             sw.Close();
         }
 
@@ -652,7 +650,7 @@ namespace Microsoft.Automata
         {
             string filename = (Name.EndsWith(".dot") ? name : name + ".dot");
             StreamWriter sw = new StreamWriter(filename);
-            Internal.DirectedGraphs.DotWriter.STbToDot(-1, this, sw);
+            DirectedGraphs.DotWriter.STbToDot(-1, this, sw);
             sw.Close();
         }
 
@@ -663,7 +661,7 @@ namespace Microsoft.Automata
         {
             string filename = (file.EndsWith(".dot") ? file : file + ".dot");
             StreamWriter sw = new StreamWriter(filename);
-            Internal.DirectedGraphs.DotWriter.STbToDot(-1, this, sw);
+            DirectedGraphs.DotWriter.STbToDot(-1, this, sw);
             sw.Close();
         }
 
@@ -672,7 +670,7 @@ namespace Microsoft.Automata
         /// </summary> 
         public void ToDot(System.IO.TextWriter tw)
         {
-            Internal.DirectedGraphs.DotWriter.STbToDot(-1, this, tw);
+            DirectedGraphs.DotWriter.STbToDot(-1, this, tw);
         }
 
         /// <summary>
@@ -683,7 +681,7 @@ namespace Microsoft.Automata
         {
             string filename = (Name.EndsWith(".dot") ? name : name + ".dot");
             StreamWriter sw = new StreamWriter(filename);
-            Internal.DirectedGraphs.DotWriter.STbToDot(k, this, sw);
+            DirectedGraphs.DotWriter.STbToDot(k, this, sw);
             sw.Close();
         }
 
@@ -695,7 +693,7 @@ namespace Microsoft.Automata
         {
             string filename = (file.EndsWith(".dot") ? file : file + ".dot");
             StreamWriter sw = new StreamWriter(filename);
-            Internal.DirectedGraphs.DotWriter.STbToDot(k, this, sw);
+            DirectedGraphs.DotWriter.STbToDot(k, this, sw);
             sw.Close();
         }
 
@@ -705,7 +703,7 @@ namespace Microsoft.Automata
         /// </summary> 
         public void ToDot(int k, System.IO.TextWriter tw)
         {
-            Internal.DirectedGraphs.DotWriter.STbToDot(k, this, tw);
+            DirectedGraphs.DotWriter.STbToDot(k, this, tw);
         }
 
         #endregion
@@ -784,17 +782,17 @@ namespace Microsoft.Automata
             TERM newReg = stb.MkRegister(newRegSort);
             string newName = (useBP ? string.Format("{0}_B", name) : string.Format("{0}_F", name));
 
-            var stack = new Stack<Pair<int, TERM>>();
-            var states = new Dictionary<Pair<int, TERM>, int>();
+            var stack = new Stack<Tuple<int, TERM>>();
+            var states = new Dictionary<Tuple<int, TERM>, int>();
 
-            var initPair = new Pair<int, TERM>(0, initBools);
+            var initPair = new Tuple<int, TERM>(0, initBools);
             states[initPair] = 0;
             int __stateCntr__ = 1;
             stack.Push(initPair);
 
             Func<int, TERM, int> stateMap = ((s,t) =>
                 {
-                    var p = new Pair<int,TERM>(s,t);
+                    var p = new Tuple<int,TERM>(s,t);
                     int state;
                     if (!states.TryGetValue(p, out state))
                     {
@@ -811,7 +809,7 @@ namespace Microsoft.Automata
                 return s;
             });
 
-            var newRuleMap = new Dictionary<int, STbRule<TERM>>();
+            var newRuleMap = new Dictionary<int, BranchingRule<TERM>>();
             var newSTb = new STb<FUNC, TERM, SORT>(solver, newName, inputSort, outputSort, newRegSort, newInitReg, 0);
 
             while (stack.Count > 0)
@@ -821,29 +819,29 @@ namespace Microsoft.Automata
 
                 //make an instance of the input register state wrt pair.Second that is the reached abstract value 
                 //var rIn = (useBP ? stb.MkBPInstance(regVar, pair.Second, newReg) : pair.Second);
-                var rIn = combine(pair.Second, newReg);
+                var rIn = combine(pair.Item2, newReg);
 
-                if (ruleMap.ContainsKey(pair.First))
+                if (ruleMap.ContainsKey(pair.Item1))
                 {
-                    var rule = ruleMap[pair.First];
+                    var rule = ruleMap[pair.Item1];
                     //create an instance of the rule for the given input register
-                    STbRule<TERM> ruleInst = rule.Subst(solver, regVar, rIn);
+                    BranchingRule<TERM> ruleInst = rule.Subst(solver, regVar, rIn);
 
                     //concretize the rule with respect to all possible abstracted outputs
-                    STbRule<TERM> newRule = ruleInst.Concretize(solver, fBP, fNBP, stateMap, newReg, inputVar);
+                    BranchingRule<TERM> newRule = ruleInst.Concretize(solver, fBP, fNBP, stateMap, newReg, inputVar);
 
                     newSTb.AssignRule(sourceState, newRule);
                 }
 
-                if (finalMap.ContainsKey(pair.First))
+                if (finalMap.ContainsKey(pair.Item1))
                 {
-                    var rule = finalMap[pair.First];
+                    var rule = finalMap[pair.Item1];
                     //create an instance of the rule for the given input register
-                    STbRule<TERM> ruleInst = rule.Subst(solver, regVar, rIn);
+                    BranchingRule<TERM> ruleInst = rule.Subst(solver, regVar, rIn);
 
                     //concretize the rule with respect to all possible abstracted outputs
                     //note that, here the inputVar must not occur in the rules, this is not actually checked
-                    STbRule<TERM> newRule = ruleInst.Concretize(solver, r => initBools, r => newInitReg, (s, r) => s, newReg, inputVar);
+                    BranchingRule<TERM> newRule = ruleInst.Concretize(solver, r => initBools, r => newInitReg, (s, r) => s, newReg, inputVar);
 
                     newSTb.AssignFinalRule(sourceState, newRule/*.ReplaceAllStatesAndRegisters(pair.First, newInitReg)*/);
                 }
@@ -1879,8 +1877,8 @@ namespace Microsoft.Automata
             {
 
                 var prunedStateList = new List<int>();
-                var prunedRulemap = new Dictionary<int,STbRule<TERM>>();
-                var prunedFinalRulemap = new Dictionary<int,STbRule<TERM>>();
+                var prunedRulemap = new Dictionary<int,BranchingRule<TERM>>();
+                var prunedFinalRulemap = new Dictionary<int,BranchingRule<TERM>>();
                 stateSet.Clear();
                 Predicate<BaseRule<TERM>> IsNotValidState = (r) =>
                     {
@@ -1977,7 +1975,18 @@ namespace Microsoft.Automata
         }
     }
 
-    public enum ParseType { Boolean, Int32, String, Skip}
+    /// <summary></summary>
+    public enum ParseType
+    {
+        /// <summary></summary>
+        Boolean,
+        /// <summary></summary>
+        Int32,
+        /// <summary></summary>
+        String,
+        /// <summary></summary>
+        Skip
+    }
     //internal class STbFromPattern
     //{
     //    void foo()

@@ -168,15 +168,15 @@ namespace Microsoft.Automata
             var finalStates = new List<int>();
             if (addEmptyWord)
                 finalStates.Add(start); //epsilon is accepted so initial state is also final
-            var conditionMap = new Dictionary<Pair<int, int>, S>();//for normalization of move conditions
-            var eMoves = new HashSet<Pair<int, int>>();
+            var conditionMap = new Dictionary<Tuple<int, int>, S>();//for normalization of move conditions
+            var eMoves = new HashSet<Tuple<int, int>>();
 
             if (!allSingleSource)
             {
                 isDeterministic = false;
                 isEpsilonFree = false;
                 foreach (var sfa in sfas) //add initial epsilon transitions
-                    eMoves.Add(new Pair<int, int>(start, sfa.InitialState));
+                    eMoves.Add(new Tuple<int, int>(start, sfa.InitialState));
             }
             else if (isDeterministic)
             {
@@ -212,13 +212,13 @@ namespace Microsoft.Automata
                 {
                     int source = (allSingleSource && sfa.InitialState == move.SourceState ? start : move.SourceState);
                     int target = (allFinalSink && sfa.FinalState == move.TargetState ? sinkId : move.TargetState);
-                    var p = new Pair<int, int>(source, target);
+                    var p = new Tuple<int, int>(source, target);
                     stateRenamingMap[move.SourceState] = source;
                     stateRenamingMap[move.TargetState] = target;
                     if (move.IsEpsilon)
                     {
                         if (source != target)
-                            eMoves.Add(new Pair<int, int>(source, target));
+                            eMoves.Add(new Tuple<int, int>(source, target));
                         continue;
                     }
 
@@ -754,12 +754,12 @@ namespace Microsoft.Automata
             return !sfa.IsEpsilonFree;
         }
 
-        IEnumerable<Move<S>> GenerateMoves(Dictionary<Pair<int, int>, S> condMap, IEnumerable<Pair<int, int>> eMoves)
+        IEnumerable<Move<S>> GenerateMoves(Dictionary<Tuple<int, int>, S> condMap, IEnumerable<Tuple<int, int>> eMoves)
         {
             foreach (var kv in condMap)
-                yield return Move<S>.Create(kv.Key.First, kv.Key.Second, kv.Value);
+                yield return Move<S>.Create(kv.Key.Item1, kv.Key.Item2, kv.Value);
             foreach (var emove in eMoves)
-                yield return Move<S>.Epsilon(emove.First, emove.Second);
+                yield return Move<S>.Epsilon(emove.Item1, emove.Item2);
         }
 
         #endregion

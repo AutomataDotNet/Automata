@@ -7,7 +7,6 @@ using System.IO;
 using Microsoft.Automata;
 using Microsoft.Automata.Z3;
 using Microsoft.Automata.Z3.Internal;
-using Microsoft.Automata.Internal;
 using Microsoft.Z3;
 
 using System.Text.RegularExpressions;
@@ -429,8 +428,6 @@ namespace Microsoft.Automata.Z3.Tests
             List<string> regexes = new List<string>(SampleRegexes.regexes);
             regexes.RemoveRange(3, regexes.Count - 3); //just consider the first few cases
 
-            long timeout = 5 * Microsoft.Automata.Internal.Utilities.HighTimer.Frequency; //5 sec
-
             for (int i = 0; i < regexes.Count; i++)
                 if (i != 6)
                     for (int j = 0; j < regexes.Count; j++)
@@ -446,7 +443,7 @@ namespace Microsoft.Automata.Z3.Tests
                         var B = z3p.RegexConverter.Convert(regexB, System.Text.RegularExpressions.RegexOptions.None);
                         try
                         {
-                            var C = Automaton<Expr>.MkDifference(A, B, (int)timeout);
+                            var C = Automaton<Expr>.MkDifference(A, B, 5000);
                             if (!C.IsEmpty)
                             {
                                 string s = GetMember(z3p, C);
@@ -468,8 +465,6 @@ namespace Microsoft.Automata.Z3.Tests
             List<string> regexes = new List<string>(SampleRegexes.regexes);
             regexes.RemoveRange(2, regexes.Count - 2); //just consider the first 5 cases
 
-            long timeout = 5 * Microsoft.Automata.Internal.Utilities.HighTimer.Frequency; //5 sec
-
             for (int i = 0; i < regexes.Count; i++)
                 for (int j = 0; j < regexes.Count; j++)
                 {
@@ -486,9 +481,9 @@ namespace Microsoft.Automata.Z3.Tests
                     try
                     {
                         List<Expr> witness;
-                        var AmB = Automaton<Expr>.MkDifference(A, B, (int)timeout).Determinize().Minimize();
+                        var AmB = Automaton<Expr>.MkDifference(A, B, 5000).Determinize().Minimize();
                         //AmB.ShowGraph();
-                        bool isNonempty = Automaton<Expr>.CheckDifference(A, B, (int)timeout, out witness);
+                        bool isNonempty = Automaton<Expr>.CheckDifference(A, B, 5000, out witness);
                         if (isNonempty)
                         {
                             string s = new String(Array.ConvertAll(witness.ToArray(), c => z3p.GetCharValue(z3p.MainSolver.FindOneMember(c).Value)));
@@ -834,7 +829,7 @@ namespace Microsoft.Automata.Z3.Tests
                 //put a 1 second bound on determinization
                 try
                 {
-                    Automata.Internal.Utilities.RegexToRangeAutomatonSerializer.SaveAsRangeAutomaton(regexes[i], BitWidth.BV16, "c:/Automata/brics/dfas/dfa_" + i + ".txt", true, true, 1000);
+                    Automata.Utilities.RegexToRangeAutomatonSerializer.SaveAsRangeAutomaton(regexes[i], BitWidth.BV16, "c:/Automata/brics/dfas/dfa_" + i + ".txt", true, true, 1000);
                 }
                 catch (TimeoutException)
                 {
@@ -850,7 +845,7 @@ namespace Microsoft.Automata.Z3.Tests
             var rex = new Rex.RexEngine(BitWidth.BV16);
             foreach (var file in Directory.EnumerateFiles("c:/Automata/brics/dfas/"))
             {
-                var aut = Automata.Internal.Utilities.RegexToRangeAutomatonSerializer.Read(rex.Solver, file);
+                var aut = Automata.Utilities.RegexToRangeAutomatonSerializer.Read(rex.Solver, file);
                 auts.Add(aut);
             }
 

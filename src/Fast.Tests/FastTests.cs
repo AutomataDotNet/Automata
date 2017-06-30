@@ -15,7 +15,7 @@ namespace Fast.Tests
     public class FastTests
     {
 
-        static string srcDirectory = "../../../../src/";
+        static string srcDirectory = "../../../../../src/";
 
         [TestMethod]
         public void TestConstants()

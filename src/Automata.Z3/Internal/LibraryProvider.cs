@@ -10,13 +10,13 @@ namespace Microsoft.Automata.Z3.Internal
     internal class LibraryProvider : ILibrary<Expr>
     {
         Z3Provider z3p;
-        Dictionary<string, Pair<FuncDecl, Expr>> library;
+        Dictionary<string, Tuple<FuncDecl, Expr>> library;
         HashSet<string> reserved = new HashSet<string>(new string[] { "ite", "Bits", "bits" });
 
         internal LibraryProvider(Z3Provider z3p)
         {
             this.z3p = z3p;
-            library = new Dictionary<string, Pair<FuncDecl, Expr>>();
+            library = new Dictionary<string, Tuple<FuncDecl, Expr>>();
         }
 
         Expr MkApp(string f, params Expr[] args)
@@ -52,10 +52,10 @@ namespace Microsoft.Automata.Z3.Internal
                 case "Bits": return MkBits((int)z3p.GetNumeralUInt(args[0]), (int)z3p.GetNumeralUInt(args[1]), args[2]);
                 default:
                     {
-                        Pair<FuncDecl, Expr> func;
+                        Tuple<FuncDecl, Expr> func;
                         if (!library.TryGetValue(f, out func))
                             throw new ArgumentException(string.Format("undefined function '{0}'", f));
-                        return z3p.MkApp(func.First, args);
+                        return z3p.MkApp(func.Item1, args);
                     }
             }
         }
@@ -63,15 +63,15 @@ namespace Microsoft.Automata.Z3.Internal
         private Expr MkBits(int u, int l, Expr term)
         {
             string f = string.Format("Bits_{0}_{1}", u, l);
-            Pair<FuncDecl, Expr> def;
+            Tuple<FuncDecl, Expr> def;
             if (library.TryGetValue(f, out def))
-                return z3p.MkApp(def.First, term);
+                return z3p.MkApp(def.Item1, term);
 
             var x = z3p.MkVar(0, z3p.CharSort);
             var body = z3p.MkBvAnd(z3p.MkBvShiftRight((uint)l, x), z3p.MkNumeral(MkMask(u, l), z3p.CharSort));
             DefineFunction(f, body, x);
 
-            var func = library[f].First;
+            var func = library[f].Item1;
             var res = z3p.MkApp(func, term);
             return res;
         }
@@ -97,7 +97,7 @@ namespace Microsoft.Automata.Z3.Internal
                 Sort[] domain = Array.ConvertAll(vars, z3p.GetSort);
                 Sort range = z3p.GetSort(body);
                 FuncDecl func = z3p.MkFuncDecl(name, domain, range);
-                library[name] = new Pair<FuncDecl, Expr>(func, body);
+                library[name] = new Tuple<FuncDecl, Expr>(func, body);
                 z3p.AssertAxiom(z3p.MkApp(func, vars), body, vars);
             }
             catch (Exception e)
@@ -132,7 +132,7 @@ namespace Microsoft.Automata.Z3.Internal
             {
                 foreach (var entry in library)
                 {
-                    var dom = z3p.GetDomain(entry.Value.First);
+                    var dom = z3p.GetDomain(entry.Value.Item1);
 
                     if (language == "JS")
                     {
@@ -152,7 +152,7 @@ namespace Microsoft.Automata.Z3.Internal
                         if (language == "C#")
                             sb.Append("static ");
 
-                        if (z3p.GetRange(entry.Value.First).Equals(z3p.BoolSort))
+                        if (z3p.GetRange(entry.Value.Item1).Equals(z3p.BoolSort))
                             sb.Append("bool ");
                         else
                             sb.Append("int ");
@@ -172,7 +172,7 @@ namespace Microsoft.Automata.Z3.Internal
                     }
 
                     sb.Append("){return ");
-                    string body = z3p.PrettyPrintCS(entry.Value.Second, x => ("_" + z3p.GetVarIndex(x)));
+                    string body = z3p.PrettyPrintCS(entry.Value.Item2, x => ("_" + z3p.GetVarIndex(x)));
                     sb.Append(body);
                     sb.Append(";");
                     sb.AppendLine("}");

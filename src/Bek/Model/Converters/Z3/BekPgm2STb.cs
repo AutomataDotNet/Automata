@@ -12,8 +12,8 @@ using Microsoft.Bek.Model.Converters;
 using STBuilderZ3 = Microsoft.Automata.STBuilder<Microsoft.Z3.FuncDecl, Microsoft.Z3.Expr, Microsoft.Z3.Sort>;
 using STModel = Microsoft.Automata.STb<Microsoft.Z3.FuncDecl, Microsoft.Z3.Expr, Microsoft.Z3.Sort>;
 
-using BV2Solver = Microsoft.Automata.PairBoolAlg<Microsoft.Automata.BDD, Microsoft.Automata.BDD>;
-using BV2 = Microsoft.Automata.Pair<Microsoft.Automata.BDD, Microsoft.Automata.BDD>;
+using BV2Solver = Microsoft.Automata.BooleanAlgebras.DisjointUnionAlgebra<Microsoft.Automata.BDD, Microsoft.Automata.BDD>;
+using BV2 = System.Tuple<Microsoft.Automata.BDD, Microsoft.Automata.BDD>;
 
 namespace Microsoft.Bek.Model.Converters.Z3
 {
@@ -169,7 +169,7 @@ namespace Microsoft.Bek.Model.Converters.Z3
                 var q = S.Pop();
                 foreach (var move in N.GetMovesFrom(q))
                 {
-                    G[q] = css.MkOr(G[q], move.Label.First);
+                    G[q] = css.MkOr(G[q], move.Label.Item1);
                     var p = move.TargetState;
                     var d = D[q] + 1;
                     if (!(N.IsFinalState(p)) && !D.ContainsKey(p))
@@ -190,7 +190,7 @@ namespace Microsoft.Bek.Model.Converters.Z3
             {
                 foreach (var move in N.GetMovesTo(fs))
                 {
-                    if (move.Label.Second.IsEmpty)
+                    if (move.Label.Item2.IsEmpty)
                         throw new BekException("Internal error: missing end anchor");
 
                     //if (!css.IsSingleton(move.Condition.Second))
@@ -201,7 +201,7 @@ namespace Microsoft.Bek.Model.Converters.Z3
                     //}
 
                     //pick the minimum case identifer when there are several, essentially pick the earliest case
-                    int id = (int)css.GetMin(move.Label.Second); 
+                    int id = (int)css.GetMin(move.Label.Item2); 
 
                     int distFromRoot = D[move.SourceState];
                     var e = repl.GetCase(id).Output;
@@ -254,7 +254,7 @@ namespace Microsoft.Bek.Model.Converters.Z3
                 initialRegisterValues[j] = zeroChar;
             var initialRegister = stb.Solver.MkTuple(initialRegisterValues);
 
-            Predicate<int> IsCaseEndState = s => { return N.OutDegree(s) == 1 && N.GetMoveFrom(s).Label.First.IsEmpty; };
+            Predicate<int> IsCaseEndState = s => { return N.OutDegree(s) == 1 && N.GetMoveFrom(s).Label.Item1.IsEmpty; };
 
             #region compute the forward moves and the completion moves
             var V = new HashSet<int>();
@@ -275,8 +275,8 @@ namespace Microsoft.Bek.Model.Converters.Z3
                     var distance = D[p];
                     Expr chExpr;
                     Expr chPred;
-                    MkExprPred(move.Label.First, out chExpr, out chPred);
-                    predLookup[chPred] = move.Label.First;
+                    MkExprPred(move.Label.Item1, out chExpr, out chPred);
+                    predLookup[chPred] = move.Label.Item1;
 
                     Expr[] regUpds = new Expr[K];
                     for (int i=0; i < K; i++)
@@ -328,7 +328,7 @@ namespace Microsoft.Bek.Model.Converters.Z3
                     #region matching cases via the initial state
                     foreach (var move0 in N.GetMovesFrom(N.InitialState))
                     {
-                        var g0 = move0.Label.First;
+                        var g0 = move0.Label.Item1;
                         var match = css.MkAnd(css.MkNot(guards), g0);
                         if (!match.IsEmpty)
                         {
@@ -366,7 +366,7 @@ namespace Microsoft.Bek.Model.Converters.Z3
             foreach (var last_move in N.GetMovesTo(N.FinalState))
             {
                 //i is the case identifier
-                int i = (int)css.GetMin(last_move.Label.Second);
+                int i = (int)css.GetMin(last_move.Label.Item2);
 
                 if (hasNoEndAnchor.Contains(i))
                 {
@@ -512,11 +512,11 @@ namespace Microsoft.Bek.Model.Converters.Z3
                     st_moves.Add(move);
                 }
 
-                STbRule<Expr> st_rule;
+                BranchingRule<Expr> st_rule;
                 if (st_moves.Count > 0)
                 {
                     //collect all rules with singleton guards and put them into a switch statement
-                    var st_rules1 = new List<KeyValuePair<Expr, STbRule<Expr>>>();
+                    var st_rules1 = new List<KeyValuePair<Expr, BranchingRule<Expr>>>();
                     var st_moves2 = new List<Move<Rule<Expr>>>();
                     foreach (var move in st_moves)
                     {
@@ -525,12 +525,12 @@ namespace Microsoft.Bek.Model.Converters.Z3
                             var v = stb.Solver.MkNumeral(css.Choose(predLookup[move.Label.Guard]), stb.Solver.CharSort);
                             var r = new BaseRule<Expr>(new Sequence<Expr>(move.Label.Yields),
                                                        move.Label.Update, move.TargetState);
-                            st_rules1.Add(new KeyValuePair<Expr, STbRule<Expr>>(v, r));
+                            st_rules1.Add(new KeyValuePair<Expr, BranchingRule<Expr>>(v, r));
                         }
                         else
                             st_moves2.Add(move);
                     }
-                    STbRule<Expr> defaultcase = new UndefRule<Expr>("reject");
+                    BranchingRule<Expr> defaultcase = new UndefRule<Expr>("reject");
                     //make st_moves2 into an ite rule
                     if (st_moves2.Count > 0)
                     {
@@ -636,7 +636,7 @@ namespace Microsoft.Bek.Model.Converters.Z3
             else
             {
                 var ranges = css.ToRanges(moveCond);
-                chPred = stb.Solver.MkRangesConstraint(false, Array.ConvertAll(ranges, r => new char[] { (char)r.First, (char)r.Second }));
+                chPred = stb.Solver.MkRangesConstraint(false, Array.ConvertAll(ranges, r => new char[] { (char)r.Item1, (char)r.Item2 }));
                 chExpr = stb.MkInputVariable(stb.Solver.CharSort);
             }
         }

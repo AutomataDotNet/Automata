@@ -8,6 +8,7 @@ using System.Diagnostics;
 
 using Microsoft.Automata.MSO;
 using Microsoft.Automata;
+using Microsoft.Automata.BooleanAlgebras;
 using Microsoft.Automata.Z3;
 using Microsoft.Automata.Z3.Internal;
 using Microsoft.Z3;

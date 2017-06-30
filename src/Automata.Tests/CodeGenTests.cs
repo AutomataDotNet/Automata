@@ -1,19 +1,19 @@
 ﻿using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Microsoft.Automata;
-using Microsoft.Automata.Rex;
-using Microsoft.Automata.Internal.Utilities;
 using System.Text.RegularExpressions;
 using System.IO;
 using System.Text;
 using System.Collections.Generic;
+using Microsoft.Automata;
+using Microsoft.Automata.Utilities;
+using Microsoft.Automata.Rex;
 
 namespace Automata.Tests
 {
     [TestClass]
     public class CodeGenTests
     {
-        static string regexesFile = "../../../Automata.Tests/regexes.txt";
+        static string regexesFile = "../../../regexes.txt";
         internal static int NrOfStrings = 100;
         internal static int MaxStringLength = 100;
         internal static int Repetitions = 10;
@@ -91,8 +91,8 @@ namespace Automata.Tests
 
         //private static void TestIgnoreCase()
         //{
-        //    Microsoft.Automata.Internal.Utilities.IgnoreCaseRelationGenerator.Generate(
-        //        "Microsoft.Automata.Internal.Generated",
+        //    Microsoft.Automata.Utilities.IgnoreCaseRelationGenerator.Generate(
+        //        "Microsoft.Automata.Generated",
         //        "IgnoreCaseRelation",
         //    @"C:\GitHub\AutomataDotNet\Automata\src\Automata\Internal\Generated");
         //}
@@ -301,7 +301,7 @@ namespace Automata.Tests
             string sOut = solver.GenerateMember(sfaMin.Complement());
             string s = sIn;
             int t1;
-            int t2;
+            //int t2;
             int t3;
             for (int i = 0; i < 2; i++)
             {
@@ -495,8 +495,12 @@ namespace Automata.Tests
             if (fi.Exists)
                 fi.IsReadOnly = false;
             StreamWriter sw = new StreamWriter(CppTest.BatFilePath);
+            string platform = "";
+#if X64
+            platform = "amd64";
+#endif
             sw.WriteLine(@"
-call ""C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat""
+call ""C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat"" " + platform + @"
 cl /LD " + SourceFile); //option /O2 takes too much time
             sw.Close();
         }

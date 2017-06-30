@@ -169,7 +169,7 @@ namespace Microsoft.Automata.Z3
         }
 
 
-        static IEnumerable<Pair<Expr, ExprSet[]>> GetSimultaneousLanguageTransitions(ExprSet states, FuncDecl f, Func<Expr, FuncDecl, IEnumerable<TreeRule>> GetRulesTmp, TreeTheory tt)
+        static IEnumerable<Tuple<Expr, ExprSet[]>> GetSimultaneousLanguageTransitions(ExprSet states, FuncDecl f, Func<Expr, FuncDecl, IEnumerable<TreeRule>> GetRulesTmp, TreeTheory tt)
         {
             ExprSet[] kids = new ExprSet[tt.Z.GetDomain(f).Length - 1]; //arity of f  - 1
             for (int i = 0; i < kids.Length; i++)
@@ -177,10 +177,10 @@ namespace Microsoft.Automata.Z3
             return GetSimultaneousLanguageTransitions1(states.elements, f, tt.Z.True, kids, GetRulesTmp, tt);
         }
 
-        static IEnumerable<Pair<Expr, ExprSet[]>> GetSimultaneousLanguageTransitions1(ConsList<Expr> states, FuncDecl f, Expr guard, ExprSet[] kids, Func<Expr, FuncDecl, IEnumerable<TreeRule>> GetRulesTmp, TreeTheory tt)
+        static IEnumerable<Tuple<Expr, ExprSet[]>> GetSimultaneousLanguageTransitions1(ConsList<Expr> states, FuncDecl f, Expr guard, ExprSet[] kids, Func<Expr, FuncDecl, IEnumerable<TreeRule>> GetRulesTmp, TreeTheory tt)
         {
             if (states == null)
-                yield return new Pair<Expr, ExprSet[]>(guard, kids);
+                yield return new Tuple<Expr, ExprSet[]>(guard, kids);
             else
             {
                 foreach (var rule in GetRulesTmp(states.First, f))
@@ -661,15 +661,15 @@ namespace Microsoft.Automata.Z3
             var Z = A.tt.Z;
             var tt = A.tt;
 
-            var statePair2Id = new Dictionary<Pair<Expr, Expr>, Expr>();
+            var statePair2Id = new Dictionary<Tuple<Expr, Expr>, Expr>();
 
-            var init_states_pair_list = new List<Pair<Expr, Expr>>();
+            var init_states_pair_list = new List<Tuple<Expr, Expr>>();
             var init_states_term_list = new List<Expr>();
             var counter = 0;
             foreach (var inStA in A.roots)
                 foreach (var inStB in B.roots)
                 {
-                    var instpair = new Pair<Expr, Expr>(inStA, inStB);
+                    var instpair = new Tuple<Expr, Expr>(inStA, inStB);
                     var instid = Z.MkInt(counter);
                     init_states_pair_list.Add(instpair);
                     init_states_term_list.Add(instid);
@@ -679,7 +679,7 @@ namespace Microsoft.Automata.Z3
 
 
 
-            var stack = new Stack<Pair<Expr, Expr>>(init_states_pair_list);
+            var stack = new Stack<Tuple<Expr, Expr>>(init_states_pair_list);
             var stateList = new List<Expr>(init_states_term_list);
             var rulesMap = new Dictionary<Expr, Dictionary<FuncDecl, List<TreeRule>>>();
             var rulesList = new List<TreeRule>();
@@ -715,7 +715,7 @@ namespace Microsoft.Automata.Z3
                 if (p.Equals(qID) && q.Equals(qID))
                     return qID;
 
-                var pq = new Pair<Expr, Expr>(p, q);
+                var pq = new Tuple<Expr, Expr>(p, q);
 
                 Expr pq_id;
                 if (statePair2Id.TryGetValue(pq, out pq_id))
@@ -737,8 +737,8 @@ namespace Microsoft.Automata.Z3
             {
                 var qA_qB_pair = stack.Pop();
                 var qAB = statePair2Id[qA_qB_pair];
-                var qA = qA_qB_pair.First;
-                var qB = qA_qB_pair.Second;
+                var qA = qA_qB_pair.Item1;
+                var qB = qA_qB_pair.Item2;
                 foreach (var F in A.inputAlphabet.constructors)
                     foreach (var ruleA in A.GetRules(qA, F))
                     {
@@ -866,11 +866,11 @@ namespace Microsoft.Automata.Z3
             var trans_S_T = tt.GetTrans(S.AlphabetSort, T.AlphabetSort);
             var trans_R_T = tt.GetTrans(R.AlphabetSort, T.AlphabetSort);
 
-            var q0A_q0B_pair = new Pair<Expr, Expr>(A.initialState, B.initialState);
+            var q0A_q0B_pair = new Tuple<Expr, Expr>(A.initialState, B.initialState);
             var q0AB = Z.MkInt(0);
-            var statePair2Id = new Dictionary<Pair<Expr, Expr>, Expr>();
+            var statePair2Id = new Dictionary<Tuple<Expr, Expr>, Expr>();
             statePair2Id[q0A_q0B_pair] = q0AB;
-            var stack = new Stack<Pair<Expr, Expr>>(statePair2Id.Keys);
+            var stack = new Stack<Tuple<Expr, Expr>>(statePair2Id.Keys);
             var stateList = new List<Expr>(new Expr[] { q0AB });
             var rulesMap = new Dictionary<Expr, Dictionary<FuncDecl, List<TreeRule>>>();
             var rulesList = new List<TreeRule>();
@@ -896,8 +896,8 @@ namespace Microsoft.Automata.Z3
             };
 
             int id = 1;
-            Func<Expr, Expr, Pair<Expr, Expr>> Pair = ((p, q) => new Pair<Expr, Expr>(p, q));
-            Func<Pair<Expr, Expr>, Expr> Pair2Id = pq =>
+            Func<Expr, Expr, Tuple<Expr, Expr>> Tuple = ((p, q) => new Tuple<Expr, Expr>(p, q));
+            Func<Tuple<Expr, Expr>, Expr> Pair2Id = pq =>
             {
                 if (pq.First.Equals(tt.identityState) && pq.Second.Equals(tt.identityState))
                     return tt.identityState;  //idempotent, it is never pushed to stack
@@ -939,7 +939,7 @@ namespace Microsoft.Automata.Z3
                                     var f = t.FuncDecl;
                                     var args = t.Args;
                                     if (TreeTheory.IsTrans(f))
-                                        return Z.MkApp(trans_S_T, Pair2Id(Pair(tt.identityState, args[0])), args[1]);
+                                        return Z.MkApp(trans_S_T, Pair2Id(Tuple(tt.identityState, args[0])), args[1]);
                                     else
                                         return null;
                                 }
@@ -967,7 +967,7 @@ namespace Microsoft.Automata.Z3
                                     var f = t.FuncDecl;
                                     var args = t.Args;
                                     if (TreeTheory.IsTrans(f))
-                                        return Z.MkApp(trans_S_T, Pair2Id(Pair(args[0], tt.identityState)), args[1]);
+                                        return Z.MkApp(trans_S_T, Pair2Id(Tuple(args[0], tt.identityState)), args[1]);
                                     else
                                         return null;
                                 }
@@ -989,7 +989,7 @@ namespace Microsoft.Automata.Z3
                         foreach (var ruleA in rulesA)
                         {
                             #region compose the ruleA for input symbol F with all rules of B
-                            var tc = new TransductionComposer(tt, (aState, bState) => Pair2Id(Pair(aState, bState)), B.GetRules);
+                            var tc = new TransductionComposer(tt, (aState, bState) => Pair2Id(Tuple(aState, bState)), B.GetRules);
                             var mixedExpr = Z.MkApp(trans_R_T, qB, ruleA.Output);
                             foreach (var guard_output in tc.Reduce(ruleA.Guard, mixedExpr))
                             {
@@ -1047,14 +1047,14 @@ namespace Microsoft.Automata.Z3
 
             int new_id = A.GetMaxStateId() + 1; //may not use state id's of A_acc as new ids
 
-            var init_states_pair_list = new List<Pair<Expr, Expr>>();
+            var init_states_pair_list = new List<Tuple<Expr, Expr>>();
             var init_states_term_list = new List<Expr>();
 
-            var statePair2Id = new Dictionary<Pair<Expr, Expr>, Expr>();
+            var statePair2Id = new Dictionary<Tuple<Expr, Expr>, Expr>();
             foreach (var inStA in A.roots)
                 foreach (var inStB in B.roots)
                 {
-                    var instpair = new Pair<Expr, Expr>(inStA, inStB);
+                    var instpair = new Tuple<Expr, Expr>(inStA, inStB);
                     var instid = Z.MkInt(new_id++);
                     init_states_pair_list.Add(instpair);
                     init_states_term_list.Add(instid);
@@ -1062,7 +1062,7 @@ namespace Microsoft.Automata.Z3
                 }
 
 
-            var stack = new Stack<Pair<Expr, Expr>>();
+            var stack = new Stack<Tuple<Expr, Expr>>();
             foreach (var stpair in init_states_pair_list)
                 stack.Push(stpair);
 
@@ -1072,8 +1072,8 @@ namespace Microsoft.Automata.Z3
             var rulesMap = new Dictionary<Expr, Dictionary<FuncDecl, List<TreeRule>>>();
 
             //product states 
-            //var stack2 = new Stack<Pair<ExprSet, ExprSet>>();
-            //var idMap2 = new Dictionary<Pair<ExprSet, ExprSet>, Expr>();
+            //var stack2 = new Stack<Tuple<ExprSet, ExprSet>>();
+            //var idMap2 = new Dictionary<Tuple<ExprSet, ExprSet>, Expr>();
 
             #region helpers
 
@@ -1100,7 +1100,7 @@ namespace Microsoft.Automata.Z3
             Func<Expr, Expr, Expr> MkStateId = (a, b) =>
             {
                 #region make a state id for the pair (a, b)
-                var ab = new Pair<Expr, Expr>(a, b);
+                var ab = new Tuple<Expr, Expr>(a, b);
 
                 Expr ab_id;
                 if (statePair2Id.TryGetValue(ab, out ab_id))
@@ -1130,8 +1130,8 @@ namespace Microsoft.Automata.Z3
                 var qA_qB_pair = stack.Pop();
                 var qAB = statePair2Id[qA_qB_pair];
 
-                var qA = qA_qB_pair.First;
-                var qB = qA_qB_pair.Second;
+                var qA = qA_qB_pair.Item1;
+                var qB = qA_qB_pair.Item2;
 
                 var func_rulesA_from_qA = (qA.Equals(tt.identityState) ? A.inputAlphabet.IdTransducer.ruleMap[qA] : A.ruleMap[qA]);
                 foreach (var func_rulesA in func_rulesA_from_qA)
@@ -1393,23 +1393,23 @@ namespace Microsoft.Automata.Z3
         /// </summary>
         public Grammars.ContextFreeGrammar ToCFG()
         {
-            var terminal = new Grammars.Exprinal<string>("_", "_");
+            var terminal = new Grammars.Terminal<string>("_", "_");
 
             List<Grammars.Production> cfg_prods = new List<Grammars.Production>();
             foreach (var rule in rulesList)
             {
                 var rhs_list = new List<Grammars.GrammarSymbol>();
-                rhs_list.Add(new Grammars.Exprinal<string>(rule.Symbol.Name.ToString(), rule.Symbol.Name.ToString()));
+                rhs_list.Add(new Grammars.Terminal<string>(rule.Symbol.Name.ToString(), rule.Symbol.Name.ToString()));
                 for (int i = 0; i < rule.Rank; i++)
                     foreach (var q in rule.Lookahead(i))
                         rhs_list.Add((Grammars.GrammarSymbol)new Grammars.Nonterminal(q.ToString()));
 
                 foreach (var q in rule.EnumerateStatesInOutput())
                 {
-                    if (q.First.Equals(tt.identityState))
+                    if (q.Item1.Equals(tt.identityState))
                         rhs_list.Add(terminal);
                     else
-                        rhs_list.Add((Grammars.GrammarSymbol)new Grammars.Nonterminal(q.First.ToString()));
+                        rhs_list.Add((Grammars.GrammarSymbol)new Grammars.Nonterminal(q.Item1.ToString()));
                 }
 
                 cfg_prods.Add(new Grammars.Production(new Grammars.Nonterminal(rule.State.ToString()), rhs_list.ToArray()));
@@ -1572,7 +1572,7 @@ namespace Microsoft.Automata.Z3
             return res3;
         }
 
-        bool sinkIsNeeded = false;
+        //bool sinkIsNeeded = false;
         bool uselessRemoved = false;
         /// <summary>
         /// Assumes that this is an acceptor and that all lookaheads are singletons and all guards are satisfiable.
@@ -1614,7 +1614,7 @@ namespace Microsoft.Automata.Z3
 
             res.determinized = this.determinized;
             res.uselessRemoved = true;
-            res.sinkIsNeeded = true;
+            //res.sinkIsNeeded = true;
 
             return res;
         }
@@ -1762,15 +1762,15 @@ namespace Microsoft.Automata.Z3
             Func<int, Expr> Int2Expr = tt.Z.MkInt;
 
             //bottom-up transitions organized by function symbols
-            var delta = new Dictionary<string, Dictionary<Pair<Sequence<int>, int>, Expr>>();
+            var delta = new Dictionary<string, Dictionary<Tuple<Sequence<int>, int>, Expr>>();
             foreach (var fnk in alph.Symbols)
-                delta[fnk.Name.ToString()] = new Dictionary<Pair<Sequence<int>, int>, Expr>();
+                delta[fnk.Name.ToString()] = new Dictionary<Tuple<Sequence<int>, int>, Expr>();
 
             foreach (var rule in A.rulesList)
             {
                 var fdelta = delta[rule.Symbol.Name.ToString()];
                 var children = new Sequence<int>(Array.ConvertAll(rule.lookahead, q => Expr2Int(q.SomeElement)));
-                var bottomup_move = new Pair<Sequence<int>, int>(children, Expr2Int(rule.state));
+                var bottomup_move = new Tuple<Sequence<int>, int>(children, Expr2Int(rule.state));
                 Expr pred;
                 if (fdelta.TryGetValue(bottomup_move, out pred))
                     pred = tt.Z.MkOr(pred, rule.Guard);
@@ -1818,9 +1818,9 @@ namespace Microsoft.Automata.Z3
                 {
                     var fnk = alph.GetConstructor(f);
                     var delta_f = delta[f];
-                    var fmoves = new List<KeyValuePair<Pair<Sequence<int>, int>, Expr>>();
+                    var fmoves = new List<KeyValuePair<Tuple<Sequence<int>, int>, Expr>>();
                     foreach (var entry in delta_f)
-                        if (IsCrossProductMember(entry.Key.First, qs))
+                        if (IsCrossProductMember(entry.Key.Item1, qs))
                             fmoves.Add(entry);
 
                     var preds = Array.ConvertAll(fmoves.ToArray(), fm => fm.Value);
@@ -1828,11 +1828,11 @@ namespace Microsoft.Automata.Z3
 
                     foreach (var minterm in minterms)
                     {
-                        var pred = tt.Z.ToNNF(tt.Z.Simplify(minterm.Second));
+                        var pred = tt.Z.ToNNF(tt.Z.Simplify(minterm.Item2));
                         var targetStatesInA = new List<int>();
                         for (int i = 0; i < preds.Length; i++)
-                            if (minterm.First[i])
-                                targetStatesInA.Add(fmoves[i].Key.Second);
+                            if (minterm.Item1[i])
+                                targetStatesInA.Add(fmoves[i].Key.Item2);
                         if (targetStatesInA.Count == 0)
                             throw new AutomataException(AutomataExceptionKind.InternalError_Determinization);
                         var targetState = P.MakePowerSetState(targetStatesInA);
@@ -1903,15 +1903,15 @@ namespace Microsoft.Automata.Z3
             Func<int, Expr> Int2Expr = tt.Z.MkInt;
 
             //bottom-up transitions organized by function symbols
-            var delta = new Dictionary<string, Dictionary<Pair<Sequence<int>, int>, Expr>>();
+            var delta = new Dictionary<string, Dictionary<Tuple<Sequence<int>, int>, Expr>>();
             foreach (var fnk in alph.Symbols)
-                delta[fnk.Name.ToString()] = new Dictionary<Pair<Sequence<int>, int>, Expr>();
+                delta[fnk.Name.ToString()] = new Dictionary<Tuple<Sequence<int>, int>, Expr>();
 
             foreach (var rule in A.rulesList)
             {
                 var fdelta = delta[rule.Symbol.Name.ToString()];
                 var children = new Sequence<int>(Array.ConvertAll(rule.lookahead, q => Expr2Int(q.SomeElement)));
-                var bottomup_move = new Pair<Sequence<int>, int>(children, Expr2Int(rule.state));
+                var bottomup_move = new Tuple<Sequence<int>, int>(children, Expr2Int(rule.state));
                 Expr pred;
                 if (fdelta.TryGetValue(bottomup_move, out pred))
                     pred = tt.Z.MkOr(pred, rule.Guard);
@@ -1959,9 +1959,9 @@ namespace Microsoft.Automata.Z3
                 {
                     var fnk = alph.GetConstructor(f);
                     var delta_f = delta[f];
-                    var fmoves = new List<KeyValuePair<Pair<Sequence<int>, int>, Expr>>();
+                    var fmoves = new List<KeyValuePair<Tuple<Sequence<int>, int>, Expr>>();
                     foreach (var entry in delta_f)
-                        if (IsCrossProductMember(entry.Key.First, qs))
+                        if (IsCrossProductMember(entry.Key.Item1, qs))
                             fmoves.Add(entry);
 
                     var preds = Array.ConvertAll(fmoves.ToArray(), fm => fm.Value);
@@ -1969,11 +1969,11 @@ namespace Microsoft.Automata.Z3
 
                     foreach (var minterm in minterms)
                     {
-                        var pred = tt.Z.ToNNF(tt.Z.Simplify(minterm.Second));
+                        var pred = tt.Z.ToNNF(tt.Z.Simplify(minterm.Item2));
                         var targetStatesInA = new List<int>();
                         for (int i = 0; i < preds.Length; i++)
-                            if (minterm.First[i])
-                                targetStatesInA.Add(fmoves[i].Key.Second);
+                            if (minterm.Item1[i])
+                                targetStatesInA.Add(fmoves[i].Key.Item2);
 
                         //This lines avoid completion. Only consider rules that go to a target state
                         if (!(targetStatesInA.Count == 0))
@@ -2037,15 +2037,15 @@ namespace Microsoft.Automata.Z3
             Func<int, Expr> Int2Expr = tt.Z.MkInt;
 
             //bottom-up transitions organized by function symbols
-            var delta = new Dictionary<string, Dictionary<Pair<Sequence<int>, int>, Expr>>();
+            var delta = new Dictionary<string, Dictionary<Tuple<Sequence<int>, int>, Expr>>();
             foreach (var fnk in alph.Symbols)
-                delta[fnk.Name.ToString()] = new Dictionary<Pair<Sequence<int>, int>, Expr>();
+                delta[fnk.Name.ToString()] = new Dictionary<Tuple<Sequence<int>, int>, Expr>();
 
             foreach (var rule in A.rulesList)
             {
                 var fdelta = delta[rule.Symbol.Name.ToString()];
                 var children = new Sequence<int>(Array.ConvertAll(rule.lookahead, q => Expr2Int(q.SomeElement)));
-                var bottomup_move = new Pair<Sequence<int>, int>(children, Expr2Int(rule.state));
+                var bottomup_move = new Tuple<Sequence<int>, int>(children, Expr2Int(rule.state));
                 Expr pred;
                 if (fdelta.TryGetValue(bottomup_move, out pred))
                     pred = tt.Z.MkOr(pred, rule.Guard);
@@ -2062,7 +2062,7 @@ namespace Microsoft.Automata.Z3
 
                 foreach (var kvp in el.Value)
                 {
-                    var trig = kvp.Key.First;
+                    var trig = kvp.Key.Item1;
                     Expr pred;
 
                     if (dict.TryGetValue(trig, out pred))
@@ -2149,10 +2149,10 @@ namespace Microsoft.Automata.Z3
             //var sink_is_needed = (fa.sinkIsNeeded); //at least one non-coaccessible state was removed
 
             //make an ordered pair of states
-            Func<Expr, Expr, Pair<Expr, Expr>> MkPair = (x, y) => (TT.Z.GetNumeralInt(x) < TT.Z.GetNumeralInt(y) ? new Pair<Expr, Expr>(x, y) : new Pair<Expr, Expr>(y, x));
+            Func<Expr, Expr, Tuple<Expr, Expr>> MkPair = (x, y) => (TT.Z.GetNumeralInt(x) < TT.Z.GetNumeralInt(y) ? new Tuple<Expr, Expr>(x, y) : new Tuple<Expr, Expr>(y, x));
 
-            var distinguishable = new HashSet<Pair<Expr, Expr>>();
-            var stack = new Stack<Pair<Expr, Expr>>();
+            var distinguishable = new HashSet<Tuple<Expr, Expr>>();
+            var stack = new Stack<Tuple<Expr, Expr>>();
 
             TreeTransducer fa_sink;
             var sink = fa.tt.Z.MkNumeral(fa.GetMaxStateId() + 1, fa.tt.Z.IntSort);
@@ -2161,9 +2161,9 @@ namespace Microsoft.Automata.Z3
             {
                 #region add sink state and some transitions to the sink state if the sink is needed
 
-                var nu = new Dictionary<Pair<FuncDecl, Sequence<ExprSet>>, Expr>();
-                HashSet<Pair<FuncDecl, Sequence<ExprSet>>> delta_lhs = null;
-                var delta_sink = new HashSet<Pair<FuncDecl, Sequence<ExprSet>>>();
+                var nu = new Dictionary<Tuple<FuncDecl, Sequence<ExprSet>>, Expr>();
+                HashSet<Tuple<FuncDecl, Sequence<ExprSet>>> delta_lhs = null;
+                var delta_sink = new HashSet<Tuple<FuncDecl, Sequence<ExprSet>>>();
 
                 foreach (var rule in fa.rulesList)
                 {
@@ -2173,21 +2173,21 @@ namespace Microsoft.Automata.Z3
                         nu[rule.LHS] = this.tt.Z.MkNot(rule.Guard);
                 }
 
-                delta_lhs = new HashSet<Pair<FuncDecl, Sequence<ExprSet>>>(nu.Keys);
+                delta_lhs = new HashSet<Tuple<FuncDecl, Sequence<ExprSet>>>(nu.Keys);
                 foreach (var key in delta_lhs)
                 {
                     if (!this.tt.Z.IsSatisfiable(nu[key]))
                         nu.Remove(key);
                 }
                 foreach (var key in delta_lhs)
-                    for (var i = 0; i < key.First.Arity - 1; i++) //Arity is rank + 1
+                    for (var i = 0; i < key.Item1.Arity - 1; i++) //Arity is rank + 1
                     {
-                        var x = key.Second[i].SomeElement;
+                        var x = key.Item2[i].SomeElement;
                         foreach (var y in fa.stateList)
                         {
                             if (!x.Equals(y) && (fa.IsRoot(x) == fa.IsRoot(y)))
                             {
-                                var z = new Pair<FuncDecl, Sequence<ExprSet>>(key.First, key.Second.Replace(i, new ExprSet(y)));
+                                var z = new Tuple<FuncDecl, Sequence<ExprSet>>(key.Item1, key.Item2.Replace(i, new ExprSet(y)));
                                 if (!delta_lhs.Contains(z))
                                     delta_sink.Add(z);
                             }
@@ -2198,9 +2198,9 @@ namespace Microsoft.Automata.Z3
 
                 var new_rules = new List<TreeRule>(fa.rulesList);
                 foreach (var maplet in nu)
-                    new_rules.Add(new TreeRule(sink, maplet.Key.First, maplet.Value, null, maplet.Key.Second.ToArray()));
+                    new_rules.Add(new TreeRule(sink, maplet.Key.Item1, maplet.Value, null, maplet.Key.Item2.ToArray()));
                 foreach (var elem in delta_sink)
-                    new_rules.Add(new TreeRule(sink, elem.First, this.tt.Z.True, null, elem.Second.ToArray()));
+                    new_rules.Add(new TreeRule(sink, elem.Item1, this.tt.Z.True, null, elem.Item2.ToArray()));
 
                 var new_states = new List<Expr>(fa.stateList);
                 new_states.Add(sink);
@@ -2236,18 +2236,18 @@ namespace Microsoft.Automata.Z3
             while (stack.Count > 0)
             {
                 var pair = stack.Pop();
-                var r = pair.First;
-                var s = pair.Second;
+                var r = pair.Item1;
+                var s = pair.Item2;
                 foreach (var rank in fa.inputAlphabet.ranks)
                     if (rank > 0)
                         foreach (var r_rule in fa_sink.GetRulesByRank(r, rank))
                             foreach (var s_rule in fa_sink.GetRulesByRank(s, rank))
                                 if (r_rule.Symbol.Equals(s_rule.Symbol))
                                 {
-                                    int i = r_rule.LHS.Second.EqAllButOne(s_rule.LHS.Second);
+                                    int i = r_rule.LHS.Item2.EqAllButOne(s_rule.LHS.Item2);
                                     if (i > -1)
                                     {
-                                        var pq = MkPair(r_rule.LHS.Second[i].SomeElement, s_rule.LHS.Second[i].SomeElement);
+                                        var pq = MkPair(r_rule.LHS.Item2[i].SomeElement, s_rule.LHS.Item2[i].SomeElement);
                                         if (!distinguishable.Contains(pq))
                                         {
                                             if (r_rule.Guard.Equals(this.tt.Z.True) || s_rule.Guard.Equals(this.tt.Z.True) ||
@@ -2281,7 +2281,7 @@ namespace Microsoft.Automata.Z3
                 }
             }
 
-            var guards = new Dictionary<Pair<Sequence<Expr>, Expr>, Dictionary<FuncDecl, Expr>>();
+            var guards = new Dictionary<Tuple<Sequence<Expr>, Expr>, Dictionary<FuncDecl, Expr>>();
 
             foreach (var move in fa.rulesList)
             {
@@ -2295,7 +2295,7 @@ namespace Microsoft.Automata.Z3
                     newLookahead[i] = new OrderedSet<Expr>(newSt);
                 }
                 var outSeq = new Sequence<Expr>(outlist);
-                var pq = new Pair<Sequence<Expr>, Expr>(outSeq, p);
+                var pq = new Tuple<Sequence<Expr>, Expr>(outSeq, p);
                 if (!guards.ContainsKey(pq))
                     guards[pq] = new Dictionary<FuncDecl, Expr>();
 
@@ -2313,12 +2313,12 @@ namespace Microsoft.Automata.Z3
             {
                 foreach (var symbentry in entry.Value)
                 {
-                    var larr = entry.Key.First.ToArray();
-                    var lookahead = new ExprSet[entry.Key.First.Length];
+                    var larr = entry.Key.Item1.ToArray();
+                    var lookahead = new ExprSet[entry.Key.Item1.Length];
                     for (int i = 0; i < lookahead.Length; i++)
                         lookahead[i] = new ExprSet(larr[i]);
 
-                    moves.Add(new TreeRule(entry.Key.Second, symbentry.Key, symbentry.Value, null, lookahead));
+                    moves.Add(new TreeRule(entry.Key.Item2, symbentry.Key, symbentry.Value, null, lookahead));
                 }
             }
 
@@ -2365,7 +2365,7 @@ namespace Microsoft.Automata.Z3
             var symbolToInt = new Dictionary<string, int>();
             var intToSymbol = new Dictionary<int, FuncDecl>();
 
-            var R = new Dictionary<List<int>, HashSet<Pair<int, Expr>>>(new ListComparer<int>());
+            var R = new Dictionary<List<int>, HashSet<Tuple<int, Expr>>>(new ListComparer<int>());
             foreach (var rule in rulesList)
             {
                 var symb = rule.Symbol.ToString();
@@ -2385,18 +2385,18 @@ namespace Microsoft.Automata.Z3
                     var li = rule.lookahead[i];
                     rhs.Add(Expr2int(li.SomeElement));
                 }
-                HashSet<Pair<int, Expr>> value = null;
+                HashSet<Tuple<int, Expr>> value = null;
                 if (R.ContainsKey(rhs))
                 {
                     value = R[rhs];
                 }
                 else
                 {
-                    value = new HashSet<Pair<int, Expr>>();
+                    value = new HashSet<Tuple<int, Expr>>();
                     R[rhs] = value;
                 }
                 var toState = Expr2int(rule.state);
-                value.Add(new Pair<int, Expr>(toState, rule.Guard));
+                value.Add(new Tuple<int, Expr>(toState, rule.Guard));
                 C[toState]++;
             }
 
@@ -2412,8 +2412,8 @@ namespace Microsoft.Automata.Z3
                 foreach (var kvpair in rule.Value)
                 {
                     HashSet<List<int>> value;
-                    var key = kvpair.First;
-                    cond = tt.Z.MkAnd(cond, kvpair.Second);
+                    var key = kvpair.Item1;
+                    cond = tt.Z.MkAnd(cond, kvpair.Item2);
                     if (!B.ContainsKey(key))
                     {
                         value = new HashSet<List<int>>();
@@ -2428,7 +2428,7 @@ namespace Microsoft.Automata.Z3
                 }
                 cond = tt.Z.MkNot(cond);
                 if (tt.Z.IsSatisfiable(cond))
-                    rule.Value.Add(new Pair<int, Expr>(-1, cond));
+                    rule.Value.Add(new Tuple<int, Expr>(-1, cond));
             }
 
             initial(P, K, Q, F, R);
@@ -2453,8 +2453,8 @@ namespace Microsoft.Automata.Z3
                     {
                         foreach (var pairLeftGuard in delta(rightOld, R))
                         {
-                            var left1 = pairLeftGuard.First;
-                            var guard1 = pairLeftGuard.Second;
+                            var left1 = pairLeftGuard.Item1;
+                            var guard1 = pairLeftGuard.Item2;
 
                             for (int k = 1; k < rightOld.Count; k++)
                             {
@@ -2467,8 +2467,8 @@ namespace Microsoft.Automata.Z3
 
                                 foreach (var pairLeftGuard2 in delta(right, R))
                                 {
-                                    var left2 = pairLeftGuard2.First;
-                                    var guard2 = pairLeftGuard2.Second;
+                                    var left2 = pairLeftGuard2.Item1;
+                                    var guard2 = pairLeftGuard2.Item2;
                                     var conj = tt.Z.MkAnd(guard1, guard2);
 
                                     //in paper left2=delta(...next...) j=left1
@@ -2489,10 +2489,10 @@ namespace Microsoft.Automata.Z3
 
                                             foreach (var pairLeftGuard3 in delta(newRight, R))
                                             {
-                                                var newConj = tt.Z.MkAnd(smallConj, pairLeftGuard3.Second);
+                                                var newConj = tt.Z.MkAnd(smallConj, pairLeftGuard3.Item2);
                                                 if (tt.Z.IsSatisfiable(newConj))
                                                 {
-                                                    var ind = P.first(pairLeftGuard3.First);
+                                                    var ind = P.first(pairLeftGuard3.Item1);
 
 
                                                     HashSet<int> subind;
@@ -2544,8 +2544,8 @@ namespace Microsoft.Automata.Z3
             }
 
             var res = merge(P, Q, F, C, R);
-            F = res.First;
-            R = res.Second;
+            F = res.Item1;
+            R = res.Item2;
 
             var newFinStates = new List<int>();
             foreach (var st in F)
@@ -2575,8 +2575,8 @@ namespace Microsoft.Automata.Z3
                 }
                 foreach (var kvp in rule.Value)
                 {
-                    if (kvp.First != -1)
-                        newRules.Add(tt.Z.TT.MkTreeAcceptorRule(inputAlphabet, kvp.First, symbol, kvp.Second, stFrom));
+                    if (kvp.Item1 != -1)
+                        newRules.Add(tt.Z.TT.MkTreeAcceptorRule(inputAlphabet, kvp.Item1, symbol, kvp.Item2, stFrom));
                 }
             }
 
@@ -2591,7 +2591,7 @@ namespace Microsoft.Automata.Z3
             List<int> right,
             Dictionary<int, HashSet<int>> subparts,
             Partition P,
-            Dictionary<List<int>, HashSet<Pair<int, Expr>>> R)
+            Dictionary<List<int>, HashSet<Tuple<int, Expr>>> R)
         {
             if (pos == all.Length)
             {
@@ -2605,12 +2605,12 @@ namespace Microsoft.Automata.Z3
                 newRight[k] = i;
                 foreach (var pairLeftGuard3 in delta(newRight, R))
                 {
-                    var newConj = tt.Z.MkAnd(condition, pairLeftGuard3.Second);
+                    var newConj = tt.Z.MkAnd(condition, pairLeftGuard3.Item2);
                     if (tt.Z.IsSatisfiable(newConj))
                     {
                         //TODO Should I check some sat again
                         var newSubs = new Dictionary<int, HashSet<int>>(subparts);
-                        var ind = P.first(pairLeftGuard3.First);
+                        var ind = P.first(pairLeftGuard3.Item1);
                         HashSet<int> subind;
                         if (newSubs.ContainsKey(ind))
                             subind = newSubs[ind];
@@ -2629,13 +2629,13 @@ namespace Microsoft.Automata.Z3
         }
 
 
-        private HashSet<Pair<int, Expr>> delta(List<int> q, Dictionary<List<int>, HashSet<Pair<int, Expr>>> R)
+        private HashSet<Tuple<int, Expr>> delta(List<int> q, Dictionary<List<int>, HashSet<Tuple<int, Expr>>> R)
         {
             if (R.ContainsKey(q))
                 return R[q];
 
-            HashSet<Pair<int, Expr>> r = new HashSet<Pair<int, Expr>>();
-            r.Add(new Pair<int, Expr>(-1, TT.Z.True));
+            HashSet<Tuple<int, Expr>> r = new HashSet<Tuple<int, Expr>>();
+            r.Add(new Tuple<int, Expr>(-1, TT.Z.True));
             return r;
         }
 
@@ -2646,11 +2646,11 @@ namespace Microsoft.Automata.Z3
             C.Remove(q);
         }
 
-        private Pair<HashSet<int>, Dictionary<List<int>, HashSet<Pair<int, Expr>>>>
+        private Tuple<HashSet<int>, Dictionary<List<int>, HashSet<Tuple<int, Expr>>>>
             merge(Partition P, HashSet<int> Q, HashSet<int> F, Dictionary<int, int> C,
-            Dictionary<List<int>, HashSet<Pair<int, Expr>>> R)
+            Dictionary<List<int>, HashSet<Tuple<int, Expr>>> R)
         {
-            var R1 = new Dictionary<List<int>, HashSet<Pair<int, Expr>>>();
+            var R1 = new Dictionary<List<int>, HashSet<Tuple<int, Expr>>>();
             var Q1 = new HashSet<int>(Q);
             var F1 = new HashSet<int>(F);
             var C1 = new Dictionary<int, int>(C);
@@ -2674,21 +2674,21 @@ namespace Microsoft.Automata.Z3
 
                 if (!lc.Equals(r, rule.Key))
                 {
-                    var set = new HashSet<Pair<int, Expr>>();
+                    var set = new HashSet<Tuple<int, Expr>>();
                     foreach (var kvp in rule.Value)
                     {
-                        var st = kvp.First;
-                        var ex = kvp.Second;
-                        set.Add(new Pair<int, Expr>(P.first(st), ex));
+                        var st = kvp.Item1;
+                        var ex = kvp.Item2;
+                        set.Add(new Tuple<int, Expr>(P.first(st), ex));
                     }
                     R1[r] = set;
                 }
                 else
                 {
-                    var set = new HashSet<Pair<int, Expr>>();
+                    var set = new HashSet<Tuple<int, Expr>>();
                     foreach (var kvp in rule.Value)
                     {
-                        set.Add(new Pair<int, Expr>(P.first(kvp.First), kvp.Second));
+                        set.Add(new Tuple<int, Expr>(P.first(kvp.Item1), kvp.Item2));
                     }
                     R1[r] = set;
                 }
@@ -2696,12 +2696,12 @@ namespace Microsoft.Automata.Z3
             }
 
             //Make sure it changes                        
-            return new Pair<HashSet<int>, Dictionary<List<int>, HashSet<Pair<int, Expr>>>>(
+            return new Tuple<HashSet<int>, Dictionary<List<int>, HashSet<Tuple<int, Expr>>>>(
                 F1, R1);
         }
 
         private void initial(Partition P, HashSet<int> K, HashSet<int> Q, HashSet<int> F,
-            Dictionary<List<int>, HashSet<Pair<int, Expr>>> R)
+            Dictionary<List<int>, HashSet<Tuple<int, Expr>>> R)
         {
             Func<Expr, int> Expr2int = (x => int.Parse(x.ToString()));
             Dictionary<int, HashSet<Triple>> signatures =
@@ -2714,8 +2714,8 @@ namespace Microsoft.Automata.Z3
 
                 foreach (var kvp in rule.Value)
                 {
-                    if (!signatures.ContainsKey(kvp.First))
-                        signatures[kvp.First] = new HashSet<Triple>();
+                    if (!signatures.ContainsKey(kvp.Item1))
+                        signatures[kvp.Item1] = new HashSet<Triple>();
 
                     for (int k = 1; k < right.Count; ++k)
                     {
@@ -2899,8 +2899,8 @@ namespace Microsoft.Automata.Z3
 
             // Get equivalence classes of quotiented SFA and build STA
             Dictionary<int, Block> Blocks = sfa.Automaton.GetStateEquivalenceClasses();
-            Dictionary<string, Dictionary<Pair<List<int>, int>, HashSet<Expr>>> condMap =
-                new Dictionary<string, Dictionary<Pair<List<int>, int>, HashSet<Expr>>>();
+            Dictionary<string, Dictionary<Tuple<List<int>, int>, HashSet<Expr>>> condMap =
+                new Dictionary<string, Dictionary<Tuple<List<int>, int>, HashSet<Expr>>>();
             foreach (var move in this.rulesList)
             {
                 int to = Blocks[GetStateId(move.state)].GetRepresentative();
@@ -2909,14 +2909,14 @@ namespace Microsoft.Automata.Z3
                     from[i] = Blocks[GetStateId(move.lookahead[i].SomeElement)].GetRepresentative();
 
                 string constr = move.Symbol.Name.ToString();
-                Dictionary<Pair<List<int>, int>, HashSet<Expr>> dict;
+                Dictionary<Tuple<List<int>, int>, HashSet<Expr>> dict;
                 if (!condMap.TryGetValue(constr, out dict))
                 {
-                    dict = new Dictionary<Pair<List<int>, int>, HashSet<Expr>>();
+                    dict = new Dictionary<Tuple<List<int>, int>, HashSet<Expr>>();
                     condMap[constr] = dict;
                 }
 
-                var st = new Pair<List<int>, int>(new List<int>(from), to);
+                var st = new Tuple<List<int>, int>(new List<int>(from), to);
                 HashSet<Expr> condSet;
                 if (!dict.TryGetValue(st, out condSet))
                 {
@@ -2934,7 +2934,7 @@ namespace Microsoft.Automata.Z3
                 foreach (var entry in constrDicPair.Value)
                 {
                     newMoves.Add(tt.Z.TT.MkTreeAcceptorRule(this.
-                        inputAlphabet, entry.Key.Second, constrDicPair.Key, tt.Z.MkOr(entry.Value), entry.Key.First.ToArray()));
+                        inputAlphabet, entry.Key.Item2, constrDicPair.Key, tt.Z.MkOr(entry.Value), entry.Key.Item1.ToArray()));
                 }
 
             foreach (var f in this.roots)
@@ -3447,11 +3447,11 @@ namespace Microsoft.Automata.Z3
         /// </summary>
         /// <param name="mixedExpr">term that may include nested applications of $trans</param>
         /// <param name="context">condition on attributes</param>
-        internal IEnumerable<Pair<Expr, Expr>> Reduce(Expr context, Expr mixedExpr)
+        internal IEnumerable<Tuple<Expr, Expr>> Reduce(Expr context, Expr mixedExpr)
         {
             if (mixedExpr == null || IsNotMixed(mixedExpr))
             {
-                yield return new Pair<Expr, Expr>(Z.True, mixedExpr);
+                yield return new Tuple<Expr, Expr>(Z.True, mixedExpr);
             }
             else
             {
@@ -3481,7 +3481,7 @@ namespace Microsoft.Automata.Z3
                         ////get the free transforrmer h = $trans_A_C
                         //var h = z3p.TT.GetTrans(qp.Sort, input_subtree.Sort, z3p.GetRange(f));
                         //var res = z3p.MkApp(h, qp, input_subtree);
-                        //yield return new Pair<Expr, Expr>(z3p.True, res);
+                        //yield return new Tuple<Expr, Expr>(z3p.True, res);
                     }
                     else
                     {
@@ -3503,7 +3503,7 @@ namespace Microsoft.Automata.Z3
                             //get the free transformer h = $trans_A_C
                             var trans = tt.GetTrans(input_subtree.Sort, Z.GetRange(f));
                             var res = Z.MkApp(trans, qp, input_subtree);
-                            yield return new Pair<Expr, Expr>(Z.True, res);
+                            yield return new Tuple<Expr, Expr>(Z.True, res);
                         }
                         else if (tt.GetRankedAlphabet(gterm.Sort).ContainsConstructor(g))
                         {
@@ -3542,7 +3542,7 @@ namespace Microsoft.Automata.Z3
                         var guard = Z.MkAnd(guards1);
                         var context_guard = Z.MkAndSimplify(context, guard);
                         if (!context_guard.Equals(Z.False))
-                            yield return new Pair<Expr, Expr>(guard, term1);
+                            yield return new Tuple<Expr, Expr>(guard, term1);
                     }
                     #endregion
                 }
@@ -3564,14 +3564,14 @@ namespace Microsoft.Automata.Z3
                 return Array.TrueForAll(maybeMixedExpr.Args, t => IsNotMixed(t));
         }
 
-        private IEnumerable<ConsList<Pair<Expr, Expr>>> ReduceSubtrees(Expr context, ConsList<Expr> terms)
+        private IEnumerable<ConsList<Tuple<Expr, Expr>>> ReduceSubtrees(Expr context, ConsList<Expr> terms)
         {
             if (terms == null)
                 yield return null;
             else
                 foreach (var first in Reduce(context, terms.First))
                     foreach (var rest in ReduceSubtrees(context, terms.Rest))
-                        yield return new ConsList<Pair<Expr, Expr>>(first, rest);
+                        yield return new ConsList<Tuple<Expr, Expr>>(first, rest);
         }
 
         internal Expr MkAnd(Expr context, Expr guard)
@@ -3597,7 +3597,7 @@ namespace Microsoft.Automata.Z3
             return Z.Z3.MkAnd(context, guard);
         }
 
-        private IEnumerable<Pair<Expr, Expr>> ApplyTransformationRules(Expr context, Expr p, Expr t)
+        private IEnumerable<Tuple<Expr, Expr>> ApplyTransformationRules(Expr context, Expr p, Expr t)
         {
             var alph = tt.GetRankedAlphabet(t.Sort);
             FuncDecl f = t.FuncDecl;  //f is known to be a constructor 
@@ -3615,7 +3615,7 @@ namespace Microsoft.Automata.Z3
                 {
                     var t1 = (rule.IsAcceptorRule ? null : Z.ApplySubstitution(rule.Output, vars, args));
                     foreach (var t2 in Reduce(context_and_guard, t1))
-                        yield return new Pair<Expr, Expr>(MkAnd(guard, t2.First), t2.Second);
+                        yield return new Tuple<Expr, Expr>(MkAnd(guard, t2.First), t2.Second);
                 }
             }
         }

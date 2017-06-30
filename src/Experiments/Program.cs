@@ -12,8 +12,8 @@ namespace Experiments
         static void Main(string[] args)
         {
             //HtmlEncode.Test.Run();
-            //Trie.Test.Run();
-            TestEvilRegex();
+            Trie.Test.Run();
+            //TestEvilRegex();
             Console.ReadLine();
         }
 

@@ -9,7 +9,6 @@ using System.IO;
 using Microsoft.Automata.Z3;
 using Microsoft.Automata.Z3.Internal;
 using Microsoft.Automata;
-using Microsoft.Automata.Tests;
 using Microsoft.Z3;
 using System.Diagnostics;
 

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
-using Microsoft.Automata.Internal;
+using Microsoft.Automata;
 
 namespace Microsoft.Automata.Rex
 {
@@ -183,7 +183,7 @@ namespace Microsoft.Automata.Rex
         }
 
         /// <summary>
-        /// Minimize the automaton
+        /// Determinize and then minimize the automaton
         /// </summary>
         public Automaton<BDD> Minimize(Automaton<BDD> aut)
         {
@@ -300,14 +300,10 @@ namespace Microsoft.Automata.Rex
         }
         #endregion
 
-        #region IDescribe<BDD> Members
-
         public string Describe(BDD label)
         {
             return converter.Describe(label);
         }
-
-        #endregion
     }
 
     /*
@@ -659,11 +655,11 @@ namespace Microsoft.Automata.Rex
             return moveCond;
         }
 
-        private static List<Pair<char, char>> ComputeRanges(string set)
+        private static List<Tuple<char, char>> ComputeRanges(string set)
         {
             int setLength = set[SETLENGTH];
 
-            var ranges = new List<Pair<char, char>>(setLength);
+            var ranges = new List<Tuple<char, char>>(setLength);
             int i = SETSTART;
             int end = i + setLength;
             while (i < end)
@@ -677,7 +673,7 @@ namespace Microsoft.Automata.Rex
                 else
                     last = Lastchar;
                 i++;
-                ranges.Add(new Pair<char, char>(first, last));
+                ranges.Add(new Tuple<char, char>(first, last));
             }
             return ranges;
         }
@@ -879,15 +875,15 @@ namespace Microsoft.Automata.Rex
             var finalStates = new List<int>();
             if (addEmptyWord)
                 finalStates.Add(start); //epsilon is accepted so initial state is also final
-            var conditionMap = new Dictionary<Pair<int, int>, S>();//for normalization of move conditions
-            var eMoves = new HashSet<Pair<int, int>>();
+            var conditionMap = new Dictionary<Tuple<int, int>, S>();//for normalization of move conditions
+            var eMoves = new HashSet<Tuple<int, int>>();
 
             if (!allSingleSource)
             {
                 isDeterministic = false;
                 isEpsilonFree = false;
                 foreach (var sfa in sfas) //add initial epsilon transitions
-                    eMoves.Add(new Pair<int, int>(start, sfa.InitialState));
+                    eMoves.Add(new Tuple<int, int>(start, sfa.InitialState));
             }
             else if (isDeterministic)
             {
@@ -923,13 +919,13 @@ namespace Microsoft.Automata.Rex
                 {
                     int source = (allSingleSource && sfa.InitialState == move.SourceState ? start : move.SourceState);
                     int target = (allFinalSink && sfa.FinalState == move.TargetState ? sinkId : move.TargetState);
-                    var p = new Pair<int, int>(source, target);
+                    var p = new Tuple<int, int>(source, target);
                     stateRenamingMap[move.SourceState] = source;
                     stateRenamingMap[move.TargetState] = target;
                     if (move.IsEpsilon)
                     {
                         if (source != target)
-                            eMoves.Add(new Pair<int, int>(source, target));
+                            eMoves.Add(new Tuple<int, int>(source, target));
                         continue;
                     }
 
@@ -1334,7 +1330,7 @@ namespace Microsoft.Automata.Rex
             return !sfa.isEpsilonFree;
         }
 
-        IEnumerable<Move<S>> GenerateMoves(Dictionary<Pair<int, int>, S> condMap, IEnumerable<Pair<int, int>> eMoves)
+        IEnumerable<Move<S>> GenerateMoves(Dictionary<Tuple<int, int>, S> condMap, IEnumerable<Tuple<int, int>> eMoves)
         {
             foreach (var kv in condMap)
                 yield return Move<S>.T(kv.Key.First, kv.Key.Second, kv.Value);

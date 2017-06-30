@@ -555,15 +555,10 @@ namespace Microsoft.Automata
 
         #endregion
 
-        #region Simplification
+        #region Negation Normal Form
 
         /// <summary>
-        /// Simplify term t to an equivalent, smaller term.
-        /// </summary>
-        TERM Simplify(TERM t);
-
-        /// <summary>
-        /// Converts all the Boolean subterms in t to an equivalent predicates in negation normal form.
+        /// Converts all the Boolean subterms in t to an equivalent predicates in Negation Normal Form.
         /// </summary>
         TERM ToNNF(TERM t);
 

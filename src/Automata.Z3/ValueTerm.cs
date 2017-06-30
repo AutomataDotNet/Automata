@@ -3,11 +3,10 @@ using System.Collections.Generic;
 using System.Text;
 
 using Microsoft.Automata;
-using Microsoft.Automata.Internal;
 using Microsoft.Automata.Z3.Internal;
 using Microsoft.Z3;
 
-using SP = Microsoft.Automata.Pair<int, int>;
+//using SP = System.Tuple<int, int>;
 
 namespace Microsoft.Automata.Z3
 {

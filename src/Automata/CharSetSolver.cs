@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 
-using Microsoft.Automata.Internal;
+using Microsoft.Automata;
 
 namespace Microsoft.Automata
 {
@@ -63,13 +63,13 @@ namespace Microsoft.Automata
 
         #region Creating ranges
 
-        Microsoft.Automata.Internal.Utilities.IgnoreCaseTransformer _IgnoreCase = null;
-        Microsoft.Automata.Internal.Utilities.IgnoreCaseTransformer IgnoreCase
+        Microsoft.Automata.Utilities.IgnoreCaseTransformer _IgnoreCase = null;
+        Microsoft.Automata.Utilities.IgnoreCaseTransformer IgnoreCase
         {
             get
             {
                 if (_IgnoreCase == null)
-                    _IgnoreCase = new Microsoft.Automata.Internal.Utilities.IgnoreCaseTransformer(this);
+                    _IgnoreCase = new Microsoft.Automata.Utilities.IgnoreCaseTransformer(this);
                 return _IgnoreCase;
             }
         }
@@ -103,11 +103,11 @@ namespace Microsoft.Automata
         /// <summary>
         /// Make a character set that is the union of the character sets of the given ranges.
         /// </summary>
-        public BDD MkCharSetFromRanges(IEnumerable<Pair<uint, uint>> ranges)
+        public BDD MkCharSetFromRanges(IEnumerable<Tuple<uint, uint>> ranges)
         {
             BDD res = False;
             foreach (var range in ranges)
-                res = MkOr(res, MkSetFromRange(range.First, range.Second, _bw -1));
+                res = MkOr(res, MkSetFromRange(range.Item1, range.Item2, _bw -1));
             return res;
         }
 
@@ -138,7 +138,7 @@ namespace Microsoft.Automata
             return aut.GetMoveFrom(aut.InitialState).Label;
         }
 
-        //private void CheckBug(Pair<int, int>[] ranges)
+        //private void CheckBug(Tuple<int, int>[] ranges)
         //{
         //    if (ranges.Length > 2)
         //    {
@@ -293,7 +293,7 @@ namespace Microsoft.Automata
             var res = new uint[ranges.Length];
             for (int i = 0; i < res.Length; i++)
                 //uses the fact that only 16 bits are used since integers are character codes
-                res[i] = (ranges[i].First << 16) | ranges[i].Second;
+                res[i] = (ranges[i].Item1 << 16) | ranges[i].Item2;
 
             return res;
         }
@@ -360,9 +360,9 @@ namespace Microsoft.Automata
 
         private BDD DeserializeBasedOnRanges(uint[] arcs)
         {
-            Pair<uint, uint>[] ranges = new Pair<uint, uint>[arcs.Length];
+            Tuple<uint, uint>[] ranges = new Tuple<uint, uint>[arcs.Length];
             for (int i = 0; i < arcs.Length; i++)
-                ranges[i] = new Pair<uint, uint>((arcs[i] >> 16) & 0xFFFF, arcs[i] & 0xFFFF);
+                ranges[i] = new Tuple<uint, uint>((arcs[i] >> 16) & 0xFFFF, arcs[i] & 0xFFFF);
             var set = MkCharSetFromRanges(ranges);
             return set;
         }
@@ -466,9 +466,9 @@ namespace Microsoft.Automata
 
             automaton = Automaton<BDD>.Create(automaton.Algebra, newInitialState, new int[] { newFinalState }, moves);
 
-            Func<int, int, Pair<int, int>> P = (m, n) => { return new Pair<int, int>(m, n); };          
+            Func<int, int, Tuple<int, int>> P = (m, n) => { return new Tuple<int, int>(m, n); };          
 
-            Dictionary<Pair<int, int>, string> regexes = new Dictionary<Pair<int, int>, string>();
+            Dictionary<Tuple<int, int>, string> regexes = new Dictionary<Tuple<int, int>, string>();
             Dictionary<int, HashSet<int>> outStates = new Dictionary<int, HashSet<int>>();
             Dictionary<int, HashSet<int>> inStates = new Dictionary<int, HashSet<int>>();
 
@@ -571,7 +571,7 @@ namespace Microsoft.Automata
 
             automaton = Automaton<BDD>.Create(automaton.Algebra, newInitialState, new int[] { newFinalState }, moves);
 
-            Func<int, int, Pair<int,int>> P = (m,n) => {return new Pair<int,int>(m,n);};
+            Func<int, int, Tuple<int,int>> P = (m,n) => {return new Tuple<int,int>(m,n);};
 
             Func<int, PrioritizedState> Prio = s => 
                 {
@@ -580,7 +580,7 @@ namespace Microsoft.Automata
                     return new PrioritizedState(s, m * n);
                 };
 
-            Dictionary<Pair<int, int>, string> regexes = new Dictionary<Pair<int, int>, string>();
+            Dictionary<Tuple<int, int>, string> regexes = new Dictionary<Tuple<int, int>, string>();
             Dictionary<int, HashSet<int>> outStates = new Dictionary<int, HashSet<int>>();
             Dictionary<int, HashSet<int>> inStates = new Dictionary<int, HashSet<int>>();
 
@@ -815,7 +815,7 @@ namespace Microsoft.Automata
         public void ShowGraph(Automaton<BDD> aut, string name)
         {
             var autwrap = new AutWrapper(aut, this);
-            Internal.DirectedGraphs.DgmlWriter.ShowGraph<BDD>(-1, autwrap, name);
+            DirectedGraphs.DgmlWriter.ShowGraph<BDD>(-1, autwrap, name);
         }
 
         /// <summary>
@@ -838,7 +838,7 @@ namespace Microsoft.Automata
                 moves.Add(Move<string>.Create(move.SourceState, move.TargetState, PrettyPrint(move.Label) + " (" + aut.GetProbability(move) + ")"));
 
             var autwrap = Automaton<string>.Create(null, aut.InitialState, aut.GetFinalStates(), moves);
-            Internal.DirectedGraphs.DgmlWriter.ShowGraph<string>(-1, autwrap, name);
+            DirectedGraphs.DgmlWriter.ShowGraph<string>(-1, autwrap, name);
         }
 
         /// <summary>
@@ -849,7 +849,7 @@ namespace Microsoft.Automata
         public void SaveAsDot(Automaton<BDD> aut, string name, string file)
         {
             var autwrap = new AutWrapper(aut, this);
-            Internal.DirectedGraphs.DotWriter.AutomatonToDot(this.PrettyPrint, autwrap, name, file, Internal.DirectedGraphs.DotWriter.RANKDIR.LR, 12, true);
+            DirectedGraphs.DotWriter.AutomatonToDot(this.PrettyPrint, autwrap, name, file, DirectedGraphs.DotWriter.RANKDIR.LR, 12, true);
         }
 
         /// <summary>
@@ -860,7 +860,7 @@ namespace Microsoft.Automata
         public void SaveAsDgml(Automaton<BDD> aut, string name)
         {
             var autwrap = new AutWrapper(aut, this);
-            Internal.DirectedGraphs.DgmlWriter.AutomatonToDgml(-1, autwrap, name);
+            DirectedGraphs.DgmlWriter.AutomatonToDgml(-1, autwrap, name);
         }
 
         /// <summary>
@@ -904,9 +904,9 @@ namespace Microsoft.Automata
                     foreach (var range in this.ToRanges(move.Label))
                     {
                         sb.Append(" ");
-                        sb.Append(range.First);
+                        sb.Append(range.Item1);
                         sb.Append(" ");
-                        sb.Append(range.Second);
+                        sb.Append(range.Item2);
                     }
                     sb.AppendLine();
                 }
@@ -930,9 +930,9 @@ namespace Microsoft.Automata
                 var nums = lines[i].Split(' ');
                 int s = int.Parse(nums[1]);
                 int t = int.Parse(nums[2]);
-                var ranges = new List<Pair<uint, uint>>();
+                var ranges = new List<Tuple<uint, uint>>();
                 for (int j = 3; j < nums.Length; j = j + 2)
-                    ranges.Add(new Pair<uint, uint>(uint.Parse(nums[j]), uint.Parse(nums[j + 1])));
+                    ranges.Add(new Tuple<uint, uint>(uint.Parse(nums[j]), uint.Parse(nums[j + 1])));
                 BDD set = MkCharSetFromRanges(ranges);
                 moves[i-1] = Move<BDD>.Create(s, t, set);
                 moveProbs[moves[i - 1]] = double.Parse(nums[0]);
@@ -996,9 +996,9 @@ namespace Microsoft.Automata
                         foreach (var range in this.ToRanges(move.Label))
                         {
                             sb.Append(" ");
-                            sb.Append(range.First);
+                            sb.Append(range.Item1);
                             sb.Append(" ");
-                            sb.Append(range.Second);
+                            sb.Append(range.Item2);
                         }
                     sb.AppendLine();
                 }
@@ -1028,9 +1028,9 @@ namespace Microsoft.Automata
                 int t = int.Parse(nums[1]);
                 if (nums.Length > 2)
                 {
-                    var ranges = new List<Pair<uint, uint>>();
+                    var ranges = new List<Tuple<uint, uint>>();
                     for (int j = 2; j < nums.Length; j = j + 2)
-                        ranges.Add(new Pair<uint, uint>(uint.Parse(nums[j]), uint.Parse(nums[j + 1])));
+                        ranges.Add(new Tuple<uint, uint>(uint.Parse(nums[j]), uint.Parse(nums[j + 1])));
                     BDD set = MkCharSetFromRanges(ranges);
                     moves[i - 2] = Move<BDD>.Create(s, t, set);
                 }
@@ -1146,7 +1146,7 @@ namespace Microsoft.Automata
         /// Convert the set into an equivalent array of ranges. The ranges are nonoverlapping and ordered.
         /// If limit > 0 then returns null if the total number of ranges exceeds limit.
         /// </summary>
-        public Pair<uint, uint>[] ToRanges(BDD set, int limit = 0)
+        public Tuple<uint, uint>[] ToRanges(BDD set, int limit = 0)
         {
             return ToRanges(set, _bw - 1, limit);
         }
@@ -1163,7 +1163,7 @@ namespace Microsoft.Automata
         {
             var ranges = ToRanges(set);
             foreach (var range in ranges)
-                for (uint i = range.First; i <= range.Second; i++)
+                for (uint i = range.Item1; i <= range.Item2; i++)
                     yield return (uint)i;
         }
 
@@ -1171,7 +1171,7 @@ namespace Microsoft.Automata
         {
             var ranges = ToRanges(set);
             for (int j = ranges.Length - 1; j >= 0; j--)
-                for (uint i = ranges[j].Second; i >= ranges[j].First; i--)
+                for (uint i = ranges[j].Item2; i >= ranges[j].Item1; i--)
                     yield return (char)i;
         }
 
@@ -1232,7 +1232,7 @@ namespace Microsoft.Automata
                     sw.WriteLine("{0} {1} {2} {3}", move.SourceState, -1, -1, move.TargetState);
                 else
                     foreach (var range in this.ToRanges(move.Label))
-                        sw.WriteLine("{0} {1} {2} {3}", move.SourceState, (int)range.First, (int)range.Second, move.TargetState);
+                        sw.WriteLine("{0} {1} {2} {3}", move.SourceState, (int)range.Item1, (int)range.Item2, move.TargetState);
             sw.Close();
         }
 
@@ -1249,7 +1249,7 @@ namespace Microsoft.Automata
                     sb.AppendLine(string.Format("{0} {1} {2} {3}", move.SourceState, -1, -1, move.TargetState));
                 else
                     foreach (var range in this.ToRanges(move.Label))
-                        sb.AppendLine(string.Format("{0} {1} {2} {3}", move.SourceState, (int)range.First, (int)range.Second, move.TargetState));
+                        sb.AppendLine(string.Format("{0} {1} {2} {3}", move.SourceState, (int)range.Item1, (int)range.Item2, move.TargetState));
             return sb.ToString();
         }
 
@@ -1310,12 +1310,12 @@ namespace Microsoft.Automata
 
         public Automaton<BDD> ReadFromFile(string file)
         {
-            return Microsoft.Automata.Internal.Utilities.RegexToRangeAutomatonSerializer.Read(this, file);
+            return Microsoft.Automata.Utilities.RegexToRangeAutomatonSerializer.Read(this, file);
         }
 
         public Automaton<BDD> ReadFromString(string automaton)
         {
-            return Microsoft.Automata.Internal.Utilities.RegexToRangeAutomatonSerializer.ReadFromString(this, automaton);
+            return Microsoft.Automata.Utilities.RegexToRangeAutomatonSerializer.ReadFromString(this, automaton);
         }
 
         /// <summary>
@@ -1324,7 +1324,7 @@ namespace Microsoft.Automata
         /// </summary>
         public Automaton<BDD> ReadFromRanges(int initialState, int[] finalStates, IEnumerable<int[]> transitions)
         {
-            return Microsoft.Automata.Internal.Utilities.RegexToRangeAutomatonSerializer.ReadFromRanges(this, initialState, finalStates, transitions);
+            return Microsoft.Automata.Utilities.RegexToRangeAutomatonSerializer.ReadFromRanges(this, initialState, finalStates, transitions);
         }
 
         /// <summary>
@@ -1369,28 +1369,28 @@ namespace Microsoft.Automata
 
         public ICompiledStringMatcher ToCS(Automaton<BDD> automaton, bool OptimzeForAsciiInput = true, string classname = null, string namespacename = null)
         {
-            return new Microsoft.Automata.Internal.Utilities.AutomataCSharpCompiler(automaton, classname, namespacename, OptimzeForAsciiInput).Compile();
+            return new Microsoft.Automata.Utilities.AutomataCSharpCompiler(automaton, classname, namespacename, OptimzeForAsciiInput).Compile();
         }
 
         public string ToCpp(Automaton<BDD>[] automata, bool exportIsMatch, bool OptimzeForAsciiInput = true, string classname = null, string namespacename = null)
         {
             var c = (classname == null ? "RegexMatcher" : classname);
             var n = (namespacename == null ? "GeneratedRegexMatchers" : namespacename);
-            return new Microsoft.Automata.Internal.Utilities.CppCodeGenerator(this, c, n, exportIsMatch, OptimzeForAsciiInput, automata).GenerateMatcher();
+            return new Microsoft.Automata.Utilities.CppCodeGenerator(this, c, n, exportIsMatch, OptimzeForAsciiInput, automata).GenerateMatcher();
         }
 
         public void ToCppFile(Automaton<BDD>[] automata, string path, bool exportIsMatch, bool OptimzeForAsciiInput = true, string classname = null, string namespacename = null)
         {
             var c = (classname == null ? "RegexMatcher" : classname);
             var n = (namespacename == null ? "GeneratedRegexMatchers" : namespacename);
-            new Microsoft.Automata.Internal.Utilities.CppCodeGenerator(this, c, n, exportIsMatch, OptimzeForAsciiInput, automata).GenerateMatcherToFile(path);
+            new Microsoft.Automata.Utilities.CppCodeGenerator(this, c, n, exportIsMatch, OptimzeForAsciiInput, automata).GenerateMatcherToFile(path);
         }
 
         public void ToCppFile(Regex[] regexes, string path, bool exportIsMatch, bool OptimzeForAsciiInput = true, string classname = null, string namespacename = null)
         {
             var c = (classname == null ? "RegexMatcher" : classname);
             var n = (namespacename == null ? "GeneratedRegexMatchers" : namespacename);
-            new Microsoft.Automata.Internal.Utilities.CppCodeGenerator(this, c, n, exportIsMatch, OptimzeForAsciiInput, regexes).GenerateMatcherToFile(path);
+            new Microsoft.Automata.Utilities.CppCodeGenerator(this, c, n, exportIsMatch, OptimzeForAsciiInput, regexes).GenerateMatcherToFile(path);
         }
 
         #endregion

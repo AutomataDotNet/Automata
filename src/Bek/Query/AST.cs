@@ -761,7 +761,7 @@ namespace Microsoft.Bek.Query
                     var st = subexpressions[0].GetST(ec).Explore(NrOfElements);
                     var aut = st.MkInstance();
                     n = String.Format("Fig_{0}", ec.imagecount);
-                    Microsoft.Automata.Internal.DirectedGraphs.DotWriter.AutomatonToDot<string>(x => x, aut, n, fname, Microsoft.Automata.Internal.DirectedGraphs.DotWriter.RANKDIR.LR, 12, true);
+                    Microsoft.Automata.DirectedGraphs.DotWriter.AutomatonToDot<string>(x => x, aut, n, fname, Microsoft.Automata.DirectedGraphs.DotWriter.RANKDIR.LR, 12, true);
                 }
             }
             ec.tw.WriteLine("Image rendered ({0})", n);
@@ -795,7 +795,7 @@ namespace Microsoft.Bek.Query
                 else
                 {
                     var aut = sfa.Concretize(NrOfElements);
-                    Microsoft.Automata.Internal.DirectedGraphs.DotWriter.AutomatonToDot<BDD>(ec.solver.CharSetProvider.PrettyPrint, aut, sfa.Name, ec.tw, Microsoft.Automata.Internal.DirectedGraphs.DotWriter.RANKDIR.LR, 12, true);
+                    Microsoft.Automata.DirectedGraphs.DotWriter.AutomatonToDot<BDD>(ec.solver.CharSetProvider.PrettyPrint, aut, sfa.Name, ec.tw, Microsoft.Automata.DirectedGraphs.DotWriter.RANKDIR.LR, 12, true);
                 }
             }
             else

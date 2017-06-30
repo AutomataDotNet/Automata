@@ -4,7 +4,7 @@
 //using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 //using Microsoft.Automata;
-//using Microsoft.Automata.Internal;
+//using Microsoft.Automata;
 
 //namespace Microsoft.Automata.Tests
 //{
@@ -20,7 +20,7 @@
 //            HashSet<char>  a = bddb.MkRangeConstraint(false, 'a', 'a');
 //            HashSet<char> b = bddb.MkRangeConstraint(false, 'b', 'b');
 //            HashSet<char> c = bddb.MkRangeConstraint(false, 'c', 'c');
-//            var combinations = new List<Pair<bool[], HashSet<char>>>(bddb.GenerateMinterms(new HashSet<char>[] { a, b, c }));
+//            var combinations = new List<Tuple<bool[], HashSet<char>>>(bddb.GenerateMinterms(new HashSet<char>[] { a, b, c }));
 //            Assert.AreEqual<int>(4, combinations.Count);
 //            for (int i = 0; i < 4; i++)
 //            {
@@ -46,7 +46,7 @@
 //            HashSet<char> c = bddb.MkRangeConstraint(false, 'c', 'c');
 //            HashSet<char> b3 = bddb.MkRangeConstraint(false, 'b', 'b');
 
-//            var combinations = new List<Pair<bool[], HashSet<char>>>(bddb.GenerateMinterms(new HashSet<char>[] { a, b, b2, c, b3 }));
+//            var combinations = new List<Tuple<bool[], HashSet<char>>>(bddb.GenerateMinterms(new HashSet<char>[] { a, b, b2, c, b3 }));
 //            Assert.AreEqual<int>(3, combinations.Count, "only three combinations are possible");
 //        }
 
@@ -60,7 +60,7 @@
 //            HashSet<char> C = bddb.MkRangesConstraint(false, new char[][] { new char[] { '3', '4' }, new char[] { '6', '7' }, new char[] { '9', '9' } });
 //            HashSet<char> D = bddb.MkRangesConstraint(false, new char[][] { new char[] { '0', '0' }, new char[] { '8', '9' } });
 
-//            var combinations = new List<Pair<bool[], HashSet<char>>>(bddb.GenerateMinterms(new HashSet<char>[] { A, B, C, D }));
+//            var combinations = new List<Tuple<bool[], HashSet<char>>>(bddb.GenerateMinterms(new HashSet<char>[] { A, B, C, D }));
 //            Assert.AreEqual<int>(11, combinations.Count, "exactly 11 combinations must be possible");
 //        }
 //    }

@@ -13,28 +13,34 @@
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
+    <PlatformTarget>x64</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
+    <OutputPath>bin\x64\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
+    <WarningLevel>0</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
+    <PlatformTarget>x64</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
+    <OutputPath>bin\x64\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
+    <WarningLevel>0</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyOriginatorKeyFile>AutomataKey.pfx</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Microsoft.Z3, Version=4.5.0.0, Culture=neutral, PublicKeyToken=9c8d792caae602a2, processorArchitecture=x86">
-      <HintPath>..\..\packages\z3x86win.4.5.0.1\lib\Microsoft.Z3.dll</HintPath>
+    <Reference Include="Microsoft.Z3, Version=4.5.0.0, Culture=neutral, PublicKeyToken=9c8d792caae602a2, processorArchitecture=AMD64">
+      <HintPath>..\..\packages\z3x64win.4.5.0.1\lib\Microsoft.Z3.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
@@ -59,25 +65,17 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+    <None Include="AutomataKey.pfx" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Automata.Tests\Automata.Tests.csproj">
-      <Project>{d437274d-5bfd-42fd-bbe5-96c4c0ffba05}</Project>
-      <Name>Automata.Tests</Name>
-    </ProjectReference>
     <ProjectReference Include="..\Automata.Z3\Automata.Z3.csproj">
       <Project>{7fe1092a-83f9-4f34-a04c-815cab2bd35b}</Project>
       <Name>Automata.Z3</Name>
-      <Private>True</Private>
     </ProjectReference>
     <ProjectReference Include="..\Automata\Automata.csproj">
-      <Project>{bc861e29-027d-4ac6-ab24-a7b0cd0fb5e8}</Project>
+      <Project>{b5e695df-c033-4938-94dd-ac6ecbeab36b}</Project>
       <Name>Automata</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Bek\Bek.csproj">
-      <Project>{a8751d84-45e8-4d0a-88b4-1551115ae2e2}</Project>
-      <Name>Bek</Name>
     </ProjectReference>
     <ProjectReference Include="..\Fast\Fast.csproj">
       <Project>{21e2408a-72b8-4c78-9d9e-1d65152ff655}</Project>

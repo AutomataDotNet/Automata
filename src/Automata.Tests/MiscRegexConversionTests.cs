@@ -5,7 +5,6 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.IO;
 
 using Microsoft.Automata;
-using Microsoft.Automata.Internal;
 
 using System.Text.RegularExpressions;
 

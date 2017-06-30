@@ -309,13 +309,13 @@ namespace Microsoft.Automata
         }
 
 
-        //public static IEnumerable<ConsList<Pair<bool, E>>> GenerateChoiceLists(ConsList<E> tl)
+        //public static IEnumerable<ConsList<Tuple<bool, E>>> GenerateChoiceLists(ConsList<E> tl)
         //{
         //    if (tl != null)
         //        foreach (var tl1 in GenerateChoiceLists(tl.rest))
         //        {
-        //            yield return new ConsList<Pair<bool, E>>(new Pair<bool, E>(true, tl.first), tl1);
-        //            yield return new ConsList<Pair<bool, E>>(new Pair<bool, E>(false, tl.first), tl1);
+        //            yield return new ConsList<Tuple<bool, E>>(new Tuple<bool, E>(true, tl.first), tl1);
+        //            yield return new ConsList<Tuple<bool, E>>(new Tuple<bool, E>(false, tl.first), tl1);
         //        }
         //    else
         //        yield return null;

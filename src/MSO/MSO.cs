@@ -680,6 +680,7 @@ namespace Microsoft.Automata.MSO
                 throw new ArgumentException("variable type not first-order", "x");
             if (n < 0)
                 throw new ArgumentException("value must be nonnegative", "n");
+            this.n = n;
         }
 
         public override void Print(StringBuilder sb)

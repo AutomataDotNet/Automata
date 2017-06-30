@@ -29,7 +29,7 @@ namespace Microsoft.Automata.Z3
 
         Dictionary<Sort, RankedAlphabet> rankedAlphabetInfoMap = new Dictionary<Sort, RankedAlphabet>();
 
-        Dictionary<Pair<string, Sort>, Sort> rankedAlphabetSortMap = new Dictionary<Pair<string, Sort>, Sort>();
+        Dictionary<Tuple<string, Sort>, Sort> rankedAlphabetSortMap = new Dictionary<Tuple<string, Sort>, Sort>();
 
         /// <summary>
         /// Returns true iff the given sort is a ranked alphabet sort.
@@ -48,7 +48,7 @@ namespace Microsoft.Automata.Z3
         public Sort GetRankedAlphabetSort(string name, Sort nodeSort)
         {
             Sort sort;
-            if (!rankedAlphabetSortMap.TryGetValue(new Pair<string, Sort>(name, nodeSort), out sort))
+            if (!rankedAlphabetSortMap.TryGetValue(new Tuple<string, Sort>(name, nodeSort), out sort))
                 throw new AutomataException(AutomataExceptionKind.RankedAlphabet_UnrecognizedAlphabetSort);
             else
                 return sort;
@@ -82,7 +82,7 @@ namespace Microsoft.Automata.Z3
             if (string.IsNullOrWhiteSpace(name) || attributeSort == null || symbols == null || ranks == null || symbols.Length == 0 || ranks.Length == 0)
                 throw new AutomataException(AutomataExceptionKind.InvalidArguments);
 
-            var name_nodeSort = new Pair<string, Sort>(name, attributeSort);
+            var name_nodeSort = new Tuple<string, Sort>(name, attributeSort);
             if (rankedAlphabetSortMap.ContainsKey(name_nodeSort))
                 throw new AutomataException(AutomataExceptionKind.RankedAlphabet_IsAlreadyDefined);
 
@@ -149,7 +149,7 @@ namespace Microsoft.Automata.Z3
             return ra;
         }
 
-        Dictionary<Pair<Sort, Sort>, FuncDecl> transformationLookup = new Dictionary<Pair<Sort, Sort>, FuncDecl>();
+        Dictionary<Tuple<Sort, Sort>, FuncDecl> transformationLookup = new Dictionary<Tuple<Sort, Sort>, FuncDecl>();
 
         /// <summary>
         /// Gets the generic uninterpreted function symbol of sort (int,A)->B
@@ -159,7 +159,7 @@ namespace Microsoft.Automata.Z3
         /// <param name="outputSort">alphabet sort of output trees</param>
         public FuncDecl GetTrans(Sort inputSort, Sort outputSort)
         {
-            var key = new Pair<Sort,Sort>(inputSort, outputSort);
+            var key = new Tuple<Sort,Sort>(inputSort, outputSort);
             FuncDecl trans;
             if (!transformationLookup.TryGetValue(key, out trans))
             {

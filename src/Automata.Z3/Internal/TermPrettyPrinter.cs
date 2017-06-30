@@ -1036,7 +1036,7 @@ namespace Microsoft.Automata.Z3.Internal
                         //tuple projection: use postfix notation
                         return string.Format("{0}{1}", DescribeExpr(subterms[0]), f);
 
-                    string str = null;
+                    //string str = null;
                     //if (IsCocreteCharacterList(term, out str))
                     //    return str;
 

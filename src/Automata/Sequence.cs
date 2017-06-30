@@ -144,6 +144,9 @@ namespace Microsoft.Automata
             return elems;
         }
 
+        /// <summary>
+        /// Two sequences are equal iff they have the same length and their i'th elements are equal for all i.
+        /// </summary>
         public override bool Equals(object obj)
         {
             var s = obj as Sequence<T>;

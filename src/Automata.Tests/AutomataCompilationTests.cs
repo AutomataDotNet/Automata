@@ -32,7 +32,7 @@ namespace Automata.Tests
         {
             var regex = @"^(([a-z])+.)+[A-Z]([a-z])+$";
             Regex EvilRegex = new Regex(regex, RegexOptions.Compiled | (RegexOptions.Singleline));
-            string a = "aaaaaaaaaaaaaaaaaaa";
+            string a = "aaaaaaaaaaaaaaaaaaaa";
             //takes time exponential in the length of a
             int t = 0;
             for (int i = 0; i < 15; i++)

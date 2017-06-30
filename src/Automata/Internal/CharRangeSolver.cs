@@ -2,15 +2,15 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Microsoft.Automata.Internal
+namespace Microsoft.Automata
 {
-    public class CharRangeSolver : ICharAlgebra<HashSet<Pair<char,char>>>
+    internal class CharRangeSolver : ICharAlgebra<HashSet<Tuple<char,char>>>
     {
 
         BitWidth encoding;
         char minCharacter;
         char maxCharacter;
-        MintermGenerator<HashSet<Pair<char, char>>> mtg;
+        MintermGenerator<HashSet<Tuple<char, char>>> mtg;
         /// <summary>
         /// The character encoding used by the solver
         /// </summary>
@@ -26,19 +26,19 @@ namespace Microsoft.Automata.Internal
             this.maxCharacter = (encoding == BitWidth.BV7 ? '\x007F' :
                 (encoding == BitWidth.BV8 ? '\x00FF' : '\xFFFF'));
 
-            mtg = new MintermGenerator<HashSet<Pair<char, char>>>(this);
+            mtg = new MintermGenerator<HashSet<Tuple<char, char>>>(this);
         }
 
-        private bool hasoverlap(Pair<char,char> lhs, Pair<char, char> rhs, out Pair<char,char> res)
+        private bool hasoverlap(Tuple<char,char> lhs, Tuple<char, char> rhs, out Tuple<char,char> res)
         {
-            if (!(lhs.First.CompareTo(rhs.Second) <= 0 || rhs.First.CompareTo(lhs.Second) <= 0))
+            if (!(lhs.Item1.CompareTo(rhs.Item2) <= 0 || rhs.Item1.CompareTo(lhs.Item2) <= 0))
             {
-                res = default(Pair<char, char>);
+                res = default(Tuple<char, char>);
                 return false;
             }
-            res = new Pair<char, char>( (lhs.First.CompareTo(rhs.First) > 0 ? lhs.First : rhs.First),
-                                        (rhs.Second.CompareTo(lhs.Second) < 0 ? rhs.Second : lhs.Second) );
-            if (res.First.CompareTo(res.Second) > 0)
+            res = new Tuple<char, char>( (lhs.Item1.CompareTo(rhs.Item1) > 0 ? lhs.Item1 : rhs.Item1),
+                                        (rhs.Item2.CompareTo(lhs.Item2) < 0 ? rhs.Item2 : lhs.Item2) );
+            if (res.Item1.CompareTo(res.Item2) > 0)
             {
                 return false;
             }
@@ -47,17 +47,17 @@ namespace Microsoft.Automata.Internal
         }
 
 
-        public HashSet<Pair<char, char>> MkOr(HashSet<Pair<char, char>> constraint1, HashSet<Pair<char, char>> constraint2)
+        public HashSet<Tuple<char, char>> MkOr(HashSet<Tuple<char, char>> constraint1, HashSet<Tuple<char, char>> constraint2)
         {
-            var res = new HashSet<Pair<char,char>>(constraint1);
+            var res = new HashSet<Tuple<char,char>>(constraint1);
             res.UnionWith(constraint2);
             return res;
         }
 
-        public HashSet<Pair<char, char>> MkOr(IEnumerable<HashSet<Pair<char, char>>> constraints)
+        public HashSet<Tuple<char, char>> MkOr(IEnumerable<HashSet<Tuple<char, char>>> constraints)
         {
-            var res = new HashSet<Pair<char,char>>();
-            foreach (HashSet<Pair<char, char>> cur in constraints)
+            var res = new HashSet<Tuple<char,char>>();
+            foreach (HashSet<Tuple<char, char>> cur in constraints)
             {
                 res.UnionWith(cur);
             }
@@ -66,15 +66,15 @@ namespace Microsoft.Automata.Internal
 
 
 
-        public HashSet<Pair<char, char>> MkAnd(HashSet<Pair<char, char>> constraint1, HashSet<Pair<char, char>> constraint2)
+        public HashSet<Tuple<char, char>> MkAnd(HashSet<Tuple<char, char>> constraint1, HashSet<Tuple<char, char>> constraint2)
         {
-            var res = new HashSet<Pair<char, char>>();
+            var res = new HashSet<Tuple<char, char>>();
 
-            foreach (Pair<char, char> a in constraint1)
+            foreach (Tuple<char, char> a in constraint1)
             {
-                foreach (Pair<char, char> b in constraint2)
+                foreach (Tuple<char, char> b in constraint2)
                 {
-                    Pair<char, char> newpair;
+                    Tuple<char, char> newpair;
                     if (hasoverlap(a, b, out newpair))
                     {
                         res.Add(newpair);
@@ -84,20 +84,20 @@ namespace Microsoft.Automata.Internal
             return res;
         }
 
-        public HashSet<Pair<char, char>> Simplify(HashSet<Pair<char, char>> constraint)
+        public HashSet<Tuple<char, char>> Simplify(HashSet<Tuple<char, char>> constraint)
         {
             return constraint;
         }
 
-        public HashSet<Pair<char, char>> MkAnd(IEnumerable<HashSet<Pair<char, char>>> constraints)
+        public HashSet<Tuple<char, char>> MkAnd(IEnumerable<HashSet<Tuple<char, char>>> constraints)
         {
             // monotonicity.
-            HashSet<Pair<char,char>> res = null;
-            foreach (HashSet<Pair<char, char>> cur in constraints)
+            HashSet<Tuple<char,char>> res = null;
+            foreach (HashSet<Tuple<char, char>> cur in constraints)
             {
                 if (res == null)
                 {
-                    res = new HashSet<Pair<char, char>>(cur);
+                    res = new HashSet<Tuple<char, char>>(cur);
                     continue;
                 }
 
@@ -110,15 +110,15 @@ namespace Microsoft.Automata.Internal
             return res;
         }
 
-        public HashSet<Pair<char, char>> MkAnd(params HashSet<Pair<char, char>>[] constraints)
+        public HashSet<Tuple<char, char>> MkAnd(params HashSet<Tuple<char, char>>[] constraints)
         {
             // monotonicity.
-            HashSet<Pair<char, char>> res = null;
-            foreach (HashSet<Pair<char, char>> cur in constraints)
+            HashSet<Tuple<char, char>> res = null;
+            foreach (HashSet<Tuple<char, char>> cur in constraints)
             {
                 if (res == null)
                 {
-                    res = new HashSet<Pair<char, char>>(cur);
+                    res = new HashSet<Tuple<char, char>>(cur);
                     continue;
                 }
 
@@ -132,21 +132,21 @@ namespace Microsoft.Automata.Internal
         }
 
         // FAIL
-        public HashSet<Pair<char, char>> MkNot(HashSet<Pair<char, char>> constraint)
+        public HashSet<Tuple<char, char>> MkNot(HashSet<Tuple<char, char>> constraint)
         {
             var res = this.True;
 
-            var curprime = new HashSet<Pair<char, char>>();
+            var curprime = new HashSet<Tuple<char, char>>();
             // Invariant: we never return a malformed pair
-            foreach (Pair<char, char> cur in constraint)
+            foreach (Tuple<char, char> cur in constraint)
             {
-                if (cur.First.CompareTo(minCharacter) > 0) {
-                    curprime.Add(new Pair<char, char>(minCharacter, (char)(cur.First - '\x0001')));
+                if (cur.Item1.CompareTo(minCharacter) > 0) {
+                    curprime.Add(new Tuple<char, char>(minCharacter, (char)(cur.Item1 - '\x0001')));
                 }
 
-                if (cur.Second.CompareTo(maxCharacter) < 0)
+                if (cur.Item2.CompareTo(maxCharacter) < 0)
                 {
-                    curprime.Add(new Pair<char, char>((char)(cur.Second + '\x0001'), maxCharacter));
+                    curprime.Add(new Tuple<char, char>((char)(cur.Item2 + '\x0001'), maxCharacter));
                 }
 
                 res = MkAnd(res, curprime);
@@ -156,61 +156,61 @@ namespace Microsoft.Automata.Internal
             return res;
         }
 
-        public HashSet<Pair<char, char>> True
+        public HashSet<Tuple<char, char>> True
         {
             get
             {
-                var res = new HashSet<Pair<char, char>>();
-                res.Add(new Pair<char, char>(minCharacter, maxCharacter));
+                var res = new HashSet<Tuple<char, char>>();
+                res.Add(new Tuple<char, char>(minCharacter, maxCharacter));
                 return res;
 
             }
         }
 
-        public HashSet<Pair<char, char>> False
+        public HashSet<Tuple<char, char>> False
         {
-            get { return new HashSet<Pair<char, char>>();  }
+            get { return new HashSet<Tuple<char, char>>();  }
         }
 
-        public HashSet<Pair<char, char>> MkRangeConstraint(char lower, char upper, bool caseInsensitive = false)
+        public HashSet<Tuple<char, char>> MkRangeConstraint(char lower, char upper, bool caseInsensitive = false)
         {
-            var res = new HashSet<Pair<char, char>>();
+            var res = new HashSet<Tuple<char, char>>();
 
             // Assumption: [lower, higher] does not cross a case boundary; i.e. all elements
             // in the range are either upper or lower case.
             // TBD: this does not always work correctly
             if (caseInsensitive)
             {
-                res.Add(new Pair<char, char>(System.Char.ToUpper(lower), System.Char.ToUpper(upper)));
-                res.Add(new Pair<char, char>(System.Char.ToLower(lower), System.Char.ToLower(upper)));
+                res.Add(new Tuple<char, char>(System.Char.ToUpper(lower), System.Char.ToUpper(upper)));
+                res.Add(new Tuple<char, char>(System.Char.ToLower(lower), System.Char.ToLower(upper)));
             }
             else
             {
-                res.Add(new Pair<char,char>(lower, upper));
+                res.Add(new Tuple<char,char>(lower, upper));
             }
             return res;
         }
 
-        public HashSet<Pair<char, char>> MkCharConstraint( char c, bool caseInsensitive = false)
+        public HashSet<Tuple<char, char>> MkCharConstraint( char c, bool caseInsensitive = false)
         {
-            var res = new HashSet<Pair<char, char>>();
+            var res = new HashSet<Tuple<char, char>>();
             if (caseInsensitive)
             {
-                res.Add(new Pair<char, char>(System.Char.ToUpper(c), System.Char.ToUpper(c)));
-                res.Add(new Pair<char, char>(System.Char.ToLower(c), System.Char.ToLower(c)));
+                res.Add(new Tuple<char, char>(System.Char.ToUpper(c), System.Char.ToUpper(c)));
+                res.Add(new Tuple<char, char>(System.Char.ToLower(c), System.Char.ToLower(c)));
             }
             else
             {
-                res.Add(new Pair<char, char>(c,c));
+                res.Add(new Tuple<char, char>(c,c));
             }
             return res;
         }
 
-        public HashSet<Pair<char, char>> MkRangesConstraint(bool caseInsensitive, IEnumerable<char[]> ranges)
+        public HashSet<Tuple<char, char>> MkRangesConstraint(bool caseInsensitive, IEnumerable<char[]> ranges)
         {
             // Assume: all the char[] in ranges have 2 elements exactly
             
-            var res = new HashSet<Pair<char, char>>();
+            var res = new HashSet<Tuple<char, char>>();
 
             foreach(char [] range in ranges)
             {
@@ -222,23 +222,23 @@ namespace Microsoft.Automata.Internal
                 //TBD: this does not always work properly
                 if (caseInsensitive)
                 {
-                    res.Add(new Pair<char, char>(System.Char.ToUpper(lower), System.Char.ToUpper(upper)));
-                    res.Add(new Pair<char, char>(System.Char.ToLower(lower), System.Char.ToLower(upper)));
+                    res.Add(new Tuple<char, char>(System.Char.ToUpper(lower), System.Char.ToUpper(upper)));
+                    res.Add(new Tuple<char, char>(System.Char.ToLower(lower), System.Char.ToLower(upper)));
                 }
                 else
                 {
-                    res.Add(new Pair<char,char>(lower, upper));
+                    res.Add(new Tuple<char,char>(lower, upper));
                 }
             }
             return res;
         }
 
-        public bool IsSatisfiable(HashSet<Pair<char, char>> constraint)
+        public bool IsSatisfiable(HashSet<Tuple<char, char>> constraint)
         {
             return constraint.Count > 0;
         }
 
-        public bool AreEquivalent(HashSet<Pair<char, char>> constraint1, HashSet<Pair<char, char>> constraint2)
+        public bool AreEquivalent(HashSet<Tuple<char, char>> constraint1, HashSet<Tuple<char, char>> constraint2)
         {
             if (MkAnd(MkNot(constraint1), constraint2).Count > 0 || MkAnd(MkNot(constraint2), constraint1).Count > 0)
                 return false;
@@ -246,7 +246,7 @@ namespace Microsoft.Automata.Internal
                 return true;
         }
 
-        public IEnumerable<Pair<bool[], HashSet<Pair<char, char>>>> GenerateMinterms(HashSet<Pair<char, char>>[] constraints)
+        public IEnumerable<Tuple<bool[], HashSet<Tuple<char, char>>>> GenerateMinterms(HashSet<Tuple<char, char>>[] constraints)
         {
             return mtg.GenerateMinterms(constraints);
         }
@@ -255,13 +255,13 @@ namespace Microsoft.Automata.Internal
          * original explicit implementation of minterms
          * 
 
-        public IEnumerable<Pair<bool[], HashSet<Pair<char, char>>>> GenerateMinterms(HashSet<Pair<char, char>>[] constraints)
+        public IEnumerable<Tuple<bool[], HashSet<Tuple<char, char>>>> GenerateMinterms(HashSet<Tuple<char, char>>[] constraints)
         {
             if (constraints.Length == 0)
-                yield return new Pair<bool[], HashSet<Pair<char, char>>>(new bool[] { }, this.True);
+                yield return new Tuple<bool[], HashSet<Tuple<char, char>>>(new bool[] { }, this.True);
             else
             {
-                var mt = new Internal.Minterms<wrapwrap>(new wrapwrap(this, this.True));
+                var mt = new Minterms<wrapwrap>(new wrapwrap(this, this.True));
 
                 var seq = mt.GenerateCombinations(true, Array.ConvertAll(constraints, cur => new wrapwrap(this, cur)));
 
@@ -269,36 +269,36 @@ namespace Microsoft.Automata.Internal
                 {
                     var outvar = pair.Second._contents;
 
-                    yield return new Pair<bool[], HashSet<Pair<char, char>>>(pair.First, outvar);
+                    yield return new Tuple<bool[], HashSet<Tuple<char, char>>>(pair.First, outvar);
                 }
             }
         }
 
 
-        class wrapwrap : Internal.ICapNeg
+        class wrapwrap : ICapNeg
         {
             private CharRangeSolver _parent;
-            internal HashSet<Pair<char, char>> _contents;
-            internal HashSet<Pair<char, char>> _inverse;
+            internal HashSet<Tuple<char, char>> _contents;
+            internal HashSet<Tuple<char, char>> _inverse;
 
-            public wrapwrap(CharRangeSolver parent, HashSet<Pair<char, char>> wrapee)
+            public wrapwrap(CharRangeSolver parent, HashSet<Tuple<char, char>> wrapee)
             {
                 _parent = parent;
                 _contents = wrapee;
                 _inverse = null;
             }
 
-            public Internal.ICapNeg cap(Internal.ICapNeg b)
+            public ICapNeg cap(ICapNeg b)
             {
                 return new wrapwrap(_parent, _parent.MkAnd(_contents, ((wrapwrap)b)._contents));
             }
 
-            public Internal.ICapNeg cup(Internal.ICapNeg b)
+            public ICapNeg cup(ICapNeg b)
             {
                 return new wrapwrap(_parent, _parent.MkOr(_contents, ((wrapwrap)b)._contents));
             }
 
-            public Internal.ICapNeg minus(Internal.ICapNeg b)
+            public ICapNeg minus(ICapNeg b)
             {
                 var bprime = (wrapwrap)b;
 
@@ -309,7 +309,7 @@ namespace Microsoft.Automata.Internal
                 return new wrapwrap(_parent, _parent.MkAnd(_contents, bprime._inverse));
             }
 
-            public bool same_elts(Internal.ICapNeg b)
+            public bool same_elts(ICapNeg b)
             {
 
                 var bprime = (wrapwrap)b;
@@ -327,7 +327,7 @@ namespace Microsoft.Automata.Internal
                     return true;
                 }
 
-                foreach (Pair<char, char> cur in _contents)
+                foreach (Tuple<char, char> cur in _contents)
                 {
                     if (cur.First.CompareTo(cur.Second) <= 0)
                     {
@@ -340,33 +340,33 @@ namespace Microsoft.Automata.Internal
         }
         */
 
-        #region IPrettyPrinter<HashSet<Pair<char,char>>> Members
+        #region IPrettyPrinter<HashSet<Tuple<char,char>>> Members
 
 
-        public string PrettyPrint(HashSet<Pair<char, char>> pred)
+        public string PrettyPrint(HashSet<Tuple<char, char>> pred)
         {
             throw new NotImplementedException();
         }
 
-        public string PrettyPrint(HashSet<Pair<char, char>> pred, Func<HashSet<Pair<char, char>>,string> varLookup)
-        {
-            throw new NotImplementedException();
-        }
-
-        #endregion
-
-
-        #region ICharSolver<HashSet<Pair<char,char>>> Members
-
-
-        public HashSet<Pair<char, char>> ConvertFromCharSet(BDD set)
+        public string PrettyPrint(HashSet<Tuple<char, char>> pred, Func<HashSet<Tuple<char, char>>,string> varLookup)
         {
             throw new NotImplementedException();
         }
 
         #endregion
 
-        #region ICharSolver<HashSet<Pair<char,char>>> Members
+
+        #region ICharSolver<HashSet<Tuple<char,char>>> Members
+
+
+        public HashSet<Tuple<char, char>> ConvertFromCharSet(BDD set)
+        {
+            throw new NotImplementedException();
+        }
+
+        #endregion
+
+        #region ICharSolver<HashSet<Tuple<char,char>>> Members
 
 
         public CharSetSolver CharSetProvider
@@ -376,19 +376,19 @@ namespace Microsoft.Automata.Internal
 
         #endregion
 
-        #region ICharSolverPred<HashSet<Pair<char,char>>> Members
+        #region ICharSolverPred<HashSet<Tuple<char,char>>> Members
 
-        public HashSet<Pair<char, char>> MkCharPredicate(string name, HashSet<Pair<char, char>> pred)
+        public HashSet<Tuple<char, char>> MkCharPredicate(string name, HashSet<Tuple<char, char>> pred)
         {
             throw new NotImplementedException();
         }
 
         #endregion
 
-        #region IPrettyPrinter<HashSet<Pair<char,char>>> Members
+        #region IPrettyPrinter<HashSet<Tuple<char,char>>> Members
 
 
-        public string PrettyPrintCS(HashSet<Pair<char, char>> t, Func<HashSet<Pair<char, char>>, string> varLookup)
+        public string PrettyPrintCS(HashSet<Tuple<char, char>> t, Func<HashSet<Tuple<char, char>>, string> varLookup)
         {
             throw new NotImplementedException();
         }
@@ -396,19 +396,19 @@ namespace Microsoft.Automata.Internal
         #endregion
 
 
-        public bool TryConvertToCharSet(HashSet<Pair<char, char>> pred, out BDD set)
+        public bool TryConvertToCharSet(HashSet<Tuple<char, char>> pred, out BDD set)
         {
             set = null;
             return false;
         }
 
-        public HashSet<Pair<char, char>> MkSet(uint e)
+        public HashSet<Tuple<char, char>> MkSet(uint e)
         {
-            return new HashSet<Pair<char, char>>(new Pair<char, char>[] { new Pair<char, char>((char)e, (char)e) });
+            return new HashSet<Tuple<char, char>>(new Tuple<char, char>[] { new Tuple<char, char>((char)e, (char)e) });
         }
 
 
-        public uint Choose(HashSet<Pair<char, char>> s)
+        public uint Choose(HashSet<Tuple<char, char>> s)
         {
             if (s.Count == 0)
                 throw new AutomataException(AutomataExceptionKind.SetIsEmpty);
@@ -425,12 +425,12 @@ namespace Microsoft.Automata.Internal
             get { return false; }
         }
 
-        public HashSet<Pair<char, char>> MkSymmetricDifference(HashSet<Pair<char, char>> p1, HashSet<Pair<char, char>> p2)
+        public HashSet<Tuple<char, char>> MkSymmetricDifference(HashSet<Tuple<char, char>> p1, HashSet<Tuple<char, char>> p2)
         {
             return MkOr(MkAnd(p1, MkNot(p2)), MkAnd(p2, MkNot(p1)));
         }
 
-        public bool CheckImplication(HashSet<Pair<char, char>> lhs, HashSet<Pair<char, char>> rhs)
+        public bool CheckImplication(HashSet<Tuple<char, char>> lhs, HashSet<Tuple<char, char>> rhs)
         {
             return !IsSatisfiable(MkAnd(lhs, MkNot(rhs)));
         }
@@ -441,7 +441,7 @@ namespace Microsoft.Automata.Internal
             get { return true; }
         }
 
-        public HashSet<Pair<char, char>> GetAtom(HashSet<Pair<char, char>> psi)
+        public HashSet<Tuple<char, char>> GetAtom(HashSet<Tuple<char, char>> psi)
         {
             if (psi.Count == 0)
                 return psi;
@@ -449,18 +449,18 @@ namespace Microsoft.Automata.Internal
             var e = psi.GetEnumerator();
             e.MoveNext();
             var elem = e.Current.Item1;
-            var atom = new HashSet<Pair<char, char>>(new Pair<char, char>[] { new Pair<char, char>(elem, elem) });
+            var atom = new HashSet<Tuple<char, char>>(new Tuple<char, char>[] { new Tuple<char, char>(elem, elem) });
             return atom;
         }
 
 
-        public bool EvaluateAtom(HashSet<Pair<char, char>> atom, HashSet<Pair<char, char>> psi)
+        public bool EvaluateAtom(HashSet<Tuple<char, char>> atom, HashSet<Tuple<char, char>> psi)
         {
             throw new NotImplementedException();
         }
 
 
-        public HashSet<Pair<char, char>> MkDiff(HashSet<Pair<char, char>> predicate1, HashSet<Pair<char, char>> predicate2)
+        public HashSet<Tuple<char, char>> MkDiff(HashSet<Tuple<char, char>> predicate1, HashSet<Tuple<char, char>> predicate2)
         {
             return MkAnd(predicate1, MkNot(predicate2));
         }

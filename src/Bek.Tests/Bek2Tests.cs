@@ -27,7 +27,7 @@ namespace Microsoft.Bek.Tests
     public class Bek2Tests
     {
 
-        static string sampleDir = "../../Samples/";
+        static string sampleDir = "../../../Samples/";
 
         [TestMethod]
         public void TestBase64Encode()

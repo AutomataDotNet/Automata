@@ -3,10 +3,13 @@ using System.Collections.Generic;
 using BvSetPair = System.Tuple<Microsoft.Automata.BDD, Microsoft.Automata.BDD>;
 using BvSet_Int = System.Tuple<Microsoft.Automata.BDD, int>;
 using BvSetKey = System.Tuple<int, Microsoft.Automata.BDD, Microsoft.Automata.BDD>;
+using Microsoft.Automata.BooleanAlgebras;
 
 namespace Microsoft.Automata
 {
-
+    /// <summary>
+    /// Bitwise operations over BDDs.
+    /// </summary>
     public interface IBDDAlgebra : IBooleanAlgebra<BDD>
     {
         BDD MkBitTrue(int bit);
@@ -15,6 +18,7 @@ namespace Microsoft.Automata
         BDD ShiftRight(BDD bdd, int k = 1);
         BDD ShiftLeft(BDD bdd, int k = 1);
     }
+
     /// <summary>
     /// Solver for BDDs.
     /// </summary>
@@ -310,7 +314,7 @@ namespace Microsoft.Automata
 
         #region Minterm generation
 
-        public IEnumerable<Pair<bool[], BDD>> GenerateMinterms(params BDD[] sets)
+        public IEnumerable<Tuple<bool[], BDD>> GenerateMinterms(params BDD[] sets)
         {
             return mintermGen.GenerateMinterms(sets);
         }
@@ -423,13 +427,13 @@ namespace Microsoft.Automata
             return CreateFromInterval1(mask, maxBit, m, n);
         }
 
-        Dictionary<Pair<int, Pair<ulong, ulong>>, BDD> intervalCache = new Dictionary<Pair<int, Pair<ulong, ulong>>, BDD>();
+        Dictionary<Tuple<int, Tuple<ulong, ulong>>, BDD> intervalCache = new Dictionary<Tuple<int, Tuple<ulong, ulong>>, BDD>();
 
         BDD CreateFromInterval1(uint mask, int bit, uint m, uint n)
         {
             BDD set;
-            var pair = new Pair<ulong, ulong>((ulong)m << 32, (ulong)n);
-            var key = new Pair<int, Pair<ulong, ulong>>(bit, pair);
+            var pair = new Tuple<ulong, ulong>((ulong)m << 32, (ulong)n);
+            var key = new Tuple<int, Tuple<ulong, ulong>>(bit, pair);
 
             if (intervalCache.TryGetValue(key, out set))
                 return set;
@@ -481,8 +485,8 @@ namespace Microsoft.Automata
         BDD CreateFromInterval1(ulong mask, int bit, ulong m, ulong n)
         {
             BDD set;
-            var pair = new Pair<ulong, ulong>(m, n);
-            var key = new Pair<int, Pair<ulong, ulong>>(bit, pair);
+            var pair = new Tuple<ulong, ulong>(m, n);
+            var key = new Tuple<int, Tuple<ulong, ulong>>(bit, pair);
 
             if (intervalCache.TryGetValue(key, out set))
                 return set;
@@ -546,7 +550,7 @@ namespace Microsoft.Automata
         /// The ranges are nonoverlapping and ordered. 
         /// If limit > 0 and there are more ranges than limit then return null.
         /// </summary>
-        public Pair<uint, uint>[] ToRanges(BDD set, int maxBit, int limit = 0)
+        public Tuple<uint, uint>[] ToRanges(BDD set, int maxBit, int limit = 0)
         {
             var rc = new RangeConverter();
             var ranges = rc.ToRanges(set, maxBit);
@@ -561,7 +565,7 @@ namespace Microsoft.Automata
         /// Bits above maxBit are ignored.
         /// The ranges are nonoverlapping and ordered. 
         /// </summary>
-        public Pair<ulong, ulong>[] ToRanges64(BDD set, int maxBit)
+        public Tuple<ulong, ulong>[] ToRanges64(BDD set, int maxBit)
         {
             var rc = new RangeConverter64();
             return rc.ToRanges(set, maxBit);
@@ -1350,7 +1354,7 @@ namespace Microsoft.Automata
 
         #region Minterm generation
 
-        public IEnumerable<Pair<bool[], BDD>> GenerateMinterms(params BDD[] sets)
+        public IEnumerable<Tuple<bool[], BDD>> GenerateMinterms(params BDD[] sets)
         {
             return mintermGen.GenerateMinterms(sets);
         }
@@ -1487,11 +1491,11 @@ namespace Microsoft.Automata
 
         #region IBooleanAlgebra<ISumOfProducts<BDD, T>>
 
-        public IEnumerable<Pair<bool[], IMonadicPredicate<BDD, T>>> GenerateMinterms(params IMonadicPredicate<BDD, T>[] constraints)
+        public IEnumerable<Tuple<bool[], IMonadicPredicate<BDD, T>>> GenerateMinterms(params IMonadicPredicate<BDD, T>[] constraints)
         {
             BDD[] bdds = Array.ConvertAll(constraints, c => (BDD)c);
             foreach (var mt in GenerateMinterms(bdds))
-                yield return new Pair<bool[], IMonadicPredicate<BDD, T>>(mt.First, (BDD<T>)mt.Second);
+                yield return new Tuple<bool[], IMonadicPredicate<BDD, T>>(mt.Item1, (BDD<T>)mt.Item2);
         }
 
         IMonadicPredicate<BDD, T> IBooleanAlgebraPositive<IMonadicPredicate<BDD, T>>.True
@@ -1652,7 +1656,7 @@ namespace Microsoft.Automata
 
     internal class RangeConverter
     {
-        Dictionary<BDD, Pair<uint, uint>[]> rangeCache = new Dictionary<BDD, Pair<uint, uint>[]>();
+        Dictionary<BDD, Tuple<uint, uint>[]> rangeCache = new Dictionary<BDD, Tuple<uint, uint>[]>();
 
         internal RangeConverter()
         {
@@ -1661,7 +1665,7 @@ namespace Microsoft.Automata
         //e.g. if b = 6 and p = 2 and ranges = (in binary form) {[0000 1010, 0000 1110]} i.e. [x0A,x0E]
         //then res = {[0000 1010, 0000 1110], [0001 1010, 0001 1110], 
         //            [0010 1010, 0010 1110], [0011 1010, 0011 1110]}, 
-        Pair<uint, uint>[] LiftRanges(int b, int p, Pair<uint, uint>[] ranges)
+        Tuple<uint, uint>[] LiftRanges(int b, int p, Tuple<uint, uint>[] ranges)
         {
             if (p == 0)
                 return ranges;
@@ -1669,34 +1673,34 @@ namespace Microsoft.Automata
             int k = b - p;
             uint maximal = ((uint)1 << k) - 1;
 
-            Pair<uint, uint>[] res = new Pair<uint, uint>[(1 << p) * (ranges.Length)];
+            Tuple<uint, uint>[] res = new Tuple<uint, uint>[(1 << p) * (ranges.Length)];
             int j = 0;
             for (uint i = 0; i < (1 << p); i++)
             {
                 uint prefix = (i << k);
                 foreach (var range in ranges)
-                    res[j++] = new Pair<uint, uint>(range.First | prefix, range.Second | prefix);
+                    res[j++] = new Tuple<uint, uint>(range.Item1 | prefix, range.Item2 | prefix);
             }
 
             //the range wraps around : [0...][...2^k-1][2^k...][...2^(k+1)-1]
-            if (ranges[0].First == 0 && ranges[ranges.Length - 1].Second == maximal)
+            if (ranges[0].Item1 == 0 && ranges[ranges.Length - 1].Item2 == maximal)
             {
                 //merge consequtive ranges, we know that res has at least two elements here
-                List<Pair<uint, uint>> res1 = new List<Pair<uint, uint>>();
-                var from = res[0].First;
-                var to = res[0].Second;
+                List<Tuple<uint, uint>> res1 = new List<Tuple<uint, uint>>();
+                var from = res[0].Item1;
+                var to = res[0].Item2;
                 for (int i = 1; i < res.Length; i++)
                 {
-                    if (to == res[i].First - 1)
-                        to = res[i].Second;
+                    if (to == res[i].Item1 - 1)
+                        to = res[i].Item2;
                     else
                     {
-                        res1.Add(new Pair<uint, uint>(from, to));
-                        from = res[i].First;
-                        to = res[i].Second;
+                        res1.Add(new Tuple<uint, uint>(from, to));
+                        from = res[i].Item1;
+                        to = res[i].Item2;
                     }
                 }
-                res1.Add(new Pair<uint, uint>(from, to));
+                res1.Add(new Tuple<uint, uint>(from, to));
                 res = res1.ToArray();
             }
 
@@ -1704,9 +1708,9 @@ namespace Microsoft.Automata
             return res;
         }
 
-        Pair<uint, uint>[] ToRanges1(BDD set)
+        Tuple<uint, uint>[] ToRanges1(BDD set)
         {
-            Pair<uint, uint>[] ranges;
+            Tuple<uint, uint>[] ranges;
             if (!rangeCache.TryGetValue(set, out ranges))
             {
                 int b = set.Ordinal;
@@ -1716,16 +1720,16 @@ namespace Microsoft.Automata
                     #region 0-case is empty
                     if (set.One.IsFull)
                     {
-                        var range = new Pair<uint, uint>(mask, (mask << 1) - 1);
-                        ranges = new Pair<uint, uint>[] { range };
+                        var range = new Tuple<uint, uint>(mask, (mask << 1) - 1);
+                        ranges = new Tuple<uint, uint>[] { range };
                     }
                     else //1-case is neither full nor empty
                     {
                         var ranges1 = LiftRanges(b, (b - set.One.Ordinal) - 1, ToRanges1(set.One));
-                        ranges = new Pair<uint, uint>[ranges1.Length];
+                        ranges = new Tuple<uint, uint>[ranges1.Length];
                         for (int i = 0; i < ranges1.Length; i++)
                         {
-                            ranges[i] = new Pair<uint, uint>(ranges1[i].First | mask, ranges1[i].Second | mask);
+                            ranges[i] = new Tuple<uint, uint>(ranges1[i].Item1 | mask, ranges1[i].Item2 | mask);
                         }
                     }
                     #endregion
@@ -1735,29 +1739,29 @@ namespace Microsoft.Automata
                     #region 0-case is full
                     if (set.One.IsEmpty)
                     {
-                        var range = new Pair<uint, uint>(0, mask - 1);
-                        ranges = new Pair<uint, uint>[] { range };
+                        var range = new Tuple<uint, uint>(0, mask - 1);
+                        ranges = new Tuple<uint, uint>[] { range };
                     }
                     else
                     {
                         var rangesR = LiftRanges(b, (b - set.One.Ordinal) - 1, ToRanges1(set.One));
                         var range = rangesR[0];
-                        if (range.First == 0)
+                        if (range.Item1 == 0)
                         {
-                            ranges = new Pair<uint, uint>[rangesR.Length];
-                            ranges[0] = new Pair<uint, uint>(0, range.Second | mask);
+                            ranges = new Tuple<uint, uint>[rangesR.Length];
+                            ranges[0] = new Tuple<uint, uint>(0, range.Item2 | mask);
                             for (int i = 1; i < rangesR.Length; i++)
                             {
-                                ranges[i] = new Pair<uint, uint>(rangesR[i].First | mask, rangesR[i].Second | mask);
+                                ranges[i] = new Tuple<uint, uint>(rangesR[i].Item1 | mask, rangesR[i].Item2 | mask);
                             }
                         }
                         else
                         {
-                            ranges = new Pair<uint, uint>[rangesR.Length + 1];
-                            ranges[0] = new Pair<uint, uint>(0, mask - 1);
+                            ranges = new Tuple<uint, uint>[rangesR.Length + 1];
+                            ranges[0] = new Tuple<uint, uint>(0, mask - 1);
                             for (int i = 0; i < rangesR.Length; i++)
                             {
-                                ranges[i + 1] = new Pair<uint, uint>(rangesR[i].First | mask, rangesR[i].Second | mask);
+                                ranges[i + 1] = new Tuple<uint, uint>(rangesR[i].Item1 | mask, rangesR[i].Item2 | mask);
                             }
                         }
                     }
@@ -1776,17 +1780,17 @@ namespace Microsoft.Automata
 
                     else if (set.One.IsFull)
                     {
-                        var ranges1 = new List<Pair<uint, uint>>();
+                        var ranges1 = new List<Tuple<uint, uint>>();
                         for (int i = 0; i < rangesL.Length - 1; i++)
                             ranges1.Add(rangesL[i]);
-                        if (last.Second == (mask - 1))
+                        if (last.Item2 == (mask - 1))
                         {
-                            ranges1.Add(new Pair<uint, uint>(last.First, (mask << 1) - 1));
+                            ranges1.Add(new Tuple<uint, uint>(last.Item1, (mask << 1) - 1));
                         }
                         else
                         {
                             ranges1.Add(last);
-                            ranges1.Add(new Pair<uint, uint>(mask, (mask << 1) - 1));
+                            ranges1.Add(new Tuple<uint, uint>(mask, (mask << 1) - 1));
                         }
                         ranges = ranges1.ToArray();
                     }
@@ -1798,22 +1802,22 @@ namespace Microsoft.Automata
 
                         var first = rangesR[0];
 
-                        if (last.Second == (mask - 1) && first.First == 0) //merge together the last and first ranges
+                        if (last.Item2 == (mask - 1) && first.Item1 == 0) //merge together the last and first ranges
                         {
-                            ranges = new Pair<uint, uint>[rangesL.Length + rangesR.Length - 1];
+                            ranges = new Tuple<uint, uint>[rangesL.Length + rangesR.Length - 1];
                             for (int i = 0; i < rangesL.Length - 1; i++)
                                 ranges[i] = rangesL[i];
-                            ranges[rangesL.Length - 1] = new Pair<uint, uint>(last.First, first.Second | mask);
+                            ranges[rangesL.Length - 1] = new Tuple<uint, uint>(last.Item1, first.Item2 | mask);
                             for (int i = 1; i < rangesR.Length; i++)
-                                ranges[rangesL.Length - 1 + i] = new Pair<uint, uint>(rangesR[i].First | mask, rangesR[i].Second | mask);
+                                ranges[rangesL.Length - 1 + i] = new Tuple<uint, uint>(rangesR[i].Item1 | mask, rangesR[i].Item2 | mask);
                         }
                         else
                         {
-                            ranges = new Pair<uint, uint>[rangesL.Length + rangesR.Length];
+                            ranges = new Tuple<uint, uint>[rangesL.Length + rangesR.Length];
                             for (int i = 0; i < rangesL.Length; i++)
                                 ranges[i] = rangesL[i];
                             for (int i = 0; i < rangesR.Length; i++)
-                                ranges[rangesL.Length + i] = new Pair<uint, uint>(rangesR[i].First | mask, rangesR[i].Second | mask);
+                                ranges[rangesL.Length + i] = new Tuple<uint, uint>(rangesR[i].Item1 | mask, rangesR[i].Item2 | mask);
                         }
 
                     }
@@ -1828,12 +1832,12 @@ namespace Microsoft.Automata
         /// Convert the set into an equivalent array of ranges. 
         /// The ranges are nonoverlapping and ordered. 
         /// </summary>
-        public Pair<uint, uint>[] ToRanges(BDD set, int maxBit)
+        public Tuple<uint, uint>[] ToRanges(BDD set, int maxBit)
         {
             if (set.IsEmpty)
-                return new Pair<uint, uint>[] { };
+                return new Tuple<uint, uint>[] { };
             else if (set.IsFull)
-                return new Pair<uint, uint>[] { new Pair<uint, uint>(0, ((((uint)1 << maxBit) << 1) - 1)) }; //note: maxBit could be 31
+                return new Tuple<uint, uint>[] { new Tuple<uint, uint>(0, ((((uint)1 << maxBit) << 1) - 1)) }; //note: maxBit could be 31
             else
                 return LiftRanges(maxBit + 1, maxBit - set.Ordinal, ToRanges1(set));
         }
@@ -1841,7 +1845,7 @@ namespace Microsoft.Automata
 
     internal class RangeConverter64
     {
-        Dictionary<BDD, Pair<ulong, ulong>[]> rangeCache = new Dictionary<BDD, Pair<ulong, ulong>[]>();
+        Dictionary<BDD, Tuple<ulong, ulong>[]> rangeCache = new Dictionary<BDD, Tuple<ulong, ulong>[]>();
 
         internal RangeConverter64()
         {
@@ -1850,7 +1854,7 @@ namespace Microsoft.Automata
         //e.g. if b = 6 and p = 2 and ranges = (in binary form) {[0000 1010, 0000 1110]} i.e. [x0A,x0E]
         //then res = {[0000 1010, 0000 1110], [0001 1010, 0001 1110], 
         //            [0010 1010, 0010 1110], [0011 1010, 0011 1110]}, 
-        Pair<ulong, ulong>[] LiftRanges(int b, int p, Pair<ulong, ulong>[] ranges)
+        Tuple<ulong, ulong>[] LiftRanges(int b, int p, Tuple<ulong, ulong>[] ranges)
         {
             if (p == 0)
                 return ranges;
@@ -1858,42 +1862,42 @@ namespace Microsoft.Automata
             int k = b - p;
             ulong maximal = ((ulong)1 << k) - 1;
 
-            var res = new Pair<ulong, ulong>[(1 << p) * (ranges.Length)];
+            var res = new Tuple<ulong, ulong>[(1 << p) * (ranges.Length)];
             int j = 0;
             for (ulong i = 0; i < ((ulong)(1 << p)); i++)
             {
                 ulong prefix = (i << k);
                 foreach (var range in ranges)
-                    res[j++] = new Pair<ulong, ulong>(range.First | prefix, range.Second | prefix);
+                    res[j++] = new Tuple<ulong, ulong>(range.Item1 | prefix, range.Item2 | prefix);
             }
 
             //the range wraps around : [0...][...2^k-1][2^k...][...2^(k+1)-1]
-            if (ranges[0].First == 0 && ranges[ranges.Length - 1].Second == maximal)
+            if (ranges[0].Item1 == 0 && ranges[ranges.Length - 1].Item2 == maximal)
             {
                 //merge consequtive ranges, we know that res has at least two elements here
-                var res1 = new List<Pair<ulong, ulong>>();
-                var from = res[0].First;
-                var to = res[0].Second;
+                var res1 = new List<Tuple<ulong, ulong>>();
+                var from = res[0].Item1;
+                var to = res[0].Item2;
                 for (int i = 1; i < res.Length; i++)
                 {
-                    if (to == res[i].First - 1)
-                        to = res[i].Second;
+                    if (to == res[i].Item1 - 1)
+                        to = res[i].Item2;
                     else
                     {
-                        res1.Add(new Pair<ulong, ulong>(from, to));
-                        from = res[i].First;
-                        to = res[i].Second;
+                        res1.Add(new Tuple<ulong, ulong>(from, to));
+                        from = res[i].Item1;
+                        to = res[i].Item2;
                     }
                 }
-                res1.Add(new Pair<ulong, ulong>(from, to));
+                res1.Add(new Tuple<ulong, ulong>(from, to));
                 res = res1.ToArray();
             }
             return res;
         }
 
-        Pair<ulong, ulong>[] ToRanges1(BDD set)
+        Tuple<ulong, ulong>[] ToRanges1(BDD set)
         {
-            Pair<ulong, ulong>[] ranges;
+            Tuple<ulong, ulong>[] ranges;
             if (!rangeCache.TryGetValue(set, out ranges))
             {
                 int b = set.Ordinal;
@@ -1903,16 +1907,16 @@ namespace Microsoft.Automata
                     #region 0-case is empty
                     if (set.One.IsFull)
                     {
-                        var range = new Pair<ulong, ulong>(mask, (mask << 1) - 1);
-                        ranges = new Pair<ulong, ulong>[] { range };
+                        var range = new Tuple<ulong, ulong>(mask, (mask << 1) - 1);
+                        ranges = new Tuple<ulong, ulong>[] { range };
                     }
                     else //1-case is neither full nor empty
                     {
                         var ranges1 = LiftRanges(b, (b - set.One.Ordinal) - 1, ToRanges1(set.One));
-                        ranges = new Pair<ulong, ulong>[ranges1.Length];
+                        ranges = new Tuple<ulong, ulong>[ranges1.Length];
                         for (int i = 0; i < ranges1.Length; i++)
                         {
-                            ranges[i] = new Pair<ulong, ulong>(ranges1[i].First | mask, ranges1[i].Second | mask);
+                            ranges[i] = new Tuple<ulong, ulong>(ranges1[i].Item1 | mask, ranges1[i].Item2 | mask);
                         }
                     }
                     #endregion
@@ -1922,29 +1926,29 @@ namespace Microsoft.Automata
                     #region 0-case is full
                     if (set.One.IsEmpty)
                     {
-                        var range = new Pair<ulong, ulong>(0, mask - 1);
-                        ranges = new Pair<ulong, ulong>[] { range };
+                        var range = new Tuple<ulong, ulong>(0, mask - 1);
+                        ranges = new Tuple<ulong, ulong>[] { range };
                     }
                     else
                     {
                         var rangesR = LiftRanges(b, (b - set.One.Ordinal) - 1, ToRanges1(set.One));
                         var range = rangesR[0];
-                        if (range.First == 0)
+                        if (range.Item1 == 0)
                         {
-                            ranges = new Pair<ulong, ulong>[rangesR.Length];
-                            ranges[0] = new Pair<ulong, ulong>(0, range.Second | mask);
+                            ranges = new Tuple<ulong, ulong>[rangesR.Length];
+                            ranges[0] = new Tuple<ulong, ulong>(0, range.Item2 | mask);
                             for (int i = 1; i < rangesR.Length; i++)
                             {
-                                ranges[i] = new Pair<ulong, ulong>(rangesR[i].First | mask, rangesR[i].Second | mask);
+                                ranges[i] = new Tuple<ulong, ulong>(rangesR[i].Item1 | mask, rangesR[i].Item2 | mask);
                             }
                         }
                         else
                         {
-                            ranges = new Pair<ulong, ulong>[rangesR.Length + 1];
-                            ranges[0] = new Pair<ulong, ulong>(0, mask - 1);
+                            ranges = new Tuple<ulong, ulong>[rangesR.Length + 1];
+                            ranges[0] = new Tuple<ulong, ulong>(0, mask - 1);
                             for (int i = 0; i < rangesR.Length; i++)
                             {
-                                ranges[i + 1] = new Pair<ulong, ulong>(rangesR[i].First | mask, rangesR[i].Second | mask);
+                                ranges[i + 1] = new Tuple<ulong, ulong>(rangesR[i].Item1 | mask, rangesR[i].Item2 | mask);
                             }
                         }
                     }
@@ -1963,17 +1967,17 @@ namespace Microsoft.Automata
 
                     else if (set.One.IsFull)
                     {
-                        var ranges1 = new List<Pair<ulong, ulong>>();
+                        var ranges1 = new List<Tuple<ulong, ulong>>();
                         for (int i = 0; i < rangesL.Length - 1; i++)
                             ranges1.Add(rangesL[i]);
-                        if (last.Second == (mask - 1))
+                        if (last.Item2 == (mask - 1))
                         {
-                            ranges1.Add(new Pair<ulong, ulong>(last.First, (mask << 1) - 1));
+                            ranges1.Add(new Tuple<ulong, ulong>(last.Item1, (mask << 1) - 1));
                         }
                         else
                         {
                             ranges1.Add(last);
-                            ranges1.Add(new Pair<ulong, ulong>(mask, (mask << 1) - 1));
+                            ranges1.Add(new Tuple<ulong, ulong>(mask, (mask << 1) - 1));
                         }
                         ranges = ranges1.ToArray();
                     }
@@ -1985,22 +1989,22 @@ namespace Microsoft.Automata
 
                         var first = rangesR[0];
 
-                        if (last.Second == (mask - 1) && first.First == 0) //merge together the last and first ranges
+                        if (last.Item2 == (mask - 1) && first.Item1 == 0) //merge together the last and first ranges
                         {
-                            ranges = new Pair<ulong, ulong>[rangesL.Length + rangesR.Length - 1];
+                            ranges = new Tuple<ulong, ulong>[rangesL.Length + rangesR.Length - 1];
                             for (int i = 0; i < rangesL.Length - 1; i++)
                                 ranges[i] = rangesL[i];
-                            ranges[rangesL.Length - 1] = new Pair<ulong, ulong>(last.First, first.Second | mask);
+                            ranges[rangesL.Length - 1] = new Tuple<ulong, ulong>(last.Item1, first.Item2 | mask);
                             for (int i = 1; i < rangesR.Length; i++)
-                                ranges[rangesL.Length - 1 + i] = new Pair<ulong, ulong>(rangesR[i].First | mask, rangesR[i].Second | mask);
+                                ranges[rangesL.Length - 1 + i] = new Tuple<ulong, ulong>(rangesR[i].Item1 | mask, rangesR[i].Item2 | mask);
                         }
                         else
                         {
-                            ranges = new Pair<ulong, ulong>[rangesL.Length + rangesR.Length];
+                            ranges = new Tuple<ulong, ulong>[rangesL.Length + rangesR.Length];
                             for (int i = 0; i < rangesL.Length; i++)
                                 ranges[i] = rangesL[i];
                             for (int i = 0; i < rangesR.Length; i++)
-                                ranges[rangesL.Length + i] = new Pair<ulong, ulong>(rangesR[i].First | mask, rangesR[i].Second | mask);
+                                ranges[rangesL.Length + i] = new Tuple<ulong, ulong>(rangesR[i].Item1 | mask, rangesR[i].Item2 | mask);
                         }
 
                     }
@@ -2015,130 +2019,14 @@ namespace Microsoft.Automata
         /// Convert the set into an equivalent array of ranges. 
         /// The ranges are nonoverlapping and ordered. 
         /// </summary>
-        public Pair<ulong, ulong>[] ToRanges(BDD set, int maxBit)
+        public Tuple<ulong, ulong>[] ToRanges(BDD set, int maxBit)
         {
             if (set.IsEmpty)
-                return new Pair<ulong, ulong>[] { };
+                return new Tuple<ulong, ulong>[] { };
             else if (set.IsFull)
-                return new Pair<ulong, ulong>[] { new Pair<ulong, ulong>(0, ((((ulong)1 << maxBit) << 1) - 1)) }; //note: maxBit could be 31
+                return new Tuple<ulong, ulong>[] { new Tuple<ulong, ulong>(0, ((((ulong)1 << maxBit) << 1) - 1)) }; //note: maxBit could be 31
             else
                 return LiftRanges(maxBit + 1, maxBit - set.Ordinal, ToRanges1(set));
-        }
-    }
-
-    /// <summary>
-    /// Boolean algebra over an atomic universe.
-    /// </summary>
-    public class TrivialBooleanAlgebra : IBooleanAlgebra<bool>
-    {
-        public TrivialBooleanAlgebra()
-        {
-        }
-
-        public IEnumerable<Pair<bool[], bool>> GenerateMinterms(params bool[] constraints)
-        {
-            yield return new Pair<bool[], bool>(constraints, true);
-        }
-
-        public bool True
-        {
-            get { return true; }
-        }
-
-        public bool False
-        {
-            get { return false; }
-        }
-
-        public bool MkOr(IEnumerable<bool> predicates)
-        {
-            foreach (var v in predicates)
-                if (v) 
-                    return true;
-            return false;
-        }
-
-        public bool MkAnd(IEnumerable<bool> predicates)
-        {
-            foreach (var v in predicates)
-                if (!v)
-                    return false;
-            return true;
-        }
-
-        public bool MkAnd(params bool[] predicates)
-        {
-            for (int i = 0; i < predicates.Length; i++ )
-                if (!predicates[i])
-                    return false;
-            return true;
-        }
-
-        public bool MkNot(bool predicate)
-        {
-            return !predicate;
-        }
-
-        public bool AreEquivalent(bool predicate1, bool predicate2)
-        {
-            return predicate1 == predicate2;
-        }
-
-        public bool IsExtensional
-        {
-            get { return true; }
-        }
-
-        public bool Simplify(bool predicate)
-        {
-            return predicate;
-        }
-
-        public bool IsSatisfiable(bool predicate)
-        {
-            return predicate;
-        }
-
-        public bool MkAnd(bool predicate1, bool predicate2)
-        {
-            return predicate1 && predicate2;
-        }
-
-        public bool MkOr(bool predicate1, bool predicate2)
-        {
-            return predicate1 || predicate2;
-        }
-
-
-        public bool MkSymmetricDifference(bool p1, bool p2)
-        {
-            return p1 != p2;
-        }
-
-        public bool CheckImplication(bool lhs, bool rhs)
-        {
-            return !lhs || rhs;
-        }
-
-        public bool IsAtomic
-        {
-            get { return true; }
-        }
-
-        public bool GetAtom(bool psi)
-        {
-            return psi;
-        }
-
-        public bool EvaluateAtom(bool atom, bool psi)
-        {
-            return atom && psi;
-        }
-
-
-        public bool MkDiff(bool predicate1, bool predicate2)
-        {
-            return predicate1 && !predicate2;
         }
     }
 }

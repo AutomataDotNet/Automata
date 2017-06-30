@@ -23,7 +23,7 @@ namespace RunExperiments
 
         public static void GenerateTests()
         {
-            HashSet<Pair<int, int>> alreadyFound = new HashSet<Pair<int, int>>();
+            HashSet<Tuple<int, int>> alreadyFound = new HashSet<Tuple<int, int>>();
 
             DirectoryInfo detDir = new DirectoryInfo(pathDet);
             int fileName = detDir.GetFiles().Length + 1;
@@ -43,7 +43,7 @@ namespace RunExperiments
                         if (aut.StateCount < 301 || aut.RuleCount < 3407)
                         {
 
-                            var stTr = new Pair<int, int>(aut.StateCount, aut.RuleCount);
+                            var stTr = new Tuple<int, int>(aut.StateCount, aut.RuleCount);
                             if (!alreadyFound.Contains(stTr))
                             {
                                 alreadyFound.Add(stTr);

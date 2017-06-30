@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -17,21 +17,38 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>..\..\bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE;REX,EXPORT_GPPG</DefineConstants>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>TRACE;DEBUG;REX,EXPORT_GPPG</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <PlatformTarget>x86</PlatformTarget>
+    <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>..\..\bin\Release\</OutputPath>
-    <DefineConstants>TRACE;REX,EXPORT_GPPG</DefineConstants>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <PlatformTarget>x86</PlatformTarget>
-    <GenerateSerializationAssemblies>Off</GenerateSerializationAssemblies>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x64\Debug\</OutputPath>
+    <DefineConstants>TRACE;DEBUG;REX,EXPORT_GPPG</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
+    <OutputPath>bin\x64\Release\</OutputPath>
+    <DefineConstants>TRACE;REX,EXPORT_GPPG</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <DocumentationFile>bin\x64\Release\Microsoft.Automata.XML</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>true</SignAssembly>
@@ -39,23 +56,21 @@
   <PropertyGroup>
     <AssemblyOriginatorKeyFile>AutomataKey.pfx</AssemblyOriginatorKeyFile>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <DebugSymbols>true</DebugSymbols>
-    <OutputPath>bin\x64\Debug\</OutputPath>
-    <DefineConstants>TRACE;REX,EXPORT_GPPG</DefineConstants>
-    <Optimize>true</Optimize>
+    <OutputPath>bin\x86\Debug\</OutputPath>
+    <DefineConstants>TRACE;DEBUG;REX,EXPORT_GPPG</DefineConstants>
     <DebugType>full</DebugType>
-    <PlatformTarget>x64</PlatformTarget>
+    <PlatformTarget>x86</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
-    <OutputPath>..\..\x64\Release\</OutputPath>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
+    <OutputPath>bin\x86\Release\</OutputPath>
     <DefineConstants>TRACE;REX,EXPORT_GPPG</DefineConstants>
     <Optimize>true</Optimize>
     <DebugType>pdbonly</DebugType>
-    <PlatformTarget>x64</PlatformTarget>
-    <GenerateSerializationAssemblies>Off</GenerateSerializationAssemblies>
+    <PlatformTarget>x86</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
@@ -64,39 +79,43 @@
     <Reference Include="System.Numerics" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AutomataAlgebra.cs" />
+    <Compile Include="Internal\AutomataAlgebra.cs" />
     <Compile Include="AutomataException.cs" />
     <Compile Include="Automaton.cs" />
     <Compile Include="AutomatonSerializer.cs" />
     <Compile Include="BDD.cs" />
     <Compile Include="BDDAlgebra.cs" />
     <Compile Include="BigInt.cs" />
-    <Compile Include="BooleanAlgebras\FiniteSetAlgebra.cs" />
     <Compile Include="BooleanAlgebras\BV128Algebra.cs" />
+    <Compile Include="BooleanAlgebras\CartesianAlgebra.cs" />
+    <Compile Include="BooleanAlgebras\DisjointUnionAlgebra.cs" />
+    <Compile Include="BooleanAlgebras\FiniteSetAlgebra.cs" />
+    <Compile Include="BooleanAlgebras\TrivialBooleanAlgebra.cs" />
     <Compile Include="BREX.cs" />
     <Compile Include="BREXManager.cs" />
     <Compile Include="CharacterEncoding.cs" />
     <Compile Include="CharSetSolver.cs" />
     <Compile Include="Chooser.cs" />
     <Compile Include="ConsList.cs" />
-    <Compile Include="EditDistance.cs" />
-    <Compile Include="ExtendedAction.cs" />
-    <Compile Include="ExtendedAutomaton.cs" />
-    <Compile Include="ExtendedMove.cs" />
+    <Compile Include="Internal\ComparablePair.cs" />
+    <Compile Include="Internal\EditDistance.cs" />
+    <Compile Include="Internal\ExtendedAction.cs" />
+    <Compile Include="Internal\ExtendedAutomaton.cs" />
+    <Compile Include="Internal\ExtendedMove.cs" />
     <Compile Include="Grammars\ContextFreeGrammar.cs" />
     <Compile Include="Grammars\GrammarParser.cs" />
     <Compile Include="Grammars\GrammarSymbol.cs" />
     <Compile Include="Grammars\Nonterminal.cs" />
     <Compile Include="Grammars\Production.cs" />
     <Compile Include="Grammars\Terminal.cs" />
-    <Compile Include="GraphAlgorithms.cs" />
+    <Compile Include="Internal\GraphAlgorithms.cs" />
     <Compile Include="Interfaces\IAcceptor.cs" />
     <Compile Include="Interfaces\IAutomaton.cs" />
     <Compile Include="Interfaces\IBooleanAlgebra.cs" />
     <Compile Include="Interfaces\ICharAlgebra.cs" />
+    <Compile Include="Interfaces\ICompiledStringMatcher.cs" />
     <Compile Include="Interfaces\IContext.cs" />
     <Compile Include="Interfaces\IDeterministicFiniteTransducer.cs" />
-    <Compile Include="Interfaces\ICompiledStringMatcher.cs" />
     <Compile Include="Interfaces\ILibrary.cs" />
     <Compile Include="Interfaces\INameProvider.cs" />
     <Compile Include="Interfaces\IPrettyPrinter.cs" />
@@ -105,37 +124,35 @@
     <Compile Include="Interfaces\ITransducer.cs" />
     <Compile Include="Interfaces\IValue.cs" />
     <Compile Include="Internal\CharRangeSolver.cs" />
-    <Compile Include="Internal\DirectedGraphs\DgmlWriter.cs" />
-    <Compile Include="Internal\DirectedGraphs\DotWriter.cs" />
-    <Compile Include="Internal\Generated\IgnoreCaseRelation.cs" />
-    <Compile Include="Internal\Generated\UnicodeCategoryRanges.cs" />
+    <Compile Include="DirectedGraphs\DgmlWriter.cs" />
+    <Compile Include="DirectedGraphs\DotWriter.cs" />
+    <Compile Include="Generated\IgnoreCaseRelation.cs" />
+    <Compile Include="Generated\UnicodeCategoryRanges.cs" />
     <Compile Include="Internal\HashSetSolver.cs" />
     <Compile Include="Internal\IntSet.cs" />
     <Compile Include="Internal\UnicodeCategoryTheory.cs" />
     <Compile Include="Internal\UnicodeCategoryTheoryProviders.cs" />
-    <Compile Include="Internal\Utilities\AutomataCSharpCompiler.cs" />
-    <Compile Include="Internal\Utilities\CppCodeGenerator.cs" />
-    <Compile Include="Internal\Utilities\CommandLineParser.cs" />
-    <Compile Include="Internal\Utilities\HelperPredicates.cs" />
-    <Compile Include="Internal\Utilities\HighTimer.cs" />
-    <Compile Include="Internal\Utilities\IgnoreCaseRelationGenerator.cs" />
-    <Compile Include="Internal\Utilities\IgnoreCaseTransformer.cs" />
-    <Compile Include="Internal\Utilities\LexLocationInFile.cs" />
-    <Compile Include="Internal\Utilities\RegexToRangeAutomatonSerializer.cs" />
-    <Compile Include="Internal\Utilities\ShiftReduceParser.cs" />
-    <Compile Include="Internal\Utilities\UnicodeCategoryRangesGenerator.cs" />
-    <Compile Include="IteBag.cs" />
+    <Compile Include="RegexExtensionMethods.cs" />
+    <Compile Include="Utilities\AutomataCSharpCompiler.cs" />
+    <Compile Include="Utilities\CommandLineParser.cs" />
+    <Compile Include="Utilities\CppCodeGenerator.cs" />
+    <Compile Include="Utilities\HelperPredicates.cs" />
+    <Compile Include="Utilities\HighTimer.cs" />
+    <Compile Include="Utilities\IgnoreCaseRelationGenerator.cs" />
+    <Compile Include="Utilities\IgnoreCaseTransformer.cs" />
+    <Compile Include="OUT.Gppg\LexLocationInFile.cs" />
+    <Compile Include="Utilities\RegexToRangeAutomatonSerializer.cs" />
+    <Compile Include="OUT.Gppg\ShiftReduceParser.cs" />
+    <Compile Include="Utilities\UnicodeCategoryRangesGenerator.cs" />
+    <Compile Include="Internal\IteBag.cs" />
     <Compile Include="MintermGenerator.cs" />
     <Compile Include="Move.cs" />
     <Compile Include="OrderedSet.cs" />
-    <Compile Include="Pair.cs" />
-    <Compile Include="PairBoolAlg.cs" />
-    <Compile Include="PartitionRefinement.cs" />
+    <Compile Include="Internal\PartitionRefinement.cs" />
     <Compile Include="PredicateTrie.cs" />
-    <Compile Include="ProductBoolAlg.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="PushdownAutomaton.cs" />
-    <Compile Include="PushdownMove.cs" />
+    <Compile Include="Internal\PushdownAutomaton.cs" />
+    <Compile Include="Internal\PushdownMove.cs" />
     <Compile Include="RegexParser\RegexBoyerMoore.cs" />
     <Compile Include="RegexParser\RegexCharClass.cs" />
     <Compile Include="RegexParser\RegexCode.cs" />
@@ -147,7 +164,7 @@
     <Compile Include="RegexParser\SR.cs" />
     <Compile Include="RegexToAutomatonBuilder.cs" />
     <Compile Include="RegexToAutomatonConverter.cs" />
-    <Compile Include="RegexToSMTConverter.cs" />
+    <Compile Include="Internal\RegexToSMTConverter.cs" />
     <Compile Include="Rex\RexEngine.cs" />
     <Compile Include="Rex\RexSettings.cs" />
     <Compile Include="Rule.cs" />
@@ -155,12 +172,12 @@
     <Compile Include="SFA.cs" />
     <Compile Include="ST.cs" />
     <Compile Include="STb.cs" />
-    <Compile Include="STbComposer.cs" />
+    <Compile Include="Internal\STbComposer.cs" />
     <Compile Include="STbFromRegexBuilder.cs" />
-    <Compile Include="STbSimplifier.cs" />
-    <Compile Include="STbSimulator.cs" />
+    <Compile Include="Internal\STbSimplifier.cs" />
+    <Compile Include="Internal\STbSimulator.cs" />
     <Compile Include="STBuilder.cs" />
-    <Compile Include="StringUtility.cs" />
+    <Compile Include="Internal\StringUtility.cs" />
     <Compile Include="Templates\AutomataTextTemplate.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -176,13 +193,9 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>AutomatonTextTemplate.tt</DependentUpon>
     </Compile>
-    <Compile Include="ThreeAutomaton.cs" />
-    <Compile Include="UnionFindHopKarp.cs" />
+    <Compile Include="Internal\ThreeAutomaton.cs" />
+    <Compile Include="Internal\UnionFindHopKarp.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="AutomataKey.pfx" />
-  </ItemGroup>
-  <ItemGroup />
   <ItemGroup>
     <Content Include="Templates\AutomataTextTemplate.tt">
       <Generator>TextTemplatingFilePreprocessor</Generator>
@@ -200,6 +213,10 @@
   <ItemGroup>
     <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="AutomataKey.pfx" />
+  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

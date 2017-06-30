@@ -84,7 +84,7 @@ namespace Microsoft.Automata
                 }
             };
 
-            var allMoves = new List<Move<Pair<BDD, T>>>();
+            var allMoves = new List<Move<Tuple<BDD, T>>>();
             var bv32 = solver.MkBitVecSort(32);
 
             Func<T, T> AddZeros = (c) =>
@@ -159,22 +159,22 @@ namespace Microsoft.Automata
                 if (patternAutomataPairs[i].Item1 == "")
                 {
                     foreach (var m in aut.GetMoves())
-                        allMoves.Add(Move<Pair<BDD, T>>.Create(MkState(i, m.SourceState), MkState(i, m.TargetState), new Pair<BDD, T>(m.Label, regVar)));
+                        allMoves.Add(Move<Tuple<BDD, T>>.Create(MkState(i, m.SourceState), MkState(i, m.TargetState), new Tuple<BDD, T>(m.Label, regVar)));
                 }
                 else if (captureSortName[patternAutomataPairs[i].Item1] == "int")
                 {
                     foreach (var m in aut.GetMoves())
-                        allMoves.Add(Move<Pair<BDD, T>>.Create(MkState(i, m.SourceState), MkState(i, m.TargetState), new Pair<BDD, T>(m.Label, ToInt(captureSortPos[patternAutomataPairs[i].Item1]))));
+                        allMoves.Add(Move<Tuple<BDD, T>>.Create(MkState(i, m.SourceState), MkState(i, m.TargetState), new Tuple<BDD, T>(m.Label, ToInt(captureSortPos[patternAutomataPairs[i].Item1]))));
                 }
                 else if (captureSortName[patternAutomataPairs[i].Item1] == "length")
                 {
                     foreach (var m in aut.GetMoves())
-                        allMoves.Add(Move<Pair<BDD, T>>.Create(MkState(i, m.SourceState), MkState(i, m.TargetState), new Pair<BDD, T>(m.Label, ToLen(captureSortPos[patternAutomataPairs[i].Item1]))));
+                        allMoves.Add(Move<Tuple<BDD, T>>.Create(MkState(i, m.SourceState), MkState(i, m.TargetState), new Tuple<BDD, T>(m.Label, ToLen(captureSortPos[patternAutomataPairs[i].Item1]))));
                 }
                 else if (captureSortName[patternAutomataPairs[i].Item1] == "last")
                 {
                     foreach (var m in aut.GetMoves())
-                        allMoves.Add(Move<Pair<BDD, T>>.Create(MkState(i, m.SourceState), MkState(i, m.TargetState), new Pair<BDD, T>(m.Label, KeepLast(captureSortPos[patternAutomataPairs[i].Item1]))));
+                        allMoves.Add(Move<Tuple<BDD, T>>.Create(MkState(i, m.SourceState), MkState(i, m.TargetState), new Tuple<BDD, T>(m.Label, KeepLast(captureSortPos[patternAutomataPairs[i].Item1]))));
                 }
                 else if (captureSortName[patternAutomataPairs[i].Item1] == "bool")
                 {
@@ -192,13 +192,13 @@ namespace Microsoft.Automata
                         if (m.SourceState == boolAcceptor.InitialState)
                         {
                             if (solver.CharSetProvider.IsSatisfiable(solver.CharSetProvider.MkAnd(_t, m.Label)))
-                                allMoves.Add(Move<Pair<BDD, T>>.Create(MkState(i, m.SourceState), MkState(i, m.TargetState), new Pair<BDD, T>(m.Label, AssignBool(captureSortPos[patternAutomataPairs[i].Item1],true))));
+                                allMoves.Add(Move<Tuple<BDD, T>>.Create(MkState(i, m.SourceState), MkState(i, m.TargetState), new Tuple<BDD, T>(m.Label, AssignBool(captureSortPos[patternAutomataPairs[i].Item1],true))));
                             else if (solver.CharSetProvider.IsSatisfiable(solver.CharSetProvider.MkAnd(_f, m.Label)))
-                                allMoves.Add(Move<Pair<BDD, T>>.Create(MkState(i, m.SourceState), MkState(i, m.TargetState), new Pair<BDD, T>(m.Label, AssignBool(captureSortPos[patternAutomataPairs[i].Item1], false))));
+                                allMoves.Add(Move<Tuple<BDD, T>>.Create(MkState(i, m.SourceState), MkState(i, m.TargetState), new Tuple<BDD, T>(m.Label, AssignBool(captureSortPos[patternAutomataPairs[i].Item1], false))));
                         }
                         else
                         {
-                            allMoves.Add(Move<Pair<BDD, T>>.Create(MkState(i, m.SourceState), MkState(i, m.TargetState), new Pair<BDD, T>(m.Label, regVar)));
+                            allMoves.Add(Move<Tuple<BDD, T>>.Create(MkState(i, m.SourceState), MkState(i, m.TargetState), new Tuple<BDD, T>(m.Label, regVar)));
                         }
                     }
                 }
@@ -209,7 +209,7 @@ namespace Microsoft.Automata
             for (int i = 0; i < patternAutomataPairs.Length-1; i++)
             {
                 foreach (var q in patternAutomataPairs[i].Item2.GetFinalStates())
-                    allMoves.Add(Move<Pair<BDD, T>>.Epsilon(MkState(i, q), MkState(i + 1, patternAutomataPairs[i + 1].Item2.InitialState)));
+                    allMoves.Add(Move<Tuple<BDD, T>>.Epsilon(MkState(i, q), MkState(i + 1, patternAutomataPairs[i + 1].Item2.InitialState)));
             }
 
             var L = patternAutomataPairs.Length - 1;
@@ -218,8 +218,8 @@ namespace Microsoft.Automata
             foreach (var f in patternAutomataPairs[L].Item2.GetFinalStates())
                 finalStates.Add(MkState(L, f));
 
-            var tmpAutE = Automaton<Pair<BDD, T>>.Create(null, MkState(0, patternAutomataPairs[0].Item2.InitialState), finalStates, allMoves);
-            Func<Pair<BDD, T>, Pair<BDD, T>, Pair<BDD, T>> error = (f1, f2) =>
+            var tmpAutE = Automaton<Tuple<BDD, T>>.Create(null, MkState(0, patternAutomataPairs[0].Item2.InitialState), finalStates, allMoves);
+            Func<Tuple<BDD, T>, Tuple<BDD, T>, Tuple<BDD, T>> error = (f1, f2) =>
                 {
                     throw new AutomataException(AutomataExceptionKind.InternalError);
                 };
@@ -367,7 +367,7 @@ namespace Microsoft.Automata
             throw new NotImplementedException();
         }
 
-        STb<F,T,S> Automaton2STb(Automaton<Pair<BDD, T>> aut, string name, S regSort, T initReg, bool isLoop)
+        STb<F,T,S> Automaton2STb(Automaton<Tuple<BDD, T>> aut, string name, S regSort, T initReg, bool isLoop)
         {
             if (isLoop)
                 if (aut.HasMoreThanOneFinalState || aut.GetMovesCountFrom(aut.FinalState) > 0)
@@ -418,17 +418,17 @@ namespace Microsoft.Automata
             return stb;
         }
 
-        STbRule<T> MkSTbRule(IEnumerable<Move<Pair<BDD, T>>> moves, Func<int, int> getState, Func<int, Sequence<T>> getYield, Func<int,T, T> getUpdate)
+        BranchingRule<T> MkSTbRule(IEnumerable<Move<Tuple<BDD, T>>> moves, Func<int, int> getState, Func<int, Sequence<T>> getYield, Func<int,T, T> getUpdate)
         {
             List<Tuple<T, BaseRule<T>>> cases = new List<Tuple<T, BaseRule<T>>>();
             var allGuards = solver.CharSetProvider.False;
             foreach (var m in moves)
             {
-                cases.Add(new Tuple<T, BaseRule<T>>(ConvertToPredicate(m.Label.First),
-                    new BaseRule<T>(getYield(m.TargetState), getUpdate(m.TargetState, m.Label.Second), getState(m.TargetState))));
-                allGuards = solver.CharSetProvider.MkOr(allGuards, m.Label.First);
+                cases.Add(new Tuple<T, BaseRule<T>>(ConvertToPredicate(m.Label.Item1),
+                    new BaseRule<T>(getYield(m.TargetState), getUpdate(m.TargetState, m.Label.Item2), getState(m.TargetState))));
+                allGuards = solver.CharSetProvider.MkOr(allGuards, m.Label.Item1);
             }
-            STbRule<T> r = UndefRule<T>.Default;
+            BranchingRule<T> r = UndefRule<T>.Default;
             if (cases.Count > 0)
             {
                 if (allGuards.IsFull)
@@ -448,11 +448,11 @@ namespace Microsoft.Automata
             foreach (var range in ranges)
             {
                 T charPred;
-                if (range.First == range.Second)
-                    charPred = solver.MkEq(solver.MkVar(0,solver.CharSort),solver.MkNumeral(range.First,solver.CharSort));
+                if (range.Item1 == range.Item2)
+                    charPred = solver.MkEq(solver.MkVar(0,solver.CharSort),solver.MkNumeral(range.Item1,solver.CharSort));
                 else 
-                    charPred = solver.MkAnd(solver.MkCharLe(solver.MkNumeral(range.First,solver.CharSort), solver.MkVar(0,solver.CharSort)),
-                        solver.MkCharLe(solver.MkVar(0,solver.CharSort), solver.MkNumeral(range.Second,solver.CharSort)));
+                    charPred = solver.MkAnd(solver.MkCharLe(solver.MkNumeral(range.Item1,solver.CharSort), solver.MkVar(0,solver.CharSort)),
+                        solver.MkCharLe(solver.MkVar(0,solver.CharSort), solver.MkNumeral(range.Item2,solver.CharSort)));
                 if (res.Equals(solver.False))
                     res = charPred;
                 else

@@ -210,7 +210,7 @@ namespace Microsoft.Bek
             }
         }
 
-        //internal Pair<Z3.Expr[], Z3.Expr> GetDefinition(string fname)
+        //internal Tuple<Z3.Expr[], Z3.Expr> GetDefinition(string fname)
         //{
         //    conver
         //}

@@ -57,7 +57,7 @@ namespace RunExperiments
             //Util.GatherResultsTimbuk(timbukFile, timbukFileDM, timbukPrefix);
 
 
-            //RegexExperiment.RunTest();
+            RegexExperiment.RunTest();
 
             //VerificationNFAExperiment.RunTest();
 

@@ -18,7 +18,7 @@ namespace Microsoft.Automata.Tests
     public class RexTests
     {
 
-        static string regexesFile = "../../regexes.txt";
+        static string regexesFile = "../../../regexes.txt";
         public RexTests()
         {
             //
@@ -282,7 +282,7 @@ namespace Microsoft.Automata.Tests
         {
             var r1 = @"^(a|ab|abc|abcd|abcde)$";
 
-            var randomseed = 123;
+            //var randomseed = 123;
 
             var rex = new Microsoft.Automata.Rex.RexEngine(BitWidth.BV7);
             var sfa = rex.CreateFromRegexes(RegexOptions.None, r1);
@@ -733,8 +733,8 @@ namespace Microsoft.Automata.Tests
         int time1 = 0;
         int time2 = 0;
         int time3 = 0;
-        int regexId;
-        string regex;
+        //int regexId;
+        string regex = "dummy";
         void RunMinimize()
         {
             try
@@ -777,7 +777,7 @@ namespace Microsoft.Automata.Tests
                     origStateCount = autom.StateCount;
                 }
             }
-            catch (Exception e)
+            catch 
             {
                 stateCount = -2;
             }

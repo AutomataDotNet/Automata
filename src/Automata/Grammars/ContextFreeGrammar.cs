@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using System.IO;
-using Microsoft.Automata.Internal;
+using Microsoft.Automata;
 
 namespace Microsoft.Automata.Grammars
 {
@@ -755,19 +755,19 @@ namespace Microsoft.Automata.Grammars
                 return g;
 
             var leavesP = new List<Production>();
-            var revP = new Dictionary<Nonterminal, List<Pair<GrammarSymbol[], Nonterminal>>>();
+            var revP = new Dictionary<Nonterminal, List<Tuple<GrammarSymbol[], Nonterminal>>>();
 
             int nonterminalID = 0;
 
             #region compute leavesP and revP
             foreach (Nonterminal v in g.variables)
-                revP[v] = new List<Pair<GrammarSymbol[], Nonterminal>>();
+                revP[v] = new List<Tuple<GrammarSymbol[], Nonterminal>>();
 
             foreach (Production p in g.GetProductions())
                 if (!(p.First is Nonterminal))
                     leavesP.Add(p);
                 else
-                    revP[(Nonterminal)p.First].Add(new Pair<GrammarSymbol[], Nonterminal>(p.Rest, p.Lhs));
+                    revP[(Nonterminal)p.First].Add(new Tuple<GrammarSymbol[], Nonterminal>(p.Rest, p.Lhs));
             #endregion
 
             var W = new Dictionary<Nonterminal, HashSet<Nonterminal>>();
@@ -814,11 +814,11 @@ namespace Microsoft.Automata.Grammars
                     }
                     foreach (var t in revP[C])
                     {
-                        Nonterminal D = t.Second;
+                        Nonterminal D = t.Item2;
                         Nonterminal D_B = Lookup(Bvar, D, ref nonterminalID);
-                        C_B_list.Add(new Production(C_B, t.First, D_B));
-                        if (t.First.Length > 0 && W_B.Contains(D))
-                            C_B_list.Add(new Production(C_B, t.First));
+                        C_B_list.Add(new Production(C_B, t.Item1, D_B));
+                        if (t.Item1.Length > 0 && W_B.Contains(D))
+                            C_B_list.Add(new Production(C_B, t.Item1));
                         if (visited.Add(D))
                             stack.Push(D);
                     }

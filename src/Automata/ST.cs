@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.IO;
 
-using Microsoft.Automata.Internal;
+using Microsoft.Automata;
 
 namespace Microsoft.Automata
 {
@@ -36,7 +36,7 @@ namespace Microsoft.Automata
             var stb = new STb<FUNC, TERM, SORT>(solver, name, inputSort, outputSort, registerSort, initReg, automaton.InitialState);
             foreach (int state in automaton.States)
             {
-                STbRule<TERM> rule = new UndefRule<TERM>();
+                BranchingRule<TERM> rule = new UndefRule<TERM>();
                 foreach (var r in this.GetNonFinalMovesFrom(state))
                 {
                     var brule = new BaseRule<TERM>(new Sequence<TERM>(r.Label.Yields), r.Label.Update, r.TargetState);
@@ -50,7 +50,7 @@ namespace Microsoft.Automata
                     }
                 }
                 stb.AssignRule(state, rule);
-                STbRule<TERM> frule = UndefRule<TERM>.Default;
+                BranchingRule<TERM> frule = UndefRule<TERM>.Default;
                 foreach (var r in this.GetFinalRules(state))
                 {
                     var brule = new BaseRule<TERM>(new Sequence<TERM>(r.Yields), initReg, state);
@@ -78,7 +78,7 @@ namespace Microsoft.Automata
             {
                 var st = Explore(k);
                 var aut = st.MkInstance();
-                Microsoft.Automata.Internal.DirectedGraphs.DgmlWriter.ShowGraph<string>(-1, aut, this.name); 
+                Microsoft.Automata.DirectedGraphs.DgmlWriter.ShowGraph<string>(-1, aut, this.name); 
             }
         }
 
@@ -755,13 +755,13 @@ namespace Microsoft.Automata
             var rB = (B.IsRegisterFree ? Z.UnitConst : (A.IsRegisterFree ? r : Z.MkProj(1, r)));
 
             int _id = 1;
-            var initState = new Pair<int, int>(autA.InitialState, autB.InitialState);
-            var stateIdMap = new Dictionary<Pair<int, int>, int>();
+            var initState = new Tuple<int, int>(autA.InitialState, autB.InitialState);
+            var stateIdMap = new Dictionary<Tuple<int, int>, int>();
             stateIdMap[initState] = 0;
-            var visited = new HashSet<Pair<int, int>>();
+            var visited = new HashSet<Tuple<int, int>>();
             visited.Add(initState);
             var moves = new List<Move<Rule<TERM>>>();
-            var stack = new Stack<Pair<int, int>>();
+            var stack = new Stack<Tuple<int, int>>();
             stack.Push(initState);
             var finalStates = new HashSet<int>();
             if (autA.IsFinalState(autA.InitialState) && autB.IsFinalState(autB.InitialState))
@@ -770,7 +770,7 @@ namespace Microsoft.Automata
 
             #region helper methods
 
-            Func<Pair<int, int>, int> GetStateId = p =>
+            Func<Tuple<int, int>, int> GetStateId = p =>
             {
                 int id;
                 if (!stateIdMap.TryGetValue(p, out id))
@@ -813,13 +813,13 @@ namespace Microsoft.Automata
             };
 
 
-            Func<Pair<int, int>, bool> AddToSearch = p =>
+            Func<Tuple<int, int>, bool> AddToSearch = p =>
             {
                 if (visited.Add(p))
                 {
                     stack.Push(p);
                     int pId = GetStateId(p);
-                    if (autA.IsFinalState(p.First) && autB.IsFinalState(p.Second))
+                    if (autA.IsFinalState(p.Item1) && autB.IsFinalState(p.Item2))
                         finalStates.Add(pId);
                     return true;
                 }
@@ -835,7 +835,7 @@ namespace Microsoft.Automata
                 var curr = stack.Pop();
                 var source = GetStateId(curr);
 
-                foreach (var mA in A.GetNonFinalMovesFrom(curr.First))
+                foreach (var mA in A.GetNonFinalMovesFrom(curr.Item1))
                 {
                     if (mA.IsEpsilon)
                         throw new AutomataException(AutomataExceptionKind.EpsilonMovesAreNotSupportedInSTs);
@@ -846,7 +846,7 @@ namespace Microsoft.Automata
 
                     if (mA.Label.Yields.Length == 0) //the output from A is eps
                     {
-                        var sp = new Pair<int,int>(mA.TargetState, curr.Second);
+                        var sp = new Tuple<int,int>(mA.TargetState, curr.Item2);
                         AddToSearch(sp);
                         Rule<TERM> composedLabel = Rule<TERM>.Mk(aGuard, MkTuple(aUpdate, rB));
                         moves.Add(Move<Rule<TERM>>.Create(source, GetStateId(sp), composedLabel));
@@ -854,26 +854,26 @@ namespace Microsoft.Automata
                     }
 
                     //int time = System.Environment.TickCount;
-                    var paths = new List<Pair<int, Rule<TERM>>>(GetForwardPaths(Z, aGuard, aYields, 0, aYields.Length, curr.Second, rB, _rB, _iB, B));
+                    var paths = new List<Tuple<int, Rule<TERM>>>(GetForwardPaths(Z, aGuard, aYields, 0, aYields.Length, curr.Item2, rB, _rB, _iB, B));
                     //time = System.Environment.TickCount - time;
 
                     foreach (var path in paths)
                     {
-                        var sp = new Pair<int, int>(mA.TargetState, path.First);
+                        var sp = new Tuple<int, int>(mA.TargetState, path.Item1);
                         AddToSearch(sp);
-                        Rule<TERM> composedLabel = Rule<TERM>.Mk(path.Second.Guard, MkTuple(aUpdate, path.Second.Update), path.Second.Yields);
+                        Rule<TERM> composedLabel = Rule<TERM>.Mk(path.Item2.Guard, MkTuple(aUpdate, path.Item2.Update), path.Item2.Yields);
                         moves.Add(Move<Rule<TERM>>.Create(source, GetStateId(sp), composedLabel));
                     }
                 }
 
-                foreach (var finalA in A.GetFinalRules(curr.First))
+                foreach (var finalA in A.GetFinalRules(curr.Item1))
                 {
                     TERM aGuard = Z.ApplySubstitution(finalA.Guard, _rA, rA);
                     TERM[] aYields = Array.ConvertAll<TERM, TERM>(finalA.Yields, y => Z.ApplySubstitution(y, _rA, rA));
 
                     if (aYields.Length == 0)
                     {
-                        foreach (var finalB in B.GetFinalRules(curr.Second))
+                        foreach (var finalB in B.GetFinalRules(curr.Item2))
                         {
                             TERM bGuard = Z.ApplySubstitution(finalB.Guard, _rB, rB);
                             TERM[] bYields = Array.ConvertAll<TERM, TERM>(finalB.Yields, y => Z.ApplySubstitution(y, _rB, rB));
@@ -882,17 +882,17 @@ namespace Microsoft.Automata
                     }
                     else
                     {
-                        var paths = new List<Pair<int, Rule<TERM>>>(GetForwardPaths(Z, aGuard, aYields, 0, aYields.Length, curr.Second, rB, _rB, _iB, B));
+                        var paths = new List<Tuple<int, Rule<TERM>>>(GetForwardPaths(Z, aGuard, aYields, 0, aYields.Length, curr.Item2, rB, _rB, _iB, B));
                         foreach (var path in paths)
                         {
-                            foreach (var finalB in B.GetFinalRules(path.First))
+                            foreach (var finalB in B.GetFinalRules(path.Item1))
                             {
-                                TERM bGuard = Z.ApplySubstitution(finalB.Guard, _rB, path.Second.Update);
-                                TERM[] bYields = Array.ConvertAll<TERM, TERM>(finalB.Yields, y => Z.ApplySubstitution(y, _rB, path.Second.Update));
-                                TERM finalGuard = Z.MkAnd(path.Second.Guard, bGuard);
+                                TERM bGuard = Z.ApplySubstitution(finalB.Guard, _rB, path.Item2.Update);
+                                TERM[] bYields = Array.ConvertAll<TERM, TERM>(finalB.Yields, y => Z.ApplySubstitution(y, _rB, path.Item2.Update));
+                                TERM finalGuard = Z.MkAnd(path.Item2.Guard, bGuard);
                                 if (Z.IsSatisfiable(finalGuard))
                                 {
-                                    List<TERM> finalYields = new List<TERM>(path.Second.Yields);
+                                    List<TERM> finalYields = new List<TERM>(path.Item2.Yields);
                                     finalYields.AddRange(bYields);
                                     moves.Add(MkFinalOutput(Z, source, finalGuard, finalYields.ToArray()));
                                 }
@@ -930,10 +930,10 @@ namespace Microsoft.Automata
             return Move<Rule<TERM>>.Create(finalState, finalState, Rule<TERM>.MkFinal(finalCondition, finalYields));
         }
 
-        static IEnumerable<Pair<int, Rule<TERM>>> GetForwardPaths(IContext<FUNC, TERM, SORT> z3p, TERM guard, TERM[] aYields, int i, int k, int state, TERM reg, TERM _rB, TERM _iB, ST<FUNC, TERM, SORT> B)
+        static IEnumerable<Tuple<int, Rule<TERM>>> GetForwardPaths(IContext<FUNC, TERM, SORT> z3p, TERM guard, TERM[] aYields, int i, int k, int state, TERM reg, TERM _rB, TERM _iB, ST<FUNC, TERM, SORT> B)
         {
             if (i == k)
-                yield return new Pair<int, Rule<TERM>>(state, Rule<TERM>.Mk(guard, reg));
+                yield return new Tuple<int, Rule<TERM>>(state, Rule<TERM>.Mk(guard, reg));
             else
                 foreach (var rule in B.GetNonFinalMovesFrom(state))
                 {
@@ -944,16 +944,16 @@ namespace Microsoft.Automata
                         TERM[] y = Array.ConvertAll(rule.Label.Yields, e => z3p.ApplySubstitution(e, _iB, aYields[i], _rB, reg));
                         foreach (var path in GetForwardPaths(z3p, g, aYields, i + 1, k, rule.TargetState, r, _rB, _iB, B))
                         {
-                            TERM g1 = path.Second.Guard;
-                            TERM r1 = path.Second.Update;
-                            TERM[] y2 = path.Second.Yields;
+                            TERM g1 = path.Item2.Guard;
+                            TERM r1 = path.Item2.Update;
+                            TERM[] y2 = path.Item2.Yields;
                             TERM[] y1 = new TERM[y.Length + y2.Length];
                             if (y.Length > 0)
                                 Array.Copy(y, 0, y1, 0, y.Length);
                             if (y2.Length > 0)
                                 Array.Copy(y2, 0, y1, y.Length, y2.Length);
                             Rule<TERM> lab = Rule<TERM>.Mk(g1, r1, y1);
-                            yield return new Pair<int, Rule<TERM>>(path.First, lab);
+                            yield return new Tuple<int, Rule<TERM>>(path.Item1, lab);
                         }
                     }
                 }
@@ -1134,10 +1134,10 @@ namespace Microsoft.Automata
         /// </summary>
         internal ST<FUNC, TERM, SORT> ExploreFull()
         {
-            var stack = new Stack<Pair<int, TERM>>();
-            var stateIdMap = new Dictionary<Pair<int, TERM>, int>();
-            var initState = new Pair<int, TERM>(automaton.InitialState, initReg);
-            stack.Push(new Pair<int, TERM>(automaton.InitialState, initReg));
+            var stack = new Stack<Tuple<int, TERM>>();
+            var stateIdMap = new Dictionary<Tuple<int, TERM>, int>();
+            var initState = new Tuple<int, TERM>(automaton.InitialState, initReg);
+            stack.Push(new Tuple<int, TERM>(automaton.InitialState, initReg));
             stateIdMap[initState] = 0;
             int nextStateId = 1;
 
@@ -1147,17 +1147,17 @@ namespace Microsoft.Automata
             {
                 var pair = stack.Pop();
                 int sourceState = stateIdMap[pair];
-                foreach (var move in GetNonFinalMovesFrom(pair.First))
+                foreach (var move in GetNonFinalMovesFrom(pair.Item1))
                 {
-                    TERM g = solver.Simplify(solver.ApplySubstitution(move.Label.Guard, RegisterVar, pair.Second));
-                    TERM u = solver.Simplify(solver.ApplySubstitution(move.Label.Update, RegisterVar, pair.Second));
-                    TERM[] ys = Array.ConvertAll(move.Label.Yields, y => solver.Simplify(solver.ApplySubstitution(y, RegisterVar, pair.Second)));
+                    TERM g = solver.Simplify(solver.ApplySubstitution(move.Label.Guard, RegisterVar, pair.Item2));
+                    TERM u = solver.Simplify(solver.ApplySubstitution(move.Label.Update, RegisterVar, pair.Item2));
+                    TERM[] ys = Array.ConvertAll(move.Label.Yields, y => solver.Simplify(solver.ApplySubstitution(y, RegisterVar, pair.Item2)));
                     TERM[] ys2 = (move.Label.Yields2 == null ? null :
-                        Array.ConvertAll(move.Label.Yields2, y => solver.Simplify(solver.ApplySubstitution(y, RegisterVar, pair.Second))));
+                        Array.ConvertAll(move.Label.Yields2, y => solver.Simplify(solver.ApplySubstitution(y, RegisterVar, pair.Item2))));
 
                     foreach (var upd in FindDistinctRegisterValues(g, u))
                     {
-                        var targetPair = new Pair<int, TERM>(move.TargetState, upd);
+                        var targetPair = new Tuple<int, TERM>(move.TargetState, upd);
                         int targetState;
                         if (!stateIdMap.TryGetValue(targetPair, out targetState))
                         {
@@ -1170,14 +1170,14 @@ namespace Microsoft.Automata
                         moves.Add(Move<Rule<TERM>>.Create(sourceState, targetState, new Rule<TERM>(move.Label.k, pred, ys, ys2, solver.UnitConst)));
                     }
                 }
-                foreach (var rule in GetFinalRules(pair.First))
+                foreach (var rule in GetFinalRules(pair.Item1))
                 {
-                    TERM g = solver.ApplySubstitution(rule.Guard, RegisterVar, pair.Second);
+                    TERM g = solver.ApplySubstitution(rule.Guard, RegisterVar, pair.Item2);
                     if (solver.MainSolver.GetModel(g) != null) //if the guard is satisfiable it is true because it is ground
                     {
-                        var ys1 = Array.ConvertAll(rule.Yields, y => solver.ApplySubstitution(y, RegisterVar, pair.Second));
+                        var ys1 = Array.ConvertAll(rule.Yields, y => solver.ApplySubstitution(y, RegisterVar, pair.Item2));
                         var ys2 = (rule.Yields2 == null ? null :
-                            Array.ConvertAll(rule.Yields2, y => solver.ApplySubstitution(y, RegisterVar, pair.Second)));
+                            Array.ConvertAll(rule.Yields2, y => solver.ApplySubstitution(y, RegisterVar, pair.Item2)));
                         moves.Add(Move<Rule<TERM>>.Create(sourceState, sourceState, new Rule<TERM>(0, solver.True, ys1, ys2, default(TERM))));
                     }
                 }
@@ -1454,16 +1454,16 @@ namespace Microsoft.Automata
 
             TERM newReg = STbuilder.MkRegister(newRegSort);
              
-            var stack = new Stack<Pair<int, TERM>>();
-            var states = new Dictionary<Pair<int, TERM>, int>();
+            var stack = new Stack<Tuple<int, TERM>>();
+            var states = new Dictionary<Tuple<int, TERM>, int>();
 
-            var initPair = new Pair<int, TERM>(0, initBools);
+            var initPair = new Tuple<int, TERM>(0, initBools);
             states[initPair] = 0;
             int stateCntr = 1;
             stack.Push(initPair);
 
-            var nfMoveMap = new Dictionary<Pair<Pair<int, int>, Pair<TERM, Seq>>, TERM>();
-            var fMoveMap = new Dictionary<Pair<int, Seq>, TERM>();
+            var nfMoveMap = new Dictionary<Tuple<Tuple<int, int>, Tuple<TERM, Seq>>, TERM>();
+            var fMoveMap = new Dictionary<Tuple<int, Seq>, TERM>();
 
             while (stack.Count > 0)
             {
@@ -1471,11 +1471,11 @@ namespace Microsoft.Automata
                 var sourceState = states[pair];
                 //make an instance of the input register state wrt to the concrete part 
 
-                var regInst = combine(pair.Second, newReg);
+                var regInst = combine(pair.Item2, newReg);
 
                 //var r00 = (useBP ? STbuilder.MkBPInstance(RegisterVar, b0, newReg) : b0);
 
-                foreach (var move in GetNonFinalMovesFrom(pair.First))
+                foreach (var move in GetNonFinalMovesFrom(pair.Item1))
                 {
                     #region normal moves
 
@@ -1514,7 +1514,7 @@ namespace Microsoft.Automata
                     //when useBP is true, bVals are all the potentially reachable boolean states (a boolean abstraction)
                     foreach (var bVal in bVals)
                     {
-                        var newPair = new Pair<int, TERM>(move.TargetState, bVal);
+                        var newPair = new Tuple<int, TERM>(move.TargetState, bVal);
                         int targetState;
                         if (!states.TryGetValue(newPair, out targetState))
                         {
@@ -1527,7 +1527,7 @@ namespace Microsoft.Automata
                         var update = nbp;
                         var yields = Array.ConvertAll(move.Label.Yields, y => solver.ToNNF(solver.Simplify(solver.ApplySubstitution(y, RegisterVar, regInst))));
 
-                        var key = new Pair<Pair<int, int>, Pair<TERM, Seq>>(new Pair<int, int>(sourceState, targetState), new Pair<TERM, Seq>(update, new Seq(yields)));
+                        var key = new Tuple<Tuple<int, int>, Tuple<TERM, Seq>>(new Tuple<int, int>(sourceState, targetState), new Tuple<TERM, Seq>(update, new Seq(yields)));
                         TERM combinedGuard;
                         if (nfMoveMap.TryGetValue(key, out combinedGuard))
                         {
@@ -1545,14 +1545,14 @@ namespace Microsoft.Automata
                     #endregion
                 }
 
-                foreach (var rule in GetFinalRules(pair.First))
+                foreach (var rule in GetFinalRules(pair.Item1))
                 {
                     #region final rules
                     var cond = Solver.ApplySubstitution(rule.Guard, RegisterVar, regInst);
                     if (Solver.IsSatisfiable(cond))
                     {
                         var yields = Array.ConvertAll(rule.Yields, y => solver.ToNNF(solver.Simplify(solver.ApplySubstitution(y, RegisterVar, regInst))));
-                        var key = new Pair<int, Seq>(sourceState, new Seq(yields));
+                        var key = new Tuple<int, Seq>(sourceState, new Seq(yields));
                         var guard = solver.ToNNF(solver.Simplify(solver.ApplySubstitution(rule.Guard, RegisterVar, regInst)));
                         TERM combinedGuard;
                         if (fMoveMap.TryGetValue(key, out combinedGuard))
@@ -1574,11 +1574,11 @@ namespace Microsoft.Automata
             var moves = new List<Move<Rule<TERM>>>();
             foreach (var entry in nfMoveMap)
             {
-                moves.Add(STbuilder.MkRule(entry.Key.First.First, entry.Key.First.Second, entry.Value, entry.Key.Second.First, entry.Key.Second.Second.elems));
+                moves.Add(STbuilder.MkRule(entry.Key.Item1.Item1, entry.Key.Item1.Item2, entry.Value, entry.Key.Item2.Item1, entry.Key.Item2.Item2.elems));
             }
             foreach (var entry in fMoveMap)
             {
-                moves.Add(STbuilder.MkFinalOutput(entry.Key.First, entry.Value, entry.Key.Second.elems));
+                moves.Add(STbuilder.MkFinalOutput(entry.Key.Item1, entry.Value, entry.Key.Item2.elems));
             }
             var st = STbuilder.MkST(string.Format("{1}E[{0}]", name, (useBP ? "B" : "F")), initRest, inputSort, outputSort, newRegSort, 0, moves);
             if (st.automaton.IsEmpty)
@@ -2158,11 +2158,11 @@ namespace Microsoft.Automata
             var z3p = solver;
             var _i = ftb.MkVar(0,AB.InputSort);
 
-            var Q = new Dictionary<int, Pair<Seq,Seq>>(); //promises
+            var Q = new Dictionary<int, Tuple<Seq,Seq>>(); //promises
 
             Stack<int> stack = new Stack<int>();
 
-            Q[AB.InitialState] = new Pair<Seq, Seq>(Seq.Empty, Seq.Empty); //the initial promise is the pair of empty sequences
+            Q[AB.InitialState] = new Tuple<Seq, Seq>(Seq.Empty, Seq.Empty); //the initial promise is the pair of empty sequences
 
             stack.Push(AB.InitialState);
             HashSet<int> visited = new HashSet<int>();
@@ -2174,7 +2174,7 @@ namespace Microsoft.Automata
                 if (visited.Add(p))
                 {
                     stack.Push(p);
-                    Q[p] = new Pair<Seq,Seq>(a, b);
+                    Q[p] = new Tuple<Seq,Seq>(a, b);
                     return true;
                 }
                 return false;
@@ -2187,8 +2187,8 @@ namespace Microsoft.Automata
                 var curr = stack.Pop();
                 foreach (var move in AB.automaton.GetMovesFrom(curr))
                 {
-                    var a = Q[curr].First;  //the promise from A
-                    var b = Q[curr].Second; //the promise from B
+                    var a = Q[curr].Item1;  //the promise from A
+                    var b = Q[curr].Item2; //the promise from B
                     if (move.Label.IsFinal)
                     {
                         if (!a.Concat(move.Label.Yields).Equals(b.Concat(move.Label.Yields2)))
@@ -2240,7 +2240,7 @@ namespace Microsoft.Automata
                                 var i1 = GetOneMember(_i, ftb, move);
                                 var s = new Seq(Array.ConvertAll(y1rest, y => ftb.Simplify(z3p.ApplySubstitution(y, _i, i1))));
                                 bool added = AddToSearch(move.TargetState, s, Seq.Empty);
-                                if (!added && !Q[move.TargetState].Equals(new Pair<Seq,Seq>(s, Seq.Empty)))
+                                if (!added && !Q[move.TargetState].Equals(new Tuple<Seq,Seq>(s, Seq.Empty)))
                                     return false; // distinct pending outputs exist
                             }
                         }
@@ -2259,7 +2259,7 @@ namespace Microsoft.Automata
                                 var i1 = GetOneMember(_i, ftb, move);
                                 var s = new Seq(Array.ConvertAll(y1rest, y => ftb.Simplify(z3p.ApplySubstitution(y, _i, i1))));
                                 bool added = AddToSearch(move.TargetState, Seq.Empty, s);
-                                if (!added && !Q[move.TargetState].Equals(new Pair<Seq, Seq>(Seq.Empty,s)))
+                                if (!added && !Q[move.TargetState].Equals(new Tuple<Seq, Seq>(Seq.Empty,s)))
                                     return false; // distinct pending outputs
                             }
                         }
@@ -2664,11 +2664,11 @@ namespace Microsoft.Automata
             var z3p = solver;
             var _i = ftb.MkVar(0, AB.InputSort);
 
-            var Q = new Dictionary<int, Pair<Seq, Seq>>(); //promises
+            var Q = new Dictionary<int, Tuple<Seq, Seq>>(); //promises
 
             Stack<int> stack = new Stack<int>();
 
-            Q[AB.InitialState] = new Pair<Seq, Seq>(Seq.Empty, Seq.Empty); //the initial promise is the pair of empty sequences
+            Q[AB.InitialState] = new Tuple<Seq, Seq>(Seq.Empty, Seq.Empty); //the initial promise is the pair of empty sequences
 
             stack.Push(AB.InitialState);
             HashSet<int> visited = new HashSet<int>();
@@ -2680,7 +2680,7 @@ namespace Microsoft.Automata
                 if (visited.Add(p))
                 {
                     stack.Push(p);
-                    Q[p] = new Pair<Seq, Seq>(a, b);
+                    Q[p] = new Tuple<Seq, Seq>(a, b);
                     return true;
                 }
                 return false;
@@ -2693,8 +2693,8 @@ namespace Microsoft.Automata
                 var curr = stack.Pop();
                 foreach (var move in AB.automaton.GetMovesFrom(curr))
                 {
-                    var a = Q[curr].First;  //the promise from A
-                    var b = Q[curr].Second; //the promise from B
+                    var a = Q[curr].Item1;  //the promise from A
+                    var b = Q[curr].Item2; //the promise from B
                     if (move.Label.IsFinal)
                     {
                         if (!a.Concat(move.Label.Yields).Equals(b.Concat(move.Label.Yields2)))
@@ -2746,7 +2746,7 @@ namespace Microsoft.Automata
                                 var i1 = GetOneMember(_i, ftb, move);
                                 var s = new Seq(Array.ConvertAll(y1rest, y => ftb.Simplify(z3p.ApplySubstitution(y, _i, i1))));
                                 bool added = AddToSearch(move.TargetState, s, Seq.Empty);
-                                if (!added && !Q[move.TargetState].Equals(new Pair<Seq, Seq>(s, Seq.Empty)))
+                                if (!added && !Q[move.TargetState].Equals(new Tuple<Seq, Seq>(s, Seq.Empty)))
                                     return false; // distinct pending outputs exist
                             }
                         }
@@ -2765,7 +2765,7 @@ namespace Microsoft.Automata
                                 var i1 = GetOneMember(_i, ftb, move);
                                 var s = new Seq(Array.ConvertAll(y1rest, y => ftb.Simplify(z3p.ApplySubstitution(y, _i, i1))));
                                 bool added = AddToSearch(move.TargetState, Seq.Empty, s);
-                                if (!added && !Q[move.TargetState].Equals(new Pair<Seq, Seq>(Seq.Empty, s)))
+                                if (!added && !Q[move.TargetState].Equals(new Tuple<Seq, Seq>(Seq.Empty, s)))
                                     return false; // distinct pending outputs
                             }
                         }
@@ -3222,11 +3222,11 @@ namespace Microsoft.Automata
             var z3p = solver;
             var _i = ftb.MkVar(0, inputSort);
 
-            var Q = new Dictionary<int, Pair<Seq, Seq>>(); //promises
+            var Q = new Dictionary<int, Tuple<Seq, Seq>>(); //promises
 
             Stack<int> stack = new Stack<int>();
 
-            Q[AB.InitialState] = new Pair<Seq, Seq>(Seq.Empty, Seq.Empty); //the initial promise is the pair of empty sequences
+            Q[AB.InitialState] = new Tuple<Seq, Seq>(Seq.Empty, Seq.Empty); //the initial promise is the pair of empty sequences
 
             stack.Push(AB.InitialState);
             HashSet<int> visited = new HashSet<int>();
@@ -3238,7 +3238,7 @@ namespace Microsoft.Automata
                 if (visited.Add(p))
                 {
                     stack.Push(p);
-                    Q[p] = new Pair<Seq, Seq>(a, b);
+                    Q[p] = new Tuple<Seq, Seq>(a, b);
                     return true;
                 }
                 return false;
@@ -3251,8 +3251,8 @@ namespace Microsoft.Automata
                 var curr = stack.Pop();
                 foreach (var move in AB.automaton.GetMovesFrom(curr))
                 {
-                    var a = Q[curr].First;  //the promise from A
-                    var b = Q[curr].Second; //the promise from B
+                    var a = Q[curr].Item1;  //the promise from A
+                    var b = Q[curr].Item2; //the promise from B
                     if (move.Label.IsFinal)
                     {
                         if (!a.Concat(move.Label.Yields).Equals(b.Concat(move.Label.Yields2)))
@@ -3304,7 +3304,7 @@ namespace Microsoft.Automata
                                 var i1 =  GetOneMember(_i, ftb, move);
                                 var s = new Seq(Array.ConvertAll(y1rest, y => ftb.Simplify(z3p.ApplySubstitution(y, _i, i1))));
                                 bool added = AddToSearch(move.TargetState, s, Seq.Empty);
-                                if (!added && !Q[move.TargetState].Equals(new Pair<Seq, Seq>(s, Seq.Empty)))
+                                if (!added && !Q[move.TargetState].Equals(new Tuple<Seq, Seq>(s, Seq.Empty)))
                                     return false; // distinct pending outputs exist
                             }
                         }
@@ -3322,7 +3322,7 @@ namespace Microsoft.Automata
                                 var i1 = GetOneMember(_i, ftb, move);
                                 var s = new Seq(Array.ConvertAll(y1rest, y => ftb.Simplify(z3p.ApplySubstitution(y, _i, i1))));
                                 bool added = AddToSearch(move.TargetState, Seq.Empty, s);
-                                if (!added && !Q[move.TargetState].Equals(new Pair<Seq, Seq>(Seq.Empty, s)))
+                                if (!added && !Q[move.TargetState].Equals(new Tuple<Seq, Seq>(Seq.Empty, s)))
                                     return false; // distinct pending outputs
                             }
                         }

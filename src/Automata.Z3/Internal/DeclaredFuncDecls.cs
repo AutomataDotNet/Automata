@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Text;
 using Microsoft.Z3;
 
-using Microsoft.Automata.Internal;
 using Microsoft.Automata;
 
 namespace Microsoft.Automata.Z3.Internal

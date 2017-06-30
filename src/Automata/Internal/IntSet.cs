@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Microsoft.Automata.Internal
+namespace Microsoft.Automata
 {
     /// <summary>
     /// Represents a set of integers. This is a value class.

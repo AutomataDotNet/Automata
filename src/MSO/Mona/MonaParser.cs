@@ -3,7 +3,7 @@ using System.IO;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.Automata.Internal.Utilities;
+using Microsoft.Automata.Utilities;
 using QUT.Gppg;
 
 namespace Microsoft.Automata.MSO.Mona

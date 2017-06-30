@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Microsoft.Automata
+namespace Microsoft.Automata.BooleanAlgebras
 {
-    public class FiniteSetAlgebra<S> : IBooleanAlgebra<UIntW>
+    internal class FiniteSetAlgebra<S> : IBooleanAlgebra<UIntW>
     {        
         readonly Dictionary<S,UIntW> alph;
 
@@ -94,7 +94,7 @@ namespace Microsoft.Automata
             return s.val > 0;
         }
 
-        public IEnumerable<Pair<bool[], UIntW>> GenerateMinterms(params UIntW[] constraints)
+        public IEnumerable<Tuple<bool[], UIntW>> GenerateMinterms(params UIntW[] constraints)
         {
             return mtg.GenerateMinterms(constraints);
         }
@@ -159,7 +159,7 @@ namespace Microsoft.Automata
         }
     }
 
-    public class UIntW
+    internal class UIntW
     {
         public UInt64 val;
         public UIntW(UInt64 val)

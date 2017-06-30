@@ -79,7 +79,7 @@ namespace Microsoft.Automata.MSO
             return !aut.IsEmpty;
         }
 
-        public IEnumerable<Pair<bool[], MSOFormula<S>>> GenerateMinterms(params MSOFormula<S>[] constraints)
+        public IEnumerable<Tuple<bool[], MSOFormula<S>>> GenerateMinterms(params MSOFormula<S>[] constraints)
         {
             return mtg.GenerateMinterms(constraints);
         }

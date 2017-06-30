@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Microsoft.Automata.Internal
+namespace Microsoft.Automata
 {
     internal class HashSetSolver : ICharAlgebra<HashSet<char>>
     {
@@ -195,7 +195,7 @@ namespace Microsoft.Automata.Internal
             return constraint1.SetEquals(constraint2);
         }
 
-        public IEnumerable<Pair<bool[], HashSet<char>>> GenerateMinterms(HashSet<char>[] constraints)
+        public IEnumerable<Tuple<bool[], HashSet<char>>> GenerateMinterms(HashSet<char>[] constraints)
         {
             return mtg.GenerateMinterms(constraints);
         }
@@ -203,26 +203,26 @@ namespace Microsoft.Automata.Internal
         /*
          * original specialized implementation of minterms
          * 
-        public IEnumerable<Pair<bool[], HashSet<char>>> GenerateMinterms(HashSet<char>[] constraints)
+        public IEnumerable<Tuple<bool[], HashSet<char>>> GenerateMinterms(HashSet<char>[] constraints)
         {
             if (constraints.Length == 0)
             {
-                yield return new Pair<bool[], HashSet<char>>(new bool[] { }, this.True);
+                yield return new Tuple<bool[], HashSet<char>>(new bool[] { }, this.True);
             }
             else
             {
-                var mt = new Internal.Minterms<wrapwrap2>(new wrapwrap2(this, this.True));
+                var mt = new Minterms<wrapwrap2>(new wrapwrap2(this, this.True));
 
                 var seq = mt.GenerateCombinations(true, Array.ConvertAll(constraints, cur => new wrapwrap2(this, cur)));
 
                 foreach (var pair in seq)
                 {
-                    yield return new Pair<bool[], HashSet<char>>(pair.First, pair.Second._contents);
+                    yield return new Tuple<bool[], HashSet<char>>(pair.First, pair.Second._contents);
                 }
             }
         }
 
-        class wrapwrap2 : Internal.ICapNeg
+        class wrapwrap2 : ICapNeg
         {
             private HashSetSolver _parent;
             internal HashSet<char> _contents;
@@ -235,17 +235,17 @@ namespace Microsoft.Automata.Internal
                 _inverse = null;
             }
 
-            public Internal.ICapNeg cap(Internal.ICapNeg b)
+            public ICapNeg cap(ICapNeg b)
             {
                 return new wrapwrap2(_parent, _parent.MkAnd(_contents, ((wrapwrap2)b)._contents));
             }
 
-            public Internal.ICapNeg cup(Internal.ICapNeg b)
+            public ICapNeg cup(ICapNeg b)
             {
                 return new wrapwrap2(_parent, _parent.MkOr(_contents, ((wrapwrap2)b)._contents));
             }
 
-            public Internal.ICapNeg minus(Internal.ICapNeg b)
+            public ICapNeg minus(ICapNeg b)
             {
                 var bprime = (wrapwrap2)b;
 
@@ -256,7 +256,7 @@ namespace Microsoft.Automata.Internal
                 return new wrapwrap2(_parent, _parent.MkAnd(_contents, bprime._inverse));
             }
 
-            public bool same_elts(Internal.ICapNeg b)
+            public bool same_elts(ICapNeg b)
             {
                 return _contents.SetEquals(((wrapwrap2)b)._contents);
             }

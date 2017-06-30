@@ -9,26 +9,41 @@ namespace Microsoft.Automata
     /// </summary>
     public class AutomataException : Exception
     {
+        /// <summary>
+        /// the kind of exception
+        /// </summary>
         public readonly AutomataExceptionKind kind;
 
+        /// <summary>
+        /// construct an exception
+        /// </summary>
         public AutomataException(string message, Exception innerException)
             : base(message, innerException)
         {
             kind = AutomataExceptionKind.Unspecified;
         }
 
+        /// <summary>
+        /// construct an exception with given message
+        /// </summary>
         public AutomataException(string message)
             : base(message)
         {
             kind = AutomataExceptionKind.Unspecified;
         }
 
+        /// <summary>
+        /// construct an exception with given kind
+        /// </summary>
         public AutomataException(AutomataExceptionKind kind)
             : base(GetMessage(kind))
         {
             this.kind = kind;
         }
 
+        /// <summary>
+        /// construct an exception with given kind and inner exception
+        /// </summary>
         public AutomataException(AutomataExceptionKind kind, Exception innerException)
             : base(GetMessage(kind), innerException)
         {

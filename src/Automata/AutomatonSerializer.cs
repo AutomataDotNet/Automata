@@ -20,7 +20,7 @@ namespace Microsoft.Automata
         /// </summary>
         public void ShowGraph()
         {
-            Microsoft.Automata.Internal.DirectedGraphs.DgmlWriter.ShowGraph<TERM>(-1, __aut, __name);
+            Microsoft.Automata.DirectedGraphs.DgmlWriter.ShowGraph<TERM>(-1, __aut, __name);
         }
 
         /// <summary>
@@ -28,7 +28,7 @@ namespace Microsoft.Automata
         /// </summary>
         public void SaveAsDgml()
         {
-            Microsoft.Automata.Internal.DirectedGraphs.DgmlWriter.AutomatonToDgml<TERM>(-1, __aut, __name);
+            Microsoft.Automata.DirectedGraphs.DgmlWriter.AutomatonToDgml<TERM>(-1, __aut, __name);
         }
 
         /// <summary>
@@ -36,7 +36,7 @@ namespace Microsoft.Automata
         /// </summary>
         public void SaveAsDot()
         {
-            Microsoft.Automata.Internal.DirectedGraphs.DotWriter.AutomatonToDot<TERM>(__aut.DescribeLabel, __aut, __name, __name, Internal.DirectedGraphs.DotWriter.RANKDIR.LR, 12, true);
+            Microsoft.Automata.DirectedGraphs.DotWriter.AutomatonToDot<TERM>(__aut.DescribeLabel, __aut, __name, __name, DirectedGraphs.DotWriter.RANKDIR.LR, 12, true);
         }
 
         /// <summary>
@@ -44,7 +44,7 @@ namespace Microsoft.Automata
         /// </summary>
         public void SaveAsDot(string file)
         {
-            Microsoft.Automata.Internal.DirectedGraphs.DotWriter.AutomatonToDot<TERM>(__aut.DescribeLabel, __aut, __name, file, Internal.DirectedGraphs.DotWriter.RANKDIR.LR, 12, true);
+            Microsoft.Automata.DirectedGraphs.DotWriter.AutomatonToDot<TERM>(__aut.DescribeLabel, __aut, __name, file, DirectedGraphs.DotWriter.RANKDIR.LR, 12, true);
         }
 
         /// <summary>
@@ -52,7 +52,7 @@ namespace Microsoft.Automata
         /// </summary>
         public void SaveAsDgml(System.IO.TextWriter tw)
         {
-            Microsoft.Automata.Internal.DirectedGraphs.DgmlWriter.AutomatonToDgml<TERM>(-1,__aut,__name, tw);
+            Microsoft.Automata.DirectedGraphs.DgmlWriter.AutomatonToDgml<TERM>(-1,__aut,__name, tw);
         }
 
         /// <summary>
@@ -60,17 +60,17 @@ namespace Microsoft.Automata
         /// </summary>
         public void SaveAsDot(System.IO.TextWriter tw)
         {
-            Microsoft.Automata.Internal.DirectedGraphs.DotWriter.AutomatonToDot<TERM>(__aut.DescribeLabel, __aut, __name, tw, Internal.DirectedGraphs.DotWriter.RANKDIR.TB, 12, true);
+            Microsoft.Automata.DirectedGraphs.DotWriter.AutomatonToDot<TERM>(__aut.DescribeLabel, __aut, __name, tw, DirectedGraphs.DotWriter.RANKDIR.TB, 12, true);
         }
 
         public virtual void ShowGraph(int k)
         {
-            Microsoft.Automata.Internal.DirectedGraphs.DgmlWriter.ShowGraph<TERM>(k, __aut, __name);
+            Microsoft.Automata.DirectedGraphs.DgmlWriter.ShowGraph<TERM>(k, __aut, __name);
         }
 
         public void SaveAsDgml(int k)
         {
-            Microsoft.Automata.Internal.DirectedGraphs.DgmlWriter.AutomatonToDgml<TERM>(k, __aut, __name);
+            Microsoft.Automata.DirectedGraphs.DgmlWriter.AutomatonToDgml<TERM>(k, __aut, __name);
         }
     }
 }

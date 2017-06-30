@@ -124,14 +124,14 @@ namespace Microsoft.Automata
 
         /// <summary>
         /// Given an array of constraints {c_1, c_2, ..., c_n} where n&gt;=0.
-        /// Enumerate all satisfiable Boolean combinations Pair({b_1, b_2, ..., b_n}, c)
+        /// Enumerate all satisfiable Boolean combinations Tuple({b_1, b_2, ..., b_n}, c)
         /// where c is satisfisable and equivalent to c'_1 &amp; c'_2 &amp; ... &amp; c'_n, 
         /// where c'_i = c_i if b_i = true and c'_i is Not(c_i) otherwise.
-        /// If n=0 return Pair({},True)
+        /// If n=0 return Tuple({},True)
         /// </summary>
         /// <param name="constraints">array of constraints</param>
         /// <returns>Booolean combinations that are satisfiable</returns>
-        IEnumerable<Pair<bool[], S>> GenerateMinterms(params S[] constraints);
+        IEnumerable<Tuple<bool[], S>> GenerateMinterms(params S[] constraints);
     }
 
     /*

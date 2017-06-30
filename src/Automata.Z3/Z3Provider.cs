@@ -88,11 +88,11 @@ namespace Microsoft.Automata.Z3
 
         //tree info
         Dictionary<Sort, UnrankedTreeInfo> treeInfoMap = new Dictionary<Sort, UnrankedTreeInfo>();
-        Dictionary<Pair<string, Sort>, Sort> treeSortMap = new Dictionary<Pair<string, Sort>, Sort>();
+        Dictionary<Tuple<string, Sort>, Sort> treeSortMap = new Dictionary<Tuple<string, Sort>, Sort>();
 
         //binary tree info
         Dictionary<Sort, BinaryTreeInfo> binaryTreeInfoMap = new Dictionary<Sort, BinaryTreeInfo>();
-        Dictionary<Pair<string, Sort>, Sort> binaryTreeSortMap = new Dictionary<Pair<string, Sort>, Sort>();
+        Dictionary<Tuple<string, Sort>, Sort> binaryTreeSortMap = new Dictionary<Tuple<string, Sort>, Sort>();
 
         RegexToAutomatonConverter<Expr> regexConverter;
 
@@ -1308,7 +1308,7 @@ namespace Microsoft.Automata.Z3
         public Sort MkTreeSort(string name, Sort nodeSort, Sort leafSort)
         {
             Sort tree_sort;
-            var key = new Pair<string, Sort>(name, nodeSort);
+            var key = new Tuple<string, Sort>(name, nodeSort);
             if (treeSortMap.TryGetValue(key, out tree_sort))
                 return tree_sort;
 
@@ -2486,7 +2486,7 @@ namespace Microsoft.Automata.Z3
         public Sort MkBinaryTreeSort(string name, Sort leafSort)
         {
             Sort tree_sort;
-            var key = new Pair<string, Sort>(name, leafSort);
+            var key = new Tuple<string, Sort>(name, leafSort);
             if (binaryTreeSortMap.TryGetValue(key, out tree_sort))
                 return tree_sort;
 
@@ -2943,20 +2943,20 @@ namespace Microsoft.Automata.Z3
 
         /// <summary>
         /// Given an array of satisfiable Boolean terms {c_1, c_2, ..., c_n} where n>0.
-        /// Enumerate all satisfiable Boolean combinations Pair({b_1, b_2, ..., b_n}, c)
+        /// Enumerate all satisfiable Boolean combinations Tuple({b_1, b_2, ..., b_n}, c)
         /// where c is satisfisable and equivalent to c'_1 and c'_2 and ... and c'_n, 
         /// where c'_i = c_i if b_i = true and c'_i is Not(c_i) otherwise.
         /// </summary>
         /// <param name="conds">nonempty array of Boolean terms</param>
         /// <returns>Booolean combinations that are satisfiable</returns>
-        public IEnumerable<Pair<bool[], Expr>> GenerateMintermsWithCubes(params Expr[] conds)
+        public IEnumerable<Tuple<bool[], Expr>> GenerateMintermsWithCubes(params Expr[] conds)
         {
             int n = conds.Length;
             var z3p = this;
             if (n ==0 )
-                yield return new Pair<bool[], Expr>(new bool[0] {}, True);
+                yield return new Tuple<bool[], Expr>(new bool[0] {}, True);
             else if (n == 1)
-                yield return new Pair<bool[], Expr>(new bool[1] {true}, conds[0]);
+                yield return new Tuple<bool[], Expr>(new bool[1] {true}, conds[0]);
             else
             {
                 var solutions = new List<bool[]>();
@@ -3005,7 +3005,7 @@ namespace Microsoft.Automata.Z3
                     for (int i = 0; i < n; i++)
                         solConds[i] = (solution[i] ? conds[i] : z3p.MkNot(conds[i]));
                     yield return
-                        new Pair<bool[], Expr>(solution, z3p.MkAnd(solConds));
+                        new Tuple<bool[], Expr>(solution, z3p.MkAnd(solConds));
                 }
             }
         }
@@ -3021,7 +3021,7 @@ namespace Microsoft.Automata.Z3
                 return mtg;
             }
         }
-        public IEnumerable<Pair<bool[], Expr>> GenerateMinterms(params Expr[] conds)
+        public IEnumerable<Tuple<bool[], Expr>> GenerateMinterms(params Expr[] conds)
         {
             return GenerateMintermsWithCubes(conds);
         }

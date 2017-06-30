@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-using Microsoft.Automata.Internal;
+using Microsoft.Automata;
 
 namespace Microsoft.Automata
 {
@@ -30,26 +30,26 @@ namespace Microsoft.Automata
         /// <summary>
         /// Returns GenerateMinterms(true, preds).
         /// </summary>
-        public IEnumerable<Pair<bool[], PRED>> GenerateMinterms(params PRED[] preds)
+        public IEnumerable<Tuple<bool[], PRED>> GenerateMinterms(params PRED[] preds)
         {
             return GenerateMinterms(true, preds);
         }
 
         /// <summary>
         /// Given an array of predidates {p_1, p_2, ..., p_n} where n>=0.
-        /// Enumerate all satisfiable Boolean combinations Pair({b_1, b_2, ..., b_n}, p)
-        /// where p is satisfiable and equivalent to p'_1 & p'_2 & ... & p'_n, 
+        /// Enumerate all satisfiable Boolean combinations Tuple({b_1, b_2, ..., b_n}, p)
+        /// where p is satisfiable and equivalent to p'_1 &amp; p'_2 &amp; ... &amp; p'_n, 
         /// where p'_i = p_i if b_i = true and p'_i is Not(p_i) otherwise.
-        /// If n=0 return Pair({},True).
+        /// If n=0 return Tuple({},True).
         /// </summary>
         /// <param name="preds">array of predicates</param>
         /// <param name="useEquivalenceChecking">optimization flag: if true, uses equivalence checking to cluster equivalent predicates; otherwise does not use equivalence checking</param>
         /// <returns>all minterms of the given predicate sequence</returns>
-        public IEnumerable<Pair<bool[], PRED>> GenerateMinterms(bool useEquivalenceChecking, params PRED[] preds)
+        public IEnumerable<Tuple<bool[], PRED>> GenerateMinterms(bool useEquivalenceChecking, params PRED[] preds)
         {
             if (preds.Length == 0)
             {
-                yield return new Pair<bool[], PRED>(new bool[] { }, ba.True);
+                yield return new Tuple<bool[], PRED>(new bool[] { }, ba.True);
             }
             else
             {
@@ -77,7 +77,7 @@ namespace Microsoft.Automata
                     equivs[newIndex].Add(i);
                 }
 
-                //var pairs = new List<Pair<IntSet, PRED>>(GenerateMinterms1(nonequivalentSets.ToArray()));
+                //var pairs = new List<Tuple<IntSet, PRED>>(GenerateMinterms1(nonequivalentSets.ToArray()));
                 //foreach (var pair in pairs)
                 //{
                 //    var characteristic = new bool[preds.Length];
@@ -85,7 +85,7 @@ namespace Microsoft.Automata
                 //        if (pair.First.Contains(indexLookup[i]))
                 //            characteristic[i] = true;
                 //    yield return
-                //        new Pair<bool[], PRED>(characteristic, pair.Second);
+                //        new Tuple<bool[], PRED>(characteristic, pair.Second);
                 //}
 
                 var tree = new PartitonTree<PRED>(ba);
@@ -98,12 +98,12 @@ namespace Microsoft.Automata
                         foreach (var n in equivs[k])
                             characteristic[n] = true;
                     yield return
-                        new Pair<bool[], PRED>(characteristic, leaf.phi);
+                        new Tuple<bool[], PRED>(characteristic, leaf.phi);
                 }
             }
         }
 
-        IEnumerable<Pair<IntSet, PRED>> GenerateMinterms1(PRED[] sets)
+        IEnumerable<Tuple<IntSet, PRED>> GenerateMinterms1(PRED[] sets)
         {
             var count = sets.Length;
 
@@ -112,7 +112,7 @@ namespace Microsoft.Automata
             {
                 PRED allFalse = ba.MkNot(ba.MkOr(sets));
                 if (ba.IsSatisfiable(allFalse))
-                    yield return new Pair<IntSet, PRED>(IntSet.Empty, allFalse);
+                    yield return new Tuple<IntSet, PRED>(IntSet.Empty, allFalse);
             }
 
             //a combination of rank k is a nonempty intersection of k+1 sets[i]'s
@@ -180,13 +180,13 @@ namespace Microsoft.Automata
                     }
                     if (ba.IsSatisfiable(combination))
                         yield return
-                            new Pair<IntSet, PRED>(indexSet, combination);
+                            new Tuple<IntSet, PRED>(indexSet, combination);
                 }
             }
             if (combinationsByRankMap.ContainsKey(rankBound))
                 foreach (var entry in combinationsByRankMap[rankBound])
                     yield return 
-                        new Pair<IntSet, PRED>(entry.Key, entry.Value);
+                        new Tuple<IntSet, PRED>(entry.Key, entry.Value);
         }
 
         EquivClass CreateEquivalenceClass(bool useEquivalenceChecking, PRED set)

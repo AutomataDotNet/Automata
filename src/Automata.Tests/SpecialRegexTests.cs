@@ -5,10 +5,9 @@ using System.Text.RegularExpressions;
 using System.IO;
 
 using Microsoft.Automata;
-using Microsoft.Automata.Internal;
-using Microsoft.Automata.Internal.Generated;
+using Microsoft.Automata.Generated;
 using Microsoft.Automata.Rex;
-using Microsoft.Automata.Internal.Utilities;
+using Microsoft.Automata.Utilities;
 
 using System.Reflection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -93,7 +92,7 @@ namespace Automata.Tests
         public void TestEvilRegex()
         {
             Regex EvilRegex = new Regex(@"^(([a-z])+.)+[A-Z]([a-z])+$", RegexOptions.Compiled | (RegexOptions.Singleline));
-            string a = "aaaaaaaaaaaaaaaaaaa";
+            string a = "aaaaaaaaaaaaaaaaaaaa";
             //takes time exponential in the length of a
             int t = 0;
             for (int i = 0; i < 15; i++)
@@ -133,8 +132,8 @@ namespace Automata.Tests
             string r1 = @"^(?i:[\xD7-\xD8])$";
             string r2 = @"^(?i:[\xD7\xD8])$";
             var solver = new CharSetSolver();
-            Assert.IsTrue(Regex.IsMatch("\xF7", @"^(?i:[\xD7-\xD8])$"));  //<--- ERROR
-            Assert.IsFalse(Regex.IsMatch("\xF7", @"^(?i:[\xD7\xD8])$")); //<--- CORRECT
+            Assert.IsTrue(Regex.IsMatch("\xF7", r1));  //<--- ERROR
+            Assert.IsFalse(Regex.IsMatch("\xF7", r2)); //<--- CORRECT
             //var a1 = solver.Convert(r1);
             //var a2 = solver.Convert(r2);
             //solver.ShowGraph(a1, "a1");

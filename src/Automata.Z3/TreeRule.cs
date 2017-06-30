@@ -21,8 +21,8 @@ namespace Microsoft.Automata.Z3
         internal ExprSet[] lookahead;
 
 
-        Pair<FuncDecl, Sequence<ExprSet>> lhs;
-        public Pair<FuncDecl, Sequence<ExprSet>> LHS
+        Tuple<FuncDecl, Sequence<ExprSet>> lhs;
+        public Tuple<FuncDecl, Sequence<ExprSet>> LHS
         {
             get
             {
@@ -75,7 +75,7 @@ namespace Microsoft.Automata.Z3
             this.symbol = symbol;
             this.guard = guard;
             this.lookahead = lookahead;
-            this.lhs = new Pair<FuncDecl, Sequence<ExprSet>>(symbol, new Sequence<ExprSet>(lookahead));
+            this.lhs = new Tuple<FuncDecl, Sequence<ExprSet>>(symbol, new Sequence<ExprSet>(lookahead));
         }
 
         internal AcceptorBase(FuncDecl symbol, Expr guard, int rank)
@@ -257,14 +257,14 @@ namespace Microsoft.Automata.Z3
         /// <summary>
         /// Enumerate all occurrences of $trans(q,subtree_id) in the output as pairs (q,subtree_id).
         /// </summary>
-        public IEnumerable<Pair<Expr,int>> EnumerateStatesInOutput()
+        public IEnumerable<Tuple<Expr,int>> EnumerateStatesInOutput()
         {
             if (output == null)
                 yield break;
 
             foreach (var st in GetStatesOf(output))
             {
-                yield return new Pair<Expr, int>(st[0], GetVariableIndex(st[1]));
+                yield return new Tuple<Expr, int>(st[0], GetVariableIndex(st[1]));
             }
         }
 

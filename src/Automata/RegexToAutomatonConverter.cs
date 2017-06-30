@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
-using Microsoft.Automata.Internal;
+using Microsoft.Automata;
 
 namespace Microsoft.Automata
 {
@@ -435,7 +435,7 @@ namespace Microsoft.Automata
 
             foreach (var range in ranges)
             {
-                S cond = solver.MkRangeConstraint(range.First, range.Second, ignoreCase);
+                S cond = solver.MkRangeConstraint(range.Item1, range.Item2, ignoreCase);
                 conditions.Add(negate ? solver.MkNot(cond) : cond);
             }
             #endregion
@@ -524,11 +524,11 @@ namespace Microsoft.Automata
             return moveCond;
         }
 
-        private static List<Pair<char, char>> ComputeRanges(string set)
+        private static List<Tuple<char, char>> ComputeRanges(string set)
         {
             int setLength = set[SETLENGTH];
 
-            var ranges = new List<Pair<char, char>>(setLength);
+            var ranges = new List<Tuple<char, char>>(setLength);
             int i = SETSTART;
             int end = i + setLength;
             while (i < end)
@@ -542,7 +542,7 @@ namespace Microsoft.Automata
                 else
                     last = Lastchar;
                 i++;
-                ranges.Add(new Pair<char, char>(first, last));
+                ranges.Add(new Tuple<char, char>(first, last));
             }
             return ranges;
         }
@@ -667,7 +667,7 @@ namespace Microsoft.Automata
             get { return chooser; }
         }
 
-        public RegexToAutomatonConverterCharSet(CharSetSolver solver) : base(solver, new Internal.UnicodeCategoryToCharSetProvider(solver))
+        public RegexToAutomatonConverterCharSet(CharSetSolver solver) : base(solver, new UnicodeCategoryToCharSetProvider(solver))
         {
             this.bddBuilder = solver;
             this.chooser = new Chooser();
@@ -710,9 +710,9 @@ namespace Microsoft.Automata
                 }
 
             var ranges = bddBuilder.ToRanges(label);
-            if (ranges.Length == 1 && ranges[0].First == ranges[0].Second)
+            if (ranges.Length == 1 && ranges[0].Item1 == ranges[0].Item2)
             {
-                string res1 = StringUtility.Escape((char)ranges[0].First);
+                string res1 = StringUtility.Escape((char)ranges[0].Item1);
                 description[label] = res1;
                 return res1;
             }
@@ -721,18 +721,18 @@ namespace Microsoft.Automata
             for (int i = 0; i < ranges.Length; i++ )
             {
                 var range = ranges[i];
-                if (range.First == range.Second)
-                    res += StringUtility.EscapeWithNumericSpace((char)range.First);
-                else if (range.First == range.Second - 1)
+                if (range.Item1 == range.Item2)
+                    res += StringUtility.EscapeWithNumericSpace((char)range.Item1);
+                else if (range.Item1 == range.Item2 - 1)
                 {
-                    res += StringUtility.EscapeWithNumericSpace((char)range.First);
-                    res += StringUtility.EscapeWithNumericSpace((char)range.Second);
+                    res += StringUtility.EscapeWithNumericSpace((char)range.Item1);
+                    res += StringUtility.EscapeWithNumericSpace((char)range.Item2);
                 }
                 else
                 {
-                    res += StringUtility.EscapeWithNumericSpace((char)range.First);
+                    res += StringUtility.EscapeWithNumericSpace((char)range.Item1);
                     res += "-";
-                    res += StringUtility.EscapeWithNumericSpace((char)range.Second);
+                    res += StringUtility.EscapeWithNumericSpace((char)range.Item2);
                 }
             }
             res += "]";
@@ -761,7 +761,7 @@ namespace Microsoft.Automata
         }
     }
 
-    internal class RegexToAutomatonConverterRanges : RegexToAutomatonConverter<HashSet<Pair<char,char>>>
+    internal class RegexToAutomatonConverterRanges : RegexToAutomatonConverter<HashSet<Tuple<char,char>>>
     {
         CharRangeSolver solver;
         Chooser chooser;
@@ -771,7 +771,7 @@ namespace Microsoft.Automata
         }
 
         public RegexToAutomatonConverterRanges(CharRangeSolver solver)
-            : base(solver, new Internal.UnicodeCategoryToRangesProvider(solver))
+            : base(solver, new UnicodeCategoryToRangesProvider(solver))
         {
             this.solver = solver;
             this.chooser = new Chooser();
@@ -786,23 +786,23 @@ namespace Microsoft.Automata
         /// <summary>
         /// Describe range set
         /// </summary>
-        new public string Describe(HashSet<Pair<char, char>> label)
+        new public string Describe(HashSet<Tuple<char, char>> label)
         {
 
             string res;
             res = "";
-            List<Pair<char, char>> ranges = new List<Pair<char, char>>(label);
+            List<Tuple<char, char>> ranges = new List<Tuple<char, char>>(label);
             for (int i = 0; i < ranges.Count; i++)
             {
                 var range = ranges[i];
-                if (range.First == range.Second)
-                    res += Rex.RexEngine.Escape(range.First);
+                if (range.Item1 == range.Item2)
+                    res += Rex.RexEngine.Escape(range.Item1);
                 else
                 {
                     res += "[";
-                    res += Rex.RexEngine.Escape(range.First);
+                    res += Rex.RexEngine.Escape(range.Item1);
                     res += "-";
-                    res += Rex.RexEngine.Escape(range.Second);
+                    res += Rex.RexEngine.Escape(range.Item2);
                     res += "]";
                 }
                 if (i < ranges.Count - 1)
@@ -815,7 +815,7 @@ namespace Microsoft.Automata
         /// Generates a random member accepted by fa. 
         /// Assumes that fa has no dead states, or else termination is not guaranteed.
         /// </summary>
-        public string GenerateMember(Automaton<HashSet<Pair<char, char>>> fa)
+        public string GenerateMember(Automaton<HashSet<Tuple<char, char>>> fa)
         {
             if (fa.IsEmpty)
                 throw new AutomataException(AutomataExceptionKind.AutomatonMustBeNonempty);
@@ -826,14 +826,14 @@ namespace Microsoft.Automata
                 var move = fa.GetNthMoveFrom(state, chooser.Choose(fa.GetMovesCountFrom(state)));
                 if (!move.IsEpsilon)
                 {
-                    Pair<char, char> someRange = new Pair<char,char>('\0','\0');
+                    Tuple<char, char> someRange = new Tuple<char,char>('\0','\0');
                     foreach (var range in move.Label)
                     {
                         someRange = range;
                         break;
                     }
-                    int offset = chooser.Choose(Math.Max(1,(int)someRange.Second - (int)someRange.First));
-                    char someChar = (char)((int)someRange.First + offset);
+                    int offset = chooser.Choose(Math.Max(1,(int)someRange.Item2 - (int)someRange.Item1));
+                    char someChar = (char)((int)someRange.Item1 + offset);
                     sb.Append(someChar);
                 }
                 state = move.TargetState;
@@ -852,7 +852,7 @@ namespace Microsoft.Automata
         }
 
         public RegexToAutomatonConverterHashSet(HashSetSolver solver)
-            : base(solver, new Internal.UnicodeCategoryToHashSetProvider(solver))
+            : base(solver, new UnicodeCategoryToHashSetProvider(solver))
         {
             this.solver = solver;
             this.chooser = new Chooser();
@@ -863,7 +863,7 @@ namespace Microsoft.Automata
         /// </summary>
         new public string Describe(HashSet<char> label)
         {
-            var ranges = new Internal.Utilities.Ranges();
+            var ranges = new Utilities.Ranges();
             foreach (char c in label)
                 ranges.Add((int)c);
 

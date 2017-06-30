@@ -11,6 +11,7 @@ using Microsoft.Automata.Z3.Internal;
 using Microsoft.Automata;
 using Microsoft.Z3;
 using System.Diagnostics;
+using Microsoft.Automata.BooleanAlgebras;
 
 
 namespace RunExperiments

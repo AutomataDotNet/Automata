@@ -512,12 +512,12 @@ namespace Microsoft.Automata.Z3
             return res;
         }
 
-        private IEnumerable<Pair<Expr, ExprSet[]>> EnumerateCombinedRules(ConsList<Expr> state_set, FuncDecl func, 
+        private IEnumerable<Tuple<Expr, ExprSet[]>> EnumerateCombinedRules(ConsList<Expr> state_set, FuncDecl func, 
             Func<Expr,FuncDecl,IEnumerable<TreeRule>> GetRules)
         {
             if (state_set.Rest == null)
                 foreach (var rule in GetRules(state_set.First, func))
-                    yield return new Pair<Expr, ExprSet[]>(rule.Guard, rule.lookahead);
+                    yield return new Tuple<Expr, ExprSet[]>(rule.Guard, rule.lookahead);
             else
             {
                 foreach (var rule in GetRules(state_set.First, func))
@@ -525,16 +525,16 @@ namespace Microsoft.Automata.Z3
                     var childStateSets = rule.lookahead;
                     foreach (var rule_base in EnumerateCombinedRules(state_set.Rest, func, GetRules)) 
                     {
-                        var guard = tt.Z.MkAndSimplify(rule.Guard, rule_base.First);
+                        var guard = tt.Z.MkAndSimplify(rule.Guard, rule_base.Item1);
                         if (!guard.Equals(tt.Z.False))
                         {
                             var childStateSets1 = new ExprSet[childStateSets.Length];
                             for (int i = 0; i < childStateSets.Length; i++)
                             {
                                 childStateSets1[i] = new ExprSet(childStateSets[i]);
-                                childStateSets1[i].AddRange(rule_base.Second[i]);
+                                childStateSets1[i].AddRange(rule_base.Item2[i]);
                             }
-                            yield return new Pair<Expr, ExprSet[]>(guard, childStateSets1);
+                            yield return new Tuple<Expr, ExprSet[]>(guard, childStateSets1);
                         }
                     }
                 }

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-using Microsoft.Automata;
+using Microsoft.Automata.BooleanAlgebras;
 
 namespace Microsoft.Automata.MSO
 {

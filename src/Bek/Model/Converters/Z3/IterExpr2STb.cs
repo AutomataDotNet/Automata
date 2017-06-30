@@ -57,8 +57,8 @@ namespace Microsoft.Bek.Model.Converters.Z3
             var iterCases = ConsList<itercase>.Create(ie.GetNormalCases());
             var endCases = ConsList<itercase>.Create(ie.GetEndCases());
 
-            STbRule<Expr> rule = CreateBranchingRule(iterCases, stb.Solver.True, I);
-            STbRule<Expr> frule = CreateBranchingRule(endCases, stb.Solver.True, I);
+            BranchingRule<Expr> rule = CreateBranchingRule(iterCases, stb.Solver.True, I);
+            BranchingRule<Expr> frule = CreateBranchingRule(endCases, stb.Solver.True, I);
 
             STModel st = new STModel(stb.Solver, "iterSTb", charsort, charsort, I.regSort, I.initReg, 0);
             st.AssignRule(0, rule);
@@ -66,7 +66,7 @@ namespace Microsoft.Bek.Model.Converters.Z3
             return st;
         }
 
-        private STbRule<Expr> CreateBranchingRule(ConsList<itercase> iterCases, Expr pathCond, VarInfo I)
+        private BranchingRule<Expr> CreateBranchingRule(ConsList<itercase> iterCases, Expr pathCond, VarInfo I)
         {
             if (iterCases == null)
                 return new BaseRule<Expr>(Sequence<Expr>.Empty, I.r, 0);
@@ -100,7 +100,7 @@ namespace Microsoft.Bek.Model.Converters.Z3
             }
         }
 
-        private STbRule<Expr> CreateBodyRule(List<iterstmt> iters, Expr pathCond, VarInfo I)
+        private BranchingRule<Expr> CreateBodyRule(List<iterstmt> iters, Expr pathCond, VarInfo I)
         {
             if (iters.Count == 0)
                 return new UndefRule<Expr>();

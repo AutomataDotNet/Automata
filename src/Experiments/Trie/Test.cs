@@ -1,6 +1,7 @@
 ﻿using System;
 
 using Microsoft.Automata;
+using Microsoft.Automata.BooleanAlgebras;
 
 namespace Experiments.Trie
 {
@@ -32,7 +33,7 @@ namespace Experiments.Trie
             double ACC2 = 0;
             double X = 0;
 
-            for (double d = 5; d <= 12; d += 0.5)
+            for (double d = 5; d <= 10; d += 0.5)
             {
                 int n = (int)Math.Pow(2.0, d);
                 double count = 0;

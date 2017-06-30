@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
-using Microsoft.Automata.Internal.Utilities;
+using Microsoft.Automata.Utilities;
 
 namespace Microsoft.Automata.Rex
 {

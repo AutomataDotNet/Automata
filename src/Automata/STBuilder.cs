@@ -247,9 +247,9 @@ namespace Microsoft.Automata
         internal void GetProjectionPair(IRegisterInfo<TERM> A, out TERM control_proj, out TERM register_proj, out Func<TERM, TERM, TERM> combine) 
         {
             var v = MkRegister(solver.GetSort(A.InitialRegister));
-            var projs = new List<Pair<TERM, bool>>(GetRegisterProjections(v, v, A)).ToArray();
-            var first = Array.ConvertAll(Array.FindAll(projs, p => p.Second), pair => pair.First);
-            var second = Array.ConvertAll(Array.FindAll(projs, p => !p.Second), pair => pair.First);
+            var projs = new List<Tuple<TERM, bool>>(GetRegisterProjections(v, v, A)).ToArray();
+            var first = Array.ConvertAll(Array.FindAll(projs, p => p.Item2), pair => pair.Item1);
+            var second = Array.ConvertAll(Array.FindAll(projs, p => !p.Item2), pair => pair.Item1);
             if (first.Length == 0)        //no control projection
             {
                 control_proj = solver.UnitConst;
@@ -277,7 +277,7 @@ namespace Microsoft.Automata
                 int m = 0;
                 int n = 0;
                 for (int i = 0; i < subst_list.Count; i++)  //subst_list has the same length as projs
-                    if (projs[i].Second)
+                    if (projs[i].Item2)
                         subst[subst_list[i].Key] = (first.Length == 1 ? tmp_control_var : solver.MkProj(m++, tmp_control_var));
                     else
                         subst[subst_list[i].Key] = (second.Length == 1 ? tmp_register_var : solver.MkProj(n++, tmp_register_var));
@@ -286,11 +286,11 @@ namespace Microsoft.Automata
             }
         }
 
-        IEnumerable<Pair<TERM, bool>> GetRegisterProjections(TERM x, TERM proj, IRegisterInfo<TERM> A)
+        IEnumerable<Tuple<TERM, bool>> GetRegisterProjections(TERM x, TERM proj, IRegisterInfo<TERM> A)
         {
             var sort = solver.GetSort(proj);
             if (sort.Equals(solver.BoolSort))
-                yield return new Pair<TERM, bool>(proj, true);
+                yield return new Tuple<TERM, bool>(proj, true);
             else if (!solver.IsTupleSort(sort))
             {
                 Predicate<TERM> pred = r =>
@@ -301,9 +301,9 @@ namespace Microsoft.Automata
                     };
 
                 if (A.IsTrueForAllRegisterUpdates(pred))
-                    yield return new Pair<TERM, bool>(proj, true);
+                    yield return new Tuple<TERM, bool>(proj, true);
                 else
-                    yield return new Pair<TERM, bool>(proj, false);
+                    yield return new Tuple<TERM, bool>(proj, false);
             }
             else
             {

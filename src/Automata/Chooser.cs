@@ -11,7 +11,7 @@ namespace Microsoft.Automata
         /// <summary>
         /// The RNGCryptoServiceProvider object the Chooser uses.
         /// </summary>
-        private static RNGCryptoServiceProvider randomNumberGenerator = new RNGCryptoServiceProvider();
+        private RNGCryptoServiceProvider randomNumberGenerator = new RNGCryptoServiceProvider();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Chooser" /> class.
@@ -69,7 +69,7 @@ namespace Microsoft.Automata
             else
             {
                 byte[] randomData = new byte[sizeof(uint)];
-                Chooser.randomNumberGenerator.GetBytes(randomData);
+                this.randomNumberGenerator.GetBytes(randomData);
                 uint randomInt = BitConverter.ToUInt32(randomData, 0);
 
                 result = randomInt & mask;
@@ -88,12 +88,8 @@ namespace Microsoft.Automata
 
             uint result;
 
-            //do
-            //{
-                Chooser.randomNumberGenerator.GetBytes(randomData);
-                result = BitConverter.ToUInt32(randomData, 0);
-            //}
-            //while (result == uint.MaxValue);
+            this.randomNumberGenerator.GetBytes(randomData);
+            result = BitConverter.ToUInt32(randomData, 0);
 
             return result;
         }
@@ -108,12 +104,8 @@ namespace Microsoft.Automata
 
             ulong result;
 
-            //do
-            //{
-                Chooser.randomNumberGenerator.GetBytes(randomData);
-                result = BitConverter.ToUInt64(randomData, 0);
-            //}
-            //while (result == uint.MaxValue);
+            this.randomNumberGenerator.GetBytes(randomData);
+            result = BitConverter.ToUInt64(randomData, 0);
 
             return result;
         }
@@ -125,7 +117,7 @@ namespace Microsoft.Automata
         public bool ChooseTrueOrFalse()
         {
             byte[] randomData = new byte[1];
-            Chooser.randomNumberGenerator.GetBytes(randomData);
+            this.randomNumberGenerator.GetBytes(randomData);
             return (randomData[0] & 0x1) == 0;
         }
 
@@ -137,7 +129,7 @@ namespace Microsoft.Automata
         public double ChooseDouble()
         {
             byte[] randomData = new byte[sizeof(int)];
-            Chooser.randomNumberGenerator.GetBytes(randomData);
+            this.randomNumberGenerator.GetBytes(randomData);
 
             return (double)BitConverter.ToUInt32(randomData, 0) / ((ulong)uint.MaxValue + 1);
         }
@@ -145,8 +137,8 @@ namespace Microsoft.Automata
         /// <summary>
         /// Calculates the value of the most significant bit in a positive integer.
         /// </summary>
-        /// <param name="n">The positive integer of which the value of the most significant bit is to be 
-        /// calculated.</param>
+        /// <param name="n">The positive integer of which the 
+        /// value of the most significant bit is to be calculated.</param>
         /// <returns>The value of the most significant bit.</returns>
         private uint GetMostSignificantBit(uint n)
         {
