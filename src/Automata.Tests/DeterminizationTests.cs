@@ -30,11 +30,12 @@ namespace Automata.Tests
         [TestMethod]
         public void TestRegexMatcher()
         {
-            Assert.IsFalse(RegexMatcher.IsMatch("ab01"));
-            Assert.IsTrue(RegexMatcher.IsMatch("01ab"));
-            Assert.IsFalse(RegexMatcher.IsMatch("0881abc"));
-            Assert.IsTrue(RegexMatcher.IsMatch("0881ac"));
-            Assert.IsFalse(RegexMatcher.IsMatch("013333a."));
+            var aut = new RegexMatcher();
+            Assert.IsFalse(aut.IsMatch("ab01"));
+            Assert.IsTrue(aut.IsMatch("01ab"));
+            Assert.IsFalse(aut.IsMatch("0881abc"));
+            Assert.IsTrue(aut.IsMatch("0881ac"));
+            Assert.IsFalse(aut.IsMatch("013333a."));
         }
 
         /// <summary>
@@ -96,7 +97,7 @@ namespace Automata.Tests
                 };
             }
 
-            public static bool IsMatch(string input)
+            public bool IsMatch(string input)
             {
                 var cs = input.ToCharArray();
                 int k = input.Length;
@@ -135,6 +136,27 @@ namespace Automata.Tests
                 goto State4;
             State4:
                 return false;
+            }
+
+            public IEnumerable<Tuple<int, int>> GenerateMatches(string input)
+            {
+                var cs = input.ToCharArray();
+                int k = input.Length;
+                int x = 0;
+                int i0 = 0;
+                int q = 0;
+                for (int i = 0; i < cs.Length; i++)
+                {
+                    if (q == 0)
+                    {
+                        i0 = i;
+                    }
+                    q = this.delta[q](cs[i]);
+                    if (this.IsFinalState(q))
+                    {
+                        yield return new System.Tuple<int, int>(i0, i);
+                    }
+                }
             }
         }
     }

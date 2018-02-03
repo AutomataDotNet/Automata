@@ -5389,7 +5389,7 @@ namespace Microsoft.Automata
 
         /// <summary>
         /// Normalizes and compiles the automaton to 
-        /// C# code that is exposed through the IFiniteAutomaton interface.
+        /// C# code that is exposed through the ICompiledStringMatcher interface.
         /// The automaton must be deterministic and the algebra must be CharSetSolver.
         /// </summary>
         public ICompiledStringMatcher Compile(string classname = null, string namespacename = null)
@@ -5408,25 +5408,24 @@ namespace Microsoft.Automata
     #region Helper classes used in various algorithms
     internal class CompiledFiniteAutomaton : ICompiledStringMatcher
     {
-        public IFiniteAutomaton Automaton { get; }
+        public IDeterministicFiniteAutomaton Automaton { get; }
 
         public string SourceCode { get; }
 
-        System.Reflection.MethodInfo ismatch;
-
-        internal CompiledFiniteAutomaton(string source, IFiniteAutomaton automaton, System.Reflection.MethodInfo ismatch = null)
+        internal CompiledFiniteAutomaton(string source, IDeterministicFiniteAutomaton automaton)
         {
             this.SourceCode = source;
             this.Automaton = automaton;
-            this.ismatch = ismatch;
         }
 
         public bool IsMatch(string input)
         {
-            if (ismatch == null)
-                return Automaton.IsFinalState(Automaton.Transition(0, input.ToCharArray()));
-            else
-                return (bool) ismatch.Invoke(null, new object[] { input });
+            return Automaton.IsMatch(input);
+        }
+
+        public IEnumerable<Tuple<int, int>> GenerateMatches(string input)
+        {
+            return Automaton.GenerateMatches(input);
         }
     }
 

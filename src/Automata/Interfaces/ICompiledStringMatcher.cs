@@ -26,7 +26,14 @@ namespace Microsoft.Automata
         /// <summary>
         /// Incremental automaton interface to the compiled source code.
         /// </summary>
-        IFiniteAutomaton Automaton { get; }
+        IDeterministicFiniteAutomaton Automaton { get; }
+
+        /// <summary>
+        /// First, yields the pair(i, j) such that input[i..j] matches the
+        /// regex. Then recursively yields matches for the rest of the input
+        /// starting from index j+1.
+        /// </summary>
+        IEnumerable<Tuple<int, int>> GenerateMatches(string input);
     }
 
     /// <summary>
@@ -48,6 +55,11 @@ namespace Microsoft.Automata
         /// Returns the target state reached after reading the input characters from the source state q.
         /// </summary>
         int Transition(int q, params char[] input);
+
+        /// <summary>
+        /// Returns true iff the automaton accepts the input
+        /// </summary>
+        bool IsMatch(string input);
     }
 
     /// <summary>
@@ -60,5 +72,12 @@ namespace Microsoft.Automata
         /// The set of states is {0,...,Delta.Length-1}.
         /// </summary>
         Func<char, int>[] Delta { get; }
+
+        /// <summary>
+        /// First, yields the pair(i, j) such that input[i..j] matches the
+        /// regex.Then recursively yields matches for the rest of the input
+        /// starting from index j+1.
+        /// </summary>
+        IEnumerable<Tuple<int, int>> GenerateMatches(string input);
     }
 }

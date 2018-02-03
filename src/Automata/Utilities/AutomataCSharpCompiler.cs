@@ -27,6 +27,7 @@ namespace Microsoft.Automata.Utilities
             parameters.GenerateInMemory = true;
             parameters.CompilerOptions = "/o";  //optimize the code
             parameters.ReferencedAssemblies.Add("System.dll");
+            //parameters.ReferencedAssemblies.Add("mscorlib.dll");
             parameters.ReferencedAssemblies.Add(typeof(IFiniteAutomaton).GetTypeInfo().Assembly.Location);
             CompilerResults results = csc.CompileAssemblyFromSource(parameters, source);
             if (results.Errors.HasErrors)
@@ -37,9 +38,8 @@ namespace Microsoft.Automata.Utilities
             {
                 var cls = results.CompiledAssembly.GetType(string.Format("{0}.{1}",namespacename,classname));
                 var cons = cls.GetConstructor(new Type[] { });
-                IFiniteAutomaton compiledAutomaton = cons.Invoke(new object[] { }) as IFiniteAutomaton;
-                var ismatch = cls.GetMethod("IsMatch", BindingFlags.Static | BindingFlags.Public);
-                return new CompiledFiniteAutomaton(this.source, compiledAutomaton, ismatch);
+                IDeterministicFiniteAutomaton compiledAutomaton = cons.Invoke(new object[] { }) as IDeterministicFiniteAutomaton;
+                return new CompiledFiniteAutomaton(this.source, compiledAutomaton);
             }
         }
 
@@ -99,6 +99,10 @@ namespace {0}
 
         System.Func<char, int>[] delta = new System.Func<char, int>[{2}];
 
+        int prevStartIndex = 0;
+
+        int currIndex = 0;
+
         public System.Func<char, int>[] Delta {{ get {{return delta; }} }}
 
         public bool IsFinalState(int x) {{ return {3}; }}
@@ -148,7 +152,7 @@ namespace {0}
 "));
                 //adds a static IsMatch method
                 code.Append(String.Format(@"
-        public static bool IsMatch(string input)
+        public bool IsMatch(string input)
         {{
             var cs = input.ToCharArray();
             int k = input.Length;
@@ -207,6 +211,29 @@ namespace {0}
                 }
                 code.Append(@"
         }");
+
+                //adds a static GenerateMatches method
+                code.Append(String.Format(@"
+        public System.Collections.Generic.IEnumerable<System.Tuple<int,int>> GenerateMatches(string input)
+        {{
+            var cs = input.ToCharArray();
+            int i0 = 0;
+            int q = 0;
+            for (int i = 0; i < cs.Length; i++)
+            {{
+                if (q == 0) 
+                {{
+                    i0 = i;
+                }}
+                q = this.delta[q](cs[i]);
+                if (this.IsFinalState(q))
+                {{ 
+                    yield return new System.Tuple<int,int>(i0,i);
+                    q = 0;
+                }}
+            }}
+        }}", classname));
+
                 code.Append(helper_predicates.ToString());
                 code.Append(@"
     }

@@ -25,6 +25,36 @@ namespace Microsoft.Automata
         }
 
         /// <summary>
+        /// Display the automaton of the regex in dgml.
+        /// </summary>
+        /// <param name="regex">given regex</param>
+        /// <param name="name">name for the automaton and the dgml file</param>
+        /// <param name="minimize">minimize (and determinize) if true</param>
+        /// <param name="determinize">determinize if true</param>
+        /// <param name="removeepsilons">remove epsilon moves if true</param>
+        public static void Display(this Regex regex, string name = "Automaton", bool minimize = false, bool determinize = false, bool removeepsilons = false)
+        {
+            var solver = new CharSetSolver(BitWidth.BV16);
+            var aut = solver.Convert(regex.ToString(), regex.Options);
+            if (removeepsilons)
+            {
+                aut = aut.RemoveEpsilons().Normalize();
+            }
+            if (determinize)
+            {
+                aut = aut.RemoveEpsilons();
+                aut = aut.Determinize().Normalize();
+            }
+            if (minimize)
+            {
+                aut = aut.RemoveEpsilons();
+                aut = aut.Determinize();
+                aut = aut.Minimize().Normalize();
+            }
+            aut.ShowGraph(name);
+        }
+
+        /// <summary>
         /// Generate c++ matcher code for the given regex. Returns the empty string if the compilation fails.
         /// </summary>
         /// <param name="regex">given regex</param>
