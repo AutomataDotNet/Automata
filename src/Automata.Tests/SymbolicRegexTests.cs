@@ -27,9 +27,8 @@ namespace Automata.Tests
             var r2 = css.RegexConverter.ConvertToSymbolicRegex(@"[\w][\p{Nd}]*");
             Assert.IsTrue(r2.ToString().Equals(@"[\w][\p{Nd}]*"));
             Assert.IsTrue(r2.Kind == SymbolicRegexKind.Concat);
-            var wd1 = r2 as SymbolicRegexConcat;
-            Assert.IsTrue(wd1.First.Kind == SymbolicRegexKind.Singleton);
-            Assert.IsTrue(wd1.Second.Kind == SymbolicRegexKind.Loop);
+            Assert.IsTrue(r2.Left.Kind == SymbolicRegexKind.Singleton);
+            Assert.IsTrue(r2.Right.Kind == SymbolicRegexKind.Loop);
             //--------
             var r3 = css.RegexConverter.ConvertToSymbolicRegex(@"a|((b)|(c)|(d))|[e-x]");
             Assert.IsTrue(r3.Kind == SymbolicRegexKind.Choice);
@@ -40,9 +39,8 @@ namespace Automata.Tests
             Assert.IsTrue(r4.Kind == SymbolicRegexKind.Loop);
             Assert.IsTrue(r4.ChoiceCount == 1);
             Assert.IsTrue(r4.ToString().Equals(@"[a-z]{0,5}"));
-            var r4l = r4 as SymbolicRegexLoop;
-            Assert.IsTrue(r4l.LowerBound == 0);
-            Assert.IsTrue(r4l.UpperBound == 5);
+            Assert.IsTrue(r4.LowerBound == 0);
+            Assert.IsTrue(r4.UpperBound == 5);
             //--------
             var a = css.RegexConverter.ConvertToSymbolicRegex("a");
             var bstar = css.RegexConverter.ConvertToSymbolicRegex("b*");
@@ -50,6 +48,24 @@ namespace Automata.Tests
             Assert.IsTrue(abstar.ChoiceCount == 1);
             Assert.IsTrue(abstar.Kind == SymbolicRegexKind.Concat);
             Assert.IsTrue(abstar.ToString() == "ab*");
+            //--------
+            var r5 = css.RegexConverter.ConvertToSymbolicRegex("[a-z]?");
+            Assert.IsTrue(r5.IsOptional);
+            Assert.IsTrue(!r5.IsStar);
+            Assert.IsTrue(!r5.IsPlus);
+            Assert.IsTrue(r5.LowerBound == 0 && r5.UpperBound == 1 && r5.Kind == SymbolicRegexKind.Loop);
+            //--------
+            var r6 = css.RegexConverter.ConvertToSymbolicRegex("[a-z]+");
+            Assert.IsTrue(!r6.IsOptional);
+            Assert.IsTrue(!r6.IsStar);
+            Assert.IsTrue(r6.IsPlus);
+            Assert.IsTrue(r6.LowerBound == 1 && r6.UpperBound == int.MaxValue && r6.Kind == SymbolicRegexKind.Loop);
+            //--------
+            var r7 = css.RegexConverter.ConvertToSymbolicRegex("[a-z]*");
+            Assert.IsTrue(!r7.IsOptional);
+            Assert.IsTrue(r7.IsStar);
+            Assert.IsTrue(!r7.IsPlus);
+            Assert.IsTrue(r7.LowerBound == 0 && r7.UpperBound == int.MaxValue && r7.Kind == SymbolicRegexKind.Loop);
         }
     }
 }

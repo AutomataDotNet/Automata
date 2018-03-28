@@ -659,7 +659,7 @@ namespace Microsoft.Automata
         /// </summary>
         /// <param name="regex">the given .NET regex pattern</param>
         /// <param name="options">regular expression options for the pattern</param>
-        public SymbolicRegex ConvertToSymbolicRegex(string regex, RegexOptions options = RegexOptions.None)
+        public SymbolicRegex<S> ConvertToSymbolicRegex(string regex, RegexOptions options = RegexOptions.None)
         {
             //filter out the RightToLeft option that turns around the parse tree
             //but has no semantical meaning regarding the regex
@@ -670,7 +670,7 @@ namespace Microsoft.Automata
             return sregex;
         }
 
-        internal SymbolicRegex ConvertNodeToSymbolicRegex(RegexNode node)
+        internal SymbolicRegex<S> ConvertNodeToSymbolicRegex(RegexNode node)
         {
             switch (node._type)
             {
@@ -753,7 +753,7 @@ namespace Microsoft.Automata
         /// <summary>
         /// Sequence of characters in node._str
         /// </summary>
-        private SymbolicRegex ConvertNodeMultiToSymbolicRegex(RegexNode node)
+        private SymbolicRegex<S> ConvertNodeMultiToSymbolicRegex(RegexNode node)
         {
             //sequence of characters
             string sequence = node._str;
@@ -782,7 +782,7 @@ namespace Microsoft.Automata
         /// <summary>
         /// Matches chacter any character except node._ch
         /// </summary>
-        private SymbolicRegex ConvertNodeNotoneToSymbolicRegex(RegexNode node)
+        private SymbolicRegex<S> ConvertNodeNotoneToSymbolicRegex(RegexNode node)
         {
             bool ignoreCase = ((node._options & RegexOptions.IgnoreCase) != 0);
 
@@ -797,7 +797,7 @@ namespace Microsoft.Automata
         /// <summary>
         /// Matches only node._ch
         /// </summary>
-        private SymbolicRegex ConvertNodeOneToSymbolicRegex(RegexNode node)
+        private SymbolicRegex<S> ConvertNodeOneToSymbolicRegex(RegexNode node)
         {
             bool ignoreCase = ((node._options & RegexOptions.IgnoreCase) != 0);
 
@@ -811,7 +811,7 @@ namespace Microsoft.Automata
         #endregion
 
         #region special loops
-        private SymbolicRegex ConvertNodeSetToSymbolicRegex(RegexNode node)
+        private SymbolicRegex<S> ConvertNodeSetToSymbolicRegex(RegexNode node)
         {
             //ranges and categories are encoded in set
             string set = node._str;
@@ -824,31 +824,31 @@ namespace Microsoft.Automata
             return this.MkSingleton(moveCond);
         }
 
-        private SymbolicRegex ConvertNodeNotoneloopToSymbolicRegex(RegexNode node)
+        private SymbolicRegex<S> ConvertNodeNotoneloopToSymbolicRegex(RegexNode node)
         {
             bool ignoreCase = ((node._options & RegexOptions.IgnoreCase) != 0);
             S cond = solver.MkNot(solver.MkCharConstraint(node._ch, ignoreCase));
             if (!description.ContainsKey(cond))
                 description[cond] = string.Format("[^{0}]", Rex.RexEngine.Escape(node._ch));
 
-            SymbolicRegex body = this.MkSingleton(cond);
-            SymbolicRegex loop = this.MkLoop(body, node._m, node._n);
+            SymbolicRegex<S> body = this.MkSingleton(cond);
+            SymbolicRegex<S> loop = this.MkLoop(body, node._m, node._n);
             return loop;
         }
 
-        private SymbolicRegex ConvertNodeOneloopToSymbolicRegex(RegexNode node)
+        private SymbolicRegex<S> ConvertNodeOneloopToSymbolicRegex(RegexNode node)
         {
             bool ignoreCase = ((node._options & RegexOptions.IgnoreCase) != 0);
             S cond = solver.MkCharConstraint(node._ch, ignoreCase);
             if (!description.ContainsKey(cond))
                 description[cond] = string.Format("{0}", Rex.RexEngine.Escape(node._ch));
 
-            SymbolicRegex body = this.MkSingleton(cond);
-            SymbolicRegex loop = this.MkLoop(body, node._m, node._n);
+            SymbolicRegex<S> body = this.MkSingleton(cond);
+            SymbolicRegex<S> loop = this.MkLoop(body, node._m, node._n);
             return loop;
         }
 
-        private SymbolicRegex ConvertNodeSetloopToSymbolicRegex(RegexNode node)
+        private SymbolicRegex<S> ConvertNodeSetloopToSymbolicRegex(RegexNode node)
         {
             //ranges and categories are encoded in set
             string set = node._str;
@@ -858,8 +858,8 @@ namespace Microsoft.Automata
             if (!description.ContainsKey(moveCond))
                 description[moveCond] = RegexCharClass.SetDescription(set);
 
-            SymbolicRegex body = this.MkSingleton(moveCond);
-            SymbolicRegex loop = this.MkLoop(body, node._m, node._n);
+            SymbolicRegex<S> body = this.MkSingleton(moveCond);
+            SymbolicRegex<S> loop = this.MkLoop(body, node._m, node._n);
             return loop;
         }
 
@@ -868,22 +868,22 @@ namespace Microsoft.Automata
         /// <summary>
         /// Make a singleton sequence regex
         /// </summary>
-        public SymbolicRegex MkSingleton(S set)
+        public SymbolicRegex<S> MkSingleton(S set)
         {
-            return new SymbolicRegexSingleton<S>(set, this.Describe);
+            return SymbolicRegex<S>.MkSingleton(set, this.Describe);
         }
 
         /// <summary>
         /// Make a choice regex of given regexes
         /// </summary>
-        public SymbolicRegex MkChoice(params SymbolicRegex[] regexes)
+        public SymbolicRegex<S> MkChoice(params SymbolicRegex<S>[] regexes)
         {
             if (regexes.Length < 1)
                 throw new AutomataException(AutomataExceptionKind.InvalidArgument);
 
             var sr = regexes[regexes.Length - 1];
             for (int i = regexes.Length - 2; i >= 0; i--)
-                sr = new SymbolicRegexChoice(regexes[i], sr);
+                sr = SymbolicRegex<S>.MkChoice(regexes[i], sr);
 
             return sr;
         }
@@ -891,14 +891,14 @@ namespace Microsoft.Automata
         /// <summary>
         /// Make a concatenation of given regexes
         /// </summary>
-        public SymbolicRegex MkConcat(params SymbolicRegex[] regexes)
+        public SymbolicRegex<S> MkConcat(params SymbolicRegex<S>[] regexes)
         {
             if (regexes.Length < 1)
                 throw new AutomataException(AutomataExceptionKind.InvalidArgument);
 
             var sr = regexes[regexes.Length - 1];
             for (int i = regexes.Length - 2; i >= 0; i--)
-                sr = new SymbolicRegexConcat(regexes[i], sr);
+                sr = SymbolicRegex<S>.MkConcat(regexes[i], sr);
 
             return sr;
         }
@@ -906,17 +906,17 @@ namespace Microsoft.Automata
         /// <summary>
         /// Make regex that accepts the empty word
         /// </summary>
-        public SymbolicRegex MkEpsilon()
+        public SymbolicRegex<S> MkEpsilon()
         {
-            return new SymbolicRegexEpsilon();
+            return SymbolicRegex<S>.MkEpsilon();
         }
 
         /// <summary>
         /// Make loop regex
         /// </summary>
-        public SymbolicRegex MkLoop(SymbolicRegex regex, int lower = 0, int upper = int.MaxValue)
+        public SymbolicRegex<S> MkLoop(SymbolicRegex<S> regex, int lower = 0, int upper = int.MaxValue)
         {
-            return new SymbolicRegexLoop(regex, lower, upper);
+            return SymbolicRegex<S>.MkLoop(regex, lower, upper);
         }
 
         #endregion

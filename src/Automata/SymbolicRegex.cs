@@ -19,276 +19,91 @@ namespace Microsoft.Automata
     }
 
     /// <summary>
-    /// Base class for symbolic regexes.
+    /// Represents an AST node of a symbolic regex.
     /// </summary>
-    public abstract class SymbolicRegex
+    public class SymbolicRegex<S>
     {
+        SymbolicRegexKind kind;
         /// <summary>
         /// Gets the kind of the regex
         /// </summary>
-        abstract public SymbolicRegexKind Kind { get; }
+        public SymbolicRegexKind Kind
+        {
+            get { return kind; }
+        }
 
         /// <summary>
         /// Number of unnested alternative branches if this is a choice node. 
         /// If this is not a choice node then the value is 1.
         /// </summary>
-        virtual public int ChoiceCount
-        {
-            get { return 1; }
-        }
-    }
-
-    /// <summary>
-    /// Epsilon regular expression, accepts the empty sequence.
-    /// </summary>
-    public class SymbolicRegexEpsilon : SymbolicRegex
-    {
-        /// <summary>
-        /// Returns the kind SymbolicRegexKind.Epsilon
-        /// </summary>
-        public override SymbolicRegexKind Kind
+        public int ChoiceCount
         {
             get
             {
-                return SymbolicRegexKind.Epsilon;
+                if (kind == SymbolicRegexKind.Choice)
+                    return left.ChoiceCount + right.ChoiceCount;
+                else
+                    return 1;
             }
         }
 
-        public override string ToString()
+        SymbolicRegex<S> left;
+        /// <summary>
+        /// Left child of a binary node or the child of a unary node
+        /// </summary>
+        public SymbolicRegex<S> Left
         {
-            return "()";
+            get { return left; }
         }
 
-        internal SymbolicRegexEpsilon() { }
-    }
-
-    /// <summary>
-    /// Set or singleton sequence of elements
-    /// </summary>
-    /// <typeparam name="S">set type</typeparam>
-    /// <typeparam name="T">element type</typeparam>
-    public class SymbolicRegexSingleton<S> : SymbolicRegex
-    {
+        SymbolicRegex<S> right;
         /// <summary>
-        /// Returns the kind SymbolicRegexKind.Singleton
+        /// Right child of a binary node
         /// </summary>
-        public override SymbolicRegexKind Kind
+        public SymbolicRegex<S> Right
+        {
+            get{ return right; }
+        }
+
+        int lower; 
+        /// <summary>
+        /// The lower bound of a loop
+        /// </summary>
+        public int LowerBound
         {
             get
             {
-                return SymbolicRegexKind.Singleton;
+                return lower;
+            }
+        }
+
+        int upper;
+        /// <summary>
+        /// The upper bound of a loop
+        /// </summary>
+        public int UpperBound
+        {
+            get
+            {
+                return upper;
             }
         }
 
         S set;
-        Func<S, string> toString;
-
         /// <summary>
-        /// Set of elements
+        /// The set of a singleton
         /// </summary>
         public S Set
         {
-            get { return set; }
-        }
-
-        /// <summary>
-        /// Creates a regex singleton sequence
-        /// </summary>
-        /// <param name="set">set of elements</param>
-        /// <param name="toString">funtion that displays the set</param>
-        internal SymbolicRegexSingleton(S set, Func<S,string> toString)
-        {
-            this.set = set;
-            this.toString = toString;
-        }
-
-        /// <summary>
-        /// Display the set as a string
-        /// </summary>
-        public override string ToString()
-        {
-            return this.toString(set);
-        }
-    }
-
-    /// <summary>
-    /// Choice node between two regexes
-    /// </summary>
-    public class SymbolicRegexChoice : SymbolicRegex
-    {
-        SymbolicRegex first;
-        SymbolicRegex second;
-
-        /// <summary>
-        /// Returns the kind SymbolicRegexKind.Choice
-        /// </summary>
-        public override SymbolicRegexKind Kind
-        {
             get
             {
-                return SymbolicRegexKind.Choice;
+                return set;
             }
         }
+        Func<S, string> toString;
 
         /// <summary>
-        /// First element
-        /// </summary>
-        public SymbolicRegex First
-        {
-            get { return this.first; }
-        }
-
-        /// <summary>
-        /// Second element
-        /// </summary>
-        public SymbolicRegex Second
-        {
-            get { return this.second; }
-        }
-
-        /// <summary>
-        /// Create choice of first or second
-        /// </summary>
-        internal SymbolicRegexChoice(SymbolicRegex first, SymbolicRegex second)
-        {
-            this.first = first;
-            this.second = second;
-        }
-
-        /// <summary>
-        /// Equals First.ChoiceCount + Second.ChoiceCount
-        /// </summary>
-        override public int ChoiceCount
-        {
-            get { return first.ChoiceCount + second.ChoiceCount; }
-        }
-
-        /// <summary>
-        /// Display the choice
-        /// </summary>
-        public override string ToString()
-        {
-            return first.ToString() + "|" + second.ToString();
-        }
-    }
-
-    /// <summary>
-    /// Concatenation of two regexes
-    /// </summary>
-    public class SymbolicRegexConcat : SymbolicRegex
-    {
-        SymbolicRegex first;
-        SymbolicRegex second;
-
-        /// <summary>
-        /// Returns the kind SymbolicRegexKind.Concat
-        /// </summary>
-        public override SymbolicRegexKind Kind
-        {
-            get
-            {
-                return SymbolicRegexKind.Concat;
-            }
-        }
-
-
-        /// <summary>
-        /// First element
-        /// </summary>
-        public SymbolicRegex First
-        {
-            get { return this.first; }
-        }
-
-        /// <summary>
-        /// Second element
-        /// </summary>
-        public SymbolicRegex Second
-        {
-            get { return this.second; }
-        }
-
-        /// <summary>
-        /// Create sequence of first followed by second
-        /// </summary>
-        internal SymbolicRegexConcat(SymbolicRegex first, SymbolicRegex second)
-        {
-            this.first = first;
-            this.second = second;
-        }
-
-        /// <summary>
-        /// Display the concatenation
-        /// </summary>
-        public override string ToString()
-        {
-            string a = first.ToString();
-            string b = second.ToString();
-            if (first.ChoiceCount > 1)
-                a = "(" + a + ")";
-            if (second.ChoiceCount > 1)
-                b = "(" + b + ")";
-            return a + b;
-        }
-    }
-
-    /// <summary>
-    /// Generalized star operator with upper and lower iteration bounds
-    public class SymbolicRegexLoop : SymbolicRegex
-    {
-        SymbolicRegex body;
-        int lower;
-        int upper;
-
-        /// <summary>
-        /// Returns the kind SymbolicRegexKind.Loop
-        /// </summary>
-        public override SymbolicRegexKind Kind
-        {
-            get
-            {
-                return SymbolicRegexKind.Loop;
-            }
-        }
-
-
-        /// <summary>
-        /// The body of the loop
-        /// </summary>
-        public SymbolicRegex Body
-        {
-            get { return body; }
-        }
-
-        /// <summary>
-        /// Lower bound of the loop
-        /// </summary>
-        public int LowerBound { get { return lower; } }
-
-        /// <summary>
-        /// Upper bound of the loop
-        /// </summary>
-        public int UpperBound {  get { return upper; } }
-
-
-        /// <summary>
-        /// Creates a loop
-        /// </summary>
-        /// <param name="regex">the body of the loop</param>
-        /// <param name="lower">lower bound on the number of iterations (default 0)</param>
-        /// <param name="upper">upper bound on the number of iterations (default int.MaxValue)</param>
-        internal SymbolicRegexLoop(SymbolicRegex regex, int lower = 0, int upper = int.MaxValue)
-        {
-            if (lower < 0 || upper < lower)
-                throw new AutomataException(AutomataExceptionKind.InvalidArgument);
-
-            this.body = regex;
-            this.lower = lower;
-            this.upper = upper;
-        }
-
-        /// <summary>
-        /// Returns true iff lower bound is 0 and upper bound is max
+        /// Returns true iff this is a loop whose lower bound is 0 and upper bound is max
         /// </summary>
         public bool IsStar
         {
@@ -299,7 +114,7 @@ namespace Microsoft.Automata
         }
 
         /// <summary>
-        /// Returns true iff lower bound is 1 and upper bound is max
+        /// Returns true iff this is a loop whose lower bound is 1 and upper bound is max
         /// </summary>
         public bool IsPlus
         {
@@ -310,19 +125,87 @@ namespace Microsoft.Automata
         }
 
         /// <summary>
-        /// Display the loop
+        /// Returns true iff this is a loop whose lower bound is 0 and upper bound is 1
         /// </summary>
+        public bool IsOptional
+        {
+            get
+            {
+                return lower == 0 && upper == 1;
+            }
+        }
+
+        private SymbolicRegex(SymbolicRegexKind kind, SymbolicRegex<S> left, SymbolicRegex<S> right, int lower, int upper, S set, Func<S, string> toString)
+        {
+            this.kind = kind;
+            this.left = left;
+            this.right = right;
+            this.lower = lower;
+            this.upper = upper;
+            this.set = set;
+            this.toString = toString;
+        }
+
+        internal static SymbolicRegex<S> MkSingleton(S set, Func<S, string> toString)
+        {
+            return new SymbolicRegex<S>(SymbolicRegexKind.Singleton, null, null, -1, -1, set, toString);
+        }
+
+        internal static SymbolicRegex<S> MkEpsilon()
+        {
+            return new SymbolicRegex<S>(SymbolicRegexKind.Epsilon, null, null, -1, -1, default(S), null);
+        }
+
+        internal static SymbolicRegex<S> MkLoop(SymbolicRegex<S> body, int lower, int upper)
+        {
+            if (lower < 0 || upper < lower)
+                throw new AutomataException(AutomataExceptionKind.InvalidArgument);
+
+            return new SymbolicRegex<S>(SymbolicRegexKind.Loop, body, null, lower, upper, default(S), null);
+        }
+
+        internal static SymbolicRegex<S> MkChoice(SymbolicRegex<S> left, SymbolicRegex<S> right)
+        {
+            return new SymbolicRegex<S>(SymbolicRegexKind.Choice, left, right, -1, -1, default(S), null);
+        }
+
+        internal static SymbolicRegex<S> MkConcat(SymbolicRegex<S> left, SymbolicRegex<S> right)
+        {
+            return new SymbolicRegex<S>(SymbolicRegexKind.Concat, left, right, -1, -1, default(S), null);
+        }
+
         public override string ToString()
         {
-            string s = body.ToString();
-            if (body.ChoiceCount > 1)
-                s = "(" + s + ")";
-            if (IsStar)
-                return s + "*";
-            else if (IsPlus)
-                return s + "+";
-            else
-                return string.Format("{0}{{{1},{2}}}", s, this.lower, this.upper);
+            switch (kind)
+            {
+                case SymbolicRegexKind.Epsilon:
+                    return "()";
+                case SymbolicRegexKind.Singleton:
+                    return toString(set);
+                case SymbolicRegexKind.Loop:
+                    string s = left.ToString();
+                    if (left.ChoiceCount > 1)
+                        s = "(" + s + ")";
+                    if (IsStar)
+                        return s + "*";
+                    else if (IsPlus)
+                        return s + "+";
+                    else if (IsOptional)
+                        return s + "?";
+                    else
+                        return string.Format("{0}{{{1},{2}}}", s, this.lower, this.upper);
+                case SymbolicRegexKind.Concat:
+                    string a = left.ToString();
+                    string b = right.ToString();
+                    if (left.ChoiceCount > 1)
+                        a = "(" + a + ")";
+                    if (right.ChoiceCount > 1)
+                        b = "(" + b + ")";
+                    return a + b;
+                default:
+                    return left.ToString() + "|" + right.ToString();
+            }
         }
     }
+
 }
