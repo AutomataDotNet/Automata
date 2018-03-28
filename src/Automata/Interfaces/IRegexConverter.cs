@@ -4,7 +4,8 @@ using System.Text.RegularExpressions;
 namespace Microsoft.Automata
 {
     /// <summary>
-    /// Provides functionality to convert regex patterns to corresponding symbolic finite automata.
+    /// Provides functionality to convert regex patterns to corresponding symbolic finite automata
+    /// and symbolic regexes.
     /// </summary>
     public interface IRegexConverter<S>
     {
@@ -27,6 +28,39 @@ namespace Microsoft.Automata
         /// </summary>
         /// <param name="s">given input strings</param>
         Automaton<S> ConvertString(string s);
+
+        /// <summary>
+        /// Convert given regex to a symbolic regex AST
+        /// </summary>
+        /// <param name="regex">given regex</param>
+        /// <param name="options">regex options</param>
+        SymbolicRegex ConvertToSymbolicRegex(string regex, RegexOptions options = RegexOptions.None);
+
+        /// <summary>
+        /// Convert a set into a singleton regex
+        /// </summary>
+        /// <param name="set">given set</param>
+        SymbolicRegex MkSingleton(S set);
+
+        /// <summary>
+        /// Make a choice regex of given regexes
+        /// </summary>
+        SymbolicRegex MkChoice(params SymbolicRegex[] regexes);
+
+        /// <summary>
+        /// Make a concatenation of given regexes
+        /// </summary>
+        SymbolicRegex MkConcat(params SymbolicRegex[] regexes);
+
+        /// <summary>
+        /// Make regex that accepts the empty word
+        /// </summary>
+        SymbolicRegex MkEpsilon();
+
+        /// <summary>
+        /// Make loop regex
+        /// </summary>
+        SymbolicRegex MkLoop(SymbolicRegex regex, int lower = 0, int upper = int.MaxValue);
     }
 
 }

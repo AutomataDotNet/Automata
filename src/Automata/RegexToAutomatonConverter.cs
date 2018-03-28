@@ -110,8 +110,6 @@ namespace Microsoft.Automata
             return aut;
         }
 
-
-
         internal Tuple<string,Automaton<S>>[] ConvertCaptures(string regex, out bool isLoop)
         {
             //automBuilder.Reset();
@@ -651,6 +649,274 @@ namespace Microsoft.Automata
             }
 
             return description[label];
+        }
+
+        #endregion
+
+        #region Symbolic regex conversion
+        /// <summary>
+        /// Convert a regex pattern to an equivalent symbolic regex
+        /// </summary>
+        /// <param name="regex">the given .NET regex pattern</param>
+        /// <param name="options">regular expression options for the pattern</param>
+        public SymbolicRegex ConvertToSymbolicRegex(string regex, RegexOptions options = RegexOptions.None)
+        {
+            //filter out the RightToLeft option that turns around the parse tree
+            //but has no semantical meaning regarding the regex
+            var options1 = (options & ~RegexOptions.RightToLeft);
+
+            RegexTree tree = RegexParser.Parse(regex, options1);
+            var sregex = ConvertNodeToSymbolicRegex(tree._root);
+            return sregex;
+        }
+
+        internal SymbolicRegex ConvertNodeToSymbolicRegex(RegexNode node)
+        {
+            switch (node._type)
+            {
+                case RegexNode.Alternate:
+                    return this.MkChoice(Array.ConvertAll(node._children.ToArray(), ConvertNodeToSymbolicRegex));
+                case RegexNode.Beginning:
+                    throw new NotImplementedException();
+                case RegexNode.Bol:
+                    throw new NotImplementedException();
+                case RegexNode.Capture:  //paranthesis (...)
+                    return ConvertNodeToSymbolicRegex(node.Child(0));
+                case RegexNode.Concatenate:
+                    return this.MkConcat(Array.ConvertAll(node._children.ToArray(), ConvertNodeToSymbolicRegex));
+                case RegexNode.Empty:
+                    return this.MkEpsilon();
+                case RegexNode.End:
+                case RegexNode.EndZ:
+                    throw new NotImplementedException();
+                case RegexNode.Eol:
+                    throw new NotImplementedException();
+                case RegexNode.Lazyloop:
+                case RegexNode.Loop:
+                    return this.MkLoop(ConvertNodeToSymbolicRegex(node._children[0]), node._m, node._n);
+                case RegexNode.Multi:
+                    return ConvertNodeMultiToSymbolicRegex(node);
+                case RegexNode.Notonelazy:
+                case RegexNode.Notone:
+                    return ConvertNodeNotoneToSymbolicRegex(node);
+                case RegexNode.Notoneloop:
+                    return ConvertNodeNotoneloopToSymbolicRegex(node);
+                case RegexNode.Onelazy:
+                case RegexNode.One:
+                    return ConvertNodeOneToSymbolicRegex(node);
+                case RegexNode.Oneloop:
+                    return ConvertNodeOneloopToSymbolicRegex(node);
+                case RegexNode.Setlazy:
+                case RegexNode.Set:
+                    return ConvertNodeSetToSymbolicRegex(node);
+                case RegexNode.Setloop:
+                    return ConvertNodeSetloopToSymbolicRegex(node);
+                case RegexNode.ECMABoundary:
+                case RegexNode.Boundary:
+                    throw new NotImplementedException();
+                case RegexNode.Nothing:
+                    throw new NotImplementedException();
+                //currently not supported cases
+                //case RegexNode.Lazyloop:
+                //throw new AutomataException("Regex construct not supported: lazy constructs *? +? ?? {,}?");
+                //case RegexNode.Notonelazy:
+                //    throw new AutomataException("Regex construct not supported: lazy construct .*?");
+                //case RegexNode.Onelazy:
+                //    throw new AutomataException("Regex construct not supported: lazy construct a*?");
+                //case RegexNode.Setlazy:
+                //    throw new AutomataException(@"Regex construct not supported: lazy construct \d*?");
+                case RegexNode.Nonboundary:
+                case RegexNode.NonECMABoundary:
+                    throw new AutomataException(@"Regex construct not supported: \B");
+                case RegexNode.Greedy:
+                    throw new AutomataException("Regex construct not supported: greedy constructs (?>) (?<)");
+                case RegexNode.Group:
+                    throw new AutomataException("Regex construct not supported: grouping (?:)");
+                case RegexNode.Prevent:
+                    throw new AutomataException("Regex construct not supported: prevent constructs (?!) (?<!)");
+                case RegexNode.Require:
+                    throw new AutomataException("Regex construct not supported: require constructs (?=) (?<=)");
+                case RegexNode.Testgroup:
+                    throw new AutomataException("Regex construct not supported: test construct (?(...) | )");
+                case RegexNode.Testref:
+                    throw new AutomataException("Regex construct not supported: test cosntruct (?(n) | )");
+                case RegexNode.Ref:
+                    throw new AutomataException(@"Regex construct not supported: references \1");
+                case RegexNode.Start:
+                    throw new AutomataException(@"Regex construct not supported: \G");
+                default:
+                    throw new AutomataException(AutomataExceptionKind.UnrecognizedRegex);
+            }
+        }
+
+        #region Character sequences to symbolic regexes
+        /// <summary>
+        /// Sequence of characters in node._str
+        /// </summary>
+        private SymbolicRegex ConvertNodeMultiToSymbolicRegex(RegexNode node)
+        {
+            //sequence of characters
+            string sequence = node._str;
+            int count = sequence.Length;
+            bool ignoreCase = ((node._options & RegexOptions.IgnoreCase) != 0);
+
+            S[] conds = new S[count];
+
+            for (int i = 0; i < count; i++)
+            {
+                List<char[]> ranges = new List<char[]>();
+                char c = sequence[i];
+                ranges.Add(new char[] { c, c });
+                S cond = solver.MkRangesConstraint(ignoreCase, ranges);
+                //TBD: fix the following description
+                if (!description.ContainsKey(cond))
+                    description[cond] = Rex.RexEngine.Escape(c);
+                conds[i] = cond;
+            }
+
+            var regexes = Array.ConvertAll(conds, this.MkSingleton);
+
+            return this.MkConcat(regexes);
+        }
+
+        /// <summary>
+        /// Matches chacter any character except node._ch
+        /// </summary>
+        private SymbolicRegex ConvertNodeNotoneToSymbolicRegex(RegexNode node)
+        {
+            bool ignoreCase = ((node._options & RegexOptions.IgnoreCase) != 0);
+
+            S cond = solver.MkNot(solver.MkCharConstraint(node._ch, ignoreCase));
+
+            if (!description.ContainsKey(cond))
+                description[cond] = string.Format("[^{0}]", Rex.RexEngine.Escape(node._ch));
+
+            return this.MkSingleton(cond);
+        }
+
+        /// <summary>
+        /// Matches only node._ch
+        /// </summary>
+        private SymbolicRegex ConvertNodeOneToSymbolicRegex(RegexNode node)
+        {
+            bool ignoreCase = ((node._options & RegexOptions.IgnoreCase) != 0);
+
+            S cond = solver.MkCharConstraint(node._ch, ignoreCase);
+            if (!description.ContainsKey(cond))
+                description[cond] = Rex.RexEngine.Escape(node._ch);
+
+            return this.MkSingleton(cond);
+        }
+
+        #endregion
+
+        #region special loops
+        private SymbolicRegex ConvertNodeSetToSymbolicRegex(RegexNode node)
+        {
+            //ranges and categories are encoded in set
+            string set = node._str;
+
+            S moveCond = CreateConditionFromSet((node._options & RegexOptions.IgnoreCase) != 0, set);
+
+            if (!description.ContainsKey(moveCond))
+                description[moveCond] = RegexCharClass.SetDescription(set);
+
+            return this.MkSingleton(moveCond);
+        }
+
+        private SymbolicRegex ConvertNodeNotoneloopToSymbolicRegex(RegexNode node)
+        {
+            bool ignoreCase = ((node._options & RegexOptions.IgnoreCase) != 0);
+            S cond = solver.MkNot(solver.MkCharConstraint(node._ch, ignoreCase));
+            if (!description.ContainsKey(cond))
+                description[cond] = string.Format("[^{0}]", Rex.RexEngine.Escape(node._ch));
+
+            SymbolicRegex body = this.MkSingleton(cond);
+            SymbolicRegex loop = this.MkLoop(body, node._m, node._n);
+            return loop;
+        }
+
+        private SymbolicRegex ConvertNodeOneloopToSymbolicRegex(RegexNode node)
+        {
+            bool ignoreCase = ((node._options & RegexOptions.IgnoreCase) != 0);
+            S cond = solver.MkCharConstraint(node._ch, ignoreCase);
+            if (!description.ContainsKey(cond))
+                description[cond] = string.Format("{0}", Rex.RexEngine.Escape(node._ch));
+
+            SymbolicRegex body = this.MkSingleton(cond);
+            SymbolicRegex loop = this.MkLoop(body, node._m, node._n);
+            return loop;
+        }
+
+        private SymbolicRegex ConvertNodeSetloopToSymbolicRegex(RegexNode node)
+        {
+            //ranges and categories are encoded in set
+            string set = node._str;
+
+            S moveCond = CreateConditionFromSet((node._options & RegexOptions.IgnoreCase) != 0, set);
+
+            if (!description.ContainsKey(moveCond))
+                description[moveCond] = RegexCharClass.SetDescription(set);
+
+            SymbolicRegex body = this.MkSingleton(moveCond);
+            SymbolicRegex loop = this.MkLoop(body, node._m, node._n);
+            return loop;
+        }
+
+        #endregion
+
+        /// <summary>
+        /// Make a singleton sequence regex
+        /// </summary>
+        public SymbolicRegex MkSingleton(S set)
+        {
+            return new SymbolicRegexSingleton<S>(set, this.Describe);
+        }
+
+        /// <summary>
+        /// Make a choice regex of given regexes
+        /// </summary>
+        public SymbolicRegex MkChoice(params SymbolicRegex[] regexes)
+        {
+            if (regexes.Length < 1)
+                throw new AutomataException(AutomataExceptionKind.InvalidArgument);
+
+            var sr = regexes[regexes.Length - 1];
+            for (int i = regexes.Length - 2; i >= 0; i--)
+                sr = new SymbolicRegexChoice(regexes[i], sr);
+
+            return sr;
+        }
+
+        /// <summary>
+        /// Make a concatenation of given regexes
+        /// </summary>
+        public SymbolicRegex MkConcat(params SymbolicRegex[] regexes)
+        {
+            if (regexes.Length < 1)
+                throw new AutomataException(AutomataExceptionKind.InvalidArgument);
+
+            var sr = regexes[regexes.Length - 1];
+            for (int i = regexes.Length - 2; i >= 0; i--)
+                sr = new SymbolicRegexConcat(regexes[i], sr);
+
+            return sr;
+        }
+
+        /// <summary>
+        /// Make regex that accepts the empty word
+        /// </summary>
+        public SymbolicRegex MkEpsilon()
+        {
+            return new SymbolicRegexEpsilon();
+        }
+
+        /// <summary>
+        /// Make loop regex
+        /// </summary>
+        public SymbolicRegex MkLoop(SymbolicRegex regex, int lower = 0, int upper = int.MaxValue)
+        {
+            return new SymbolicRegexLoop(regex, lower, upper);
         }
 
         #endregion

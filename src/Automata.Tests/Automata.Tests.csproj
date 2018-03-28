@@ -97,6 +97,7 @@
     <Compile Include="SampleRegexes.cs" />
     <Compile Include="SCCTest.cs" />
     <Compile Include="SpecialRegexTests.cs" />
+    <Compile Include="SymbolicRegexTests.cs" />
     <Compile Include="ThreeAutomataTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="UtilitiesTests.cs" />
