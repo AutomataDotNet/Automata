@@ -342,7 +342,7 @@ namespace Microsoft.Automata.BooleanAlgebras
         /// </summary>
         public static BV128 All0
         {
-            get { return max; }
+            get { return min; }
         }
 
         /// <summary>

@@ -59,8 +59,8 @@ namespace Microsoft.Automata
                 //    return @"\v";
                 //case '\f':
                 //    return @"\f";
-                //case '\n':
-                //    return @"\n";
+                case '\n':
+                    return @"\n";
                 //case '\"':
                 //    return "\\\"";
                 //case '\'':

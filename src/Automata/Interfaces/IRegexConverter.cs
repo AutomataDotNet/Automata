@@ -45,7 +45,7 @@ namespace Microsoft.Automata
         /// <summary>
         /// Make a choice regex of given regexes
         /// </summary>
-        SymbolicRegex<S> MkChoice(params SymbolicRegex<S>[] regexes);
+        SymbolicRegex<S> MkOr(params SymbolicRegex<S>[] regexes);
 
         /// <summary>
         /// Make a concatenation of given regexes

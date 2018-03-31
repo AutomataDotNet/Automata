@@ -134,6 +134,7 @@
     <Compile Include="Internal\UnicodeCategoryTheoryProviders.cs" />
     <Compile Include="RegexExtensionMethods.cs" />
     <Compile Include="SymbolicRegex.cs" />
+    <Compile Include="SymbolicRegexBuilder.cs" />
     <Compile Include="Utilities\AutomataCSharpCompiler.cs" />
     <Compile Include="Utilities\CommandLineParser.cs" />
     <Compile Include="Utilities\CppCodeGenerator.cs" />

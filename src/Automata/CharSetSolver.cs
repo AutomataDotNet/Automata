@@ -381,6 +381,10 @@ namespace Microsoft.Automata
             {
                 return ".";
             }
+            else if (set.IsEmpty)
+            {
+                return "[0-[0]]";
+            }
             if (ComputeDomainSize(MkNot(set)) <= 3)
             {
                 string res = "[^";

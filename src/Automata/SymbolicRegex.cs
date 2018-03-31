@@ -13,9 +13,10 @@ namespace Microsoft.Automata
     {
         Epsilon,
         Singleton,
-        Choice,
-        Concat, 
-        Loop
+        Or,
+        Concat,
+        Loop,
+        IfThenElse
     }
 
     /// <summary>
@@ -33,15 +34,15 @@ namespace Microsoft.Automata
         }
 
         /// <summary>
-        /// Number of unnested alternative branches if this is a choice node. 
-        /// If this is not a choice node then the value is 1.
+        /// Number of unnested alternative branches if this is an or-node. 
+        /// If this is not an or-node then the value is 1.
         /// </summary>
-        public int ChoiceCount
+        public int OrCount
         {
             get
             {
-                if (kind == SymbolicRegexKind.Choice)
-                    return left.ChoiceCount + right.ChoiceCount;
+                if (kind == SymbolicRegexKind.Or)
+                    return left.OrCount + right.OrCount;
                 else
                     return 1;
             }
@@ -49,7 +50,7 @@ namespace Microsoft.Automata
 
         SymbolicRegex<S> left;
         /// <summary>
-        /// Left child of a binary node or the child of a unary node
+        /// Left child of a binary node (the child of a unary node, the true-branch of an Ite-node)
         /// </summary>
         public SymbolicRegex<S> Left
         {
@@ -58,14 +59,14 @@ namespace Microsoft.Automata
 
         SymbolicRegex<S> right;
         /// <summary>
-        /// Right child of a binary node
+        /// Right child of a binary node (the false-branch of an Ite-node)
         /// </summary>
         public SymbolicRegex<S> Right
         {
-            get{ return right; }
+            get { return right; }
         }
 
-        int lower; 
+        int lower;
         /// <summary>
         /// The lower bound of a loop
         /// </summary>
@@ -102,6 +103,16 @@ namespace Microsoft.Automata
         }
         Func<S, string> toString;
 
+
+        SymbolicRegex<S> iteCond;
+        /// <summary>
+        /// IfThenElse condition
+        /// </summary>
+        public SymbolicRegex<S> IteCond
+        {
+            get { return iteCond; }
+        }
+
         /// <summary>
         /// Returns true iff this is a loop whose lower bound is 0 and upper bound is max
         /// </summary>
@@ -127,7 +138,7 @@ namespace Microsoft.Automata
         /// <summary>
         /// Returns true iff this is a loop whose lower bound is 0 and upper bound is 1
         /// </summary>
-        public bool IsOptional
+        public bool IsQM
         {
             get
             {
@@ -135,7 +146,32 @@ namespace Microsoft.Automata
             }
         }
 
-        private SymbolicRegex(SymbolicRegexKind kind, SymbolicRegex<S> left, SymbolicRegex<S> right, int lower, int upper, S set, Func<S, string> toString)
+        internal bool IsSartAnchor
+        {
+            get { return this.lower == -2; }
+        }
+
+        internal bool IsBolAnchor
+        {
+            get { return this.lower == -3; }
+        }
+
+        internal bool IsEndAnchor
+        {
+            get { return this.upper == -2; }
+        }
+
+        internal bool IsEolAnchor
+        {
+            get { return this.upper == -3; }
+        }
+
+        internal bool IsAnchor
+        {
+            get { return IsSartAnchor || IsBolAnchor || IsEndAnchor || IsEolAnchor; }
+        }
+
+        private SymbolicRegex(SymbolicRegexKind kind, SymbolicRegex<S> left, SymbolicRegex<S> right, int lower, int upper, S set, Func<S, string> toString, SymbolicRegex<S> iteCond)
         {
             this.kind = kind;
             this.left = left;
@@ -144,16 +180,36 @@ namespace Microsoft.Automata
             this.upper = upper;
             this.set = set;
             this.toString = toString;
+            this.iteCond = iteCond;
         }
-
         internal static SymbolicRegex<S> MkSingleton(S set, Func<S, string> toString)
         {
-            return new SymbolicRegex<S>(SymbolicRegexKind.Singleton, null, null, -1, -1, set, toString);
+            return new SymbolicRegex<S>(SymbolicRegexKind.Singleton, null, null, -1, -1, set, toString, null);
+        }
+
+        internal static SymbolicRegex<S> MkStartAnchor()
+        {
+            return new SymbolicRegex<S>(SymbolicRegexKind.Epsilon, null, null, -2, -1, default(S), null, null);
+        }
+
+        internal static SymbolicRegex<S> MkEndAnchor()
+        {
+            return new SymbolicRegex<S>(SymbolicRegexKind.Epsilon, null, null, -1, -2, default(S), null, null);
+        }
+
+        internal static SymbolicRegex<S> MkEolAnchor()
+        {
+            return new SymbolicRegex<S>(SymbolicRegexKind.Epsilon, null, null, -1, -3, default(S), null, null);
+        }
+
+        internal static SymbolicRegex<S> MkBolAnchor()
+        {
+            return new SymbolicRegex<S>(SymbolicRegexKind.Epsilon, null, null, -3, -1, default(S), null, null);
         }
 
         internal static SymbolicRegex<S> MkEpsilon()
         {
-            return new SymbolicRegex<S>(SymbolicRegexKind.Epsilon, null, null, -1, -1, default(S), null);
+            return new SymbolicRegex<S>(SymbolicRegexKind.Epsilon, null, null, -1, -1, default(S), null, null);
         }
 
         internal static SymbolicRegex<S> MkLoop(SymbolicRegex<S> body, int lower, int upper)
@@ -161,51 +217,66 @@ namespace Microsoft.Automata
             if (lower < 0 || upper < lower)
                 throw new AutomataException(AutomataExceptionKind.InvalidArgument);
 
-            return new SymbolicRegex<S>(SymbolicRegexKind.Loop, body, null, lower, upper, default(S), null);
+            return new SymbolicRegex<S>(SymbolicRegexKind.Loop, body, null, lower, upper, default(S), null, null);
         }
 
-        internal static SymbolicRegex<S> MkChoice(SymbolicRegex<S> left, SymbolicRegex<S> right)
+        internal static SymbolicRegex<S> MkOr(SymbolicRegex<S> left, SymbolicRegex<S> right)
         {
-            return new SymbolicRegex<S>(SymbolicRegexKind.Choice, left, right, -1, -1, default(S), null);
+            return new SymbolicRegex<S>(SymbolicRegexKind.Or, left, right, -1, -1, default(S), null, null);
         }
 
         internal static SymbolicRegex<S> MkConcat(SymbolicRegex<S> left, SymbolicRegex<S> right)
         {
-            return new SymbolicRegex<S>(SymbolicRegexKind.Concat, left, right, -1, -1, default(S), null);
+            return new SymbolicRegex<S>(SymbolicRegexKind.Concat, left, right, -1, -1, default(S), null, null);
         }
 
+        internal static SymbolicRegex<S> MkIfThenElse(SymbolicRegex<S> cond, SymbolicRegex<S> left, SymbolicRegex<S> right)
+        {
+            return new SymbolicRegex<S>(SymbolicRegexKind.IfThenElse, left, right, -1, -1, default(S), null, cond);
+        }
+
+        /// <summary>
+        /// Produce a string representation of the symbolic regex. 
+        /// </summary>
         public override string ToString()
         {
             switch (kind)
             {
                 case SymbolicRegexKind.Epsilon:
-                    return "()";
+                    if (IsSartAnchor || IsBolAnchor)
+                        return "^";
+                    else if (IsEndAnchor || IsEolAnchor)
+                        return "$";
+                    else
+                        return "()";
                 case SymbolicRegexKind.Singleton:
                     return toString(set);
                 case SymbolicRegexKind.Loop:
                     string s = left.ToString();
-                    if (left.ChoiceCount > 1)
+                    if (left.OrCount > 1 || left.kind == SymbolicRegexKind.Concat)
                         s = "(" + s + ")";
                     if (IsStar)
                         return s + "*";
                     else if (IsPlus)
                         return s + "+";
-                    else if (IsOptional)
+                    else if (IsQM)
                         return s + "?";
                     else
                         return string.Format("{0}{{{1},{2}}}", s, this.lower, this.upper);
                 case SymbolicRegexKind.Concat:
                     string a = left.ToString();
                     string b = right.ToString();
-                    if (left.ChoiceCount > 1)
+                    if (left.OrCount > 1)
                         a = "(" + a + ")";
-                    if (right.ChoiceCount > 1)
+                    if (right.OrCount > 1)
                         b = "(" + b + ")";
                     return a + b;
-                default:
+                case SymbolicRegexKind.Or:
                     return left.ToString() + "|" + right.ToString();
+                default: //ITE 
+                    return string.Format("(?({0}){1}|{2})", iteCond, left, right);
             }
         }
-    }
 
+    }
 }
