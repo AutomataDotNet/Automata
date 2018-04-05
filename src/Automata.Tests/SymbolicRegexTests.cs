@@ -198,5 +198,33 @@ namespace Automata.Tests
             Assert.IsTrue(r4b.ToString().Equals(@"(.*\n)?(\n.*)?"));
             Assert.IsTrue(r4.ToString().Equals(@"(.*\n)?(\n.*)?"));
         }
+
+        [TestMethod]
+        public void TestSymbolicRegexSampler_Completeness()
+        {
+            CharSetSolver solver = new CharSetSolver(BitWidth.BV7);
+            string regex = @"^(a|b)cccc(d|e)kkkk(f|l)$";
+            SymbolicRegexSampler sampler = new SymbolicRegexSampler(regex, solver, 10);
+            Assert.IsTrue(sampler.GetPositiveDataset(1000).Count == 8, "Incomplete Dataset");
+        }
+
+        [TestMethod]
+        public void TestSymbolicRegexSampler_KleeneStar()
+        {
+            CharSetSolver solver = new CharSetSolver(BitWidth.BV7);
+            string regex = @"^(a(b*)c)*$";
+            SymbolicRegexSampler sampler = new SymbolicRegexSampler(regex, solver, 15);
+            Assert.IsTrue(sampler.GetPositiveDataset(1000).Count > 100, "Incomplete Dataset");
+        }
+
+        [TestMethod]
+        public void TestSymbolicRegexSampler_Anchors() 
+        {
+            CharSetSolver solver = new CharSetSolver(BitWidth.BV7);
+            string regex = @"^bcd$";   
+            SymbolicRegexSampler sampler = new SymbolicRegexSampler(regex, solver, 15);
+            Assert.IsTrue(sampler.GetPositiveDataset(1000).Count == 1, "Incorrect Dataset");
+        }
+
     }
 }

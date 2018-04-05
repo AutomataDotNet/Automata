@@ -45,5 +45,46 @@ namespace Automata.Tests
                 Assert.IsNotNull(cpp);
             }
         }
+
+        [TestMethod]
+        public void TestRegexGenerateRandomDataset()
+        { 
+            var regex1 = new Regex(@"^bcd$");
+            var set1 = regex1.GenerateRandomDataSet(100);
+            Assert.IsTrue(set1.Count == 1, "Incorrect Dataset"); 
+            //----
+            var regex2 = new Regex(@"^(\d[\w-[\d]])+$");
+            var set2 = regex2.GenerateRandomDataSet(100,"[0a-d]", 20);
+            Assert.IsTrue(set2.Count == 100);
+            foreach (string s in set2)
+                Assert.IsTrue(Regex.IsMatch(s, "^(0[a-d])+$"), "Incorrect Dataset");
+        }
+
+        [TestMethod]
+        public void TestRegexGenerateRandomDatasetFromComplement()
+        {
+            var regex1 = new Regex(@"^bcd$").Complement();
+            var set1 = regex1.GenerateRandomDataSet(100);
+            Assert.IsTrue(set1.Count == 100, "Incorrect Dataset");
+            //----
+            var regex2 = new Regex(@"^(\d[\w-[\d]])+$").Complement();
+            var set2 = regex2.GenerateRandomDataSet(100);
+            Assert.IsTrue(set2.Count == 100);
+            foreach (string s in set2)
+                Assert.IsTrue(!Regex.IsMatch(s, @"^(\d[\w-[\d]])+$"), "Incorrect Dataset");
+        }
+
+        [TestMethod]
+        public void TestRegexGenerateRandomMember()
+        {
+            var regex = new Regex(@"^(\d[\w-[\d]])+$");
+            for (int i = 0; i < 100; i++)
+            {
+                var s = regex.GenerateRandomMember("[01ab]");
+                Assert.IsTrue(Regex.IsMatch(s, "^([01][ab])+$"));
+                s = regex.GenerateRandomMember("[9a-z]");
+                Assert.IsTrue(Regex.IsMatch(s, "^(9[a-z])+$"));
+            }
+        }
     }
 }

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+
 namespace Microsoft.Automata
 {
     /// <summary>
@@ -24,6 +25,16 @@ namespace Microsoft.Automata
     /// </summary>
     public class SymbolicRegex<S>
     {
+        SymbolicRegexBuilder<S> builder;
+
+        /// <summary>
+        /// Underlying solver
+        /// </summary>
+        public ICharAlgebra<S> Solver
+        {
+            get { return builder.solver; }
+        }
+
         SymbolicRegexKind kind;
         /// <summary>
         /// Gets the kind of the regex
@@ -101,8 +112,6 @@ namespace Microsoft.Automata
                 return set;
             }
         }
-        Func<S, string> toString;
-
 
         SymbolicRegex<S> iteCond;
         /// <summary>
@@ -171,68 +180,81 @@ namespace Microsoft.Automata
             get { return IsSartAnchor || IsBolAnchor || IsEndAnchor || IsEolAnchor; }
         }
 
-        private SymbolicRegex(SymbolicRegexKind kind, SymbolicRegex<S> left, SymbolicRegex<S> right, int lower, int upper, S set, Func<S, string> toString, SymbolicRegex<S> iteCond)
+        /// <summary>
+        /// AST node of a symbolic regex
+        /// </summary>
+        /// <param name="builder">the buiolder</param>
+        /// <param name="kind">what kind of node</param>
+        /// <param name="left">left child</param>
+        /// <param name="right">right child</param>
+        /// <param name="lower">lower bound of a loop</param>
+        /// <param name="upper">upper boubd of a loop</param>
+        /// <param name="set">sinlgelton set</param>
+        /// <param name="toString"></param>
+        /// <param name="iteCond"></param>
+        internal SymbolicRegex(SymbolicRegexBuilder<S> builder, SymbolicRegexKind kind, SymbolicRegex<S> left, SymbolicRegex<S> right, int lower, int upper, S set, SymbolicRegex<S> iteCond)
         {
+            this.builder = builder;
             this.kind = kind;
             this.left = left;
             this.right = right;
             this.lower = lower;
             this.upper = upper;
             this.set = set;
-            this.toString = toString;
             this.iteCond = iteCond;
         }
-        internal static SymbolicRegex<S> MkSingleton(S set, Func<S, string> toString)
+
+        internal static SymbolicRegex<S> MkSingleton(SymbolicRegexBuilder<S> builder, S set)
         {
-            return new SymbolicRegex<S>(SymbolicRegexKind.Singleton, null, null, -1, -1, set, toString, null);
+            return new SymbolicRegex<S>(builder, SymbolicRegexKind.Singleton, null, null, -1, -1, set,  null);
         }
 
-        internal static SymbolicRegex<S> MkStartAnchor()
+        internal static SymbolicRegex<S> MkStartAnchor(SymbolicRegexBuilder<S> builder)
         {
-            return new SymbolicRegex<S>(SymbolicRegexKind.Epsilon, null, null, -2, -1, default(S), null, null);
+            return new SymbolicRegex<S>(builder, SymbolicRegexKind.Epsilon, null, null, -2, -1, default(S), null);
         }
 
-        internal static SymbolicRegex<S> MkEndAnchor()
+        internal static SymbolicRegex<S> MkEndAnchor(SymbolicRegexBuilder<S> builder)
         {
-            return new SymbolicRegex<S>(SymbolicRegexKind.Epsilon, null, null, -1, -2, default(S), null, null);
+            return new SymbolicRegex<S>(builder, SymbolicRegexKind.Epsilon, null, null, -1, -2, default(S), null);
         }
 
-        internal static SymbolicRegex<S> MkEolAnchor()
+        internal static SymbolicRegex<S> MkEolAnchor(SymbolicRegexBuilder<S> builder)
         {
-            return new SymbolicRegex<S>(SymbolicRegexKind.Epsilon, null, null, -1, -3, default(S), null, null);
+            return new SymbolicRegex<S>(builder, SymbolicRegexKind.Epsilon, null, null, -1, -3, default(S), null);
         }
 
-        internal static SymbolicRegex<S> MkBolAnchor()
+        internal static SymbolicRegex<S> MkBolAnchor(SymbolicRegexBuilder<S> builder)
         {
-            return new SymbolicRegex<S>(SymbolicRegexKind.Epsilon, null, null, -3, -1, default(S), null, null);
+            return new SymbolicRegex<S>(builder, SymbolicRegexKind.Epsilon, null, null, -3, -1, default(S), null);
         }
 
-        internal static SymbolicRegex<S> MkEpsilon()
+        internal static SymbolicRegex<S> MkEpsilon(SymbolicRegexBuilder<S> builder)
         {
-            return new SymbolicRegex<S>(SymbolicRegexKind.Epsilon, null, null, -1, -1, default(S), null, null);
+            return new SymbolicRegex<S>(builder, SymbolicRegexKind.Epsilon, null, null, -1, -1, default(S), null);
         }
 
-        internal static SymbolicRegex<S> MkLoop(SymbolicRegex<S> body, int lower, int upper)
+        internal static SymbolicRegex<S> MkLoop(SymbolicRegexBuilder<S> builder, SymbolicRegex<S> body, int lower, int upper)
         {
             if (lower < 0 || upper < lower)
                 throw new AutomataException(AutomataExceptionKind.InvalidArgument);
 
-            return new SymbolicRegex<S>(SymbolicRegexKind.Loop, body, null, lower, upper, default(S), null, null);
+            return new SymbolicRegex<S>(builder, SymbolicRegexKind.Loop, body, null, lower, upper, default(S), null);
         }
 
-        internal static SymbolicRegex<S> MkOr(SymbolicRegex<S> left, SymbolicRegex<S> right)
+        internal static SymbolicRegex<S> MkOr(SymbolicRegexBuilder<S> builder, SymbolicRegex<S> left, SymbolicRegex<S> right)
         {
-            return new SymbolicRegex<S>(SymbolicRegexKind.Or, left, right, -1, -1, default(S), null, null);
+            return new SymbolicRegex<S>(builder, SymbolicRegexKind.Or, left, right, -1, -1, default(S), null);
         }
 
-        internal static SymbolicRegex<S> MkConcat(SymbolicRegex<S> left, SymbolicRegex<S> right)
+        internal static SymbolicRegex<S> MkConcat(SymbolicRegexBuilder<S> builder, SymbolicRegex<S> left, SymbolicRegex<S> right)
         {
-            return new SymbolicRegex<S>(SymbolicRegexKind.Concat, left, right, -1, -1, default(S), null, null);
+            return new SymbolicRegex<S>(builder, SymbolicRegexKind.Concat, left, right, -1, -1, default(S), null);
         }
 
-        internal static SymbolicRegex<S> MkIfThenElse(SymbolicRegex<S> cond, SymbolicRegex<S> left, SymbolicRegex<S> right)
+        internal static SymbolicRegex<S> MkIfThenElse(SymbolicRegexBuilder<S> builder, SymbolicRegex<S> cond, SymbolicRegex<S> left, SymbolicRegex<S> right)
         {
-            return new SymbolicRegex<S>(SymbolicRegexKind.IfThenElse, left, right, -1, -1, default(S), null, cond);
+            return new SymbolicRegex<S>(builder, SymbolicRegexKind.IfThenElse, left, right, -1, -1, default(S), cond);
         }
 
         /// <summary>
@@ -250,7 +272,7 @@ namespace Microsoft.Automata
                     else
                         return "()";
                 case SymbolicRegexKind.Singleton:
-                    return toString(set);
+                    return builder.solver.PrettyPrint(set);
                 case SymbolicRegexKind.Loop:
                     string s = left.ToString();
                     if (left.OrCount > 1 || left.kind == SymbolicRegexKind.Concat)
@@ -278,5 +300,68 @@ namespace Microsoft.Automata
             }
         }
 
+        /// <summary>
+        /// Produce a string representation of the symbolic regex with explicit start and end anchors. 
+        /// </summary>
+        public string ToStringWithAnchors()
+        {
+            return string.Format("^({0})$", this.ToString());
+        }
+
+        /// <summary>
+        /// Transform the symbolic regex so that all singletons have been intersected with the given predicate pred. 
+        /// </summary>
+        public SymbolicRegex<S> Restrict(S pred)
+        {
+            switch (kind)
+            {
+                case SymbolicRegexKind.Epsilon:
+                    return this;
+                case SymbolicRegexKind.Singleton:
+                    {
+                        var newset = builder.solver.MkAnd(this.set, pred);
+                        if (this.set.Equals(newset))
+                            return this;
+                        else
+                            return builder.MkSingleton(newset);
+                    }
+                case SymbolicRegexKind.Loop:
+                    {
+                        var body = this.left.Restrict(pred);
+                        if (body == this.left)
+                            return this;
+                        else
+                            return builder.MkLoop(body, this.lower, this.upper);
+                    }
+                case SymbolicRegexKind.Concat:
+                    {
+                        var first = this.left.Restrict(pred);
+                        var second = this.right.Restrict(pred);
+                        if (first == this.left && second == this.right)
+                            return this;
+                        else
+                            return builder.MkConcat(first, second);
+                    }
+                case SymbolicRegexKind.Or:
+                    {
+                        var first = this.left.Restrict(pred);
+                        var second = this.right.Restrict(pred);
+                        if (first == this.left && second == this.right)
+                            return this;
+                        else
+                            return builder.MkOr(first, second);
+                    }
+                default: //ITE 
+                    {
+                        var truecase = this.left.Restrict(pred);
+                        var falsecase = this.right.Restrict(pred);
+                        var cond = this.iteCond.Restrict(pred);
+                        if (truecase == this.left && falsecase == this.right && cond == this.iteCond)
+                            return this;
+                        else
+                            return builder.MkIfThenElse(cond, truecase, falsecase);
+                    }
+            }
+        }
     }
 }

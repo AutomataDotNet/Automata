@@ -17,7 +17,7 @@ namespace Microsoft.Automata
 
         RegexToAutomatonBuilder<RegexNode, S> automBuilder;
 
-        SymbolicRegexBuilder<RegexNode, S> srBuilder;
+        SymbolicRegexBuilder<S> srBuilder;
 
         /// <summary>
         /// The character solver associated with the regex converter
@@ -44,7 +44,7 @@ namespace Microsoft.Automata
             //description.Add(solver.False, "[0-[0]]");
             description.Add(solver.False, "[]");
             this.automBuilder = new RegexToAutomatonBuilder<RegexNode, S>(solver, ConvertNode);
-            this.srBuilder = new SymbolicRegexBuilder<RegexNode, S>(solver);
+            this.srBuilder = new SymbolicRegexBuilder<S>(solver);
             //this.converterHelper.Callback = (node, start, end) => ConvertNode(node, start, end);
         }
 

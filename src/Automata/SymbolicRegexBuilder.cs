@@ -1,18 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿
 
 namespace Microsoft.Automata
 {
     /// <summary>
-    /// Builder from elements of type T into symbolic regexes over S. 
+    /// Builder of symbolic regexes over S. 
     /// S is the type of elements of an effective Boolean algebra.
-    /// T is the type of an AST of concrete regexes.
-    /// Used as the main building block for converting regexes to symbolic regexes over S.
+    /// Used to convert .NET regexes to symbolic regexes.
     /// </summary>
-    internal class SymbolicRegexBuilder<T,S>
+    internal class SymbolicRegexBuilder<S>
     {
         internal SymbolicRegex<S> epsilon;  
         internal SymbolicRegex<S> startAnchor;
@@ -24,7 +19,7 @@ namespace Microsoft.Automata
         internal SymbolicRegex<S> all;
         internal SymbolicRegex<S> bolRegex;
         internal SymbolicRegex<S> eolRegex;
-        ICharAlgebra<S> solver;
+        internal ICharAlgebra<S> solver;
         //internal SymbolicRegex<S> nothing;
         /// <summary>
         /// Create a new incremental symbolic regex builder.
@@ -34,16 +29,16 @@ namespace Microsoft.Automata
         public SymbolicRegexBuilder(ICharAlgebra<S> solver)
         {
             this.solver = solver;
-            this.epsilon = SymbolicRegex<S>.MkEpsilon();
-            this.startAnchor = SymbolicRegex<S>.MkStartAnchor();
-            this.endAnchor = SymbolicRegex<S>.MkEndAnchor();
-            this.eolAnchor = SymbolicRegex<S>.MkEolAnchor();
-            this.bolAnchor = SymbolicRegex<S>.MkBolAnchor();
-            this.newLine = SymbolicRegex<S>.MkSingleton(solver.MkCharConstraint('\n'), solver.PrettyPrint);
-            this.dot = SymbolicRegex<S>.MkSingleton(solver.True, solver.PrettyPrint);
-            this.all = SymbolicRegex<S>.MkLoop(this.dot, 0, int.MaxValue);
-            this.bolRegex = SymbolicRegex<S>.MkLoop(SymbolicRegex<S>.MkConcat(this.all, this.newLine), 0, 1);
-            this.eolRegex = SymbolicRegex<S>.MkLoop(SymbolicRegex<S>.MkConcat(this.newLine, this.all), 0, 1);
+            this.epsilon = SymbolicRegex<S>.MkEpsilon(this);
+            this.startAnchor = SymbolicRegex<S>.MkStartAnchor(this);
+            this.endAnchor = SymbolicRegex<S>.MkEndAnchor(this);
+            this.eolAnchor = SymbolicRegex<S>.MkEolAnchor(this);
+            this.bolAnchor = SymbolicRegex<S>.MkBolAnchor(this);
+            this.newLine = SymbolicRegex<S>.MkSingleton(this, solver.MkCharConstraint('\n'));
+            this.dot = SymbolicRegex<S>.MkSingleton(this, solver.True);
+            this.all = SymbolicRegex<S>.MkLoop(this, this.dot, 0, int.MaxValue);
+            this.bolRegex = SymbolicRegex<S>.MkLoop(this, SymbolicRegex<S>.MkConcat(this, this.all, this.newLine), 0, 1);
+            this.eolRegex = SymbolicRegex<S>.MkLoop(this, SymbolicRegex<S>.MkConcat(this, this.newLine, this.all), 0, 1);
             //this.nothing = SymbolicRegex<S>.MkSingleton(solver.False, describe);
         }
 
@@ -57,7 +52,7 @@ namespace Microsoft.Automata
 
             var sr = regexes[regexes.Length - 1];
             for (int i = regexes.Length - 2; i >= 0; i--)
-                sr = SymbolicRegex<S>.MkOr(regexes[i], sr);
+                sr = SymbolicRegex<S>.MkOr(this, regexes[i], sr);
 
             return sr;
         }
@@ -85,7 +80,7 @@ namespace Microsoft.Automata
                     }
                     else
                     {
-                        sr = SymbolicRegex<S>.MkConcat(regexes[i], sr);
+                        sr = SymbolicRegex<S>.MkConcat(this, regexes[i], sr);
                     }
                 }
                 return sr;
@@ -97,7 +92,7 @@ namespace Microsoft.Automata
         /// </summary>
         public SymbolicRegex<S> MkLoop(SymbolicRegex<S> regex, int lower = 0, int upper = int.MaxValue)
         {
-            return SymbolicRegex<S>.MkLoop(regex, lower, upper);
+            return SymbolicRegex<S>.MkLoop(this, regex, lower, upper);
         }
 
         /// <summary>
@@ -105,7 +100,7 @@ namespace Microsoft.Automata
         /// </summary>
         public SymbolicRegex<S> MkSingleton(S set)
         {
-            var s = SymbolicRegex<S>.MkSingleton(set, solver.PrettyPrint);
+            var s = new SymbolicRegex<S>(this, SymbolicRegexKind.Singleton, null, null, -1, -1, set, null);
             return s;
         }
 
@@ -118,7 +113,7 @@ namespace Microsoft.Automata
         /// <returns></returns>
         public SymbolicRegex<S> MkIfThenElse(SymbolicRegex<S> cond, SymbolicRegex<S> left, SymbolicRegex<S> right)
         {
-            return SymbolicRegex<S>.MkIfThenElse(cond, left, right);
+            return SymbolicRegex<S>.MkIfThenElse(this, cond, left, right);
         }
 
         internal bool IsAll(SymbolicRegex<S> loop)
