@@ -217,7 +217,7 @@ pip-log.txt
 
 
 #Ingnore key files for signing
-*.snk
+#*.snk
 
 #Ignore binaries
 *.dll

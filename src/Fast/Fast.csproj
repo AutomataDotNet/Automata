@@ -36,7 +36,7 @@
     <SignAssembly>true</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
-    <AssemblyOriginatorKeyFile>AutomataKey.pfx</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>AutomataKey.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <DebugSymbols>true</DebugSymbols>
@@ -116,7 +116,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="AutomataKey.pfx" />
+    <None Include="AutomataKey.snk" />
     <None Include="packages.config" />
     <None Include="parser\fast.lex" />
     <None Include="parser\fast.y" />

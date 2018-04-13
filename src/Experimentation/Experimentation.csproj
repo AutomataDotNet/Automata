@@ -36,7 +36,7 @@
     <SignAssembly>true</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
-    <AssemblyOriginatorKeyFile>AutomataKey.pfx</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>AutomataKey.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <DebugSymbols>true</DebugSymbols>
@@ -89,7 +89,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
-    <None Include="AutomataKey.pfx" />
+    <None Include="AutomataKey.snk" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

@@ -111,7 +111,7 @@ namespace Microsoft.Automata
                 {
                     var nfa = this.CreateNFA();
                     //try to determinize with 1sec timeout
-                    var dfa = nfa.RemoveEpsilons().Determinize(Manager.Timeout);
+                    var dfa = nfa.Determinize(Manager.Timeout);
                     //minimize
                     var mfa = dfa.Minimize();
                     //return false if the state limit is violated

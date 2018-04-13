@@ -166,5 +166,17 @@ namespace Automata.Tests
             }
             Assert.IsTrue(t > 1000);
         }
+
+        [TestMethod]
+        public void TestPerformanceRegressionOfBigChoice()
+        {
+            CharSetSolver css = new CharSetSolver();
+            Regex testregex = new Regex(@"(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eightteen|nineteen|twenty)", RegexOptions.IgnoreCase);
+            var aut = css.Convert(testregex.ToString(), testregex.Options);
+
+            var matcher = aut.Determinize().Minimize().Compile();
+            var regexc = testregex.Compile();
+            //aut.ShowGraph();
+        }
     }
 }

@@ -33,7 +33,7 @@
     <SignAssembly>true</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
-    <AssemblyOriginatorKeyFile>AutomataKey.pfx</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>AutomataKey.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <DebugSymbols>true</DebugSymbols>
@@ -96,7 +96,7 @@
     <Compile Include="Z3Provider.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="AutomataKey.pfx" />
+    <None Include="AutomataKey.snk" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

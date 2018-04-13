@@ -51,7 +51,7 @@
     <SignAssembly>true</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
-    <AssemblyOriginatorKeyFile>AutomataKey.pfx</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>AutomataKey.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <DebugSymbols>true</DebugSymbols>
@@ -92,7 +92,7 @@
     <Compile Include="Variable.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="AutomataKey.pfx" />
+    <None Include="AutomataKey.snk" />
     <None Include="Mona\genparser.bat" />
     <None Include="packages.config" />
   </ItemGroup>
