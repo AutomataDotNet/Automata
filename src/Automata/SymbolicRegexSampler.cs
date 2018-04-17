@@ -185,7 +185,6 @@ namespace Microsoft.Automata
         public HashSet<string> GetPositiveDataset(int sampleNum)
         {
             HashSet<string> dataset = new HashSet<string>();
-            int i = 0;
 
             int totalTries = maxSamplingIter * sampleNum;
             // We iterate this loop at most totalTries to collect the request nr of samples
@@ -201,7 +200,6 @@ namespace Microsoft.Automata
         {
             HashSet<string> dataset = new HashSet<string>();
             string negRE = solver.ConvertToRegex(solver.Convert(regex).Complement());
-            int i = 0;
 
             // Invert the regex by converting to SFA and complementing and back to RE
             var root = solver.RegexConverter.ConvertToSymbolicRegex(negRE);

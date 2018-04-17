@@ -69,19 +69,19 @@ namespace Automata.Tests
             Assert.IsTrue(abc.ToString() == "a|b*|c+");
             //--------
             var r5 = css.RegexConverter.ConvertToSymbolicRegex("^[a-z]?$");
-            Assert.IsTrue(r5.IsQM);
+            Assert.IsTrue(r5.IsMaybe);
             Assert.IsTrue(!r5.IsStar);
             Assert.IsTrue(!r5.IsPlus);
             Assert.IsTrue(r5.LowerBound == 0 && r5.UpperBound == 1 && r5.Kind == SymbolicRegexKind.Loop);
             //--------
             var r6 = css.RegexConverter.ConvertToSymbolicRegex("^[a-z]+$");
-            Assert.IsTrue(!r6.IsQM);
+            Assert.IsTrue(!r6.IsMaybe);
             Assert.IsTrue(!r6.IsStar);
             Assert.IsTrue(r6.IsPlus);
             Assert.IsTrue(r6.LowerBound == 1 && r6.UpperBound == int.MaxValue && r6.Kind == SymbolicRegexKind.Loop);
             //--------
             var r7 = css.RegexConverter.ConvertToSymbolicRegex("^[a-[a]]*$");
-            Assert.IsTrue(!r7.IsQM);
+            Assert.IsTrue(!r7.IsMaybe);
             Assert.IsTrue(r7.IsStar);
             Assert.IsTrue(!r7.IsPlus);
             Assert.IsTrue(r7.LowerBound == 0 && r7.UpperBound == int.MaxValue && r7.Kind == SymbolicRegexKind.Loop);
@@ -113,35 +113,108 @@ namespace Automata.Tests
         }
 
         [TestMethod]
-        public void TestSampleSymbolicRegexesErrorCases()
+        public void TestSampleSymbolicRegexesBasicConstructsKeepAnchors()
         {
-            try
-            {
-                CharSetSolver css = new CharSetSolver(BitWidth.BV7);
-                var r0 = css.RegexConverter.ConvertToSymbolicRegex("^a^b");
-            }
-            catch (AutomataException e)
-            {
-                Assert.IsTrue(e.kind == AutomataExceptionKind.MisplacedStartAnchor);
-            }
-            try
-            {
-                CharSetSolver css = new CharSetSolver(BitWidth.BV7);
-                var r0 = css.RegexConverter.ConvertToSymbolicRegex("a$b");
-            }
-            catch (AutomataException e)
-            {
-                Assert.IsTrue(e.kind == AutomataExceptionKind.MisplacedEndAnchor);
-            }
-            try
-            {
-                CharSetSolver css = new CharSetSolver(BitWidth.BV7);
-                var r0 = css.RegexConverter.ConvertToSymbolicRegex("$^");
-            }
-            catch (AutomataException e)
-            {
-                Assert.IsTrue(e.kind == AutomataExceptionKind.MisplacedEndAnchor || e.kind == AutomataExceptionKind.MisplacedStartAnchor);
-            }
+            CharSetSolver css = new CharSetSolver(BitWidth.BV16);
+            var r0 = css.RegexConverter.ConvertToSymbolicRegex("",RegexOptions.None,true);
+            Assert.IsTrue(r0.ToString().Equals("()"));
+            //--------
+            var r0a = css.RegexConverter.ConvertToSymbolicRegex("^", RegexOptions.None, true);
+            Assert.IsTrue(r0a.ToString().Equals("^"));
+            //--------
+            var r0b = css.RegexConverter.ConvertToSymbolicRegex("$", RegexOptions.None, true);
+            Assert.IsTrue(r0b.ToString().Equals("$"));
+            //--------
+            var r0e = css.RegexConverter.ConvertToSymbolicRegex("^$", RegexOptions.None, true);
+            Assert.IsTrue(r0e.ToString().Equals("^$"));
+            //--------
+            var r1 = css.RegexConverter.ConvertToSymbolicRegex("^abc$", RegexOptions.None, true);
+            Assert.IsTrue(r1.ToString().Equals("^abc$"));
+            //--------
+            var r1b = css.RegexConverter.ConvertToSymbolicRegex("^abc", RegexOptions.None, true);
+            Assert.IsTrue(r1b.ToString().Equals("^abc"));
+            //--------
+            var r1c = css.RegexConverter.ConvertToSymbolicRegex("abc$", RegexOptions.None, true);
+            Assert.IsTrue(r1c.ToString().Equals("abc$"));
+            //--------
+            var r2 = css.RegexConverter.ConvertToSymbolicRegex(@"^\w\d*$", RegexOptions.None, true);
+            Assert.IsTrue(r2.ToString().Equals(@"^\w\d*$"));
+            Assert.IsTrue(r2.Kind == SymbolicRegexKind.Concat);
+            Assert.IsTrue(r2.Left.Kind == SymbolicRegexKind.StartAnchor);
+            Assert.IsTrue(r2.Right.Kind == SymbolicRegexKind.Concat);
+            //--------
+            var r3 = css.RegexConverter.ConvertToSymbolicRegex(@"^(a|((b)|(c)|(d))|[e-x])$", RegexOptions.None, true);
+            Assert.IsTrue(r3.Right.Left.Kind == SymbolicRegexKind.Or);
+            Assert.IsTrue(r3.Right.Left.OrCount == 5);
+            Assert.IsTrue(r3.ToString().Equals(@"^(a|b|c|d|[e-x])$"));
+            //--------
+            var r4 = css.RegexConverter.ConvertToSymbolicRegex(@"^[a-x]{0,5}", RegexOptions.None, true);
+            Assert.IsTrue(r4.Kind == SymbolicRegexKind.Concat);
+            Assert.IsTrue(r4.OrCount == 1);
+            Assert.IsTrue(r4.ToString().Equals(@"^[a-x]{0,5}"));
+            Assert.IsTrue(r4.Left.IsSartAnchor);
+            //--------
+            var a = css.RegexConverter.ConvertToSymbolicRegex("a", RegexOptions.None, true);
+            var bstar = css.RegexConverter.ConvertToSymbolicRegex("b*", RegexOptions.None, true);
+            var cplus = css.RegexConverter.ConvertToSymbolicRegex("c+", RegexOptions.None, true);
+            var abc = css.RegexConverter.MkOr(a, bstar, cplus);
+            Assert.IsTrue(abc.OrCount == 3);
+            Assert.IsTrue(abc.Kind == SymbolicRegexKind.Or);
+            Assert.IsTrue(abc.ToString() == "a|b*|c+");
+            //--------
+            var r5 = css.RegexConverter.ConvertToSymbolicRegex("[a-z]?", RegexOptions.None, true);
+            Assert.IsTrue(r5.IsMaybe);
+            Assert.IsTrue(!r5.IsStar);
+            Assert.IsTrue(!r5.IsPlus);
+            Assert.IsTrue(r5.LowerBound == 0 && r5.UpperBound == 1 && r5.Kind == SymbolicRegexKind.Loop);
+            //--------
+            var r6 = css.RegexConverter.ConvertToSymbolicRegex("[a-z]+", RegexOptions.None, true);
+            Assert.IsTrue(!r6.IsMaybe);
+            Assert.IsTrue(!r6.IsStar);
+            Assert.IsTrue(r6.IsPlus);
+            Assert.IsTrue(r6.LowerBound == 1 && r6.UpperBound == int.MaxValue && r6.Kind == SymbolicRegexKind.Loop);
+            //--------
+            var r7 = css.RegexConverter.ConvertToSymbolicRegex("[a-[a]]*", RegexOptions.None, true);
+            Assert.IsTrue(!r7.IsMaybe);
+            Assert.IsTrue(r7.IsStar);
+            Assert.IsTrue(!r7.IsPlus);
+            Assert.IsTrue(r7.LowerBound == 0 && r7.UpperBound == int.MaxValue && r7.Kind == SymbolicRegexKind.Loop);
+            //---------
+            var r8 = css.RegexConverter.ConvertToSymbolicRegex(@"(?(.*A.*).*B.*|.*C.*)", RegexOptions.Singleline, true);
+            Assert.IsTrue(r8.Kind == SymbolicRegexKind.IfThenElse);
+            Assert.AreEqual<string>(@"(?(.*A.*).*B.*|.*C.*)", r8.ToString());
+            //---------
+            var r8b = css.RegexConverter.ConvertToSymbolicRegex(@"(?(A)B|C)", RegexOptions.Singleline, true);
+            Assert.IsTrue(r8b.Kind == SymbolicRegexKind.IfThenElse);
+            Assert.AreEqual<string>(@"(?(A)B|C)", r8b.ToString());
+            //---------
+            var r8c = css.RegexConverter.ConvertToSymbolicRegex(@"^(?(A)B|C)", RegexOptions.Singleline, true);
+            Assert.IsTrue(r8c.Right.Kind == SymbolicRegexKind.IfThenElse);
+            Assert.AreEqual<string>(@"^(?(A)B|C)", r8c.ToString());
+            //---------
+            var r8d = css.RegexConverter.ConvertToSymbolicRegex(@"(?(A)B|C)$", RegexOptions.Singleline, true);
+            Assert.IsTrue(r8d.Left.Kind == SymbolicRegexKind.IfThenElse);
+            Assert.AreEqual<string>(@"(?(A)B|C)$", r8d.ToString());
+            //--------
+            var r9 = css.RegexConverter.ConvertToSymbolicRegex(@"()()", RegexOptions.Singleline, true);
+            Assert.IsTrue(r9.Kind == SymbolicRegexKind.Epsilon);
+            Assert.AreEqual<string>(@"()", r9.ToString());
+            //-----
+            var a_complement = css.RegexConverter.ConvertToSymbolicRegex(@"(?(a)[1-[1]]|.*)", RegexOptions.Singleline,true);
+            Assert.IsTrue(a_complement.Kind == SymbolicRegexKind.IfThenElse);
+            Assert.AreEqual<string>(@"(?(a)[0-[0]]|.*)", a_complement.ToString());
+            //-----
+        }
+
+        [TestMethod]
+        public void TestSampleSymbolicRegexesWithMisplacedAnchors()
+        {
+            CharSetSolver css = new CharSetSolver(BitWidth.BV7);
+            var regex = new Regex("$.+", RegexOptions.Singleline);
+            Assert.IsFalse(regex.IsMatch(""));
+            Assert.IsFalse(regex.IsMatch("ab"));
+            var sregex = css.RegexConverter.ConvertToSymbolicRegex(regex, true);
+            Assert.AreEqual(sregex.ToString(), "$.+");
         }
 
         [TestMethod]
@@ -223,7 +296,16 @@ namespace Automata.Tests
             CharSetSolver solver = new CharSetSolver(BitWidth.BV7);
             string regex = @"^bcd$";   
             SymbolicRegexSampler sampler = new SymbolicRegexSampler(regex, solver, 15);
-            Assert.IsTrue(sampler.GetPositiveDataset(1000).Count == 1, "Incorrect Dataset");
+        }
+
+        [TestMethod]
+        public void TestSymbolicRegex_Restrict()
+        {
+            CharSetSolver solver = new CharSetSolver();
+            var regex = new Regex("^([5-8]|[d-g]+)+([a-k]|()|[1-9][1-9])(?(d)[de]|f)(?([a-k])[de]|f)def[a-g]*(e|8)+$");
+            var sr = solver.RegexConverter.ConvertToSymbolicRegex(regex, true);
+            var sr1 = sr.Restrict(solver.MkCharSetFromRegexCharClass("[d-x0-8]"));
+            Assert.IsTrue(sr1.ToString() == "^([5-8]|[d-g]+)+([d-k]|()|[1-8][1-8])(?(d)[de]|f)(?([d-k])[de]|f)def[d-g]*[8e]+$");
         }
 
     }

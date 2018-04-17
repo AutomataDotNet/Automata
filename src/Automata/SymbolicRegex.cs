@@ -12,6 +12,8 @@ namespace Microsoft.Automata
     /// </summary>
     public enum SymbolicRegexKind
     {
+        StartAnchor,
+        EndAnchor,
         Epsilon,
         Singleton,
         Or,
@@ -147,7 +149,7 @@ namespace Microsoft.Automata
         /// <summary>
         /// Returns true iff this is a loop whose lower bound is 0 and upper bound is 1
         /// </summary>
-        public bool IsQM
+        public bool IsMaybe
         {
             get
             {
@@ -155,43 +157,90 @@ namespace Microsoft.Automata
             }
         }
 
-        internal bool IsSartAnchor
+        /// <summary>
+        /// Returns true iff this is a start-anchor
+        /// </summary>
+        public bool IsSartAnchor
+        {
+            get { return this.kind == SymbolicRegexKind.StartAnchor; }
+        }
+
+        /// <summary>
+        /// Returns true iff this is an anchor for detecting start of line (including first line or start of input)
+        /// </summary>
+        public bool IsStartOfLineAnchor
         {
             get { return this.lower == -2; }
         }
 
-        internal bool IsBolAnchor
+        /// <summary>
+        /// Returns true iff this is an anchor for detecting end of input
+        /// </summary>
+        public bool IsEndAnchor
         {
-            get { return this.lower == -3; }
+            get { return this.kind == SymbolicRegexKind.EndAnchor; }
         }
 
-        internal bool IsEndAnchor
+        /// <summary>
+        /// Returns true iff this is an anchor for detecting end of line (including last line or end of input)
+        /// </summary>
+        public bool IsEndOfLineAnchor
         {
             get { return this.upper == -2; }
         }
 
-        internal bool IsEolAnchor
+        /// <summary>
+        /// Returns true iff this is either a start-anchor or an end-anchor
+        /// </summary>
+        public bool IsAnchor
         {
-            get { return this.upper == -3; }
+            get { return IsSartAnchor || IsEndAnchor; }
         }
 
-        internal bool IsAnchor
+        /// <summary>
+        /// Returns true if this is a .*
+        /// </summary>
+        public bool IsAll
         {
-            get { return IsSartAnchor || IsBolAnchor || IsEndAnchor || IsEolAnchor; }
+            get
+            {
+                return this.IsStar && this.Left.Kind == SymbolicRegexKind.Singleton && this.builder.solver.True.Equals(this.Left.Set);
+            }
+        }
+
+        /// <summary>
+        /// Returns true if this is as singleton whose set is empty
+        /// </summary>
+        public bool IsNothing
+        {
+            get
+            {
+                return this.kind == SymbolicRegexKind.Singleton && this.builder.solver.False.Equals(this.Set);
+            }
+        }
+
+        /// <summary>
+        /// Returns true if this kind is Epsilon
+        /// </summary>
+        public bool IsEpsilon
+        {
+            get
+            {
+                return this.kind == SymbolicRegexKind.Epsilon;
+            }
         }
 
         /// <summary>
         /// AST node of a symbolic regex
         /// </summary>
-        /// <param name="builder">the buiolder</param>
+        /// <param name="builder">the builder</param>
         /// <param name="kind">what kind of node</param>
         /// <param name="left">left child</param>
         /// <param name="right">right child</param>
         /// <param name="lower">lower bound of a loop</param>
         /// <param name="upper">upper boubd of a loop</param>
-        /// <param name="set">sinlgelton set</param>
-        /// <param name="toString"></param>
-        /// <param name="iteCond"></param>
+        /// <param name="set">singelton set</param>
+        /// <param name="iteCond">if-then-else condition</param>
         internal SymbolicRegex(SymbolicRegexBuilder<S> builder, SymbolicRegexKind kind, SymbolicRegex<S> left, SymbolicRegex<S> right, int lower, int upper, S set, SymbolicRegex<S> iteCond)
         {
             this.builder = builder;
@@ -211,22 +260,22 @@ namespace Microsoft.Automata
 
         internal static SymbolicRegex<S> MkStartAnchor(SymbolicRegexBuilder<S> builder)
         {
-            return new SymbolicRegex<S>(builder, SymbolicRegexKind.Epsilon, null, null, -2, -1, default(S), null);
+            return new SymbolicRegex<S>(builder, SymbolicRegexKind.StartAnchor, null, null, -1, -1, default(S), null);
         }
 
         internal static SymbolicRegex<S> MkEndAnchor(SymbolicRegexBuilder<S> builder)
         {
-            return new SymbolicRegex<S>(builder, SymbolicRegexKind.Epsilon, null, null, -1, -2, default(S), null);
+            return new SymbolicRegex<S>(builder, SymbolicRegexKind.EndAnchor, null, null, -1, -1, default(S), null);
         }
 
         internal static SymbolicRegex<S> MkEolAnchor(SymbolicRegexBuilder<S> builder)
         {
-            return new SymbolicRegex<S>(builder, SymbolicRegexKind.Epsilon, null, null, -1, -3, default(S), null);
+            return new SymbolicRegex<S>(builder, SymbolicRegexKind.EndAnchor, null, null, -1, -2, default(S), null);
         }
 
         internal static SymbolicRegex<S> MkBolAnchor(SymbolicRegexBuilder<S> builder)
         {
-            return new SymbolicRegex<S>(builder, SymbolicRegexKind.Epsilon, null, null, -3, -1, default(S), null);
+            return new SymbolicRegex<S>(builder, SymbolicRegexKind.StartAnchor, null, null, -2, -1, default(S), null);
         }
 
         internal static SymbolicRegex<S> MkEpsilon(SymbolicRegexBuilder<S> builder)
@@ -264,13 +313,12 @@ namespace Microsoft.Automata
         {
             switch (kind)
             {
+                case SymbolicRegexKind.StartAnchor:
+                    return "^";
+                case SymbolicRegexKind.EndAnchor:
+                    return "$";
                 case SymbolicRegexKind.Epsilon:
-                    if (IsSartAnchor || IsBolAnchor)
-                        return "^";
-                    else if (IsEndAnchor || IsEolAnchor)
-                        return "$";
-                    else
-                        return "()";
+                    return "()";
                 case SymbolicRegexKind.Singleton:
                     return builder.solver.PrettyPrint(set);
                 case SymbolicRegexKind.Loop:
@@ -281,7 +329,7 @@ namespace Microsoft.Automata
                         return s + "*";
                     else if (IsPlus)
                         return s + "+";
-                    else if (IsQM)
+                    else if (IsMaybe)
                         return s + "?";
                     else
                         return string.Format("{0}{{{1},{2}}}", s, this.lower, this.upper);
@@ -315,6 +363,8 @@ namespace Microsoft.Automata
         {
             switch (kind)
             {
+                case SymbolicRegexKind.StartAnchor:
+                case SymbolicRegexKind.EndAnchor:
                 case SymbolicRegexKind.Epsilon:
                     return this;
                 case SymbolicRegexKind.Singleton:

@@ -649,212 +649,35 @@ namespace Microsoft.Automata
         /// Convert a regex pattern to an equivalent symbolic regex
         /// </summary>
         /// <param name="regex">the given .NET regex pattern</param>
-        /// <param name="options">regular expression options for the pattern (default is RegexOptions.Singleline)</param>
-        public SymbolicRegex<S> ConvertToSymbolicRegex(string regex, RegexOptions options = RegexOptions.Singleline)
+        /// <param name="options">regular expression options for the pattern (default is RegexOptions.None)</param>
+        /// <param name="keepAnchors">if false (default) then anchors are replaced by equivalent regexes</param>
+        public SymbolicRegex<S> ConvertToSymbolicRegex(string regex, RegexOptions options = RegexOptions.None, bool keepAnchors = false)
         {
             //filter out the RightToLeft option that turns around the parse tree
             //but has no semantical meaning regarding the regex
             var options1 = (options & ~RegexOptions.RightToLeft);
 
             RegexTree tree = RegexParser.Parse(regex, options1);
-            var tmp_sregex = ConvertNodeToSymbolicRegex(tree._root);
-            //remove temporary anchors
-            return ProcessAnchors(tmp_sregex, true, true);
-        }
-
-        /// <summary>
-        /// Convert a .NET regex to an equivalent symbolic regex
-        /// </summary>
-        public SymbolicRegex<S> ConvertToSymbolicRegex(Regex regex)
-        {
-            return ConvertToSymbolicRegex(regex.ToString(), regex.Options);
-        }
-
-        /// <summary>
-        /// Goes over the symbolic regex, removes anchors, and adds .* if anchors were not present
-        /// </summary>
-        private SymbolicRegex<S> ProcessAnchors(SymbolicRegex<S> sr, bool isBeg, bool isEnd)
-        {
-            switch (sr.Kind)
+            var sregex = ConvertNodeToSymbolicRegex(tree._root);
+            if (keepAnchors)
             {
-                case SymbolicRegexKind.Concat:
-                    {
-                        #region concat
-                        var left = ProcessAnchors(sr.Left, isBeg, false);
-                        var right = ProcessAnchors(sr.Right, false, isEnd);
-                        //empty language concatenated with anything else reduces to empty language
-                        if (this.srBuilder.IsNothing(left))
-                        {
-                            return left;
-                        }
-                        else if (this.srBuilder.IsNothing(right))
-                        {
-                            return right;
-                        }
-                        else if (this.srBuilder.IsAll(left) && this.srBuilder.IsAll(right))
-                        {
-                            //.*.* simplifies to .*
-                            return left;
-                        }
-                        else if (left.Kind == SymbolicRegexKind.Epsilon)
-                        {
-                            //()r simplifies to r
-                            return right;
-                        }
-                        else if (right.Kind == SymbolicRegexKind.Epsilon)
-                        {
-                            //l() simplifies to l
-                            return left;
-                        }
-                        else if (left == sr.Left && right == sr.Right)
-                        {
-                            //there was no change
-                            return sr;
-                        }
-                        else
-                        { 
-                            return this.srBuilder.MkConcat(left, right);
-                        }
-                        #endregion
-                    }
-                case SymbolicRegexKind.Epsilon: 
-                    {
-                        if (sr.IsAnchor)
-                        {
-                            #region anchors
-                            if (sr.IsSartAnchor)
-                            {
-                                if (isBeg) //^ at the beginning
-                                {
-                                    if (isEnd) //^ also at the end
-                                        return this.srBuilder.all;
-                                    else
-                                        return this.srBuilder.epsilon;
-                                }
-                                else
-                                    throw new AutomataException(AutomataExceptionKind.MisplacedStartAnchor);
-                            }
-                            else if (sr.IsEndAnchor)
-                            {
-                                if (isEnd) //$ at the end
-                                {
-                                    if (isBeg) //$ also at the beginning
-                                        return this.srBuilder.all;
-                                    else
-                                        return this.srBuilder.epsilon;
-                                }
-                                else
-                                    throw new AutomataException(AutomataExceptionKind.MisplacedEndAnchor);
-                            }
-                            else if (sr.IsBolAnchor)
-                            {
-                                if (isBeg) //^ at the beginning
-                                {
-                                    if (isEnd) //^ also at the end
-                                        return this.srBuilder.all;
-                                    else
-                                        return this.srBuilder.bolRegex;
-                                }
-                                else
-                                    throw new AutomataException(AutomataExceptionKind.MisplacedStartAnchor);
-                            }
-                            else //sr.IsEolAnchor
-                            {
-                                if (isEnd) //$ at the end
-                                {
-                                    if (isBeg) //$ also at the beginning
-                                        return this.srBuilder.all;
-                                    else
-                                        return this.srBuilder.eolRegex;
-                                }
-                                else
-                                    throw new AutomataException(AutomataExceptionKind.MisplacedEndAnchor);
-                            }
-                            #endregion
-                        }
-                        else
-                        {
-                            #region epsilon
-                            if (isBeg || isEnd)
-                            {
-                                //this is the start or the end but there is no anchor so return .*
-                                return this.srBuilder.all;
-                            }
-                            else
-                            {
-                                //just return ()
-                                return sr;
-                            }
-                            #endregion
-                        }
-                    }
-                case SymbolicRegexKind.IfThenElse:
-                    {
-                        #region ite
-                        var left = ProcessAnchors(sr.Left, isBeg, isEnd);
-                        var right = ProcessAnchors(sr.Right, isBeg, isEnd);
-                        var cond = ProcessAnchors(sr.IteCond, isBeg, isEnd);
-                        if (left == sr.Left && right == sr.Right && sr.IteCond == cond)
-                            return sr;
-                        else
-                        {
-                            return this.srBuilder.MkIfThenElse(cond, left, right);
-                        }
-                        #endregion
-                    }
-                case SymbolicRegexKind.Loop:
-                    {
-                        #region loop
-                        //this call only verifies absense of start and end anchors inside the loop body (Left)
-                        //because any anchor causes an exception
-                        ProcessAnchors(sr.Left, false, false);
-                        var loop = sr;
-                        if (this.srBuilder.IsAll(loop))
-                        {
-                            return loop;
-                        }
-                        if (isEnd)
-                        {
-                            loop = MkConcat(loop, this.srBuilder.all);
-                        }
-                        if (isBeg)
-                        {
-                            loop = MkConcat(this.srBuilder.all, loop);
-                        }
-                        return loop;
-                        #endregion
-                    }
-                case SymbolicRegexKind.Or:
-                    {
-                        #region or
-                        var left = ProcessAnchors(sr.Left, isBeg, isEnd);
-                        var right = ProcessAnchors(sr.Right, isBeg, isEnd);
-                        if (left == sr.Left && right == sr.Right)
-                            return sr;
-                        else
-                        {
-                            return this.srBuilder.MkOr(left, right);
-                        }
-                        #endregion
-                    }
-                default: // SymbolicRegexKind.Singleton:
-                    {
-                        #region singleton
-                        var res = sr;
-                        if (isEnd)
-                        {
-                            //add .* at the end
-                            res = this.srBuilder.MkConcat(res, this.srBuilder.all);
-                        }
-                        if (isBeg)
-                        {
-                            //add .* at the beginning
-                            res = this.srBuilder.MkConcat(this.srBuilder.all, res);
-                        }
-                        return res;
-                        #endregion
-                    }
+                return sregex;
             }
+            else
+            {
+                //remove all anchors
+                return this.srBuilder.RemoveAnchors(sregex, true, true);
+            }
+        }
+
+        /// <summary>
+        /// Convert a .NET regex into an equivalent symbolic regex
+        /// </summary>
+        /// <param name="regex">the given .NET regex</param>
+        /// <param name="keepAnchors">if false (default) then anchors are replaced by equivalent regexes</param>
+        public SymbolicRegex<S> ConvertToSymbolicRegex(Regex regex, bool keepAnchors = false)
+        {
+            return ConvertToSymbolicRegex(regex.ToString(), regex.Options, keepAnchors);
         }
 
         internal SymbolicRegex<S> ConvertNodeToSymbolicRegex(RegexNode node)
@@ -1091,6 +914,18 @@ namespace Microsoft.Automata
         {
             return this.srBuilder.MkLoop(regex, lower, upper);
         }
+
+        public SymbolicRegex<S> MkStartAnchor()
+        {
+            return this.srBuilder.MkStartAnchor();
+        }
+
+        public SymbolicRegex<S> MkEndAnchor()
+        {
+            return this.srBuilder.MkEndAnchor();
+        }
+
+
 
         #endregion
     }

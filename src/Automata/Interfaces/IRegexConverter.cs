@@ -34,7 +34,15 @@ namespace Microsoft.Automata
         /// </summary>
         /// <param name="regex">given regex</param>
         /// <param name="options">regex options</param>
-        SymbolicRegex<S> ConvertToSymbolicRegex(string regex, RegexOptions options = RegexOptions.None);
+        /// <param name="keepAnchors">if true then start and end anchors are not eliminated (default is false)</param>
+        SymbolicRegex<S> ConvertToSymbolicRegex(string regex, RegexOptions options = RegexOptions.None, bool keepAnchors = false);
+
+        /// <summary>
+        /// Convert given regex to a symbolic regex AST
+        /// </summary>
+        /// <param name="regex">given .NET regex</param>
+        /// <param name="keepAnchors">if true then start and end anchors are not eliminated, else (default) anchors are eliminated and replaced by equivalent regexes and resulting symbolic regex will have implicit start and end anchors</param>
+        SymbolicRegex<S> ConvertToSymbolicRegex(Regex regex, bool keepAnchors = false);
 
         /// <summary>
         /// Convert a set into a singleton regex
@@ -58,9 +66,22 @@ namespace Microsoft.Automata
         SymbolicRegex<S> MkEpsilon();
 
         /// <summary>
-        /// Make loop regex
+        /// Make a loop with lower and upper bound, 
+        /// lower=0 and upper=int.MaxValue means (...)*, 
+        /// lower=1 and upper=int.MaxValue means (...)+,
+        /// lower=0 and upper=1 means (...)?
         /// </summary>
         SymbolicRegex<S> MkLoop(SymbolicRegex<S> regex, int lower = 0, int upper = int.MaxValue);
+
+        /// <summary>
+        /// Make start anchor
+        /// </summary>
+        SymbolicRegex<S> MkStartAnchor();
+
+        /// <summary>
+        /// Make end anchor
+        /// </summary>
+        SymbolicRegex<S> MkEndAnchor();
     }
 
 }

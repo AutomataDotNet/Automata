@@ -51,13 +51,22 @@ namespace Automata.Tests
         { 
             var regex1 = new Regex(@"^bcd$");
             var set1 = regex1.GenerateRandomDataSet(100);
-            Assert.IsTrue(set1.Count == 1, "Incorrect Dataset"); 
+            Assert.IsTrue(set1.Count == 1, "Incorrect Dataset");
+            var regex1a = new Regex(@"^b(c|C)d$");
+            var set1a = regex1a.GenerateRandomDataSet(100);
+            Assert.IsTrue(set1a.Count == 2, "Incorrect Dataset");
+            var regex1b = new Regex(@"(?i:^bcd$)");
+            var set1b = regex1b.GenerateRandomDataSet(100);
+            Assert.IsTrue(set1b.Count == 8, "Incorrect Dataset");
+            var regex1c = new Regex(@"(?i:^bcd$)");
+            var set1c = regex1c.GenerateRandomDataSet(100,"[bcCdD]");
+            Assert.IsTrue(set1c.Count == 4, "Incorrect Dataset");
             //----
             var regex2 = new Regex(@"^(\d[\w-[\d]])+$");
-            var set2 = regex2.GenerateRandomDataSet(100,"[0a-d]", 20);
+            var set2 = regex2.GenerateRandomDataSet(100,"[012a-d]", 20);
             Assert.IsTrue(set2.Count == 100);
             foreach (string s in set2)
-                Assert.IsTrue(Regex.IsMatch(s, "^(0[a-d])+$"), "Incorrect Dataset");
+                Assert.IsTrue(Regex.IsMatch(s, "^([0-2][a-d])+$"), "Incorrect Dataset");
         }
 
         [TestMethod]
