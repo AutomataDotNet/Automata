@@ -56,11 +56,12 @@ namespace Automata.Tests
         [TestMethod]
         public void GenerateMatchesTest1()
         {
+            var matches = new Tuple<int, int>[100];
             var r = new Regex("^(fox*o|bar|ba+zz)*$");
             //r.Display("DFA",true);
             var aut = r.Compile();
-            var matches = new List<Tuple<int, int>>(aut.GenerateMatches("foofoxxxobaaaazzbar"));
-            Assert.IsTrue(matches.Count == 4);
+            var count = aut.GenerateMatches("foofoxxxobaaaazzbar", matches);
+            Assert.IsTrue(count == 4);
             Assert.IsTrue(matches[0].Item1 == 0 && matches[0].Item2 == 2);
             Assert.IsTrue(matches[1].Item1 == 3 && matches[1].Item2 == 8);
             Assert.IsTrue(matches[2].Item1 == 9 && matches[2].Item2 == 15);
@@ -75,9 +76,10 @@ namespace Automata.Tests
             var r = new Regex(pattern);
             //r.Display();
             var aut = r.Compile();
-            var matches = new List<Tuple<int, int>>(aut.GenerateMatches(input));
-            //Assert.IsTrue(matches.Count == 2);
-            for (int i = 0; i < matches.Count; i++)
+            var matches = new Tuple<int, int>[10];
+            var count = aut.GenerateMatches(input, matches);
+            Assert.IsTrue(count == 2);
+            for (int i = 0; i < count; i++)
             {
                 var substring = input.Substring(matches[i].Item1, matches[i].Item2 + 1 - matches[i].Item1);
                 Assert.IsTrue(Regex.IsMatch(substring, pattern));
@@ -92,8 +94,9 @@ namespace Automata.Tests
             var r = new Regex(pattern);
             //r.Display();
             var aut = r.Compile();
-            var matches = new List<Tuple<int, int>>(aut.GenerateMatches(input));
-            Assert.IsTrue(matches.Count == 3);
+            var matches = new Tuple<int, int>[10];
+            var count = aut.GenerateMatches(input, matches);
+            Assert.IsTrue(count == 3); 
             for (int i = 0; i < 3; i++)
             {
                 var substring = input.Substring(matches[i].Item1, matches[i].Item2 + 1 - matches[i].Item1);

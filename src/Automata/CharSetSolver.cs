@@ -1223,6 +1223,11 @@ namespace Microsoft.Automata
             return true;
         }
 
+        public BDD ConvertToCharSet(BDD pred)
+        {
+            return pred;
+        }
+
         public void SaveToFile(Automaton<BDD> A, string file)
         {
 

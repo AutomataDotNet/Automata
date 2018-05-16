@@ -1,4 +1,5 @@
-﻿
+﻿using System.Collections.Generic;
+using System;
 
 namespace Microsoft.Automata
 {
@@ -25,6 +26,7 @@ namespace Microsoft.Automata
         internal SymbolicRegex<S> bolRegex;
         internal SymbolicRegex<S> eolRegex;
         internal ICharAlgebra<S> solver;
+
         /// <summary>
         /// Create a new incremental symbolic regex builder.
         /// </summary>
@@ -48,7 +50,7 @@ namespace Microsoft.Automata
         }
 
         /// <summary>
-        /// Make a disjunction of given regexes, eliminate nothing
+        /// Make a disjunction of given regexes, simplify by eliminating any regex that accepts no inputs
         /// </summary>
         public SymbolicRegex<S> MkOr(params SymbolicRegex<S>[] regexes)
         {
@@ -56,29 +58,60 @@ namespace Microsoft.Automata
                 throw new AutomataException(AutomataExceptionKind.InvalidArgument);
 
             var sr = regexes[regexes.Length - 1];
+
             for (int i = regexes.Length - 2; i >= 0; i--)
             {
-                if (!regexes[i].IsNothing)
-                {
-                    sr = SymbolicRegex<S>.MkOr(this, regexes[i], sr);
-                }
+                sr = this.MkOr2(regexes[i], sr);
+                if (sr.IsEverything)
+                    return this.dotStar;
             }
 
             return sr;
         }
 
         /// <summary>
-        /// Make a concatenation of given regexes, if any regex is nothing then return nothing
+        /// Make a disjunction of given regexes, simplify by eliminating any regex that accepts no inputs
+        /// </summary>
+        public SymbolicRegex<S> MkOr(SymbolicRegexSet<S> regexset)
+        {
+            if (regexset.IsNothing)
+                return this.nothing;
+            else if (regexset.IsEverything)
+                return this.dotStar;
+            else if (regexset.IsSigleton)
+                return regexset.GetTheElement();
+            else
+                return SymbolicRegex<S>.MkOr(this, regexset);
+        }
+
+        SymbolicRegex<S> MkOr2(SymbolicRegex<S> x, SymbolicRegex<S> y)
+        {
+            if (x.IsEverything || y.IsEverything)
+                return this.dotStar;
+            else if (x.IsNothing)
+                return y;
+            else if (y.IsNothing)
+                return x;
+            else
+            {
+                var or = SymbolicRegex<S>.MkOr(this, x, y);
+                return or;
+            }
+        }
+
+        /// <summary>
+        /// Make a concatenation of given regexes, if any regex is nothing then return nothing, eliminate 
+        /// intermediate epsilons
         /// </summary>
         public SymbolicRegex<S> MkConcat(params SymbolicRegex<S>[] regexes)
         {
-            if (regexes.Length < 1)
-                throw new AutomataException(AutomataExceptionKind.InvalidArgument);
+            if (regexes.Length == 0)
+                return this.epsilon;
 
             var sr = regexes[regexes.Length - 1];
             if (sr.IsNothing)
             {
-                return sr;
+                return this.nothing;
             }
             else
             {
@@ -87,7 +120,7 @@ namespace Microsoft.Automata
                 {
                     if (regexes[i].IsNothing)
                     {
-                        return regexes[i];
+                        return this.nothing;
                     }
                     else if (sr.IsEpsilon)
                     {
@@ -107,7 +140,18 @@ namespace Microsoft.Automata
         /// </summary>
         public SymbolicRegex<S> MkLoop(SymbolicRegex<S> regex, int lower = 0, int upper = int.MaxValue)
         {
-            return SymbolicRegex<S>.MkLoop(this, regex, lower, upper);
+            if (lower == 1 && upper == 1)
+            {
+                return regex;
+            }
+            else if (lower == 0 && upper == 0)
+            {
+                return this.epsilon;
+            }
+            else
+            {
+                return SymbolicRegex<S>.MkLoop(this, regex, lower, upper);
+            }
         }
 
         public SymbolicRegex<S> MkStartAnchor()
@@ -125,7 +169,7 @@ namespace Microsoft.Automata
         /// </summary>
         public SymbolicRegex<S> MkSingleton(S set)
         {
-            var s = new SymbolicRegex<S>(this, SymbolicRegexKind.Singleton, null, null, -1, -1, set, null);
+            var s = SymbolicRegex<S>.MkSingleton(this,set);
             return s;
         }
 
@@ -163,7 +207,7 @@ namespace Microsoft.Automata
                         {
                             return right;
                         }
-                        else if (left.IsAll && right.IsAll)
+                        else if (left.IsEverything && right.IsEverything)
                         {
                             //.*.* simplifies to .*
                             return left;
@@ -225,7 +269,7 @@ namespace Microsoft.Automata
                         //because any anchor causes an exception
                         RemoveAnchors(sr.Left, false, false);
                         var loop = sr;
-                        if (loop.IsAll)
+                        if (loop.IsEverything)
                         {
                             return loop;
                         }
@@ -243,14 +287,8 @@ namespace Microsoft.Automata
                 case SymbolicRegexKind.Or:
                     {
                         #region or
-                        var left = RemoveAnchors(sr.Left, isBeg, isEnd);
-                        var right = RemoveAnchors(sr.Right, isBeg, isEnd);
-                        if (left == sr.Left && right == sr.Right)
-                            return sr;
-                        else
-                        {
-                            return this.MkOr(left, right);
-                        }
+                        var choices = sr.alts.RemoveAnchors(isBeg, isEnd);
+                        return this.MkOr(choices);
                         #endregion
                     }
                 case SymbolicRegexKind.StartAnchor:
@@ -326,5 +364,148 @@ namespace Microsoft.Automata
                     }
             }
         }
+
+        internal SymbolicRegex<S> MkDerivative(S elem, bool isFirst, bool isLast, SymbolicRegex<S> sr)
+        {
+            if (sr.IsEverything)
+                return this.dotStar;
+            else if (sr.IsNothing)
+                return this.nothing;
+            else
+                switch (sr.kind)
+                {
+                    case SymbolicRegexKind.StartAnchor:
+                    case SymbolicRegexKind.EndAnchor:
+                    case SymbolicRegexKind.Epsilon:
+                        {
+                            return this.nothing;
+                        }
+                    case SymbolicRegexKind.Singleton:
+                        {
+                            #region d(a,R) = epsilon if (a in R) else nothing
+                            if (this.solver.IsSatisfiable(this.solver.MkAnd(elem, sr.set)))
+                            {
+                                return this.epsilon;
+                            }
+                            else
+                            {
+                                return this.nothing;
+                            }
+                            #endregion
+                        }
+                    case SymbolicRegexKind.Loop:
+                        {
+                            #region d(a, R*) = d(a,R)R*
+                            var step = MkDerivative(elem, isFirst, isLast, sr.left);
+                            if (step.IsNothing)
+                            {
+                                return this.nothing;
+                            }
+                            if (sr.IsStar)
+                            {
+                                var deriv = this.MkConcat(step, sr);
+                                return deriv;
+                            }
+                            else if (sr.IsPlus)
+                            {
+                                var star = this.MkLoop(sr.left);
+                                var deriv = this.MkConcat(step, star);
+                                return deriv;
+                            }
+                            else if (sr.IsMaybe)
+                            {
+                                return step;
+                            }
+                            else
+                            {
+                                //also decrement the upper bound if it was not maximum int
+                                //there cannot be a case when upper == lower == 1
+                                //such a loop is never created by MkLoop it will just return the first argument
+                                //and case upper == 1, lower == 0 is the previous case
+                                //so upper > 1 holds here
+                                int newupper = (sr.upper == int.MaxValue ? int.MaxValue : sr.upper - 1);
+                                int newlower = (sr.lower == 0 ? 0 : sr.lower - 1);
+                                var rest = this.MkLoop(sr.left, newlower, newupper);
+                                var deriv = this.MkConcat(step, rest);
+                                return deriv;
+                            }
+                            #endregion
+                        }
+                    case SymbolicRegexKind.Concat:
+                        {
+                            #region d(a, AB) = d(a,A)B | (if A nullable then d(a,B))
+                            var first = this.MkConcat(this.MkDerivative(elem, isFirst, isLast, sr.left), sr.right);
+                            if (sr.left.IsNullable(isFirst, isLast))
+                            {
+                                var second = this.MkDerivative(elem, isFirst, isLast, sr.right);
+                                var deriv = this.MkOr2(first, second);
+                                return deriv;
+                            }
+                            else
+                            {
+                                return first;
+                            }
+                            #endregion
+                        }
+                    case SymbolicRegexKind.Or:
+                        {
+                            #region d(a,A|B) = d(a,A)|d(a,B)
+                            var alts_deriv = sr.alts.MkDerivative(elem, isFirst, isLast);
+                            return this.MkOr(alts_deriv);
+                            #endregion
+                        }
+                    default: //ITE 
+                        {
+                            #region d(a,Ite(A,B,C)) = Ite(d(a,A),d(a,B),d(a,C))
+                            var condD = this.MkDerivative(elem, isFirst, isLast, sr.iteCond);
+                            if (condD.IsNothing)
+                            {
+                                var rightD = this.MkDerivative(elem, isFirst, isLast, sr.right);
+                                return rightD;
+                            }
+                            else if (condD.IsEverything)
+                            {
+                                var leftD = this.MkDerivative(elem, isFirst, isLast, sr.left);
+                                return leftD;
+                            }
+                            else
+                            {
+                                var leftD = this.MkDerivative(elem, isFirst, isLast, sr.left);
+                                var rightD = this.MkDerivative(elem, isFirst, isLast, sr.right);
+                                var ite = this.MkIfThenElse(condD, leftD, rightD);
+                                return ite;
+                            }
+                            #endregion
+                        }
+                }
+        }
+
+        internal SymbolicRegex<T> Transform<T>(SymbolicRegex<S> sr, SymbolicRegexBuilder<T> builderT, Func<S, T> predicateTransformer)
+        {
+            switch (sr.kind)
+            {
+                case SymbolicRegexKind.StartAnchor:
+                    return builderT.startAnchor;
+                case SymbolicRegexKind.EndAnchor:
+                    return builderT.endAnchor;
+                case SymbolicRegexKind.Epsilon:
+                    return builderT.epsilon;
+                case SymbolicRegexKind.Singleton:
+                    return builderT.MkSingleton(predicateTransformer(sr.set));
+                case SymbolicRegexKind.Loop:
+                    return builderT.MkLoop(Transform(sr.left, builderT, predicateTransformer), sr.lower, sr.upper);
+                case SymbolicRegexKind.Or:
+                    return builderT.MkOr(sr.alts.Transform(builderT, predicateTransformer));
+                case SymbolicRegexKind.Concat:
+                    return builderT.MkConcat(Transform(sr.left, builderT, predicateTransformer),
+                        Transform(sr.right, builderT, predicateTransformer));
+                default: //ITE
+                    return
+                        builderT.MkIfThenElse(Transform(sr.IteCond, builderT, predicateTransformer),
+                        Transform(sr.left, builderT, predicateTransformer),
+                        Transform(sr.right, builderT, predicateTransformer));
+            }
+        }
+
     }
 }

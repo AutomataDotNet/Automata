@@ -24,6 +24,32 @@ namespace Microsoft.Automata
             return aut.Compile();
         }
 
+        public static SymbolicRegex<BV> ConvertToSymbolicRegexBV(this Regex regex, CharSetSolver css, bool simplify = true)
+        {
+            var sr_bdd = css.RegexConverter.ConvertToSymbolicRegex(regex, true);
+            BVAlgebra bva = new BVAlgebra(css, sr_bdd.ComputeMinterms());
+            SymbolicRegexBuilder<BV> builder = new SymbolicRegexBuilder<BV>(bva);
+            var sr_bv = sr_bdd.builder.Transform<BV>(sr_bdd, builder, builder.solver.ConvertFromCharSet);
+            if (simplify)
+                sr_bv = sr_bv.Simplify();
+            return sr_bv;
+        }
+
+        public static SymbolicRegex<BDD> ConvertToSymbolicRegexBDD(this Regex regex, CharSetSolver css, bool simplify = true)
+        {
+            var sr_bdd = css.RegexConverter.ConvertToSymbolicRegex(regex, true);
+            if (simplify)
+                sr_bdd = sr_bdd.Simplify();
+            return sr_bdd;
+        }
+
+        public static RegexAutomaton Compile2(this Regex regex)
+        {
+            CharSetSolver css = new CharSetSolver();
+            var aut = RegexAutomaton.Create(css, regex);
+            return aut;
+        }
+
         /// <summary>
         /// Display the automaton of the regex in dgml.
         /// </summary>
@@ -84,7 +110,7 @@ namespace Microsoft.Automata
             if (charClassRestriction != null)
                 sr = sr.Restrict(solver.MkCharSetFromRegexCharClass(charClassRestriction));
 
-            var sampler = new SymbolicRegexSampler(sr, maxUnroll, cornerCaseProb);
+            var sampler = new SymbolicRegexSampler<BDD>(sr, maxUnroll, cornerCaseProb);
             return sampler.GenerateRandomMember();
         }
 
@@ -104,7 +130,7 @@ namespace Microsoft.Automata
             if (charClassRestriction != null)
                 sr = sr.Restrict(solver.MkCharSetFromRegexCharClass(charClassRestriction));
 
-            var sampler = new SymbolicRegexSampler(sr, maxUnroll, cornerCaseProb);
+            var sampler = new SymbolicRegexSampler<BDD>(sr, maxUnroll, cornerCaseProb);
             return sampler.GetPositiveDataset(size);
         }
 
@@ -112,7 +138,7 @@ namespace Microsoft.Automata
         /// Returns a regex that accepts the complement of this regex.
         /// </summary>
         /// <param name="regex">this regex</param>
-        /// <param name="timout">timeout to complement in ms</param>
+        /// <param name="timeout">timeout to complement in ms</param>
         /// <returns></returns>
         public static Regex Complement(this Regex regex, int timeout = 10000)
         {

@@ -334,8 +334,16 @@ namespace Microsoft.Automata
 
         public bool TryConvertToCharSet(HashSet<char> pred, out BDD set)
         {
-            set = null;
-            return false;
+            set = ConvertToCharSet(pred);
+            return true;
+        }
+
+        public BDD ConvertToCharSet(HashSet<char> pred)
+        {
+            BDD res = this.CharSetProvider.False;
+            foreach (var c in pred)
+                res = this.CharSetProvider.MkCharConstraint(c) | res;
+            return res;
         }
 
         public HashSet<char> MkSet(uint e)
@@ -410,6 +418,11 @@ namespace Microsoft.Automata
         public HashSet<char> MkDiff(HashSet<char> predicate1, HashSet<char> predicate2)
         {
             return MkAnd(predicate1, MkNot(predicate2));
+        }
+
+        public char ChooseUniformly(HashSet<char> s)
+        {
+            throw new NotImplementedException();
         }
     }
 }

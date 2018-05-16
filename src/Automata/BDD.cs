@@ -8,7 +8,7 @@ namespace Microsoft.Automata
     /// <summary>
     /// Represents a Binary Decision Diagram.
     /// </summary>
-    public class BDD
+    public class BDD : IComparable
     {
         /// <summary>
         /// The encoding of the set for lower ordinals for the case when the current bit is 1.
@@ -229,6 +229,26 @@ namespace Microsoft.Automata
             return algebra.MkNot(this);
         }
 
+        public static BDD operator &(BDD x, BDD y)
+        {
+            if (x.algebra != y.algebra)
+                throw new AutomataException(AutomataExceptionKind.IncompatibleAlgebras);
+            return x.algebra.MkAnd(x, y);
+        }
+
+        public static BDD operator |(BDD x, BDD y)
+        {
+            if (x.algebra != y.algebra)
+                throw new AutomataException(AutomataExceptionKind.IncompatibleAlgebras);
+            return x.algebra.MkOr(x, y);
+        }
+
+        public static BDD operator !(BDD x)
+        {
+            return x.algebra.MkNot(x);
+        }
+
+
         public BDD Diff(BDD other)
         {
             return algebra.MkDiff(this, other);
@@ -258,6 +278,34 @@ namespace Microsoft.Automata
         public BDD ShiftLeft(int k = 1)
         {
             return algebra.ShiftLeft(this, k);
+        }
+
+        /// <summary>
+        /// returns -1 if the minimum element in this BDD is smaller than the minimum element in the otther BDD or if this BDD is empty
+        /// returns 0 if the minimum elements are equal or if the BDDs are equal, 
+        /// returns 1 otherwise
+        /// </summary>
+        /// <param name="other">the other BDD</param>
+        /// <returns></returns>
+        public int CompareTo(object other)
+        {
+            BDD bdd = other as BDD;
+            if (bdd == null)
+                return 1;
+            if (bdd == this)
+                return 0;
+            if (this.IsEmpty)
+                return -1;
+            if (bdd.IsEmpty)
+                return 1;
+            var min1 = this.GetMin();
+            var min2 = bdd.GetMin();
+            if (min1 < min2)
+                return -1;
+            else if (min2 < min1)
+                return 1;
+            else
+                return 0;
         }
     }
 

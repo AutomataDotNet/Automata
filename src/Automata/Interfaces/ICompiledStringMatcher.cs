@@ -29,11 +29,9 @@ namespace Microsoft.Automata
         IDeterministicFiniteAutomaton Automaton { get; }
 
         /// <summary>
-        /// First, yields the pair(i, j) such that input[i..j] matches the
-        /// regex. Then recursively yields matches for the rest of the input
-        /// starting from index j+1.
+        /// Returns the number of matches, and fills in the array with those matches (startindex, length) 
         /// </summary>
-        IEnumerable<Tuple<int, int>> GenerateMatches(string input);
+        int GenerateMatches(string input, Tuple<int,int>[] matches);
     }
 
     /// <summary>
@@ -74,10 +72,8 @@ namespace Microsoft.Automata
         Func<char, int>[] Delta { get; }
 
         /// <summary>
-        /// First, yields the pair(i, j) such that input[i..j] matches the
-        /// regex.Then recursively yields matches for the rest of the input
-        /// starting from index j+1.
+        /// Returns the number of matches, and fills in the array with those matches (startindex, length) 
         /// </summary>
-        IEnumerable<Tuple<int, int>> GenerateMatches(string input);
+        int GenerateMatches(string input, Tuple<int,int>[] mathces);
     }
 }

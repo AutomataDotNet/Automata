@@ -18,10 +18,10 @@ namespace Automata.Tests
             int t = System.Environment.TickCount;
             IgnoreCaseTransformer ic = new IgnoreCaseTransformer(solver);
             //simple test first:
-            BDD a2c = solver.MkRangeConstraint('a', 'c');
-            BDD a2cA2C = ic.Apply(a2c);
-            BDD a2cA2C_expected = a2c.Or(solver.MkRangeConstraint('A', 'C'));
-            Assert.AreEqual<BDD>(a2cA2C, a2cA2C_expected);
+            //BDD a2c = solver.MkRangeConstraint('a', 'c');
+            //BDD a2cA2C = ic.Apply(a2c);
+            //BDD a2cA2C_expected = a2c.Or(solver.MkRangeConstraint('A', 'C'));
+            //Assert.AreEqual<BDD>(a2cA2C, a2cA2C_expected);
             //
             //comprehensive test:
             //
@@ -64,6 +64,26 @@ namespace Automata.Tests
             //            Console.WriteLine(StringUtility.Escape(c));
             //    }
             //}
+        }
+
+        [TestMethod]
+        public void TestIgnoreCaseTransformer_SimpleCases()
+        {
+            CharSetSolver solver = new CharSetSolver();
+            int t = System.Environment.TickCount;
+            IgnoreCaseTransformer ic = new IgnoreCaseTransformer(solver);
+            //simple test first:
+            BDD a2c = solver.MkRangeConstraint('a', 'c');
+            BDD a2cA2C = ic.Apply(a2c);
+            BDD a2cA2C_expected = a2c.Or(solver.MkRangeConstraint('A', 'C'));
+            Assert.AreEqual<BDD>(a2cA2C, a2cA2C_expected);
+            //digits are not changed
+            BDD ascii_digits = solver.MkRangeConstraint('0', '9');
+            BDD ascii_digits1 = ic.Apply(ascii_digits);
+            Assert.AreEqual<BDD>(ascii_digits1, ascii_digits);
+            var tt = ic.Apply(solver.True);
+            var tt_compl = solver.MkNot(tt);
+            Assert.AreEqual<BDD>(ic.Apply(solver.True), solver.True);
         }
     }
 }

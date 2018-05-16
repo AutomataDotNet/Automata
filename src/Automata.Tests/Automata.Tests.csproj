@@ -81,9 +81,11 @@
   <ItemGroup>
     <Compile Include="AutomataCompilationTests.cs" />
     <Compile Include="BREXTests.cs" />
+    <Compile Include="BVAlgebraTests.cs" />
     <Compile Include="CharSetSolverTests.cs" />
     <Compile Include="CharSetTests.cs" />
     <Compile Include="CodeGenTests.cs" />
+    <Compile Include="DecisionTreeTests.cs" />
     <Compile Include="DeterminizationTests.cs" />
     <Compile Include="EditDistanceTest.cs" />
     <Compile Include="FiniteAutomataTests.cs" />
@@ -91,6 +93,8 @@
     <Compile Include="LikePatternTests.cs" />
     <Compile Include="MinimizationTests.cs" />
     <Compile Include="MiscRegexConversionTests.cs" />
+    <Compile Include="MiscStringOperationTests.cs" />
+    <Compile Include="RegexAutomatonTests.cs" />
     <Compile Include="RegexExtensionMethodTests.cs" />
     <Compile Include="RegexToSMTTests.cs" />
     <Compile Include="RexTests.cs" />

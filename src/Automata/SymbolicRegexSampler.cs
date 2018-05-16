@@ -4,7 +4,7 @@ using Microsoft.Automata.Rex;
 
 namespace Microsoft.Automata
 {
-    class SymbolicRegexSampler
+    class SymbolicRegexSampler<S>
     {
 
         // Inverse of pobability of taking a corner 
@@ -17,37 +17,18 @@ namespace Microsoft.Automata
         // (see GetDataset method)
         private int maxSamplingIter;
 
-        private string regex;
-        CharSetSolver solver;
         Random rand;
         int maxUnroll;
-        SymbolicRegex<BDD> sr;
-        System.Text.RegularExpressions.RegexOptions options;
+        SymbolicRegex<S> sr;
+        SymbolicRegexBuilder<S> builder;
 
-        public SymbolicRegexSampler(string regex, CharSetSolver solver, int mu, int cornerCaseProb = 5, int maxSamplingIter = 3, System.Text.RegularExpressions.RegexOptions options = System.Text.RegularExpressions.RegexOptions.None)
-        {
-            this.options = options;
-            this.cornerCaseProb = cornerCaseProb;
-            this.maxSamplingIter = maxSamplingIter;
-            this.maxUnroll = mu;
-            this.regex = regex;
-            this.sr = solver.RegexConverter.ConvertToSymbolicRegex(regex, options);
-            this.solver = solver;
-            rand = new Random();
-        }
-
-        public SymbolicRegexSampler(SymbolicRegex<BDD> sr, int mu, int cornerCaseProb = 5, int maxSamplingIter = 3)
+        public SymbolicRegexSampler(SymbolicRegex<S> sr, int maxUnroll, int cornerCaseProb = 5, int maxSamplingIter = 3)
         {
             this.cornerCaseProb = cornerCaseProb;
             this.maxSamplingIter = maxSamplingIter;
-            this.maxUnroll = mu;
-            this.regex = sr.ToStringWithAnchors();
-            this.options = System.Text.RegularExpressions.RegexOptions.None;
+            this.maxUnroll = maxUnroll;
             this.sr = sr;
-            if (!(sr.Solver is CharSetSolver))
-                throw new AutomataException(AutomataExceptionKind.NotSupported);
-
-            solver = sr.Solver as CharSetSolver;
+            this.builder = sr.builder;
             rand = new Random();
         }
 
@@ -81,65 +62,62 @@ namespace Microsoft.Automata
             return rand.Next(lb + 1, realUb);
         }
 
-        public SymbolicRegex<BDD> UnrollRE(SymbolicRegex<BDD> re)
+        public SymbolicRegex<S> UnrollRE(SymbolicRegex<S> re)
         {
             // Create a regular expression without loops by unrolling 
             // each loop a random number of times as dictated by the 
             // maxUnroll parameter
-            SymbolicRegex<BDD> newRoot = null;
+            SymbolicRegex<S> newRoot = null;
             switch (re.Kind)
             {
                 case SymbolicRegexKind.Concat:
-                    newRoot = solver.RegexConverter.MkConcat(UnrollRE(re.Left),
+                    newRoot = builder.MkConcat(UnrollRE(re.Left),
                         UnrollRE(re.Right));
                     break;
-                case SymbolicRegexKind.Epsilon:
-                    newRoot = re;
-                    break;
                 case SymbolicRegexKind.IfThenElse:
-                    newRoot = solver.RegexConverter.MkIfThenElse(re.IteCond,
+                    newRoot = builder.MkIfThenElse(re.IteCond,
                         UnrollRE(re.Left), UnrollRE(re.Right));
                     break;
                 case SymbolicRegexKind.Or:
-                    newRoot = solver.RegexConverter.MkOr(UnrollRE(re.Left),
-                        UnrollRE(re.Right));
-                    break;
-                case SymbolicRegexKind.Singleton:
-                    newRoot = re;
+                    var alts = Array.ConvertAll(re.alts.ToArray(), UnrollRE);
+                    newRoot = builder.MkOr(alts);
                     break;
                 case SymbolicRegexKind.Loop:
                     newRoot = UnrollRE(UnrollLoop(re));
+                    break;
+                default: //anchors or singleton or epsilon
+                    newRoot = re;
                     break;
             }
             return newRoot;
         }
 
-        private SymbolicRegex<BDD> UnrollLoop(SymbolicRegex<BDD> node)
+        private SymbolicRegex<S> UnrollLoop(SymbolicRegex<S> node)
         {
             // select the number of times the loop will be unrolled
             int times = SampleLoopIterations(node.LowerBound, node.UpperBound);
             switch (times)
             {
                 case 0:
-                    return solver.RegexConverter.MkEpsilon();
+                    return builder.epsilon;
                 case 1:
                     return node.Left;
             }
-            SymbolicRegex<BDD> loop = node.Left;
-            SymbolicRegex<BDD> root = node.Left;
+            SymbolicRegex<S> loop = node.Left;
+            SymbolicRegex<S> root = node.Left;
             for (int i = 0; i < times - 1; i++)
             {
-                root = solver.RegexConverter.MkConcat(root, loop);
+                root = builder.MkConcat(root, loop);
             }
             return root;
         }
 
-        string GenerateRandomMember(SymbolicRegex<BDD> root)
+        string GenerateRandomMember(SymbolicRegex<S> root)
         {
             // TODO: ITE is currently not supported.
             string sample = "";
-            Stack<SymbolicRegex<BDD>> nodeQueue = new Stack<SymbolicRegex<BDD>>();
-            SymbolicRegex<BDD> curNode = null;
+            Stack<SymbolicRegex<S>> nodeQueue = new Stack<SymbolicRegex<S>>();
+            SymbolicRegex<S> curNode = null;
 
             nodeQueue.Push(UnrollRE(root));
             while (nodeQueue.Count > 0 || curNode != null)
@@ -151,27 +129,42 @@ namespace Microsoft.Automata
                 switch (curNode.Kind)
                 {
                     case SymbolicRegexKind.Singleton:
-                        if (curNode.Set.IsEmpty)
+                        if (!builder.solver.IsSatisfiable(curNode.Set))
                             throw new AutomataException(AutomataExceptionKind.SetIsEmpty);
 
-                        sample += solver.ChooseUniformly(curNode.Set);
+                        sample += builder.solver.ChooseUniformly(curNode.Set);
                         curNode = null;
                         break;
                     case SymbolicRegexKind.Loop:
                         curNode = curNode.Left;
                         break;
                     case SymbolicRegexKind.Epsilon:
-                        curNode = curNode.Left;
+                        curNode = null;
                         break;
                     case SymbolicRegexKind.Concat:
                         nodeQueue.Push(curNode.Right);
                         curNode = curNode.Left;
                         break;
                     case SymbolicRegexKind.Or:
-                        int choice = SampleChildNode(curNode.Left.OrCount,
-                                                    curNode.Right.OrCount);
-                        curNode = (choice == 0) ? curNode.Left : curNode.Right;
+                        int choice = rand.Next(curNode.OrCount);
+                        int i = 0;
+                        foreach (var elem in curNode.Alts)
+                        {
+                            if (i == choice)
+                            {
+                                curNode = elem;
+                                break;
+                            }
+                            else
+                                i += 1;
+                        }
                         break;
+                    case SymbolicRegexKind.EndAnchor:
+                    case SymbolicRegexKind.StartAnchor:
+                        curNode = null;
+                        break;
+                    default:
+                        throw new NotImplementedException(curNode.Kind.ToString());
                 }
             }
             return sample;
@@ -191,24 +184,6 @@ namespace Microsoft.Automata
             while (dataset.Count < sampleNum && totalTries > 0)
             {
                 dataset.Add(GenerateRandomMember());
-                totalTries = totalTries - 1;
-            }
-            return dataset;
-        }
-
-        public HashSet<string> GetNegativeDataset(int sampleNum)
-        {
-            HashSet<string> dataset = new HashSet<string>();
-            string negRE = solver.ConvertToRegex(solver.Convert(regex).Complement());
-
-            // Invert the regex by converting to SFA and complementing and back to RE
-            var root = solver.RegexConverter.ConvertToSymbolicRegex(negRE);
-
-            int totalTries = maxSamplingIter * sampleNum;
-            // We iterate this loop at most totalTries to collect the request nr of samples
-            while (dataset.Count < sampleNum && totalTries > 0)
-            {
-                dataset.Add(GenerateRandomMember(root));
                 totalTries = totalTries - 1;
             }
             return dataset;

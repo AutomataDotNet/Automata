@@ -46,11 +46,15 @@ namespace Automata.Tests
 
             System.Func<char, int>[] delta = new System.Func<char, int>[5];
 
+            int prevStartIndex = 0;
+
+            int currIndex = 0;
+
             public System.Func<char, int>[] Delta { get { return delta; } }
 
-            public bool IsFinalState(int x) { return (0x2 <= x && x <= 0x3); }
+            public bool IsFinalState(int x) { return (0x3 <= x && x <= 0x4); }
 
-            public bool IsSinkState(int x) { return (x == 0x4); }
+            public bool IsSinkState(int x) { return (x == 0x2); }
 
             //return the state from the given state after reading the input
             public int Transition(int state, params char[] input)
@@ -59,7 +63,7 @@ namespace Automata.Tests
                 for (int i = 0; i < input.Length; i++)
                 {
                     x = delta[x](input[i]);
-                    if ((x == 0x4))
+                    if ((x == 0x2))
                         return x;
                 }
                 return x;
@@ -71,29 +75,29 @@ namespace Automata.Tests
                 {
                     if ((0x30 <= x && x <= 0x39))
                         return 1;
-                    return 4;
+                    return 2;
                 };
                 delta[1] = x =>
                 {
                     if ((0x30 <= x && x <= 0x39))
                         return 1;
                     if ((x < 0x61 ? (0x41 <= x && x <= 0x44) : (x <= 0x64)))
-                        return 2;
-                    return 4;
+                        return 3;
+                    return 2;
                 };
                 delta[2] = x =>
                 {
-                    if ((x < 0x61 ? (0x41 <= x && x <= 0x44) : (x <= 0x64)))
-                        return 3;
-                    return 4;
+                    return 2;
                 };
                 delta[3] = x =>
                 {
-                    return 4;
+                    if ((x < 0x61 ? (0x41 <= x && x <= 0x44) : (x <= 0x64)))
+                        return 4;
+                    return 2;
                 };
                 delta[4] = x =>
                 {
-                    return 4;
+                    return 2;
                 };
             }
 
@@ -109,7 +113,7 @@ namespace Automata.Tests
                 x = (int)cs[i];
                 if ((0x30 <= x && x <= 0x39))
                     goto State1;
-                goto State4;
+                goto State2;
             State1:
                 i += 1;
                 if (i == k)
@@ -118,45 +122,47 @@ namespace Automata.Tests
                 if ((0x30 <= x && x <= 0x39))
                     goto State1;
                 if ((x < 0x61 ? (0x41 <= x && x <= 0x44) : (x <= 0x64)))
-                    goto State2;
-                goto State4;
-            State2:
-                i += 1;
-                if (i == k)
-                    return true;
-                x = (int)cs[i];
-                if ((x < 0x61 ? (0x41 <= x && x <= 0x44) : (x <= 0x64)))
                     goto State3;
-                goto State4;
+                goto State2;
+            State2:
+                return false;
             State3:
                 i += 1;
                 if (i == k)
                     return true;
                 x = (int)cs[i];
-                goto State4;
+                if ((x < 0x61 ? (0x41 <= x && x <= 0x44) : (x <= 0x64)))
+                    goto State4;
+                goto State2;
             State4:
-                return false;
+                i += 1;
+                if (i == k)
+                    return true;
+                x = (int)cs[i];
+                goto State2;
             }
 
-            public IEnumerable<Tuple<int, int>> GenerateMatches(string input)
+            public int GenerateMatches(string input, System.Tuple<int, int>[] matches)
             {
                 var cs = input.ToCharArray();
-                int k = input.Length;
-                int x = 0;
                 int i0 = 0;
                 int q = 0;
+                int j = 0;
                 for (int i = 0; i < cs.Length; i++)
                 {
+                    if (j == matches.Length)
+                        return j;
                     if (q == 0)
-                    {
                         i0 = i;
-                    }
                     q = this.delta[q](cs[i]);
                     if (this.IsFinalState(q))
                     {
-                        yield return new System.Tuple<int, int>(i0, i);
+                        matches[j] = new System.Tuple<int, int>(i0, i);
+                        j += 1;
+                        q = 0;
                     }
                 }
+                return j;
             }
         }
     }

@@ -41,7 +41,7 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
-    <OutputPath>..\..\bin\x64\Release\</OutputPath>
+    <OutputPath>bin\x64\Release\</OutputPath>
     <DefineConstants>TRACE;REX,EXPORT_GPPG</DefineConstants>
     <Optimize>true</Optimize>
     <DebugType>pdbonly</DebugType>
@@ -79,6 +79,8 @@
     <Reference Include="System.Numerics" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BooleanAlgebras\BV64Algebra.cs" />
+    <Compile Include="BooleanAlgebras\BVAlgebra.cs" />
     <Compile Include="Internal\AutomataAlgebra.cs" />
     <Compile Include="AutomataException.cs" />
     <Compile Include="Automaton.cs" />
@@ -132,6 +134,8 @@
     <Compile Include="Internal\IntSet.cs" />
     <Compile Include="Internal\UnicodeCategoryTheory.cs" />
     <Compile Include="Internal\UnicodeCategoryTheoryProviders.cs" />
+    <Compile Include="RegexAutomaton\DecisionTree.cs" />
+    <Compile Include="RegexAutomaton\RegexAutomaton.cs" />
     <Compile Include="RegexExtensionMethods.cs" />
     <Compile Include="SymbolicRegex.cs" />
     <Compile Include="SymbolicRegexBuilder.cs" />

@@ -275,6 +275,11 @@ namespace Microsoft.Automata
         InvalidArgument_MustBeNonempty,
         NotCartesianAlgebra,
         IteBagError,
-        AutomataConversionFailed
+        AutomataConversionFailed,
+        IncompatibeBitvectors,
+        BitOutOfRange,
+        InternalError_RegexAutomaton,
+        InvalidArgument_IndexOutOfRange,
+        InternalError_SymbolicRegex,
     }
 }

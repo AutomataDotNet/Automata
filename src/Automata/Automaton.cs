@@ -488,6 +488,17 @@ namespace Microsoft.Automata
         }
 
         /// <summary>
+        /// Convert the T-automaton to an S-automaton where each guard p has been replaced with f(p) and the S-algebra is alg.
+        /// </summary>
+        public Automaton<S> ReplaceAlgebra<S>(Func<T, S> f, IBooleanAlgebra<S> alg)
+        {
+            List<Move<S>> moves1 = new List<Move<S>>();
+            foreach (var move in GetMoves())
+                moves1.Add(Move<S>.Create(move.SourceState, move.TargetState, f(move.Label)));
+            return Automaton<S>.Create(alg, initialState, this.GetFinalStates(), moves1);
+        }
+
+        /// <summary>
         /// Project the second component an automaton with monadic predicates.
         /// </summary>
         static public Automaton<T> ProjectSecond<S>(Automaton<IMonadicPredicate<S, T>> automaton)
@@ -2577,7 +2588,6 @@ namespace Microsoft.Automata
 
                 foreach (var solution in solver.GenerateMinterms(conds))
                 {
-
                     CheckTimeout(timeoutLimit);
                     var nfaTargetStates = new List<int>();
                     for (int j = 0; j < n; j++)
@@ -5423,9 +5433,9 @@ namespace Microsoft.Automata
             return Automaton.IsMatch(input);
         }
 
-        public IEnumerable<Tuple<int, int>> GenerateMatches(string input)
+        public int GenerateMatches(string input, Tuple<int,int>[] matches)
         {
-            return Automaton.GenerateMatches(input);
+            return Automaton.GenerateMatches(input, matches);
         }
     }
 

@@ -43,6 +43,11 @@ namespace Microsoft.Automata
         bool TryConvertToCharSet(PRED pred, out BDD set);
 
         /// <summary>
+        /// Conv a predicate into a set of characters. Returns default(PRED) is the converion fails.
+        /// </summary>
+        BDD ConvertToCharSet(PRED pred);
+
+        /// <summary>
         /// Gets the underlying character set solver.
         /// </summary>
         CharSetSolver CharSetProvider { get; }
@@ -62,9 +67,14 @@ namespace Microsoft.Automata
         PRED MkSet(uint e);
 
         /// <summary>
-        /// Chooses a member of a nonempty set s.
+        /// Chooses a random member of a nonempty set s.
         /// </summary>
         uint Choose(PRED s);
+
+        /// <summary>
+        /// Chooses a random character uniformly at random from a nonempty set s.
+        /// </summary>
+        char ChooseUniformly(PRED s);
     }
 }
 

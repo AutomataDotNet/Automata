@@ -464,5 +464,19 @@ namespace Microsoft.Automata
         {
             return MkAnd(predicate1, MkNot(predicate2));
         }
+
+        public char ChooseUniformly(HashSet<Tuple<char, char>> s)
+        {
+            throw new NotImplementedException();
+        }
+
+        public BDD ConvertToCharSet(HashSet<Tuple<char, char>> pred)
+        {
+            BDD set;
+            if (TryConvertToCharSet(pred, out set))
+                return set;
+            else
+                return null;
+        }
     }
 }

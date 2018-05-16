@@ -3633,6 +3633,11 @@ namespace Microsoft.Automata.Z3
         {
             return MkAnd(predicate1, MkNot(predicate2));
         }
+
+        public char ChooseUniformly(Expr s)
+        {
+            throw new NotSupportedException();
+        }
     }
 }
 

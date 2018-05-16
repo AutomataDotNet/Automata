@@ -214,24 +214,27 @@ namespace {0}
 
                 //adds a static GenerateMatches method
                 code.Append(String.Format(@"
-        public System.Collections.Generic.IEnumerable<System.Tuple<int,int>> GenerateMatches(string input)
+        public int GenerateMatches(string input, System.Tuple<int,int>[] matches)
         {{
             var cs = input.ToCharArray();
             int i0 = 0;
             int q = 0;
+            int j = 0;
             for (int i = 0; i < cs.Length; i++)
             {{
+                if (j == matches.Length)
+                    return j;
                 if (q == 0) 
-                {{
                     i0 = i;
-                }}
                 q = this.delta[q](cs[i]);
                 if (this.IsFinalState(q))
                 {{ 
-                    yield return new System.Tuple<int,int>(i0,i);
+                    matches[j] = new System.Tuple<int,int>(i0,i);
+                    j += 1;
                     q = 0;
                 }}
             }}
+            return j;
         }}", classname));
 
                 code.Append(helper_predicates.ToString());

@@ -27,7 +27,11 @@ namespace Microsoft.Automata.Utilities
             if (domain.And(bdd).IsEmpty)
                 return bdd;
             else
-                return bdd.And(IgnoreCaseRel).ShiftRight(16);
+            {
+                var ignorecase = bdd.And(IgnoreCaseRel).ShiftRight(16);
+                var res = ignorecase.Or(bdd);
+                return res;
+            }
         }
 
         public bool IsInDomain(char c)
