@@ -99,7 +99,9 @@ namespace Microsoft.Automata
             int t0 = System.Environment.TickCount;
             var nfa = solver.Convert(regex.ToString(), regex.Options);
             var minterms = GetMinterms(nfa);
+            //create specialized BV algebra for this particular minterm partition
             var bvsolver = new BVAlgebra(solver, minterms);
+            //convert the nfa to the specialized algebra
             var nfa_BV = nfa.ReplaceAlgebra<BV>(bvsolver.MapPredToBV, bvsolver);
             t0 = System.Environment.TickCount - t0;
             int t = System.Environment.TickCount;

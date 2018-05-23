@@ -24,8 +24,10 @@ namespace Microsoft.Automata
             return aut.Compile();
         }
 
-        public static SymbolicRegex<BV> ConvertToSymbolicRegexBV(this Regex regex, CharSetSolver css, bool simplify = true)
+        public static SymbolicRegex<BV> CompileToSymbolicRegex(this Regex regex, CharSetSolver css = null, bool simplify = true)
         {
+            if (css == null)
+                css = new CharSetSolver();
             var sr_bdd = css.RegexConverter.ConvertToSymbolicRegex(regex, true);
             BVAlgebra bva = new BVAlgebra(css, sr_bdd.ComputeMinterms());
             SymbolicRegexBuilder<BV> builder = new SymbolicRegexBuilder<BV>(bva);
@@ -35,7 +37,7 @@ namespace Microsoft.Automata
             return sr_bv;
         }
 
-        public static SymbolicRegex<BDD> ConvertToSymbolicRegexBDD(this Regex regex, CharSetSolver css, bool simplify = true)
+        internal static SymbolicRegex<BDD> ConvertToSymbolicRegexBDD(this Regex regex, CharSetSolver css, bool simplify = true)
         {
             var sr_bdd = css.RegexConverter.ConvertToSymbolicRegex(regex, true);
             if (simplify)
@@ -43,7 +45,7 @@ namespace Microsoft.Automata
             return sr_bdd;
         }
 
-        public static RegexAutomaton Compile2(this Regex regex)
+        internal static RegexAutomaton Compile2(this Regex regex)
         {
             CharSetSolver css = new CharSetSolver();
             var aut = RegexAutomaton.Create(css, regex);

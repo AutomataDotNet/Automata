@@ -12,6 +12,8 @@ using Microsoft.Automata.Utilities;
 using System.Reflection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+using System.Security.Cryptography;
+
 namespace Automata.Tests
 {
     [TestClass]
@@ -116,7 +118,7 @@ namespace Automata.Tests
         public void TestSampleSymbolicRegexesBasicConstructsKeepAnchors()
         {
             CharSetSolver css = new CharSetSolver(BitWidth.BV16);
-            var r0 = css.RegexConverter.ConvertToSymbolicRegex("",RegexOptions.None,true);
+            var r0 = css.RegexConverter.ConvertToSymbolicRegex("", RegexOptions.None, true);
             Assert.IsTrue(r0.ToString().Equals("()"));
             //--------
             var r0a = css.RegexConverter.ConvertToSymbolicRegex("^", RegexOptions.None, true);
@@ -200,7 +202,7 @@ namespace Automata.Tests
             Assert.IsTrue(r9.Kind == SymbolicRegexKind.Epsilon);
             Assert.AreEqual<string>(@"()", r9.ToString());
             //-----
-            var a_complement = css.RegexConverter.ConvertToSymbolicRegex(@"(?(a)[1-[1]]|.*)", RegexOptions.Singleline,true);
+            var a_complement = css.RegexConverter.ConvertToSymbolicRegex(@"(?(a)[1-[1]]|.*)", RegexOptions.Singleline, true);
             Assert.IsTrue(a_complement.Kind == SymbolicRegexKind.IfThenElse);
             Assert.AreEqual<string>(@"(?(a)[0-[0]]|.*)", a_complement.ToString());
             //-----
@@ -228,7 +230,7 @@ namespace Automata.Tests
             var r0b = css.RegexConverter.ConvertToSymbolicRegex("^f(?i:o)o$");
             Assert.IsTrue(r0b.ToString().Equals("f[Oo]o"));
             //--- multiline option
-            var r1 = css.RegexConverter.ConvertToSymbolicRegex(@"^foo\Z",RegexOptions.Multiline);
+            var r1 = css.RegexConverter.ConvertToSymbolicRegex(@"^foo\Z", RegexOptions.Multiline);
             //var a1 = css.RegexConverter.Convert(@"^foo\Z", RegexOptions.Multiline);
             //a1.ShowGraph("a1");
             Assert.IsTrue(r1.ToString().Equals(@"(.*\n)?foo"));
@@ -293,7 +295,7 @@ namespace Automata.Tests
         }
 
         [TestMethod]
-        public void TestSymbolicRegexSampler_Anchors() 
+        public void TestSymbolicRegexSampler_Anchors()
         {
             CharSetSolver solver = new CharSetSolver(BitWidth.BV7);
             string regex = @"^bcd$";
@@ -339,13 +341,13 @@ namespace Automata.Tests
             CharSetSolver css = new CharSetSolver();
             var sr = css.RegexConverter.ConvertToSymbolicRegex(regex);
             Func<string, BDD[]> F = s => Array.ConvertAll<char, BDD>(s.ToCharArray(), c => css.MkCharConstraint(c));
-            Assert.IsTrue(sr.IsMatch(F("a0d")));
-            Assert.IsFalse(sr.IsMatch(F("a0")));
-            Assert.IsTrue(sr.IsMatch(F("a5def")));
-            Assert.IsFalse(sr.IsMatch(F("aa")));
-            Assert.IsTrue(sr.IsMatch(F("a3abcdefg")));
-            Assert.IsTrue(sr.IsMatch(F("a3abcdefgh")));
-            Assert.IsFalse(sr.IsMatch(F("a3abcdefghi")));
+            Assert.IsTrue(sr.IsMatch("a0d"));
+            Assert.IsFalse(sr.IsMatch("a0"));
+            Assert.IsTrue(sr.IsMatch("a5def"));
+            Assert.IsFalse(sr.IsMatch("aa"));
+            Assert.IsTrue(sr.IsMatch("a3abcdefg"));
+            Assert.IsTrue(sr.IsMatch("a3abcdefgh"));
+            Assert.IsFalse(sr.IsMatch("a3abcdefghi"));
         }
 
         [TestMethod]
@@ -355,8 +357,8 @@ namespace Automata.Tests
             CharSetSolver css = new CharSetSolver();
             var sr = css.RegexConverter.ConvertToSymbolicRegex(regex);
             Func<string, BDD[]> F = s => Array.ConvertAll<char, BDD>(s.ToCharArray(), c => css.MkCharConstraint(c));
-            Assert.IsTrue(sr.IsMatch(F("addddd")));
-            Assert.IsFalse(sr.IsMatch(F("adddddd")));
+            Assert.IsTrue(sr.IsMatch("addddd"));
+            Assert.IsFalse(sr.IsMatch("adddddd"));
             //    var R = new Regex(regex);
             //    Assert.IsTrue(R.IsMatch("addddd"));
             //    var matches = R.Matches("xxxxadddddexxxxxadddddxxxxabc");
@@ -370,7 +372,7 @@ namespace Automata.Tests
             var R = new Regex(@".*(ab|ba)+$", RegexOptions.Singleline);
             var R1 = new Regex(@"(ab|ba)+", RegexOptions.Singleline);
             CharSetSolver css = new CharSetSolver();
-            var sr = css.RegexConverter.ConvertToSymbolicRegex(R,true);
+            var sr = css.RegexConverter.ConvertToSymbolicRegex(R, true);
             Assert.IsTrue(sr.IsMatch("xxabbabbaba"));
             Assert.IsTrue(sr.IsMatch("abba"));
             Assert.IsTrue(R1.IsMatch("baba"));
@@ -387,7 +389,7 @@ namespace Automata.Tests
         {
             var R = new Regex(@"(ab|ba)+|ababbba", RegexOptions.Singleline);
             CharSetSolver css = new CharSetSolver();
-            var sr = css.RegexConverter.ConvertToSymbolicRegex(R,true);
+            var sr = css.RegexConverter.ConvertToSymbolicRegex(R, true);
             Assert.IsTrue(sr.IsMatch("ababba"));
             var matches = R.Matches("xaababbba");
             Assert.IsTrue(matches.Count == 2);
@@ -484,7 +486,7 @@ namespace Automata.Tests
             var autBDD = srBDD.Explore();
             //-----
             //autBDD.ShowGraph("autBDD");
-            var srBV = R1.ConvertToSymbolicRegexBV(css);
+            var srBV = R1.CompileToSymbolicRegex(css);
             var autBV = srBV.Explore();
             //autBV.ShowGraph("autBV");
             Assert.AreEqual<int>(autBV.StateCount, autBDD.StateCount);
@@ -494,9 +496,9 @@ namespace Automata.Tests
         public void TestSymbolicRegex_Explore_Loop_TrickyCase()
         {
             int k = 10;
-            //var r = "pwd=[^a][^b]{0,10}b";
+            var r = "pwd=[^a][^b]{0,10}b";
             //var r = "\n.*(thisid|that).*(foobar|[^a-z]bar)=[^@][^;]{5," + k + "};";
-            var r = "[^a][^b]{0," + k + "}b";
+            //var r = "[^a][^b]{0," + k + "}b";
             //SymbolicRegexSet<BV>.optimizeLoops = false;
             TestSymbolicRegex_Explore_Helper(r);
         }
@@ -519,7 +521,7 @@ namespace Automata.Tests
             //int abc_cnt = (int)css.ComputeDomainSize(bcd);
             //Assert.AreEqual<int>(abc_cnt, 6);
             //Assert.AreEqual<int>(neg_abc_cnt, 0x10000 - 6);
-            var sr = R.ConvertToSymbolicRegexBV(css);
+            var sr = R.CompileToSymbolicRegex(css);
             //--- construnct specialized RegexAutomaton
             int t = System.Environment.TickCount;
             var ar = sr.Explore(10000);
@@ -562,7 +564,7 @@ namespace Automata.Tests
             string[] regexes = new string[] {
                 "ba{3,7}b",
                 "ba{3,7}b|baa{2,6}b",
-                "ba{3,}z|baa{2,}z", 
+                "ba{3,}z|baa{2,}z",
                 "(foo){4,5}|(bar){2,7}",
                 "(bar){2,7}|(foo){4,5}"
             };
@@ -582,18 +584,57 @@ namespace Automata.Tests
             }
         }
 
+        [TestMethod]
+        public void TestSymbolicRegex_Matches_abc()
+        {
+            var regex = new Regex("abc", RegexOptions.IgnoreCase);
+            var solver = new CharSetSolver();
+            var sr = regex.CompileToSymbolicRegex(solver);
+            var input = "xbxabcabxxxxaBCabcxx";
+            Func<int, int, Tuple<int, int>> f = (x, y) => new Tuple<int, int>(x, y);
+            var expectedMatches = new Sequence<Tuple<int, int>>(f(3, 3), f(12, 3), f(15, 3));
+            var matches = new Sequence<Tuple<int, int>>(sr.Matches(input));
+            Assert.AreEqual<Sequence<Tuple<int, int>>>(expectedMatches, matches);
+        }
+
+        [TestMethod]
+        public void TestSymbolicRegex_Matches_simple_loops()
+        {
+            var regex = new Regex("bcd|(cc)+|e+");
+            var solver = new CharSetSolver();
+            var sr = regex.CompileToSymbolicRegex(solver);
+            var input = "cccccbcdeeeee";
+            Func<int, int, Tuple<int, int>> f = (x, y) => new Tuple<int, int>(x, y);
+            var expectedMatches = new Sequence<Tuple<int, int>>(f(0, 4), f(5, 3), f(8, 5));
+            var matches = new Sequence<Tuple<int, int>>(sr.Matches(input));
+            Assert.AreEqual<Sequence<Tuple<int, int>>>(expectedMatches, matches);
+        }
+
+        [TestMethod]
+        public void TestSymbolicRegex_Matches_bounded_loops()
+        {
+            var regex = new Regex("a{2,4}");
+            var solver = new CharSetSolver();
+            var sr = regex.CompileToSymbolicRegex(solver);
+            var input = "..aaaaaaaaaaa..";
+            Func<int, int, Tuple<int, int>> f = (x, y) => new Tuple<int, int>(x, y);
+            var expectedMatches = new Sequence<Tuple<int, int>>(f(2,4),f(6,4),f(10,3));
+            var matches = new Sequence<Tuple<int, int>>(sr.Matches(input));
+            Assert.AreEqual<int>(3, matches.Length);
+            Assert.AreEqual<Sequence<Tuple<int, int>>>(expectedMatches, matches);
+        }
 
         [TestMethod]
         public void TestSymbolicRegex_Explore_Choice_Large()
         {
-            var r = "(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|"+
-                "twenty-one|twenty-two|twenty-three|twenty-four|twenty-five|twenty-six|twenty-seven|twenty-eight|twenty-nine|thirty|"+
-                "thirty-one|thirty-two|thirty-three|thirty-four|thirty-five|thirty-six|thirty-seven|thirty-eight|thirty-nine|forty|"+
-                "forty-one|forty-two|forty-three|forty-four|forty-five|forty-six|forty-seven|forty-eight|forty-nine|fifty|"+
-                "fifty-one|fifty-two|fifty-three|fifty-four|fifty-five|fifty-six|fifty-seven|fifty-eight|fifty-nine|sixty|"+
-                "sixty-one|sixty-two|sixty-three|sixty-four|sixty-five|sixty-six|sixty-seven|sixty-eight|sixty-nine|seventy|"+
-                "seventy-one|seventy-two|seventy-three|seventy-four|seventy-five|seventy-six|seventy-seven|seventy-eight|seventy-nine|"+
-                "eighty|eighty-one|eighty-two|eighty-three|eighty-four|eighty-five|eighty-six|eighty-seven|eighty-eight|eighty-nine|ninety|"+
+            var r = "(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|" +
+                "twenty-one|twenty-two|twenty-three|twenty-four|twenty-five|twenty-six|twenty-seven|twenty-eight|twenty-nine|thirty|" +
+                "thirty-one|thirty-two|thirty-three|thirty-four|thirty-five|thirty-six|thirty-seven|thirty-eight|thirty-nine|forty|" +
+                "forty-one|forty-two|forty-three|forty-four|forty-five|forty-six|forty-seven|forty-eight|forty-nine|fifty|" +
+                "fifty-one|fifty-two|fifty-three|fifty-four|fifty-five|fifty-six|fifty-seven|fifty-eight|fifty-nine|sixty|" +
+                "sixty-one|sixty-two|sixty-three|sixty-four|sixty-five|sixty-six|sixty-seven|sixty-eight|sixty-nine|seventy|" +
+                "seventy-one|seventy-two|seventy-three|seventy-four|seventy-five|seventy-six|seventy-seven|seventy-eight|seventy-nine|" +
+                "eighty|eighty-one|eighty-two|eighty-three|eighty-four|eighty-five|eighty-six|eighty-seven|eighty-eight|eighty-nine|ninety|" +
                 "ninety-one|ninety-two|ninety-three|ninety-four|ninety-five|ninety-six|ninety-seven|ninety-eight|ninety-nine|onehundred)";
             TestSymbolicRegex_Explore_Helper(r);
         }
@@ -618,7 +659,7 @@ namespace Automata.Tests
             var r = "a";
             CharSetSolver css = new CharSetSolver();
             var R3 = new Regex(".*(" + r + ")", RegexOptions.Singleline | RegexOptions.IgnoreCase);
-            var sr3 = R3.ConvertToSymbolicRegexBV(css);
+            var sr3 = R3.CompileToSymbolicRegex(css);
             var bva = ((BVAlgebra)sr3.builder.solver);
             Assert.IsTrue(2 == bva.atoms.Length);
             Assert.IsTrue(2 == bva.atoms.Length);
@@ -634,8 +675,8 @@ namespace Automata.Tests
         private static void TestSymbolicRegex_Explore_Helper(string r3)
         {
             CharSetSolver css = new CharSetSolver();
-            var R3 = new Regex(".*(" + r3 + ")", RegexOptions.Singleline);
-            var sr3 = R3.ConvertToSymbolicRegexBV(css,false);
+            var R3 = new Regex(".*(" + r3 + ")", RegexOptions.Singleline | RegexOptions.IgnoreCase);
+            var sr3 = R3.CompileToSymbolicRegex(css, false);
             int t = System.Environment.TickCount;
             var ar3 = sr3.Explore(10000);
             t = System.Environment.TickCount - t;
@@ -644,6 +685,7 @@ namespace Automata.Tests
             int t2 = System.Environment.TickCount;
             var sfa3m = sfa3.Determinize().Minimize().Normalize();
             t2 = System.Environment.TickCount - t2;
+            string[] partition = Array.ConvertAll(GetMinterms(sfa3m), ((CharSetSolver)(sfa3m.Algebra)).PrettyPrint);
             int t2bv = System.Environment.TickCount;
             var sfa3mbv = sfa3_bv.Determinize().Minimize().Normalize();
             t2bv = System.Environment.TickCount - t2bv;
@@ -670,5 +712,52 @@ namespace Automata.Tests
                 Assert.IsTrue(R3.IsMatch(s));
             }
         }
+
+        private static IEnumerable<BDD> EnumeratePredicates(Automaton<BDD> sfa3m)
+        {
+            foreach (var m in sfa3m.GetMoves())
+                yield return m.Label;
+        }
+
+        private static BDD[] GetMinterms(Automaton<BDD> sfa3m)
+        {
+            var predsArray = new List<BDD>(new HashSet<BDD>(EnumeratePredicates(sfa3m))).ToArray();
+            var mts = new List<Tuple<bool[], BDD>>(sfa3m.Algebra.GenerateMinterms(predsArray)).ToArray();
+            BDD[] partition = Array.ConvertAll(mts, x => x.Item2);
+            return partition;
+        }
+
+        [TestMethod]
+        public void TestSymbolicRegexBDD_IsMatch()
+        {
+            var css = new CharSetSolver();
+            var R = new Regex(@"^abc[\0-\xFF]+$");
+            var sr = R.ConvertToSymbolicRegexBDD(css);
+            var str = "abc" + CreateRandomString(1000);
+            Assert.IsTrue(sr.IsMatch(str));
+            Assert.IsFalse(sr.IsMatch(str + "\uFFFD\uFFFD\uFFFD"));
+        }
+
+        [TestMethod]
+        public void TestSymbolicRegexBV_IsMatch()
+        {
+            var css = new CharSetSolver();
+            var R = new Regex(@"^abc[\0-\xFF]+$");
+            var sr = R.CompileToSymbolicRegex(css);
+            var str = "abc" + CreateRandomString(1000);
+            Assert.IsTrue(sr.IsMatch(str));
+            Assert.IsFalse(sr.IsMatch(str + "\uFFFD\uFFFD"));
+        }
+
+        public static string CreateRandomString(int length)
+        {
+            byte[] bytes = new byte[length];
+            RNGCryptoServiceProvider rnd = new RNGCryptoServiceProvider();
+            rnd.GetBytes(bytes);
+            char[] cs = Array.ConvertAll(bytes, b => (char)b);
+            string s = new string(cs);
+            return s;
+        }
+
     }
 }

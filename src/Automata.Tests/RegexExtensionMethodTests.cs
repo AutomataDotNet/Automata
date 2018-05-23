@@ -95,5 +95,46 @@ namespace Automata.Tests
                 Assert.IsTrue(Regex.IsMatch(s, "^(9[a-z])+$"));
             }
         }
+
+        [TestMethod]
+        public void TestRegexCompileToSymbolicRegex()
+        {
+            Regex[] regexes = Array.ConvertAll(File.ReadAllLines(regexesFile), x => new Regex(x));
+            for (int i = 0; i < regexes.Length && i < 50; i++)
+            {
+                var regex = regexes[i];
+                var sr = regex.CompileToSymbolicRegex();
+                if (!sr.ContainsAnchors())
+                {
+                    var dataset = sr.GetPositiveDataset(10);
+                    string str = "";
+                    foreach (var s in dataset)
+                    {
+                        int k = new Random().Next(10);
+                        str += s + SymbolicRegexTests.CreateRandomString(k);
+                    }
+                    var sr_matches = sr.Matches(str);
+                    var regex_matches = regex.Matches(str);
+                    Assert.AreEqual<int>(regex_matches.Count, sr_matches.Length);
+                }
+            }
+        }
+
+        [TestMethod]
+        public void TestRegexCompileToSymbolicRegex1()
+        {
+            var regex = new Regex("[0-9A-Za-z]*");
+            var sr = regex.CompileToSymbolicRegex();
+            var dataset = sr.GetPositiveDataset(2);
+            string str = "";
+            foreach (var s in dataset)
+            {
+                int k = new Random().Next(10);
+                str += s + SymbolicRegexTests.CreateRandomString(k);
+            }
+            var sr_matches = sr.Matches(str);
+            var regex_matches = regex.Matches(str);
+            Assert.AreEqual<int>(regex_matches.Count, sr_matches.Length);
+        }
     }
 }
