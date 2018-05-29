@@ -13,6 +13,7 @@ namespace Microsoft.Automata
         /// </summary>
         /// <param name="regex">given regex</param>
         /// <param name="css">given solver, if null a new one is created</param>
+        /// <param name="simplify">if true then lower loop bounds are unwound (default is true)</param>
         /// <returns></returns>
         public static SymbolicRegex<BV> Compile(this Regex regex, CharSetSolver css = null, bool simplify = true)
         {

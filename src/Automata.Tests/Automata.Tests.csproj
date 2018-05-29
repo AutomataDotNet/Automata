@@ -110,6 +110,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="regexes.txt" />
+    <Content Include="regexesWithoutAnchors.txt" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Automata\Automata.csproj">
