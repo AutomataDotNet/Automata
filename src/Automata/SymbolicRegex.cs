@@ -1278,8 +1278,8 @@ namespace Microsoft.Automata
 
         /// <summary>
         /// Find all matches in the given input string.
-        /// Returns arrays of pairs (index, length) such that input.Substring(index, length) matches the regex. 
-        /// This regex must not be nullable.
+        /// Returns array of pairs (index, length) such that input.Substring(index, length) matches the regex. 
+        /// This regex must not accept the empty string.
         /// </summary>
         public Tuple<int, int>[] Matches(string input)
         {
