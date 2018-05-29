@@ -1376,7 +1376,7 @@ namespace Microsoft.Automata
 
         #region code generation 
 
-        public ICompiledStringMatcher ToCS(Automaton<BDD> automaton, bool OptimzeForAsciiInput = true, string classname = null, string namespacename = null)
+        public IMatcher ToCS(Automaton<BDD> automaton, bool OptimzeForAsciiInput = true, string classname = null, string namespacename = null)
         {
             return new Microsoft.Automata.Utilities.AutomataCSharpCompiler(automaton, classname, namespacename, OptimzeForAsciiInput).Compile();
         }

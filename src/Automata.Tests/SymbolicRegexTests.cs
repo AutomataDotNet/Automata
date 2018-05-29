@@ -486,7 +486,7 @@ namespace Automata.Tests
             var autBDD = srBDD.Explore();
             //-----
             //autBDD.ShowGraph("autBDD");
-            var srBV = R1.CompileToSymbolicRegex(css);
+            var srBV = R1.Compile(css);
             var autBV = srBV.Explore();
             //autBV.ShowGraph("autBV");
             Assert.AreEqual<int>(autBV.StateCount, autBDD.StateCount);
@@ -521,7 +521,7 @@ namespace Automata.Tests
             //int abc_cnt = (int)css.ComputeDomainSize(bcd);
             //Assert.AreEqual<int>(abc_cnt, 6);
             //Assert.AreEqual<int>(neg_abc_cnt, 0x10000 - 6);
-            var sr = R.CompileToSymbolicRegex(css);
+            var sr = R.Compile(css);
             //--- construnct specialized RegexAutomaton
             int t = System.Environment.TickCount;
             var ar = sr.Explore(10000);
@@ -589,7 +589,7 @@ namespace Automata.Tests
         {
             var regex = new Regex("abc", RegexOptions.IgnoreCase);
             var solver = new CharSetSolver();
-            var sr = regex.CompileToSymbolicRegex(solver);
+            var sr = regex.Compile(solver);
             var input = "xbxabcabxxxxaBCabcxx";
             Func<int, int, Tuple<int, int>> f = (x, y) => new Tuple<int, int>(x, y);
             var expectedMatches = new Sequence<Tuple<int, int>>(f(3, 3), f(12, 3), f(15, 3));
@@ -602,7 +602,7 @@ namespace Automata.Tests
         {
             var regex = new Regex("bcd|(cc)+|e+");
             var solver = new CharSetSolver();
-            var sr = regex.CompileToSymbolicRegex(solver);
+            var sr = regex.Compile(solver);
             var input = "cccccbcdeeeee";
             Func<int, int, Tuple<int, int>> f = (x, y) => new Tuple<int, int>(x, y);
             var expectedMatches = new Sequence<Tuple<int, int>>(f(0, 4), f(5, 3), f(8, 5));
@@ -615,7 +615,7 @@ namespace Automata.Tests
         {
             var regex = new Regex("a{2,4}");
             var solver = new CharSetSolver();
-            var sr = regex.CompileToSymbolicRegex(solver);
+            var sr = regex.Compile(solver);
             var input = "..aaaaaaaaaaa..";
             Func<int, int, Tuple<int, int>> f = (x, y) => new Tuple<int, int>(x, y);
             var expectedMatches = new Sequence<Tuple<int, int>>(f(2,4),f(6,4),f(10,3));
@@ -659,7 +659,7 @@ namespace Automata.Tests
             var r = "a";
             CharSetSolver css = new CharSetSolver();
             var R3 = new Regex(".*(" + r + ")", RegexOptions.Singleline | RegexOptions.IgnoreCase);
-            var sr3 = R3.CompileToSymbolicRegex(css);
+            var sr3 = R3.Compile(css);
             var bva = ((BVAlgebra)sr3.builder.solver);
             Assert.IsTrue(2 == bva.atoms.Length);
             Assert.IsTrue(2 == bva.atoms.Length);
@@ -676,7 +676,7 @@ namespace Automata.Tests
         {
             CharSetSolver css = new CharSetSolver();
             var R3 = new Regex(".*(" + r3 + ")", RegexOptions.Singleline | RegexOptions.IgnoreCase);
-            var sr3 = R3.CompileToSymbolicRegex(css, false);
+            var sr3 = R3.Compile(css, false);
             int t = System.Environment.TickCount;
             var ar3 = sr3.Explore(10000);
             t = System.Environment.TickCount - t;
@@ -743,7 +743,7 @@ namespace Automata.Tests
         {
             var css = new CharSetSolver();
             var R = new Regex(@"^abc[\0-\xFF]+$");
-            var sr = R.CompileToSymbolicRegex(css);
+            var sr = R.Compile(css);
             var str = "abc" + CreateRandomString(1000);
             Assert.IsTrue(sr.IsMatch(str));
             Assert.IsFalse(sr.IsMatch(str + "\uFFFD\uFFFD"));

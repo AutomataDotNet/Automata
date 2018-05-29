@@ -11,8 +11,8 @@ namespace Microsoft.Automata
     /// </summary>
     internal class DecisionTree
     {
-        int[] precomputed;
-        BST bst;
+        internal int[] precomputed;
+        internal BST bst;
         internal BDD[] partition;
 
         internal BST Tree
@@ -35,9 +35,9 @@ namespace Microsoft.Automata
         /// </summary>
         /// <param name="solver">character alberbra</param>
         /// <param name="partition">partition of the whole set of all characters into pairwise disjoint nonempty sets</param>
-        /// <param name="precomputeLimit">upper limit for block ids for characters to be precomputed in an array (default is 0x7F, i.e. ASCII)</param>
+        /// <param name="precomputeLimit">upper limit for block ids for characters to be precomputed in an array (default is 0xFF, i.e. extended ASCII)</param>
         /// <returns></returns>
-        internal static DecisionTree Create(CharSetSolver solver, BDD[] partition, ushort precomputeLimit = 0x7F)
+        internal static DecisionTree Create(CharSetSolver solver, BDD[] partition, ushort precomputeLimit = 0xFF)
         {
             if (partition.Length == 1)
                 //there is no partition, everything maps to one symbol e.g. in .*

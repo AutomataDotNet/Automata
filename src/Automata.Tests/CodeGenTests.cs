@@ -294,7 +294,7 @@ namespace Automata.Tests
             Console.WriteLine("----------------------------");
 
             Console.WriteLine("-------- cs ----------------");
-            Console.WriteLine(cs.SourceCode);
+            // Console.WriteLine(cs.SourceCode);
             Console.WriteLine("----------------------------");
 
             string sIn = solver.GenerateMember(sfaMin);

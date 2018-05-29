@@ -5402,7 +5402,7 @@ namespace Microsoft.Automata
         /// C# code that is exposed through the ICompiledStringMatcher interface.
         /// The automaton must be deterministic and the algebra must be CharSetSolver.
         /// </summary>
-        public ICompiledStringMatcher Compile(string classname = null, string namespacename = null)
+        public IMatcher Compile(string classname = null, string namespacename = null)
         {
             if (!(algebra is CharSetSolver))
                 throw new AutomataException(AutomataExceptionKind.AlgebraMustBeCharSetSolver);
@@ -5416,7 +5416,7 @@ namespace Microsoft.Automata
     }
 
     #region Helper classes used in various algorithms
-    internal class CompiledFiniteAutomaton : ICompiledStringMatcher
+    internal class CompiledFiniteAutomaton : IMatcher
     {
         public IDeterministicFiniteAutomaton Automaton { get; }
 
@@ -5433,9 +5433,9 @@ namespace Microsoft.Automata
             return Automaton.IsMatch(input);
         }
 
-        public int GenerateMatches(string input, Tuple<int,int>[] matches)
+        public Tuple<int, int>[] Matches(string input)
         {
-            return Automaton.GenerateMatches(input, matches);
+            throw new NotImplementedException();
         }
     }
 

@@ -20,7 +20,7 @@ namespace Microsoft.Automata.Utilities
         }
         string source;
 
-        internal ICompiledStringMatcher Compile()
+        internal IMatcher Compile()
         {
             var csc = new CSharpCodeProvider();
             var parameters = new CompilerParameters();  

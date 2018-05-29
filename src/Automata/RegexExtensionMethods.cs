@@ -9,22 +9,12 @@ namespace Microsoft.Automata
     public static class RegexExtensionMethods
     {
         /// <summary>
-        /// Attempts to compile the regex to the given automaton interface or returns null if the compilation attempt fails.
+        /// Copmiles a regex into a symbolic regex
         /// </summary>
-        /// <param name="regex">the regex</param>
-        /// <param name="timeout">given compilation timeout in ms</param>
-        public static ICompiledStringMatcher Compile(this Regex regex, int timeout = 0)
-        {
-            var brexman = new BREXManager("Matcher", "FString", 0, timeout);
-            var brex = brexman.MkRegex(regex.ToString(), regex.Options);
-            if (!brex.CanBeOptimized())
-                return null;
-
-            var aut = brex.Optimize();
-            return aut.Compile();
-        }
-
-        public static SymbolicRegex<BV> CompileToSymbolicRegex(this Regex regex, CharSetSolver css = null, bool simplify = true)
+        /// <param name="regex">given regex</param>
+        /// <param name="css">given solver, if null a new one is created</param>
+        /// <returns></returns>
+        public static SymbolicRegex<BV> Compile(this Regex regex, CharSetSolver css = null, bool simplify = true)
         {
             if (css == null)
                 css = new CharSetSolver();
@@ -43,13 +33,6 @@ namespace Microsoft.Automata
             if (simplify)
                 sr_bdd = sr_bdd.Simplify();
             return sr_bdd;
-        }
-
-        internal static RegexAutomaton Compile2(this Regex regex)
-        {
-            CharSetSolver css = new CharSetSolver();
-            var aut = RegexAutomaton.Create(css, regex);
-            return aut;
         }
 
         /// <summary>

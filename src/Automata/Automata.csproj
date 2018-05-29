@@ -115,7 +115,7 @@
     <Compile Include="Interfaces\IAutomaton.cs" />
     <Compile Include="Interfaces\IBooleanAlgebra.cs" />
     <Compile Include="Interfaces\ICharAlgebra.cs" />
-    <Compile Include="Interfaces\ICompiledStringMatcher.cs" />
+    <Compile Include="Interfaces\IMatcher.cs" />
     <Compile Include="Interfaces\IContext.cs" />
     <Compile Include="Interfaces\IDeterministicFiniteTransducer.cs" />
     <Compile Include="Interfaces\ILibrary.cs" />
@@ -139,6 +139,7 @@
     <Compile Include="RegexExtensionMethods.cs" />
     <Compile Include="SymbolicRegex.cs" />
     <Compile Include="SymbolicRegexBuilder.cs" />
+    <Compile Include="SymbolicRegexMatcher.cs" />
     <Compile Include="SymbolicRegexSampler.cs" />
     <Compile Include="Utilities\AutomataCSharpCompiler.cs" />
     <Compile Include="Utilities\CommandLineParser.cs" />

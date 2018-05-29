@@ -8,30 +8,19 @@ using System.Reflection;
 namespace Microsoft.Automata
 {
     /// <summary>
-    /// Provides source code, IsMatch method, and IFiniteAutomaton interface of the source code.
+    /// Provides IsMatch method and Matches method.
     /// </summary>
-    public interface ICompiledStringMatcher
+    public interface IMatcher
     {
         /// <summary>
-        /// Source code implementing the matcher.
-        /// </summary>
-        string SourceCode { get; }
-
-        /// <summary>
-        /// Returns true iff the automaton accepts the input string. 
-        /// Semantically equivalent to Automaton.IsFinalState(Automaton.Transition(0, input.ToCharArray())).
+        /// Returns true iff the input string imatches. 
         /// </summary>
         bool IsMatch(string input);
 
         /// <summary>
-        /// Incremental automaton interface to the compiled source code.
+        /// Returns all matches as pairs (startindex, length) in the input string.
         /// </summary>
-        IDeterministicFiniteAutomaton Automaton { get; }
-
-        /// <summary>
-        /// Returns the number of matches, and fills in the array with those matches (startindex, length) 
-        /// </summary>
-        int GenerateMatches(string input, Tuple<int,int>[] matches);
+        Tuple<int, int>[] Matches(string input);
     }
 
     /// <summary>

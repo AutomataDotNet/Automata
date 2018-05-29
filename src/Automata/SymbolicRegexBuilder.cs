@@ -11,21 +11,23 @@ namespace Microsoft.Automata
     internal class SymbolicRegexBuilder<S>
     {
         //empty string only
-        internal SymbolicRegex<S> epsilon;
+        readonly internal SymbolicRegex<S> epsilon;
         //empty language, complement of dotStar
-        internal SymbolicRegex<S> nothing;
-        internal SymbolicRegex<S> startAnchor;
-        internal SymbolicRegex<S> endAnchor;
-        internal SymbolicRegex<S> bolAnchor;
-        internal SymbolicRegex<S> eolAnchor;
-        internal SymbolicRegex<S> newLine;
-        internal SymbolicRegex<S> dot;
-        internal SymbolicRegex<S> dotStar;
-        internal SymbolicRegex<S> dollar;
-        internal SymbolicRegex<S> hat;
-        internal SymbolicRegex<S> bolRegex;
-        internal SymbolicRegex<S> eolRegex;
-        internal ICharAlgebra<S> solver;
+        readonly internal SymbolicRegex<S> nothing;
+        readonly internal SymbolicRegex<S> startAnchor;
+        readonly internal SymbolicRegex<S> endAnchor;
+        readonly internal SymbolicRegex<S> bolAnchor;
+        readonly internal SymbolicRegex<S> eolAnchor;
+        readonly internal SymbolicRegex<S> newLine;
+        readonly internal SymbolicRegex<S> dot;
+        readonly internal SymbolicRegex<S> dotStar;
+        readonly internal SymbolicRegex<S> dollar;
+        readonly internal SymbolicRegex<S> hat;
+        readonly internal SymbolicRegex<S> bolRegex;
+        readonly internal SymbolicRegex<S> eolRegex;
+        readonly internal ICharAlgebra<S> solver;
+
+        Dictionary<S, SymbolicRegex<S>> singletonCache = new Dictionary<S, SymbolicRegex<S>>();
 
         /// <summary>
         /// Create a new incremental symbolic regex builder.
@@ -35,16 +37,17 @@ namespace Microsoft.Automata
         {
             this.solver = solver;
             this.epsilon = SymbolicRegex<S>.MkEpsilon(this);
-            this.nothing = SymbolicRegex<S>.MkSingleton(this, solver.False);
+            this.nothing = SymbolicRegex<S>.MkFalse(this);
+            singletonCache[solver.False] = this.nothing;
+            this.dot = SymbolicRegex<S>.MkTrue(this);
+            singletonCache[solver.True] = this.dot;
+            this.dotStar = SymbolicRegex<S>.MkDotStar(this, this.dot);
             this.startAnchor = SymbolicRegex<S>.MkStartAnchor(this);
             this.endAnchor = SymbolicRegex<S>.MkEndAnchor(this);
             this.eolAnchor = SymbolicRegex<S>.MkEolAnchor(this);
             this.bolAnchor = SymbolicRegex<S>.MkBolAnchor(this);
-            this.newLine = SymbolicRegex<S>.MkSingleton(this, solver.MkCharConstraint('\n'));
-            this.dollar = SymbolicRegex<S>.MkSingleton(this, solver.MkCharConstraint('$'));
-            this.hat = SymbolicRegex<S>.MkSingleton(this, solver.MkCharConstraint('^'));
-            this.dot = SymbolicRegex<S>.MkSingleton(this, solver.True);
-            this.dotStar = SymbolicRegex<S>.MkLoop(this, this.dot, 0, int.MaxValue);
+            this.newLine = SymbolicRegex<S>.MkNewline(this);
+            singletonCache[this.newLine.set] = this.newLine;
             this.bolRegex = SymbolicRegex<S>.MkLoop(this, SymbolicRegex<S>.MkConcat(this, this.dotStar, this.newLine), 0, 1);
             this.eolRegex = SymbolicRegex<S>.MkLoop(this, SymbolicRegex<S>.MkConcat(this, this.newLine, this.dotStar), 0, 1);
         }
@@ -148,6 +151,10 @@ namespace Microsoft.Automata
             {
                 return this.epsilon;
             }
+            else if (lower == 0 && upper == int.MaxValue && regex.kind == SymbolicRegexKind.Singleton && this.solver.AreEquivalent(this.solver.True, regex.set))
+            {
+                return this.dotStar;
+            }
             else
             {
                 return SymbolicRegex<S>.MkLoop(this, regex, lower, upper);
@@ -169,8 +176,13 @@ namespace Microsoft.Automata
         /// </summary>
         public SymbolicRegex<S> MkSingleton(S set)
         {
-            var s = SymbolicRegex<S>.MkSingleton(this,set);
-            return s;
+            SymbolicRegex<S> res;
+            if (!singletonCache.TryGetValue(set, out res))
+            {
+                res = SymbolicRegex<S>.MkSingleton(this, set);
+                singletonCache[set] = res;
+            }
+            return res;
         }
 
         /// <summary>
