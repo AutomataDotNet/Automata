@@ -25,6 +25,7 @@ namespace Microsoft.Automata
             var sr_bv = sr_bdd.builder.Transform<BV>(sr_bdd, builder, builder.solver.ConvertFromCharSet);
             if (simplify)
                 sr_bv = sr_bv.Simplify();
+            sr_bv.InitializeMatcher();
             return sr_bv;
         }
 

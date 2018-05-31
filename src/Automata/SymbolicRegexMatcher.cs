@@ -16,9 +16,44 @@ namespace Microsoft.Automata
         SymbolicRegex<S> A;
 
         /// <summary>
+        /// if nonempty then A has that fixed prefix
+        /// </summary>
+        string A_fixedPrefix;
+
+        /// <summary>
+        /// if true then the fixed prefix of A is idependent of case
+        /// </summary>
+        bool A_fixedPrefix_ignoreCase;
+
+        /// <summary>
+        /// precomputed state of A1 that is reached after the fixed prefix of A
+        /// </summary>
+        int A1_skipState;
+
+        /// <summary>
+        /// precomputed regex of A1 that is reached after the fixed prefix of A
+        /// </summary>
+        SymbolicRegex<S> A1_skipStateRegex;
+
+        /// <summary>
         /// Reverse(A).
         /// </summary>
         SymbolicRegex<S> Ar;
+
+        /// <summary>
+        /// if nonempty then Ar has that fixed prefix of predicates
+        /// </summary>
+        S[] Ar_prefix;
+
+        /// <summary>
+        /// precomputed state that is reached after the fixed prefix of Ar
+        /// </summary>
+        int Ar_skipState;
+
+        /// <summary>
+        /// precomputed regex that is reached after the fixed prefix of Ar
+        /// </summary>
+        SymbolicRegex<S> Ar_skipStateRegex;
 
         /// <summary>
         /// .*A
@@ -171,7 +206,42 @@ namespace Microsoft.Automata
                 this.state2regexExtra[q0_A] = A;
                 this.deltaExtra[q0_A] = new int[K];
             }
+
+            SymbolicRegex<S> tmp = A;
+            this.A_fixedPrefix = A.FixedPrefix;
+            this.A_fixedPrefix_ignoreCase = A.IgnoreCaseOfFixedPrefix;
+            this.A1_skipState = DeltaStar(A_fixedPrefix, q0_A1, out tmp);
+            this.A1_skipStateRegex = tmp;
+
+            this.Ar_prefix = Ar.GetPrefix();
+            var Ar_prefix_repr = new string(Array.ConvertAll(this.Ar_prefix, x => (char)sr.Solver.CharSetProvider.GetMin(sr.Solver.ConvertToCharSet(x))));
+            this.Ar_skipState = DeltaStar(Ar_prefix_repr, q0_Ar, out tmp);
+            this.Ar_skipStateRegex = tmp;
         }
+
+        /// <summary>
+        /// Return the state after the given input
+        /// </summary>
+        /// <param name="input">given input</param>
+        /// <param name="q">given start state</param>
+        int DeltaStar(string input, int q, out SymbolicRegex<S> regex)
+        {
+            int p = q;
+            SymbolicRegex<S> regex1 = null;
+            if (input.Length == 0)
+            {
+                regex = this.state2regex[q];
+                return q;
+            }
+            else
+            {
+                for (int i = 0; i < input.Length; i++)
+                    p = Delta(input[i], p, out regex1);
+            }
+            regex = regex1;
+            return p;
+        }
+
 
         /// <summary>
         /// Compute the target state for source state q and input character c.
@@ -338,6 +408,8 @@ namespace Microsoft.Automata
             if (this.A.containsAnchors)
             {
                 //separate case when A contains anchors
+                //TBD prefix optimization  ay still be important here 
+                //but the prefix needs to be computed based on A ... but with start anchors removed or treated specially
                 if (A2 == null)
                 {
                     #region initialize A2 to A.RemoveAnchors()
@@ -359,36 +431,15 @@ namespace Microsoft.Automata
                     {
                         this.state2regex[qA2] = this.A2;
                     }
+
+
+
                     #endregion
                 }
 
                 int q = this.q0_A2;
                 SymbolicRegex<S> regex = this.A2;
                 int i = 0;
-
-                if (A2.FixedPrefix != string.Empty)
-                {
-                    #region prefix optimization
-                    var prefix = A2.FixedPrefix;
-                    //it is important to use Ordinal/OrdinalIgnoreCase to avoid culture dependent semantics of IndexOf
-                    StringComparison comparison = (A2.IgnoreCaseOfFixedPrefix ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
-                    i = input.IndexOf(prefix, 0, comparison);
-
-                    if (i == -1)
-                    {
-                        return false;
-                    }
-                    else
-                    {
-                        //compute the end state for the prefix
-                        for (int j = 0; j < prefix.Length; j++)
-                        {
-                            q = Delta(input[i], q, out regex);
-                            i += 1;
-                        }
-                    }
-                    #endregion
-                }
 
                 while (i < k)
                 {
@@ -418,7 +469,7 @@ namespace Microsoft.Automata
             {
                 //reuse A1
                 int i;
-                if (A1.FixedPrefix != string.Empty)
+                if (A.FixedPrefix != string.Empty)
                 {
                     i = FindFinalState1(input, 0);
                 }
@@ -483,22 +534,51 @@ namespace Microsoft.Automata
         /// Walk back in reverse using Ar to find the start position of match, start position is known to exist.
         /// </summary>
         /// <param name="input">the input array</param>
-        /// <param name="i">position to start walking back from</param>
+        /// <param name="i">position to start walking back from, i points at the last character of the match</param>
         /// <param name="match_start_boundary">do not pass this boundary when walking back</param>
         /// <returns></returns>
         private int FindStartPosition(string input, int i, int match_start_boundary)
         {
-            int i_start = -1;
             int q = q0_Ar;
+            SymbolicRegex<S> regex = null;
+            //A_r may have a fixed sequence
+            if (this.Ar_prefix.Length > 0)
+            {
+                //skip back the prefix portion of Ar
+                q = this.Ar_skipState;
+                regex = this.Ar_skipStateRegex;
+                i = i - this.Ar_prefix.Length;
+            }
+            if (i == -1)
+            {
+                //we reached the beginning of the input, thus the state q must be accepting
+                if (!regex.isNullable)
+                    throw new AutomataException(AutomataExceptionKind.InternalError);
+                return 0;
+            }
+
+            int last_start = -1;
+            if (regex != null && regex.isNullable)
+            {
+                //the whole prefix of Ar was in reverse a prefix of A
+                last_start = i + 1;
+            }
+            else
+            {
+                //still undefined where the start is
+                last_start = -1;
+            }
+
+            //walk back to the accepting state of Ar
+            int p;
+            int c;
             while (i >= match_start_boundary)
             {
                 //observe that the input is reversed 
                 //so input[k-1] is the first character 
                 //and input[0] is the last character
                 //TBD: anchors
-                SymbolicRegex<S> regex;
-                int c = input[i];
-                int p;
+                c = input[i];
                 p = Delta(c, q, out regex);
 
                 if (regex.isNullable)
@@ -508,7 +588,7 @@ namespace Microsoft.Automata
                     //this must happen at some point 
                     //or else A1 would not have reached a 
                     //final state after match_start_boundary
-                    i_start = i;
+                    last_start = i;
                 }
                 else if (regex.IsNothing)
                 {
@@ -518,9 +598,9 @@ namespace Microsoft.Automata
                 q = p;
                 i -= 1;
             }
-            if (i_start == -1)
+            if (last_start == -1)
                 throw new AutomataException(AutomataExceptionKind.InternalError);
-            return i_start;
+            return last_start;
         }
 
         /// <summary>
@@ -549,7 +629,7 @@ namespace Microsoft.Automata
                 }
                 else if (regex == regex.builder.nothing)
                 {
-                    //p is a deadend state so any further saerch is meaningless
+                    //p is a deadend state so any further search is meaningless
                     return k;
                 }
 
@@ -567,9 +647,9 @@ namespace Microsoft.Automata
         {
             int k = input.Length;
             int q = q0_A1;
-            var prefix = A.FixedPrefix;
+            var prefix = this.A_fixedPrefix;
             //it is important to use Ordinal/OrdinalIgnoreCase to avoid culture dependent semantics of IndexOf
-            StringComparison comparison = (A.IgnoreCaseOfFixedPrefix ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+            StringComparison comparison = (this.A_fixedPrefix_ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
             while (i < k)
             {
                 SymbolicRegex<S> regex = null;
@@ -583,7 +663,7 @@ namespace Microsoft.Automata
                 //first position where the prefix does match
                 if (q == q0_A1)
                 {
-                    i = input.IndexOf(prefix, i, comparison);
+                    i = IndexOf(input, prefix, i, this.A_fixedPrefix_ignoreCase); //input.IndexOf(prefix, i, comparison);
 
                     if (i == -1)
                     {
@@ -594,9 +674,15 @@ namespace Microsoft.Automata
                     }
                     else
                     {
-                        //compute the end state for the prefix
-                        for (int j = 0; j < prefix.Length; j++)
-                            q = Delta(prefix[j], q, out regex);
+                        //compute the end state for the A prefix
+                        //skip directly to the resulting state
+                        // --- i.e. does the loop ---
+                        //for (int j = 0; j < prefix.Length; j++)
+                        //    q = Delta(prefix[j], q, out regex);
+                        // ---
+                        q = this.A1_skipState;
+                        regex = this.A1_skipStateRegex;
+
                         //skip the prefix
                         i = i + prefix.Length;
                         if (regex.isNullable)
@@ -630,6 +716,45 @@ namespace Microsoft.Automata
                 i += 1;
             }
             return i;
+        }
+
+
+        /// <summary>
+        ///  Find first occurrence of s in input starting from index i.
+        /// </summary>
+        /// <param name="input">input string to search in</param>
+        /// <param name="s">the substring that is searched for</param>
+        /// <param name="i">the start index in input</param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        int IndexOf(string input, string s, int i, bool caseInsensitive)
+        {
+            //TBD: StringComparison.OrdinalIgnoreCase works incorrectly when s includes a unicode case-equivalent I, or K
+            //and the pattern s includes I or K, the match in s will then not be found
+            return input.IndexOf(s, i, (caseInsensitive ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal));
+            //char c = s[0];
+            //int l = s.Length;
+            //int k = input.Length - l;
+            //bool matchFound = false;
+            //while (i < k)
+            //{
+            //    if (input[i] == c)
+            //    {
+            //        matchFound = true;
+            //        for (int j = 1; j < l; j++)
+            //        {
+            //            if (input[i + j] != s[j])
+            //            {
+            //                matchFound = false;
+            //                break;
+            //            }
+            //        }
+            //    }
+            //    if (matchFound)
+            //        return i;
+            //    i += 1;
+            //}
+            //return -1;
         }
     }
 }

@@ -93,6 +93,10 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Automata.Tests\Automata.Tests.csproj">
+      <Project>{d437274d-5bfd-42fd-bbe5-96c4c0ffba05}</Project>
+      <Name>Automata.Tests</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Automata.Z3\Automata.Z3.csproj">
       <Project>{7fe1092a-83f9-4f34-a04c-815cab2bd35b}</Project>
       <Name>Automata.Z3</Name>

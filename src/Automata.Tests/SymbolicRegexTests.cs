@@ -476,86 +476,86 @@ namespace Automata.Tests
                 Assert.IsTrue(rev2.IsMatch(sample));
         }
 
-        [TestMethod]
-        public void TestSymbolicRegex_Explore_Simple()
-        {
-            CharSetSolver css = new CharSetSolver();
-            //-----
-            var R1 = new Regex(@"abc");
-            var srBDD = R1.ConvertToSymbolicRegexBDD(css);
-            var autBDD = srBDD.Explore();
-            //-----
-            //autBDD.ShowGraph("autBDD");
-            var srBV = R1.Compile(css);
-            var autBV = srBV.Explore();
-            //autBV.ShowGraph("autBV");
-            Assert.AreEqual<int>(autBV.StateCount, autBDD.StateCount);
-        }
+        //[TestMethod]
+        //public void TestSymbolicRegex_Explore_Simple()
+        //{
+        //    CharSetSolver css = new CharSetSolver();
+        //    //-----
+        //    var R1 = new Regex(@"abc");
+        //    var srBDD = R1.ConvertToSymbolicRegexBDD(css);
+        //    var autBDD = srBDD.Explore();
+        //    //-----
+        //    //autBDD.ShowGraph("autBDD");
+        //    var srBV = R1.Compile(css);
+        //    var autBV = srBV.Explore();
+        //    //autBV.ShowGraph("autBV");
+        //    Assert.AreEqual<int>(autBV.StateCount, autBDD.StateCount);
+        //}
 
-        [TestMethod]
-        public void TestSymbolicRegex_Explore_Loop_TrickyCase()
-        {
-            int k = 10;
-            var r = "pwd=[^a][^b]{0,10}b";
-            //var r = "\n.*(thisid|that).*(foobar|[^a-z]bar)=[^@][^;]{5," + k + "};";
-            //var r = "[^a][^b]{0," + k + "}b";
-            //SymbolicRegexSet<BV>.optimizeLoops = false;
-            TestSymbolicRegex_Explore_Helper(r);
-        }
+        //[TestMethod]
+        //public void TestSymbolicRegex_Explore_Loop_TrickyCase()
+        //{
+        //    int k = 10;
+        //    var r = "pwd=[^a][^b]{0,10}b";
+        //    //var r = "\n.*(thisid|that).*(foobar|[^a-z]bar)=[^@][^;]{5," + k + "};";
+        //    //var r = "[^a][^b]{0," + k + "}b";
+        //    //SymbolicRegexSet<BV>.optimizeLoops = false;
+        //    TestSymbolicRegex_Explore_Helper(r);
+        //}
 
-        [TestMethod]
-        public void TestSymbolicRegex_Explore_Choice_Small2()
-        {
-            var r = ".*(bc|[^bcd])";
-            var R = new Regex(r, RegexOptions.Singleline | RegexOptions.IgnoreCase);
-            //var r3 = "(?i:(bc|[^bcd]))";
-            //var R3 = new Regex(r3, RegexOptions.Singleline);
-            CharSetSolver css = new CharSetSolver();
-            //var bcd = css.MkCharSetFromRanges('b', 'd', 'B', 'D');
-            //var range1 = css.MkCharSetFromRegexCharClass("[\0-AE-ae-\uFFFF]");
-            //var range2 = css.MkCharSetFromRegexCharClass("[^bcdBCD]");
-            //Assert.AreEqual<BDD>(range1, range2);
-            //Assert.AreEqual<BDD>(!bcd, range2);
-            //var neg_abc = css.MkNot(bcd);
-            //int neg_abc_cnt = (int)css.ComputeDomainSize(neg_abc);
-            //int abc_cnt = (int)css.ComputeDomainSize(bcd);
-            //Assert.AreEqual<int>(abc_cnt, 6);
-            //Assert.AreEqual<int>(neg_abc_cnt, 0x10000 - 6);
-            var sr = R.Compile(css);
-            //--- construnct specialized RegexAutomaton
-            int t = System.Environment.TickCount;
-            var ar = sr.Explore(10000);
-            t = System.Environment.TickCount - t;
-            //--- covert to sfa over BDDs
-            var sfa = css.Convert("(" + R.ToString() + ")$", R.Options);
-            //--- convert to specialized sfa over BVs
-            var sfa_bv = sfa.ReplaceAlgebra<BV>(sr.builder.solver.ConvertFromCharSet, sr.builder.solver);
-            //--- minimize that sfa
-            int t2 = System.Environment.TickCount;
-            var sfa_m = sfa.Determinize().Minimize().Normalize();
-            t2 = System.Environment.TickCount - t2;
-            //--- minimize the sfa over BVs
-            int t2bv = System.Environment.TickCount;
-            var sfa_bv_m = sfa_bv.Determinize().Minimize().Normalize();
-            t2bv = System.Environment.TickCount - t2bv;
-            //--- covret back from BVs to BDDs
-            var sfa_bv_m_bdd = sfa_bv_m.ReplaceAlgebra<BDD>(sr.builder.solver.ConvertToCharSet, sr.builder.solver.CharSetProvider);
-            //---
-            Console.WriteLine("Explore:|Q|={0},t={1}ms, MinAut:|Q|={2},t={3}ms, MinAut_bv:|Q|={4},t={5}ms", ar.StateCount, t, sfa_m.StateCount, t2, sfa_bv_m.StateCount, t2bv);
-            Assert.IsTrue(sfa_m.StateCount == sfa_bv_m.StateCount, "automata must have same nr of states");
-            Assert.IsTrue(sfa_m.StateCount == sfa_bv_m_bdd.StateCount, "automata must have same nr of states");
-            Assert.IsTrue(sfa_m.IsEquivalentWith(sfa_bv_m_bdd), "automata must be equivalent");
-        }
+        //[TestMethod]
+        //public void TestSymbolicRegex_Explore_Choice_Small2()
+        //{
+        //    var r = ".*(bc|[^bcd])";
+        //    var R = new Regex(r, RegexOptions.Singleline | RegexOptions.IgnoreCase);
+        //    //var r3 = "(?i:(bc|[^bcd]))";
+        //    //var R3 = new Regex(r3, RegexOptions.Singleline);
+        //    CharSetSolver css = new CharSetSolver();
+        //    //var bcd = css.MkCharSetFromRanges('b', 'd', 'B', 'D');
+        //    //var range1 = css.MkCharSetFromRegexCharClass("[\0-AE-ae-\uFFFF]");
+        //    //var range2 = css.MkCharSetFromRegexCharClass("[^bcdBCD]");
+        //    //Assert.AreEqual<BDD>(range1, range2);
+        //    //Assert.AreEqual<BDD>(!bcd, range2);
+        //    //var neg_abc = css.MkNot(bcd);
+        //    //int neg_abc_cnt = (int)css.ComputeDomainSize(neg_abc);
+        //    //int abc_cnt = (int)css.ComputeDomainSize(bcd);
+        //    //Assert.AreEqual<int>(abc_cnt, 6);
+        //    //Assert.AreEqual<int>(neg_abc_cnt, 0x10000 - 6);
+        //    var sr = R.Compile(css);
+        //    //--- construnct specialized RegexAutomaton
+        //    int t = System.Environment.TickCount;
+        //    var ar = sr.Explore(10000);
+        //    t = System.Environment.TickCount - t;
+        //    //--- covert to sfa over BDDs
+        //    var sfa = css.Convert("(" + R.ToString() + ")$", R.Options);
+        //    //--- convert to specialized sfa over BVs
+        //    var sfa_bv = sfa.ReplaceAlgebra<BV>(sr.builder.solver.ConvertFromCharSet, sr.builder.solver);
+        //    //--- minimize that sfa
+        //    int t2 = System.Environment.TickCount;
+        //    var sfa_m = sfa.Determinize().Minimize().Normalize();
+        //    t2 = System.Environment.TickCount - t2;
+        //    //--- minimize the sfa over BVs
+        //    int t2bv = System.Environment.TickCount;
+        //    var sfa_bv_m = sfa_bv.Determinize().Minimize().Normalize();
+        //    t2bv = System.Environment.TickCount - t2bv;
+        //    //--- covret back from BVs to BDDs
+        //    var sfa_bv_m_bdd = sfa_bv_m.ReplaceAlgebra<BDD>(sr.builder.solver.ConvertToCharSet, sr.builder.solver.CharSetProvider);
+        //    //---
+        //    Console.WriteLine("Explore:|Q|={0},t={1}ms, MinAut:|Q|={2},t={3}ms, MinAut_bv:|Q|={4},t={5}ms", ar.StateCount, t, sfa_m.StateCount, t2, sfa_bv_m.StateCount, t2bv);
+        //    Assert.IsTrue(sfa_m.StateCount == sfa_bv_m.StateCount, "automata must have same nr of states");
+        //    Assert.IsTrue(sfa_m.StateCount == sfa_bv_m_bdd.StateCount, "automata must have same nr of states");
+        //    Assert.IsTrue(sfa_m.IsEquivalentWith(sfa_bv_m_bdd), "automata must be equivalent");
+        //}
 
-        [TestMethod]
-        public void TestSymbolicRegex_Explore_Loop_Simple()
-        {
-            for (int k = 10; k < 12; k++)
-            {
-                var r = "ba{0,3}b";
-                TestSymbolicRegex_Explore_Helper(r);
-            }
-        }
+        //[TestMethod]
+        //public void TestSymbolicRegex_Explore_Loop_Simple()
+        //{
+        //    for (int k = 10; k < 12; k++)
+        //    {
+        //        var r = "ba{0,3}b";
+        //        TestSymbolicRegex_Explore_Helper(r);
+        //    }
+        //}
 
         [TestMethod]
         public void TestSymbolicRegex_Simplify()
@@ -624,94 +624,94 @@ namespace Automata.Tests
             Assert.AreEqual<Sequence<Tuple<int, int>>>(expectedMatches, matches);
         }
 
-        [TestMethod]
-        public void TestSymbolicRegex_Explore_Choice_Large()
-        {
-            var r = "(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|" +
-                "twenty-one|twenty-two|twenty-three|twenty-four|twenty-five|twenty-six|twenty-seven|twenty-eight|twenty-nine|thirty|" +
-                "thirty-one|thirty-two|thirty-three|thirty-four|thirty-five|thirty-six|thirty-seven|thirty-eight|thirty-nine|forty|" +
-                "forty-one|forty-two|forty-three|forty-four|forty-five|forty-six|forty-seven|forty-eight|forty-nine|fifty|" +
-                "fifty-one|fifty-two|fifty-three|fifty-four|fifty-five|fifty-six|fifty-seven|fifty-eight|fifty-nine|sixty|" +
-                "sixty-one|sixty-two|sixty-three|sixty-four|sixty-five|sixty-six|sixty-seven|sixty-eight|sixty-nine|seventy|" +
-                "seventy-one|seventy-two|seventy-three|seventy-four|seventy-five|seventy-six|seventy-seven|seventy-eight|seventy-nine|" +
-                "eighty|eighty-one|eighty-two|eighty-three|eighty-four|eighty-five|eighty-six|eighty-seven|eighty-eight|eighty-nine|ninety|" +
-                "ninety-one|ninety-two|ninety-three|ninety-four|ninety-five|ninety-six|ninety-seven|ninety-eight|ninety-nine|onehundred)";
-            TestSymbolicRegex_Explore_Helper(r);
-        }
+        //[TestMethod]
+        //public void TestSymbolicRegex_Explore_Choice_Large()
+        //{
+        //    var r = "(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|" +
+        //        "twenty-one|twenty-two|twenty-three|twenty-four|twenty-five|twenty-six|twenty-seven|twenty-eight|twenty-nine|thirty|" +
+        //        "thirty-one|thirty-two|thirty-three|thirty-four|thirty-five|thirty-six|thirty-seven|thirty-eight|thirty-nine|forty|" +
+        //        "forty-one|forty-two|forty-three|forty-four|forty-five|forty-six|forty-seven|forty-eight|forty-nine|fifty|" +
+        //        "fifty-one|fifty-two|fifty-three|fifty-four|fifty-five|fifty-six|fifty-seven|fifty-eight|fifty-nine|sixty|" +
+        //        "sixty-one|sixty-two|sixty-three|sixty-four|sixty-five|sixty-six|sixty-seven|sixty-eight|sixty-nine|seventy|" +
+        //        "seventy-one|seventy-two|seventy-three|seventy-four|seventy-five|seventy-six|seventy-seven|seventy-eight|seventy-nine|" +
+        //        "eighty|eighty-one|eighty-two|eighty-three|eighty-four|eighty-five|eighty-six|eighty-seven|eighty-eight|eighty-nine|ninety|" +
+        //        "ninety-one|ninety-two|ninety-three|ninety-four|ninety-five|ninety-six|ninety-seven|ninety-eight|ninety-nine|onehundred)";
+        //    TestSymbolicRegex_Explore_Helper(r);
+        //}
 
-        [TestMethod]
-        public void TestSymbolicRegex_Explore_Choice_Medium()
-        {
-            var r = "one|two|three|four|five|six|seven|eight|nine|ten|twenty|twenty-one";
-            TestSymbolicRegex_Explore_Helper(r);
-        }
+        //[TestMethod]
+        //public void TestSymbolicRegex_Explore_Choice_Medium()
+        //{
+        //    var r = "one|two|three|four|five|six|seven|eight|nine|ten|twenty|twenty-one";
+        //    TestSymbolicRegex_Explore_Helper(r);
+        //}
 
-        [TestMethod]
-        public void TestSymbolicRegex_Explore_Choice_Small()
-        {
-            var r = "one|two|three";
-            TestSymbolicRegex_Explore_Helper(r);
-        }
+        //[TestMethod]
+        //public void TestSymbolicRegex_Explore_Choice_Small()
+        //{
+        //    var r = "one|two|three";
+        //    TestSymbolicRegex_Explore_Helper(r);
+        //}
 
-        [TestMethod]
-        public void TestSymbolicRegex_Explore_Trivial()
-        {
-            var r = "a";
-            CharSetSolver css = new CharSetSolver();
-            var R3 = new Regex(".*(" + r + ")", RegexOptions.Singleline | RegexOptions.IgnoreCase);
-            var sr3 = R3.Compile(css);
-            var bva = ((BVAlgebra)sr3.builder.solver);
-            Assert.IsTrue(2 == bva.atoms.Length);
-            Assert.IsTrue(2 == bva.atoms.Length);
-            Assert.IsTrue(bva.GetIdOfChar('a') == bva.GetIdOfChar('A'));
-            Assert.IsTrue(bva.GetIdOfChar('d') == bva.GetIdOfChar('x'));
-            var aut = sr3.Explore(100000);
-            Assert.IsFalse(aut.IsMatch(""));
-            Assert.IsTrue(aut.IsMatch("xxxa"));
-            Assert.IsTrue(aut.IsMatch("xxsdsdxA"));
-            Assert.IsFalse(aut.IsMatch("xxsdsdxAx"));
-        }
+        //[TestMethod]
+        //public void TestSymbolicRegex_Explore_Trivial()
+        //{
+        //    var r = "a";
+        //    CharSetSolver css = new CharSetSolver();
+        //    var R3 = new Regex(".*(" + r + ")", RegexOptions.Singleline | RegexOptions.IgnoreCase);
+        //    var sr3 = R3.Compile(css);
+        //    var bva = ((BVAlgebra)sr3.builder.solver);
+        //    Assert.IsTrue(2 == bva.atoms.Length);
+        //    Assert.IsTrue(2 == bva.atoms.Length);
+        //    Assert.IsTrue(bva.GetIdOfChar('a') == bva.GetIdOfChar('A'));
+        //    Assert.IsTrue(bva.GetIdOfChar('d') == bva.GetIdOfChar('x'));
+        //    var aut = sr3.Explore(100000);
+        //    Assert.IsFalse(aut.IsMatch(""));
+        //    Assert.IsTrue(aut.IsMatch("xxxa"));
+        //    Assert.IsTrue(aut.IsMatch("xxsdsdxA"));
+        //    Assert.IsFalse(aut.IsMatch("xxsdsdxAx"));
+        //}
 
-        private static void TestSymbolicRegex_Explore_Helper(string r3)
-        {
-            CharSetSolver css = new CharSetSolver();
-            var R3 = new Regex(".*(" + r3 + ")", RegexOptions.Singleline | RegexOptions.IgnoreCase);
-            var sr3 = R3.Compile(css, false);
-            int t = System.Environment.TickCount;
-            var ar3 = sr3.Explore(10000);
-            t = System.Environment.TickCount - t;
-            var sfa3 = css.Convert("(" + r3 + ")$", R3.Options);
-            var sfa3_bv = sfa3.ReplaceAlgebra<BV>(sr3.builder.solver.ConvertFromCharSet, sr3.builder.solver);
-            int t2 = System.Environment.TickCount;
-            var sfa3m = sfa3.Determinize().Minimize().Normalize();
-            t2 = System.Environment.TickCount - t2;
-            string[] partition = Array.ConvertAll(GetMinterms(sfa3m), ((CharSetSolver)(sfa3m.Algebra)).PrettyPrint);
-            int t2bv = System.Environment.TickCount;
-            var sfa3mbv = sfa3_bv.Determinize().Minimize().Normalize();
-            t2bv = System.Environment.TickCount - t2bv;
-            Func<BV, BDD> F = bv =>
-            {
-                BDD bdd;
-                sr3.builder.solver.TryConvertToCharSet(bv, out bdd);
-                return bdd;
-            };
-            var sfa3mbv_bdd = sfa3mbv.ReplaceAlgebra<BDD>(F, sr3.builder.solver.CharSetProvider);
-            Console.WriteLine("Explore:|Q|={0},t={1}ms, MinAut:|Q|={2},t={3}ms, MinAut_bv:|Q|={4},t={5}ms", ar3.StateCount, t, sfa3m.StateCount, t2, sfa3mbv.StateCount, t2bv);
-            //--- run agains a set of samples
-            Assert.AreEqual<int>(sfa3m.StateCount, sfa3mbv.StateCount);
-            Assert.AreEqual<int>(sfa3m.StateCount, sfa3mbv_bdd.StateCount);
-            Assert.IsTrue(sfa3m.IsEquivalentWith(sfa3mbv_bdd));
-            var ar3_bdd = ar3.ConvertToAutomatonOverBDD();
-            Assert.IsTrue(sfa3m.IsEquivalentWith(ar3_bdd));
-            var dataset = sr3.GetPositiveDataset(50);
-            foreach (var s in dataset)
-            {
-                Assert.IsTrue(ar3.IsMatch(s));
-                Assert.IsTrue(sr3.IsMatch(s));
-                css.Accepts(sfa3m, s);
-                Assert.IsTrue(R3.IsMatch(s));
-            }
-        }
+        //private static void TestSymbolicRegex_Explore_Helper(string r3)
+        //{
+        //    CharSetSolver css = new CharSetSolver();
+        //    var R3 = new Regex(".*(" + r3 + ")", RegexOptions.Singleline | RegexOptions.IgnoreCase);
+        //    var sr3 = R3.Compile(css, false);
+        //    int t = System.Environment.TickCount;
+        //    var ar3 = sr3.Explore(10000);
+        //    t = System.Environment.TickCount - t;
+        //    var sfa3 = css.Convert("(" + r3 + ")$", R3.Options);
+        //    var sfa3_bv = sfa3.ReplaceAlgebra<BV>(sr3.builder.solver.ConvertFromCharSet, sr3.builder.solver);
+        //    int t2 = System.Environment.TickCount;
+        //    var sfa3m = sfa3.Determinize().Minimize().Normalize();
+        //    t2 = System.Environment.TickCount - t2;
+        //    string[] partition = Array.ConvertAll(GetMinterms(sfa3m), ((CharSetSolver)(sfa3m.Algebra)).PrettyPrint);
+        //    int t2bv = System.Environment.TickCount;
+        //    var sfa3mbv = sfa3_bv.Determinize().Minimize().Normalize();
+        //    t2bv = System.Environment.TickCount - t2bv;
+        //    Func<BV, BDD> F = bv =>
+        //    {
+        //        BDD bdd;
+        //        sr3.builder.solver.TryConvertToCharSet(bv, out bdd);
+        //        return bdd;
+        //    };
+        //    var sfa3mbv_bdd = sfa3mbv.ReplaceAlgebra<BDD>(F, sr3.builder.solver.CharSetProvider);
+        //    Console.WriteLine("Explore:|Q|={0},t={1}ms, MinAut:|Q|={2},t={3}ms, MinAut_bv:|Q|={4},t={5}ms", ar3.StateCount, t, sfa3m.StateCount, t2, sfa3mbv.StateCount, t2bv);
+        //    //--- run agains a set of samples
+        //    Assert.AreEqual<int>(sfa3m.StateCount, sfa3mbv.StateCount);
+        //    Assert.AreEqual<int>(sfa3m.StateCount, sfa3mbv_bdd.StateCount);
+        //    Assert.IsTrue(sfa3m.IsEquivalentWith(sfa3mbv_bdd));
+        //    var ar3_bdd = ar3.ConvertToAutomatonOverBDD();
+        //    Assert.IsTrue(sfa3m.IsEquivalentWith(ar3_bdd));
+        //    var dataset = sr3.GetPositiveDataset(50);
+        //    foreach (var s in dataset)
+        //    {
+        //        Assert.IsTrue(ar3.IsMatch(s));
+        //        Assert.IsTrue(sr3.IsMatch(s));
+        //        css.Accepts(sfa3m, s);
+        //        Assert.IsTrue(R3.IsMatch(s));
+        //    }
+        //}
 
         private static IEnumerable<BDD> EnumeratePredicates(Automaton<BDD> sfa3m)
         {

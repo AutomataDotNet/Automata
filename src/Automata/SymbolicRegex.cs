@@ -615,6 +615,18 @@ namespace Microsoft.Automata
                 }
         }
 
+
+        /// <summary>
+        /// Initialize the matcher for this regex, if it is not initialized already
+        /// </summary>
+        internal void InitializeMatcher()
+        {
+            if (matcher == null)
+            {
+                matcher = new SymbolicRegexMatcher<S>(this);
+            }
+        }
+
         /// <summary>
         /// Checks if the given input string is accepted.
         /// </summary>
@@ -625,7 +637,7 @@ namespace Microsoft.Automata
             else
             {
                 if (matcher == null)
-                    matcher = new SymbolicRegexMatcher<S>(this);
+                    InitializeMatcher();
                 return matcher.IsMatch(input);
             }
             //S[] atoms;
@@ -893,196 +905,196 @@ namespace Microsoft.Automata
             return sampler.GetPositiveDataset(size);
         }
 
-        /// <summary>
-        /// Try to explore the symbolic regex into a DFA. 
-        /// If maxStateCount >= 0 then returns null if the DFA state count exceeds maxStateCount.
-        /// </summary>
-        public RegexAutomaton Explore(int maxStateCount = 1024)
-        {
-            S[] minterms;
-            BDD[] partition;
-            int K;
-            BVAlgebra bva;
-            if (this.Solver is BVAlgebra)
-            {
-                bva = this.Solver as BVAlgebra;
-                minterms = bva.atoms as S[];
-                partition = bva.minterms;
-                K = minterms.Length;
-            }
-            else if (this.Solver is CharSetSolver)
-            {
-                var css = this.Solver as CharSetSolver;
-                //compute the partition
-                minterms = ComputeMinterms();
-                bva = new BVAlgebra(css, minterms as BDD[]);
-                K = minterms.Length;
-                partition = minterms as BDD[];
-                //partition = new BDD[K];
-                //#region compute corresponding BDD partition from minterms
-                //for (int i = 0; i < K; i++)
-                //{
-                //    BDD bdd;
-                //    if (!Solver.TryConvertToCharSet(minterms[i], out bdd))
-                //        throw new AutomataException(AutomataExceptionKind.InternalError_SymbolicRegex);
-                //    partition[i] = bdd;
-                //}
-                //#endregion
-            }
-            else
-            {
-                throw new NotSupportedException(string.Format("only {0} or {1} solver is supported", typeof(BVAlgebra), typeof(CharSetSolver)));
-            }
+        ///// <summary>
+        ///// Try to explore the symbolic regex into a DFA. 
+        ///// If maxStateCount >= 0 then returns null if the DFA state count exceeds maxStateCount.
+        ///// </summary>
+        //public RegexAutomaton Explore(int maxStateCount = 1024)
+        //{
+        //    S[] minterms;
+        //    BDD[] partition;
+        //    int K;
+        //    BVAlgebra bva;
+        //    if (this.Solver is BVAlgebra)
+        //    {
+        //        bva = this.Solver as BVAlgebra;
+        //        minterms = bva.atoms as S[];
+        //        partition = bva.minterms;
+        //        K = minterms.Length;
+        //    }
+        //    else if (this.Solver is CharSetSolver)
+        //    {
+        //        var css = this.Solver as CharSetSolver;
+        //        //compute the partition
+        //        minterms = ComputeMinterms();
+        //        bva = new BVAlgebra(css, minterms as BDD[]);
+        //        K = minterms.Length;
+        //        partition = minterms as BDD[];
+        //        //partition = new BDD[K];
+        //        //#region compute corresponding BDD partition from minterms
+        //        //for (int i = 0; i < K; i++)
+        //        //{
+        //        //    BDD bdd;
+        //        //    if (!Solver.TryConvertToCharSet(minterms[i], out bdd))
+        //        //        throw new AutomataException(AutomataExceptionKind.InternalError_SymbolicRegex);
+        //        //    partition[i] = bdd;
+        //        //}
+        //        //#endregion
+        //    }
+        //    else
+        //    {
+        //        throw new NotSupportedException(string.Format("only {0} or {1} solver is supported", typeof(BVAlgebra), typeof(CharSetSolver)));
+        //    }
 
-            Dictionary<SymbolicRegex<S>, int> regex2state = new Dictionary<SymbolicRegex<S>, int>(maxStateCount);
-            Dictionary<int, SymbolicRegex<S>> state2regex = new Dictionary<int, SymbolicRegex<S>>(maxStateCount);
+        //    Dictionary<SymbolicRegex<S>, int> regex2state = new Dictionary<SymbolicRegex<S>, int>(maxStateCount);
+        //    Dictionary<int, SymbolicRegex<S>> state2regex = new Dictionary<int, SymbolicRegex<S>>(maxStateCount);
 
-            //there are at most maxStateCount * K transitions
-            //a transtion q --i--> p is represented by the entry delta[(q*K)+i]==p
-            int[] delta = new int[maxStateCount * K];
-            HashSet<int> finalstates = new HashSet<int>();
+        //    //there are at most maxStateCount * K transitions
+        //    //a transtion q --i--> p is represented by the entry delta[(q*K)+i]==p
+        //    int[] delta = new int[maxStateCount * K];
+        //    HashSet<int> finalstates = new HashSet<int>();
 
-            //initial state is 0
-            regex2state[this] = 0;
-            state2regex[0] = this;
+        //    //initial state is 0
+        //    regex2state[this] = 0;
+        //    state2regex[0] = this;
 
-            int stateCount = 1;
+        //    int stateCount = 1;
 
-            var stack = new SimpleStack<int>();
-            stack.Push(0);
-            if (this.IsNullable())
-                finalstates.Add(0);
+        //    var stack = new SimpleStack<int>();
+        //    stack.Push(0);
+        //    if (this.IsNullable())
+        //        finalstates.Add(0);
 
-            int nonfinalSinkState = -1;
-            int finalSinkState = -1;
+        //    int nonfinalSinkState = -1;
+        //    int finalSinkState = -1;
 
-            var q_derivs = new SymbolicRegex<S>[K];
+        //    var q_derivs = new SymbolicRegex<S>[K];
 
-            #region use DFS to discover the transitions, return null if state bound goes beyond maxStateCount
-            while (stack.IsNonempty)
-            {
-                var q = stack.Pop();
-                int qK = q * K;
-                var r = state2regex[q];
-                for (int i = 0; i < K; i++)
-                    //TBD: anchors
-                    q_derivs[i] = r.MkDerivative(minterms[i]);
+        //    #region use DFS to discover the transitions, return null if state bound goes beyond maxStateCount
+        //    while (stack.IsNonempty)
+        //    {
+        //        var q = stack.Pop();
+        //        int qK = q * K;
+        //        var r = state2regex[q];
+        //        for (int i = 0; i < K; i++)
+        //            //TBD: anchors
+        //            q_derivs[i] = r.MkDerivative(minterms[i]);
 
-                #region tmp: analyze the derivatives for counter extraction
-                if (false) // (r.EnabledBoundedLoopCount > 0)
-                {
-                    //group inputs leading to same target state
-                    var targets = new Dictionary<SymbolicRegex<S>, S>();
-                    for (int i = 0; i < K; i++)
-                    {
-                        S s;
-                        if (targets.TryGetValue(q_derivs[i], out s))
-                            targets[q_derivs[i]] = Solver.MkOr(s, minterms[i]);
-                        else
-                            targets[q_derivs[i]] = minterms[i];
-                    }
-                    var r1 = r.DecrementBoundedLoopCount();
-                    var k = r.EnabledBoundedLoopValue();
-                    if (targets.ContainsKey(r1))
-                    {
-                        //the bounded loop predicate
-                        var loop_pred = targets[r1];
-                        //check that r is an invariant loop state
-                        var targets1 = new Dictionary<SymbolicRegex<S>, S>();
-                        var r1_derivs = new SymbolicRegex<S>[K];
-                        for (int i = 0; i < K; i++)
-                            //TBD: anchors
-                            r1_derivs[i] = r1.MkDerivative(minterms[i]);
-                        for (int i = 0; i < K; i++)
-                        {
-                            S s;
-                            if (targets1.TryGetValue(r1_derivs[i], out s))
-                                targets1[r1_derivs[i]] = Solver.MkOr(s, minterms[i]);
-                            else
-                                targets1[r1_derivs[i]] = minterms[i];
-                        }
-                        bool aresame = true;
-                        if (targets1.Count != targets.Count)
-                            aresame = false;
-                        else
-                            foreach (var key in targets1.Keys)
-                            {
-                                if (!targets1[key].Equals(loop_pred))
-                                    if (!(targets.ContainsKey(key) && targets[key].Equals(targets1[key])))
-                                    {
-                                        aresame = false;
-                                        break;
-                                    }
-                            }
-                        Console.WriteLine(aresame);
-                        targets1.Clear();
-                        targets.Clear();
-                        //try to detect a loop
-                    }
+        //        #region tmp: analyze the derivatives for counter extraction
+        //        if (false) // (r.EnabledBoundedLoopCount > 0)
+        //        {
+        //            //group inputs leading to same target state
+        //            var targets = new Dictionary<SymbolicRegex<S>, S>();
+        //            for (int i = 0; i < K; i++)
+        //            {
+        //                S s;
+        //                if (targets.TryGetValue(q_derivs[i], out s))
+        //                    targets[q_derivs[i]] = Solver.MkOr(s, minterms[i]);
+        //                else
+        //                    targets[q_derivs[i]] = minterms[i];
+        //            }
+        //            var r1 = r.DecrementBoundedLoopCount();
+        //            var k = r.EnabledBoundedLoopValue();
+        //            if (targets.ContainsKey(r1))
+        //            {
+        //                //the bounded loop predicate
+        //                var loop_pred = targets[r1];
+        //                //check that r is an invariant loop state
+        //                var targets1 = new Dictionary<SymbolicRegex<S>, S>();
+        //                var r1_derivs = new SymbolicRegex<S>[K];
+        //                for (int i = 0; i < K; i++)
+        //                    //TBD: anchors
+        //                    r1_derivs[i] = r1.MkDerivative(minterms[i]);
+        //                for (int i = 0; i < K; i++)
+        //                {
+        //                    S s;
+        //                    if (targets1.TryGetValue(r1_derivs[i], out s))
+        //                        targets1[r1_derivs[i]] = Solver.MkOr(s, minterms[i]);
+        //                    else
+        //                        targets1[r1_derivs[i]] = minterms[i];
+        //                }
+        //                bool aresame = true;
+        //                if (targets1.Count != targets.Count)
+        //                    aresame = false;
+        //                else
+        //                    foreach (var key in targets1.Keys)
+        //                    {
+        //                        if (!targets1[key].Equals(loop_pred))
+        //                            if (!(targets.ContainsKey(key) && targets[key].Equals(targets1[key])))
+        //                            {
+        //                                aresame = false;
+        //                                break;
+        //                            }
+        //                    }
+        //                Console.WriteLine(aresame);
+        //                targets1.Clear();
+        //                targets.Clear();
+        //                //try to detect a loop
+        //            }
 
-                }
-                #endregion
+        //        }
+        //        #endregion
 
-                for (int i = 0; i < K; i++)
-                {
-                    var c = minterms[i];
-                    var d = q_derivs[i];
+        //        for (int i = 0; i < K; i++)
+        //        {
+        //            var c = minterms[i];
+        //            var d = q_derivs[i];
 
-                    //if (r.EnabledBoundedLoopCount == 1)
-                    //{
-                    //    var r1 = r.DecrementBoundedLoopCount();
-                    //    if (r1.Equals(d))
-                    //        Console.WriteLine("YES: loop decrement: on deriv({0}, {1})", c, r);
-                    //    else if (!regex2state.ContainsKey(d))
-                    //        Console.WriteLine("NO: loop decrement: on deriv({0}, {1}) = {2} ", c, r, d);
-                    //}
+        //            //if (r.EnabledBoundedLoopCount == 1)
+        //            //{
+        //            //    var r1 = r.DecrementBoundedLoopCount();
+        //            //    if (r1.Equals(d))
+        //            //        Console.WriteLine("YES: loop decrement: on deriv({0}, {1})", c, r);
+        //            //    else if (!regex2state.ContainsKey(d))
+        //            //        Console.WriteLine("NO: loop decrement: on deriv({0}, {1}) = {2} ", c, r, d);
+        //            //}
 
-                    int p;
-                    if (!regex2state.TryGetValue(d, out p))
-                    {
-                        //check if state limit has been reached
-                        if ((maxStateCount > 0) && (stateCount == maxStateCount))
-                            return null;
+        //            int p;
+        //            if (!regex2state.TryGetValue(d, out p))
+        //            {
+        //                //check if state limit has been reached
+        //                if ((maxStateCount > 0) && (stateCount == maxStateCount))
+        //                    return null;
 
-                        p = stateCount;
-                        regex2state[d] = p;
-                        state2regex[p] = d;
-                        stateCount += 1;
-                        if (d.IsNullable())
-                        {
-                            finalstates.Add(p);
-                        }
-                        if (d.IsEverything)
-                        {
-                            finalSinkState = p;
-                            int pK = p * K;
-                            for (int j = 0; j < K; j++)
-                                delta[pK + j] = p;
-                        }
-                        else if (d.IsNothing)
-                        {
-                            nonfinalSinkState = p;
-                            int pK = p * K;
-                            for (int j = 0; j < K; j++)
-                                delta[pK + j] = p;
-                        }
-                        else
-                        {
-                            stack.Push(p);
-                        }
-                    }
-                    delta[qK + i] = p;
-                }
-            }
-            #endregion
+        //                p = stateCount;
+        //                regex2state[d] = p;
+        //                state2regex[p] = d;
+        //                stateCount += 1;
+        //                if (d.IsNullable())
+        //                {
+        //                    finalstates.Add(p);
+        //                }
+        //                if (d.IsEverything)
+        //                {
+        //                    finalSinkState = p;
+        //                    int pK = p * K;
+        //                    for (int j = 0; j < K; j++)
+        //                        delta[pK + j] = p;
+        //                }
+        //                else if (d.IsNothing)
+        //                {
+        //                    nonfinalSinkState = p;
+        //                    int pK = p * K;
+        //                    for (int j = 0; j < K; j++)
+        //                        delta[pK + j] = p;
+        //                }
+        //                else
+        //                {
+        //                    stack.Push(p);
+        //                }
+        //            }
+        //            delta[qK + i] = p;
+        //        }
+        //    }
+        //    #endregion
 
-            var dt = DecisionTree.Create(this.builder.solver.CharSetProvider, partition);
+        //    var dt = DecisionTree.Create(this.builder.solver.CharSetProvider, partition);
 
-            var aut = new RegexAutomaton(bva, new System.Text.RegularExpressions.Regex(this.ToString()), K, stateCount,
-                delta, finalstates, dt, nonfinalSinkState, finalSinkState);
+        //    var aut = new RegexAutomaton(bva, new System.Text.RegularExpressions.Regex(this.ToString()), K, stateCount,
+        //        delta, finalstates, dt, nonfinalSinkState, finalSinkState);
 
-            return aut;
-        }
+        //    return aut;
+        //}
 
         internal bool StartsWithLoop(int upperBoundLowestValue = 1)
         {
@@ -1407,7 +1419,7 @@ namespace Microsoft.Automata
             }
         }
 
-        S[] GetPrefix()
+        internal S[] GetPrefix()
         {
             return GetPrefixList(SimpleList<S>.Empty).ToArray();
         }

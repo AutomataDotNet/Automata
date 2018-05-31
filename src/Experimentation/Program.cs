@@ -11,6 +11,7 @@ using Microsoft.Automata.Z3.Internal;
 using Microsoft.Automata;
 using Microsoft.Z3;
 using System.Diagnostics;
+using Automata.Tests;
 
 namespace RunExperiments
 {
@@ -24,7 +25,7 @@ namespace RunExperiments
         static internal string timbukFileDM = "dtaminrestimbuk.txt";
         static internal string largeAlphabetFile = "largeAlphabetResults.txt";
         static internal string fastFile = "fastResults.txt";
-        
+
         static internal string regexOutputFile = "nfaRegexMinResults.txt";
         static internal string verifNFAOutputFile = "nfaVerificationMinResults.txt";
 
@@ -57,7 +58,7 @@ namespace RunExperiments
             //Util.GatherResultsTimbuk(timbukFile, timbukFileDM, timbukPrefix);
 
 
-            RegexExperiment.RunTest();
+            //RegexExperiment.RunTest();
 
             //VerificationNFAExperiment.RunTest();
 
@@ -66,7 +67,10 @@ namespace RunExperiments
             RegexExperiment.RunTest();
             Console.WriteLine("nfa-verification");
             VerificationNFAExperiment.RunFinAlphTest();
-             */     
+             */
+
+            var tests = new RegexExtensionMethodTests();
+            tests.TestRegex_CompileToSymbolicRegex_IsMatch_IgnoreCaseTrue();
         }
 
     }
