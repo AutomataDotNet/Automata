@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Runtime.CompilerServices;
 
 namespace Microsoft.Automata
 {
@@ -533,6 +534,7 @@ namespace Microsoft.Automata
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsSatisfiable(BV predicate)
         {
             return !predicate.Equals(zero);
@@ -555,16 +557,19 @@ namespace Microsoft.Automata
             throw new NotImplementedException();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public BV MkAnd(BV predicate1, BV predicate2)
         {
             return predicate1 & predicate2;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public BV MkDiff(BV predicate1, BV predicate2)
         {
             return predicate1 & ~predicate2; 
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public BV MkNot(BV predicate)
         {
             return ~predicate;
@@ -587,11 +592,13 @@ namespace Microsoft.Automata
             return predicate1 | predicate2;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public BV MkSymmetricDifference(BV p1, BV p2)
         {
             return p1 ^ p2;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public BV Simplify(BV predicate)
         {
             return predicate;
@@ -786,6 +793,7 @@ namespace Microsoft.Automata
         /// <summary>
         /// Bitwise AND
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static BV operator &(BV x, BV y)
         {
             int k = (x.more.Length <= y.more.Length ? x.more.Length : y.more.Length);

@@ -13,7 +13,7 @@ namespace Microsoft.Automata
     public interface IMatcher
     {
         /// <summary>
-        /// Returns true iff the input string imatches. 
+        /// Returns true iff the input string matches. 
         /// </summary>
         bool IsMatch(string input);
 

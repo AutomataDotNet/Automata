@@ -229,5 +229,38 @@ namespace Microsoft.Automata
 
             return res;
         }
+
+        /// <summary>
+        /// Reuturns the maximal common prefix between this sequence and another sequence
+        /// </summary>
+        /// <typeparam name="S">element type</typeparam>
+        /// <param name="that">the other sequence</param>
+        /// <returns></returns>
+        public Sequence<T> MaximalCommonPrefix(Sequence<T> that)
+        {
+            if (that.IsEmpty || this.IsEmpty)
+                return Sequence<T>.Empty;
+            else
+            {
+                int k = (this.elems.Length <= that.elems.Length ? this.elems.Length : that.elems.Length);
+                int i = 0;
+                while (i < k)
+                {
+                    if (object.Equals(this.elems[i], that.elems[i]))
+                        i += 1;
+                    else
+                        break;
+                }
+                if (i == 0)
+                    return Sequence<T>.Empty;
+                else
+                {
+                    T[] common_prefix = new T[i];
+                    Array.Copy(this.elems, common_prefix, i);
+                    var pref = new Sequence<T>(common_prefix);
+                    return pref;
+                }
+            }
+        }
     }
 }

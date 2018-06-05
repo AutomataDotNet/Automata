@@ -640,78 +640,44 @@ namespace Microsoft.Automata
                     InitializeMatcher();
                 return matcher.IsMatch(input);
             }
-            //S[] atoms;
-            //DecisionTree dt;
-            //if (this.Solver is BVAlgebra)
-            //{
-            //    BVAlgebra bva = this.Solver as BVAlgebra;
-            //    atoms = bva.atoms as S[];
-            //    dt = bva.dtree;
-            //}
-            //else if (this.Solver is CharSetSolver)
-            //{
-            //    //compute the minterms 
-            //    atoms = ComputeMinterms();
-            //    dt = DecisionTree.Create(this.Solver as CharSetSolver, atoms as BDD[]);
-            //}
-            //else
-            //{ 
-            //    throw new NotSupportedException(string.Format("only {0} or {1} solver is supported", typeof(BVAlgebra), typeof(CharSetSolver)));
-            //}
-            //var regex2state = new Dictionary<SymbolicRegex<S>, int>();
-            //var state2regex = new Dictionary<int, SymbolicRegex<S>>();
-            //var transitions = new Dictionary<int, int[]>();
-
-            ////use 1 as the initial state, transitions[q][s]=0 means uninitialized entry
-            //regex2state[this] = 1;
-            //state2regex[1] = this;
-            //transitions[1] = new int[atoms.Length];
-            //int nextStateId = 2;
-
-            //var k = input.Length;
-            //if (k == 0)
-            //    return this.IsNullable(true, true);
-            //else
-            //{
-            //    var q = 1;
-            //    for (int i = 0; i < k; i++)
-            //    {
-            //        int[] q_transitions = transitions[q];
-            //        char c = input[i];
-            //        int c_id = dt.GetId(c);
-            //        //a is the corresponding atom or minterm of c
-            //        S a = atoms[c_id];
-            //        int p = q_transitions[c_id];
-            //        if (p == 0)
-            //        {
-            //            //p==0 means that the transition q--a-->p is undefined
-            //            //so compute the derivative for atom a 
-            //            var regex = state2regex[q];
-            //            //TBD: anchors
-            //            var d = regex.MkDerivative(a);
-            //            if (d.IsEverything)
-            //                //everything is accepted from this point on
-            //                return true; 
-            //            else if (d.IsNothing)
-            //                //everything is rejected from this point on
-            //                return false;
-            //            if (!regex2state.TryGetValue(d, out p))
-            //            {
-            //                //the derivative has not been seen before
-            //                //assign the next avaliable state id to it
-            //                //p is the new state
-            //                p = nextStateId++;
-            //                regex2state[d] = p;
-            //                state2regex[p] = d;
-            //                transitions[p] = new int[atoms.Length];
-            //            }
-            //            q_transitions[c_id] = p;
-            //        }
-            //        q = p;
-            //    }
-            //    return state2regex[q].IsNullable(false, true);
-            //}
         }
+
+        ///// <summary>
+        ///// Checks if the given input string is accepted.
+        ///// Unsafe version of IsMatch.
+        ///// </summary>
+        //unsafe public bool IsMatchU(string input)
+        //{
+        //    if (input == string.Empty)
+        //        return this.isNullable;
+        //    else
+        //    {
+        //        if (matcher == null)
+        //            InitializeMatcher();
+        //        var chars = input.ToCharArray();
+
+        //        fixed (char* charsp = &chars[0])
+        //        {
+        //            return matcher.IsMatch(charsp, chars.Length);
+        //        }
+        //    }
+        //}
+
+        ///// <summary>
+        ///// Checks if the given input string of length k is accepted.
+        ///// Unsafe version of IsMatch.
+        ///// </summary>
+        //unsafe public bool IsMatchU(char* input, int k)
+        //{
+        //    if (k == 0)
+        //        return this.isNullable;
+        //    else
+        //    {
+        //        if (matcher == null)
+        //            InitializeMatcher();
+        //        return matcher.IsMatch(input, k);
+        //    }
+        //}
 
         static int prime = 31;
         int hashcode = -1;
@@ -905,197 +871,6 @@ namespace Microsoft.Automata
             return sampler.GetPositiveDataset(size);
         }
 
-        ///// <summary>
-        ///// Try to explore the symbolic regex into a DFA. 
-        ///// If maxStateCount >= 0 then returns null if the DFA state count exceeds maxStateCount.
-        ///// </summary>
-        //public RegexAutomaton Explore(int maxStateCount = 1024)
-        //{
-        //    S[] minterms;
-        //    BDD[] partition;
-        //    int K;
-        //    BVAlgebra bva;
-        //    if (this.Solver is BVAlgebra)
-        //    {
-        //        bva = this.Solver as BVAlgebra;
-        //        minterms = bva.atoms as S[];
-        //        partition = bva.minterms;
-        //        K = minterms.Length;
-        //    }
-        //    else if (this.Solver is CharSetSolver)
-        //    {
-        //        var css = this.Solver as CharSetSolver;
-        //        //compute the partition
-        //        minterms = ComputeMinterms();
-        //        bva = new BVAlgebra(css, minterms as BDD[]);
-        //        K = minterms.Length;
-        //        partition = minterms as BDD[];
-        //        //partition = new BDD[K];
-        //        //#region compute corresponding BDD partition from minterms
-        //        //for (int i = 0; i < K; i++)
-        //        //{
-        //        //    BDD bdd;
-        //        //    if (!Solver.TryConvertToCharSet(minterms[i], out bdd))
-        //        //        throw new AutomataException(AutomataExceptionKind.InternalError_SymbolicRegex);
-        //        //    partition[i] = bdd;
-        //        //}
-        //        //#endregion
-        //    }
-        //    else
-        //    {
-        //        throw new NotSupportedException(string.Format("only {0} or {1} solver is supported", typeof(BVAlgebra), typeof(CharSetSolver)));
-        //    }
-
-        //    Dictionary<SymbolicRegex<S>, int> regex2state = new Dictionary<SymbolicRegex<S>, int>(maxStateCount);
-        //    Dictionary<int, SymbolicRegex<S>> state2regex = new Dictionary<int, SymbolicRegex<S>>(maxStateCount);
-
-        //    //there are at most maxStateCount * K transitions
-        //    //a transtion q --i--> p is represented by the entry delta[(q*K)+i]==p
-        //    int[] delta = new int[maxStateCount * K];
-        //    HashSet<int> finalstates = new HashSet<int>();
-
-        //    //initial state is 0
-        //    regex2state[this] = 0;
-        //    state2regex[0] = this;
-
-        //    int stateCount = 1;
-
-        //    var stack = new SimpleStack<int>();
-        //    stack.Push(0);
-        //    if (this.IsNullable())
-        //        finalstates.Add(0);
-
-        //    int nonfinalSinkState = -1;
-        //    int finalSinkState = -1;
-
-        //    var q_derivs = new SymbolicRegex<S>[K];
-
-        //    #region use DFS to discover the transitions, return null if state bound goes beyond maxStateCount
-        //    while (stack.IsNonempty)
-        //    {
-        //        var q = stack.Pop();
-        //        int qK = q * K;
-        //        var r = state2regex[q];
-        //        for (int i = 0; i < K; i++)
-        //            //TBD: anchors
-        //            q_derivs[i] = r.MkDerivative(minterms[i]);
-
-        //        #region tmp: analyze the derivatives for counter extraction
-        //        if (false) // (r.EnabledBoundedLoopCount > 0)
-        //        {
-        //            //group inputs leading to same target state
-        //            var targets = new Dictionary<SymbolicRegex<S>, S>();
-        //            for (int i = 0; i < K; i++)
-        //            {
-        //                S s;
-        //                if (targets.TryGetValue(q_derivs[i], out s))
-        //                    targets[q_derivs[i]] = Solver.MkOr(s, minterms[i]);
-        //                else
-        //                    targets[q_derivs[i]] = minterms[i];
-        //            }
-        //            var r1 = r.DecrementBoundedLoopCount();
-        //            var k = r.EnabledBoundedLoopValue();
-        //            if (targets.ContainsKey(r1))
-        //            {
-        //                //the bounded loop predicate
-        //                var loop_pred = targets[r1];
-        //                //check that r is an invariant loop state
-        //                var targets1 = new Dictionary<SymbolicRegex<S>, S>();
-        //                var r1_derivs = new SymbolicRegex<S>[K];
-        //                for (int i = 0; i < K; i++)
-        //                    //TBD: anchors
-        //                    r1_derivs[i] = r1.MkDerivative(minterms[i]);
-        //                for (int i = 0; i < K; i++)
-        //                {
-        //                    S s;
-        //                    if (targets1.TryGetValue(r1_derivs[i], out s))
-        //                        targets1[r1_derivs[i]] = Solver.MkOr(s, minterms[i]);
-        //                    else
-        //                        targets1[r1_derivs[i]] = minterms[i];
-        //                }
-        //                bool aresame = true;
-        //                if (targets1.Count != targets.Count)
-        //                    aresame = false;
-        //                else
-        //                    foreach (var key in targets1.Keys)
-        //                    {
-        //                        if (!targets1[key].Equals(loop_pred))
-        //                            if (!(targets.ContainsKey(key) && targets[key].Equals(targets1[key])))
-        //                            {
-        //                                aresame = false;
-        //                                break;
-        //                            }
-        //                    }
-        //                Console.WriteLine(aresame);
-        //                targets1.Clear();
-        //                targets.Clear();
-        //                //try to detect a loop
-        //            }
-
-        //        }
-        //        #endregion
-
-        //        for (int i = 0; i < K; i++)
-        //        {
-        //            var c = minterms[i];
-        //            var d = q_derivs[i];
-
-        //            //if (r.EnabledBoundedLoopCount == 1)
-        //            //{
-        //            //    var r1 = r.DecrementBoundedLoopCount();
-        //            //    if (r1.Equals(d))
-        //            //        Console.WriteLine("YES: loop decrement: on deriv({0}, {1})", c, r);
-        //            //    else if (!regex2state.ContainsKey(d))
-        //            //        Console.WriteLine("NO: loop decrement: on deriv({0}, {1}) = {2} ", c, r, d);
-        //            //}
-
-        //            int p;
-        //            if (!regex2state.TryGetValue(d, out p))
-        //            {
-        //                //check if state limit has been reached
-        //                if ((maxStateCount > 0) && (stateCount == maxStateCount))
-        //                    return null;
-
-        //                p = stateCount;
-        //                regex2state[d] = p;
-        //                state2regex[p] = d;
-        //                stateCount += 1;
-        //                if (d.IsNullable())
-        //                {
-        //                    finalstates.Add(p);
-        //                }
-        //                if (d.IsEverything)
-        //                {
-        //                    finalSinkState = p;
-        //                    int pK = p * K;
-        //                    for (int j = 0; j < K; j++)
-        //                        delta[pK + j] = p;
-        //                }
-        //                else if (d.IsNothing)
-        //                {
-        //                    nonfinalSinkState = p;
-        //                    int pK = p * K;
-        //                    for (int j = 0; j < K; j++)
-        //                        delta[pK + j] = p;
-        //                }
-        //                else
-        //                {
-        //                    stack.Push(p);
-        //                }
-        //            }
-        //            delta[qK + i] = p;
-        //        }
-        //    }
-        //    #endregion
-
-        //    var dt = DecisionTree.Create(this.builder.solver.CharSetProvider, partition);
-
-        //    var aut = new RegexAutomaton(bva, new System.Text.RegularExpressions.Regex(this.ToString()), K, stateCount,
-        //        delta, finalstates, dt, nonfinalSinkState, finalSinkState);
-
-        //    return aut;
-        //}
-
         internal bool StartsWithLoop(int upperBoundLowestValue = 1)
         {
             switch (kind)
@@ -1285,8 +1060,38 @@ namespace Microsoft.Automata
             }
         }
 
-
         SymbolicRegexMatcher<S> matcher = null;
+
+        ///// <summary>
+        ///// Find all matches in the given input string.
+        ///// Returns array of pairs (index, length) such that input.Substring(index, length) matches the regex. 
+        ///// This regex must not accept the empty string.
+        ///// Unsafe version of Matches.
+        ///// </summary>
+        //unsafe public Tuple<int, int>[] Matches(string input)
+        //{
+        //    if (this.isNullable)
+        //        throw new AutomataException(AutomataExceptionKind.MustNotAcceptEmptyString);
+        //    else if (string.IsNullOrEmpty(input))
+        //        throw new AutomataException(AutomataExceptionKind.InvalidArgument);
+        //    else if (input.Length == 1)
+        //    {
+        //        if (IsMatchU(input))
+        //            return new Tuple<int, int>[] { new Tuple<int, int>(0, 1) };
+        //        else
+        //            return new Tuple<int, int>[] {};
+        //    }
+        //    else
+        //    {
+        //        if (matcher == null)
+        //            matcher = new SymbolicRegexMatcher<S>(this);
+        //        var chars = input.ToCharArray();
+        //        fixed (char* charsp = &chars[0])
+        //        {
+        //            return matcher.MatchesU(charsp, chars.Length);
+        //        }
+        //    }
+        //}
 
         /// <summary>
         /// Find all matches in the given input string.
@@ -1296,7 +1101,7 @@ namespace Microsoft.Automata
         public Tuple<int, int>[] Matches(string input)
         {
             if (this.isNullable)
-                throw new AutomataException(AutomataExceptionKind.SymbolicRegexMayNotBeNullable);
+                throw new AutomataException(AutomataExceptionKind.MustNotAcceptEmptyString);
             else if (string.IsNullOrEmpty(input))
                 throw new AutomataException(AutomataExceptionKind.InvalidArgument);
             else if (input.Length == 1)
@@ -1304,15 +1109,42 @@ namespace Microsoft.Automata
                 if (IsMatch(input))
                     return new Tuple<int, int>[] { new Tuple<int, int>(0, 1) };
                 else
-                    return new Tuple<int, int>[] {};
+                    return new Tuple<int, int>[] { };
             }
             else
             {
                 if (matcher == null)
                     matcher = new SymbolicRegexMatcher<S>(this);
-                return matcher.FindMatches(input, false);
+                return matcher.Matches(input);
             }
         }
+
+        ///// <summary>
+        ///// Find all matches in the given input string.
+        ///// Returns array of pairs (index, length) such that input.Substring(index, length) matches the regex. 
+        ///// This regex must not accept the empty string.
+        ///// Unsafe version of Matches.
+        ///// </summary>
+        //unsafe public Tuple<int, int>[] MatchesU(char *input, int k)
+        //{
+        //    if (this.isNullable)
+        //        throw new AutomataException(AutomataExceptionKind.MustNotAcceptEmptyString);
+        //    else if (k == 0)
+        //        throw new AutomataException(AutomataExceptionKind.InvalidArgument);
+        //    else if (k == 1)
+        //    {
+        //        if (IsMatchU(input, k))
+        //            return new Tuple<int, int>[] { new Tuple<int, int>(0, 1) };
+        //        else
+        //            return new Tuple<int, int>[] { };
+        //    }
+        //    else
+        //    {
+        //        if (matcher == null)
+        //            matcher = new SymbolicRegexMatcher<S>(this);
+        //        return matcher.MatchesU(input, k);
+        //    }
+        //}
 
         internal bool containsAnchors = false;
 
@@ -1421,9 +1253,9 @@ namespace Microsoft.Automata
 
         internal S[] GetPrefix()
         {
-            return GetPrefixList(SimpleList<S>.Empty).ToArray();
+            return GetPrefixSequence(Sequence<S>.Empty).ToArray();
         }
-        SimpleList<S> GetPrefixList(SimpleList<S> pref)
+        Sequence<S> GetPrefixSequence(Sequence<S> pref)
         {
             switch (this.kind)
             {
@@ -1434,9 +1266,21 @@ namespace Microsoft.Automata
                 case SymbolicRegexKind.Concat:
                     {
                         if (this.left.kind == SymbolicRegexKind.Singleton)
-                            return this.right.GetPrefixList(pref.Append(this.left.set));
+                            return this.right.GetPrefixSequence(pref.Append(this.left.set));
                         else
                             return pref;
+                    }
+                case SymbolicRegexKind.Or:
+                    {
+                        var enumerator = alts.GetEnumerator();
+                        enumerator.MoveNext();
+                        var alts_prefix = enumerator.Current.GetPrefixSequence(Sequence<S>.Empty);
+                        while (!alts_prefix.IsEmpty && enumerator.MoveNext())
+                        {
+                            var p = enumerator.Current.GetPrefixSequence(Sequence<S>.Empty);
+                            alts_prefix = alts_prefix.MaximalCommonPrefix(p);
+                        }
+                        return alts_prefix;
                     }
                 default:
                     {
@@ -1453,6 +1297,46 @@ namespace Microsoft.Automata
         public bool IgnoreCaseOfFixedPrefix
         {
             get { return ignoreCaseOfFixedPrefix; }
+        }
+
+        /// <summary>
+        /// Gets the predicate that covers all elements that make some progress. 
+        /// </summary>
+        public S GetStartSet()
+        {
+            switch (kind)
+            {
+                case SymbolicRegexKind.Epsilon:
+                case SymbolicRegexKind.StartAnchor:
+                case SymbolicRegexKind.EndAnchor:
+                    return this.Solver.False;
+                case SymbolicRegexKind.Singleton:
+                    return this.set;
+                case SymbolicRegexKind.Loop:
+                    return this.left.GetStartSet();
+                case SymbolicRegexKind.Concat:
+                    {
+                        var startSet = this.left.GetStartSet();
+                        if (left.isNullable)
+                        {
+                            var set2 = this.right.GetStartSet();
+                            startSet = this.builder.solver.MkOr(startSet, set2);
+                        }
+                        return startSet;
+                    }
+                case SymbolicRegexKind.Or:
+                    {
+                        S startSet = this.builder.solver.False;
+                        foreach (var alt in alts)
+                            startSet = this.builder.solver.MkOr(startSet, alt.GetStartSet());
+                        return startSet;
+                    }
+                default: //if-then-else
+                    {
+                        S startSet = this.builder.solver.MkOr(iteCond.GetStartSet(), this.builder.solver.MkOr(left.GetStartSet(), right.GetStartSet()));
+                        return startSet;
+                    }
+            }
         }
     }
 

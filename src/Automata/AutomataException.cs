@@ -281,6 +281,6 @@ namespace Microsoft.Automata
         InternalError_RegexAutomaton,
         InvalidArgument_IndexOutOfRange,
         InternalError_SymbolicRegex,
-        SymbolicRegexMayNotBeNullable,
+        MustNotAcceptEmptyString,
     }
 }

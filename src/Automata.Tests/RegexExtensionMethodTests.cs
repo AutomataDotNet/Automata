@@ -12,6 +12,7 @@ namespace Automata.Tests
     [TestClass]
     public class RegexExtensionMethodTests
     {
+        static string myconsole = "c://tmp/vsoutput.txt";
         static string regexesFile = "../../../../Automata.Tests/Samples/regexes.txt";
         static string inputFile = "../../../../Automata.Tests/Samples/input.txt";
         static string regexesWithoutAnchorsFile = "../../../../Automata.Tests/Samples/regexesWithoutAnchors.txt";
@@ -144,36 +145,22 @@ namespace Automata.Tests
         [TestMethod]
         public void TestRegex_CompileToSymbolicRegex_Matches_IgnoreCaseTrue()
         {
-            File.Delete(regexesPerfFile_IgnoreCaseTrue);
+            File.WriteAllText(myconsole, "");
+            GenerateInputFile();
             RegexOptions options = RegexOptions.Compiled | RegexOptions.IgnoreCase;
-            TestRegex_CompileToSymbolicRegex_Matches_Helper(options, regexesPerfFile_IgnoreCaseTrue);
-        }
-
-        [TestMethod]
-        public void TestRegex_CompileToSymbolicRegex_Matches_IgnoreCaseTrue2()
-        {
-            File.Delete(regexesPerfFile_IgnoreCaseTrue);
-            RegexOptions options = RegexOptions.Compiled | RegexOptions.IgnoreCase;
-            TestRegex_CompileToSymbolicRegex_Matches_Helper2(options, regexesPerfFile_IgnoreCaseTrue);
+            TestRegex_CompileToSymbolicRegex_Matches_Helper(options);
         }
 
         [TestMethod]
         public void TestRegex_CompileToSymbolicRegex_Matches_IgnoreCaseFalse()
         {
-            File.Delete(regexesPerfFile_IgnoreCaseFalse);
-            RegexOptions options = RegexOptions.Compiled;
-            TestRegex_CompileToSymbolicRegex_Matches_Helper(options, regexesPerfFile_IgnoreCaseFalse);
-        }
-
-
-        [TestMethod]
-        public void TestRegex_CompileToSymbolicRegex_Matches_IgnoreCaseFalse2()
-        {
-            File.Delete(regexesPerfFile_IgnoreCaseFalse);
+            //clear the possible previous output
+            File.WriteAllText(myconsole,"");
             GenerateInputFile();
             RegexOptions options = RegexOptions.Compiled;
-            TestRegex_CompileToSymbolicRegex_Matches_Helper2(options, regexesPerfFile_IgnoreCaseFalse);
+            TestRegex_CompileToSymbolicRegex_Matches_Helper(options);
         }
+
 
         public void GenerateInputFile()
         {
@@ -193,7 +180,6 @@ namespace Automata.Tests
                 File.WriteAllText(inputFile, sb.ToString(), Encoding.Unicode);
             }
         }
-
 
         [TestMethod]
         public void TestRegex_CompileToSymbolicRegex_IsMatch_IgnoreCaseTrue()
@@ -225,111 +211,42 @@ namespace Automata.Tests
             File.WriteAllLines(regexesFile, filtered.ToArray());
         }
 
-        public void TestRegex_CompileToSymbolicRegex_Matches_Helper(RegexOptions options, string regexesPerfFile)
-        {
-            //set match timeout to 1 second for .net regexes
-            Regex[] regexes = Array.ConvertAll(File.ReadAllLines(regexesWithoutAnchorsFile), x => new Regex(x, options, new TimeSpan(0,0,1)));
-            int sr_tot_ms = 0;
-            int re_tot_ms = 0;
-            //repeat each test that many times
-            int matchRepeatCount = 1;
-            //generate that many random matches inside each input
-            //observe that every input starts and ends with a match
-            int nrOfMatches = 100;
-            //random blocks of text that are inserted between matches and have this upper length bound
-            int randomBlockLimit = 1000000;
-            int timeouts = 0;
-            CharSetSolver css = new CharSetSolver();
-            for (int i = 0; i < 100; i++)
-            {
-                var re = regexes[i];
-                var sr = re.Compile(css);
-
-                var str = TestRegex_GenerateInput(nrOfMatches, randomBlockLimit, sr);
-
-                //--------------------------------
-                //--- measure time for sr.Matches
-                Tuple<int, int>[] sr_res = sr.Matches(str); //do it once before
-                int sr_t = System.Environment.TickCount;
-                for (int j = 0; j < matchRepeatCount; j++)
-                {
-                    //the main work is done here
-                    sr_res = sr.Matches(str);
-                }
-                sr_t = System.Environment.TickCount - sr_t;
-                //-------------------------------
-
-                //--- measure time for .NET re.Matches
-                int re_t = 0;
-                Tuple<int, int>[] re_res = null;
-                Match[] re_arr = new Match[] { };
-                try
-                {
-                    re_t = System.Environment.TickCount;
-                    for (int j = 0; j < matchRepeatCount; j++)
-                    {
-                        //the work is actually done when matches are accessed/counted
-                        var re_matches = re.Matches(str);
-                        re_arr = new Match[re_matches.Count];
-                        re_matches.CopyTo(re_arr, 0);
-                    }
-                    re_t = System.Environment.TickCount - re_t;
-                }
-                catch (System.Text.RegularExpressions.RegexMatchTimeoutException)
-                {
-                    //skip this entry because it causes timeout
-                    File.AppendAllText(regexesPerfFile, string.Format("--- {1}, sr:{0}ms, re:timeout ---\r\n", sr_t, i + 1));
-                    timeouts += 1;
-                    continue;
-                }
-                re_res = Array.ConvertAll(re_arr, x => new Tuple<int, int>(x.Index, x.Length));
-                //----------------------------
-
-                // regex 1366 causes a .NET regex bug to give wrong result
-                //if (i != 1366)
-                //{
-                //    ValidateMatches(re, sr, str, sr_res, re_res);
-                //}
-                // ---- due to small semantic differences this assert may not always be true ---
-                //Assert.IsTrue(sr_res.Length == re_res.Length);
-                //--- accumulate total matching times ---
-                sr_tot_ms += sr_t;
-                re_tot_ms += re_t;
-                int ratio = (sr_tot_ms == 0 ? -1 : re_tot_ms / sr_tot_ms);
-                File.AppendAllText(regexesPerfFile, string.Format("{0}, sr:{1}ms({2}ms), re:{3}ms({4}ms)\r\n", i + 1, sr_t, sr_tot_ms, re_t, re_tot_ms));
-                Console.WriteLine(string.Format("{0}, sr:{1}ms({2}ms), re:{3}ms({4}ms)\r\n", i + 1, sr_t, sr_tot_ms, re_t, re_tot_ms));
-
-            }
-            Console.WriteLine(string.Format("total: sr:{0}ms, re:{1}ms, speedup={2}\r\n", sr_tot_ms, re_tot_ms, (sr_tot_ms == 0 ? 0 : re_tot_ms / sr_tot_ms)));
-            Console.WriteLine(string.Format("re timeouts: {0}\r\n", timeouts));
-        }
-
-        public void TestRegex_CompileToSymbolicRegex_Matches_Helper2(RegexOptions options, string regexesPerfFile)
+        public void TestRegex_CompileToSymbolicRegex_Matches_Helper(RegexOptions options)
         {
             //set match timeout to 1 second for .net regexes
             Regex[] regexes = Array.ConvertAll(File.ReadAllLines(regexesWithoutAnchorsFile), x => new Regex(x, options, new TimeSpan(0, 0, 1)));
-            int sr_tot_ms = 0;
-            int re_tot_ms = 0;
+            int sr_tot = 0;
+            int re_tot = 0;
             //repeat each test that many times
             int matchRepeatCount = 1;
             int timeouts = 0;
             var str = File.ReadAllText(inputFile);
+            //str = str.Substring(330850,50);
+            var strArray = str.ToCharArray();
+            int k = str.Length;
             CharSetSolver css = new CharSetSolver();
-            for (int i = 0; i < regexes.Length; i++)
+            for (int i = 0; i < 200; i++)
             {
                 var re = regexes[i];
                 var sr = re.Compile(css);
+
+                //-------------------------------
+
+                var sr3 = re.Compile(css);
                 //--------------------------------
                 //--- measure time for sr.Matches
-                Tuple<int, int>[] sr_res = sr.Matches(str); //do it once before
+                Tuple<int, int>[] sr_res = null;
                 int sr_t = System.Environment.TickCount;
                 for (int j = 0; j < matchRepeatCount; j++)
                 {
                     //the main work is done here
-                    sr_res = sr.Matches(str);
+                    sr_res = sr3.Matches(str);
                 }
                 sr_t = System.Environment.TickCount - sr_t;
                 //-------------------------------
+
+                //Assert.AreEqual<int>(sr_resU.Length, sr_res.Length);
+                //Assert.AreEqual<int>(sr_resU2.Length, sr_res.Length);
 
                 //--- measure time for .NET re.Matches
                 int re_t = 0;
@@ -350,7 +267,7 @@ namespace Automata.Tests
                 catch (System.Text.RegularExpressions.RegexMatchTimeoutException)
                 {
                     //skip this entry because it causes timeout
-                    File.AppendAllText(regexesPerfFile, string.Format("--- {1}, sr:{0}ms, re:timeout ---\r\n", sr_t, i + 1));
+                    File.AppendAllText(myconsole, string.Format("--- {1}, sr:{0}ms, re:timeout ---\r\n", sr_t, i + 1));
                     timeouts += 1;
                     continue;
                 }
@@ -365,14 +282,11 @@ namespace Automata.Tests
                 // ---- due to small semantic differences this assert may not always be true ---
                 //Assert.IsTrue(sr_res.Length == re_res.Length);
                 //--- accumulate total matching times ---
-                sr_tot_ms += sr_t;
-                re_tot_ms += re_t;
-                int ratio = (sr_tot_ms == 0 ? -1 : re_tot_ms / sr_tot_ms);
-                File.AppendAllText(regexesPerfFile, string.Format("{0}, sr:{1}ms({2}ms), re:{3}ms({4}ms)\r\n", i + 1, sr_t, sr_tot_ms, re_t, re_tot_ms));
-                Console.WriteLine(string.Format("{0}, sr:{1}ms({2}ms), re:{3}ms({4}ms)\r\n", i + 1, sr_t, sr_tot_ms, re_t, re_tot_ms));
-
+                sr_tot += sr_t;
+                re_tot += re_t;
+                File.AppendAllText(myconsole, string.Format("{0}, sr:{1}ms({2}ms), re:{3}ms({4}ms)\r\n", i + 1, sr_t, sr_tot, re_t, re_tot));
             }
-            Console.WriteLine(string.Format("total: sr:{0}ms, re:{1}ms, speedup={2}\r\n", sr_tot_ms, re_tot_ms, (sr_tot_ms == 0 ? 0 : re_tot_ms / sr_tot_ms)));
+            Console.WriteLine(string.Format("total: sr:{0}ms, re:{1}ms", sr_tot, re_tot));
             Console.WriteLine(string.Format("re timeouts: {0}\r\n", timeouts));
         }
 
