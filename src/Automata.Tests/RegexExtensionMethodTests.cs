@@ -161,6 +161,102 @@ namespace Automata.Tests
             TestRegex_CompileToSymbolicRegex_Matches_Helper(options);
         }
 
+        void ClearLog()
+        {
+            File.WriteAllText(myconsole, "");
+        }
+        void Log(string text)
+        {
+            File.AppendAllText(myconsole, text + "\r\n");
+        }
+
+
+        [TestMethod]
+        public void TestRegex_CompileToSymbolicRegex_Matches()
+        {
+            RegexOptions options = RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture;
+            CharSetSolver css = new CharSetSolver();
+
+            //1 sec timeout for matching
+            Regex[] regexes = Array.ConvertAll(File.ReadAllLines(regexesWithoutAnchorsFile), x => new Regex(x, options, new TimeSpan(0,0,1)));
+
+
+            ClearLog();
+
+            //make sure k is at most regexes.Length, regexes.Length is around 1600
+            int k = 50;
+
+            int sr_comp_ms = System.Environment.TickCount;
+            SymbolicRegex<BV>[] srs = new SymbolicRegex<BV>[k];
+            for (int i = 0; i < k; i++)
+                srs[i] = regexes[i].Compile(css);
+            sr_comp_ms = System.Environment.TickCount - sr_comp_ms;
+
+            Log("Compile time(ms): " + sr_comp_ms);
+
+            var str = File.ReadAllText(inputFile);
+
+            //first filter out those regexes that cause tiomeout in .net
+
+            HashSet<int> timeouts = new HashSet<int>();
+            //--- .net ---
+            for (int i = 0; i < k; i++)
+            {
+                try
+                {
+                    var re_matches = regexes[i].Matches(str);
+                    int tmp = re_matches.Count;
+                    Log("ok: " + i);
+                }
+                catch (System.Text.RegularExpressions.RegexMatchTimeoutException)
+                {
+                    timeouts.Add(i);
+                    Log("timeout: " + i);
+                }
+            }
+            //-------------
+
+            //--- aut ---
+            int sr_tot_ms = System.Environment.TickCount;
+            int sr_tot_matches = 0;
+            for (int i = 0; i < k; i++)
+            {
+                //here we could also allow the regexes that timed out in .net
+                //but the Assert below would fail
+                if (!timeouts.Contains(i))
+                {
+                    var sr_matches = srs[i].Matches(str);
+                    sr_tot_matches += sr_matches.Length;
+                }
+            }
+            sr_tot_ms = System.Environment.TickCount - sr_tot_ms;
+            //--------------
+
+            Log( "AUT: " + sr_tot_ms);
+
+            //--- .net ---
+            int re_tot_ms = System.Environment.TickCount;
+            int re_tot_matches = 0;
+            for (int i = 0; i < k; i++)
+            {
+                if (!timeouts.Contains(i))
+                {
+                    var re_matches = regexes[i].Matches(str);
+                    re_tot_matches += re_matches.Count;
+                }
+            }
+            re_tot_ms = System.Environment.TickCount - re_tot_ms;
+            //--------------
+
+            Log(".NET: " + re_tot_ms);
+
+            //allow some variation (+- 5 in either direction)
+            Assert.IsTrue(sr_tot_matches <= re_tot_matches + 5);
+            Assert.IsTrue(re_tot_matches <= sr_tot_matches + 5);
+
+            Console.WriteLine(string.Format("total: AUT:{0}ms, .NET:{1}ms, matchcount={2}", sr_tot_ms, re_tot_ms, re_tot_matches));
+        }
+
 
         public void GenerateInputFile()
         {
@@ -193,7 +289,7 @@ namespace Automata.Tests
         public void TestRegex_CompileToSymbolicRegex_IsMatch_IgnoreCaseFalse()
         {
             File.Delete(regexesPerfFile_IsMatch_IgnoreCaseFalse);
-            RegexOptions options = RegexOptions.Compiled;
+            RegexOptions options = RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture;
             TestRegex_CompileToSymbolicRegex_IsMatch_Helper(options, regexesPerfFile_IsMatch_IgnoreCaseFalse);
         }
 
@@ -225,14 +321,12 @@ namespace Automata.Tests
             var strArray = str.ToCharArray();
             int k = str.Length;
             CharSetSolver css = new CharSetSolver();
-            for (int i = 0; i < 200; i++)
+            for (int i = 0; i < 50; i++)
             {
                 var re = regexes[i];
                 var sr = re.Compile(css);
 
                 //-------------------------------
-
-                var sr3 = re.Compile(css);
                 //--------------------------------
                 //--- measure time for sr.Matches
                 Tuple<int, int>[] sr_res = null;
@@ -240,7 +334,7 @@ namespace Automata.Tests
                 for (int j = 0; j < matchRepeatCount; j++)
                 {
                     //the main work is done here
-                    sr_res = sr3.Matches(str);
+                    sr_res = sr.Matches(str);
                 }
                 sr_t = System.Environment.TickCount - sr_t;
                 //-------------------------------
@@ -280,7 +374,7 @@ namespace Automata.Tests
                 //    ValidateMatches(re, sr, str, sr_res, re_res);
                 //}
                 // ---- due to small semantic differences this assert may not always be true ---
-                //Assert.IsTrue(sr_res.Length == re_res.Length);
+                Assert.IsTrue(sr_res.Length == re_res.Length);
                 //--- accumulate total matching times ---
                 sr_tot += sr_t;
                 re_tot += re_t;
