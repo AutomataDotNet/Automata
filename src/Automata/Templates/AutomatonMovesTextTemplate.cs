@@ -17,7 +17,7 @@ namespace Microsoft.Automata.Templates
     /// Class to produce the template output
     /// </summary>
     
-    #line 1 "C:\Automata\Automata\Templates\AutomatonMovesTextTemplate.tt"
+    #line 1 "C:\GitHub\Automata\src\Automata\Templates\AutomatonMovesTextTemplate.tt"
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "14.0.0.0")]
     public partial class AutomatonMovesTextTemplate : AutomatonMovesTextTemplateBase
     {
@@ -29,7 +29,7 @@ namespace Microsoft.Automata.Templates
         {
             this.Write("\r\n");
             
-            #line 5 "C:\Automata\Automata\Templates\AutomatonMovesTextTemplate.tt"
+            #line 5 "C:\GitHub\Automata\src\Automata\Templates\AutomatonMovesTextTemplate.tt"
   // This template generates valid C# or C++ depending on the isAtEndConditionText and readNextCharText parameters passed in
 
     var stack = new Stack<int>();
@@ -56,14 +56,14 @@ namespace Microsoft.Automata.Templates
             #line hidden
             this.Write("            State");
             
-            #line 26 "C:\Automata\Automata\Templates\AutomatonMovesTextTemplate.tt"
+            #line 26 "C:\GitHub\Automata\src\Automata\Templates\AutomatonMovesTextTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(q));
             
             #line default
             #line hidden
             this.Write(":\r\n");
             
-            #line 27 "C:\Automata\Automata\Templates\AutomatonMovesTextTemplate.tt"
+            #line 27 "C:\GitHub\Automata\src\Automata\Templates\AutomatonMovesTextTemplate.tt"
       }
         if (isFinalSink(q))
         {
@@ -72,7 +72,7 @@ namespace Microsoft.Automata.Templates
             #line hidden
             this.Write("                return true;\r\n");
             
-            #line 31 "C:\Automata\Automata\Templates\AutomatonMovesTextTemplate.tt"
+            #line 31 "C:\GitHub\Automata\src\Automata\Templates\AutomatonMovesTextTemplate.tt"
       }
         else if (isNonfinalSink(q))
         {
@@ -81,7 +81,7 @@ namespace Microsoft.Automata.Templates
             #line hidden
             this.Write("                return false;\r\n");
             
-            #line 35 "C:\Automata\Automata\Templates\AutomatonMovesTextTemplate.tt"
+            #line 35 "C:\GitHub\Automata\src\Automata\Templates\AutomatonMovesTextTemplate.tt"
       }
         else
         {
@@ -90,21 +90,21 @@ namespace Microsoft.Automata.Templates
             #line hidden
             this.Write("                if (");
             
-            #line 38 "C:\Automata\Automata\Templates\AutomatonMovesTextTemplate.tt"
+            #line 38 "C:\GitHub\Automata\src\Automata\Templates\AutomatonMovesTextTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(isAtEndConditionText));
             
             #line default
             #line hidden
             this.Write(") {\r\n                    return ");
             
-            #line 39 "C:\Automata\Automata\Templates\AutomatonMovesTextTemplate.tt"
+            #line 39 "C:\GitHub\Automata\src\Automata\Templates\AutomatonMovesTextTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(automaton.IsFinalState(q) ? "true" : "false"));
             
             #line default
             #line hidden
             this.Write(";\r\n                }\r\n");
             
-            #line 41 "C:\Automata\Automata\Templates\AutomatonMovesTextTemplate.tt"
+            #line 41 "C:\GitHub\Automata\src\Automata\Templates\AutomatonMovesTextTemplate.tt"
           if (automaton.GetMovesCountFrom(q) > 0) //q is a sink
             {
                 
@@ -112,13 +112,13 @@ namespace Microsoft.Automata.Templates
             #line default
             #line hidden
             
-            #line 43 "C:\Automata\Automata\Templates\AutomatonMovesTextTemplate.tt"
+            #line 43 "C:\GitHub\Automata\src\Automata\Templates\AutomatonMovesTextTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(readNextCharText));
             
             #line default
             #line hidden
             
-            #line 43 "C:\Automata\Automata\Templates\AutomatonMovesTextTemplate.tt"
+            #line 43 "C:\GitHub\Automata\src\Automata\Templates\AutomatonMovesTextTemplate.tt"
                   
                 //---------------------------------------------------------------------
                 //many potential optimizations can be made in generating the conditions
@@ -134,14 +134,14 @@ namespace Microsoft.Automata.Templates
             #line hidden
             this.Write("                goto State");
             
-            #line 53 "C:\Automata\Automata\Templates\AutomatonMovesTextTemplate.tt"
+            #line 53 "C:\GitHub\Automata\src\Automata\Templates\AutomatonMovesTextTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(move.TargetState));
             
             #line default
             #line hidden
             this.Write(";\r\n");
             
-            #line 54 "C:\Automata\Automata\Templates\AutomatonMovesTextTemplate.tt"
+            #line 54 "C:\GitHub\Automata\src\Automata\Templates\AutomatonMovesTextTemplate.tt"
  
                         qIsComplete = true;
                     }
@@ -152,21 +152,21 @@ namespace Microsoft.Automata.Templates
             #line hidden
             this.Write("                if (");
             
-            #line 59 "C:\Automata\Automata\Templates\AutomatonMovesTextTemplate.tt"
+            #line 59 "C:\GitHub\Automata\src\Automata\Templates\AutomatonMovesTextTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(helperPredicates.GeneratePredicate(move.Label)));
             
             #line default
             #line hidden
             this.Write(")\r\n                    goto State");
             
-            #line 60 "C:\Automata\Automata\Templates\AutomatonMovesTextTemplate.tt"
+            #line 60 "C:\GitHub\Automata\src\Automata\Templates\AutomatonMovesTextTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(move.TargetState));
             
             #line default
             #line hidden
             this.Write(";\r\n");
             
-            #line 61 "C:\Automata\Automata\Templates\AutomatonMovesTextTemplate.tt"
+            #line 61 "C:\GitHub\Automata\src\Automata\Templates\AutomatonMovesTextTemplate.tt"
                   }
                     if (set.Add(move.TargetState))
                         stack.Push(move.TargetState);
@@ -181,7 +181,7 @@ namespace Microsoft.Automata.Templates
             #line hidden
             this.Write("                return false;\r\n");
             
-            #line 71 "C:\Automata\Automata\Templates\AutomatonMovesTextTemplate.tt"
+            #line 71 "C:\GitHub\Automata\src\Automata\Templates\AutomatonMovesTextTemplate.tt"
           }
         }
     }
@@ -191,7 +191,7 @@ namespace Microsoft.Automata.Templates
             return this.GenerationEnvironment.ToString();
         }
         
-        #line 74 "C:\Automata\Automata\Templates\AutomatonMovesTextTemplate.tt"
+        #line 74 "C:\GitHub\Automata\src\Automata\Templates\AutomatonMovesTextTemplate.tt"
 
     public AutomatonMovesTextTemplate(CharSetSolver solver, BDDHelperPredicates helperPredicates, Automaton<BDD> automaton,
         string isAtEndConditionText, string readNextCharText)

@@ -1119,6 +1119,26 @@ namespace Microsoft.Automata
             }
         }
 
+        /// <summary>
+        /// Find all matches in the given input string.
+        /// Returns array of pairs (index, length) such that input.Substring(index, length) matches the regex. 
+        /// This regex must not accept the empty string.
+        /// Unsafe version of Matches.
+        /// </summary>
+        public Tuple<int, int>[] Matches_(string input)
+        {
+            if (this.isNullable)
+                throw new AutomataException(AutomataExceptionKind.MustNotAcceptEmptyString);
+            else if (string.IsNullOrEmpty(input))
+                throw new AutomataException(AutomataExceptionKind.InvalidArgument);
+            else
+            {
+                if (matcher == null)
+                    matcher = new SymbolicRegexMatcher<S>(this);
+                return matcher.Matches_(input);
+            }
+        }
+
         ///// <summary>
         ///// Find all matches in the given input string.
         ///// Returns array of pairs (index, length) such that input.Substring(index, length) matches the regex. 

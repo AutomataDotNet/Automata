@@ -19,7 +19,7 @@ namespace Microsoft.Automata.Templates
     /// Class to produce the template output
     /// </summary>
     
-    #line 1 "C:\Automata\Automata\Templates\AutomataTextTemplate.tt"
+    #line 1 "C:\GitHub\Automata\src\Automata\Templates\AutomataTextTemplate.tt"
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "14.0.0.0")]
     public partial class AutomataTextTemplate : AutomataTextTemplateBase
     {
@@ -32,7 +32,7 @@ namespace Microsoft.Automata.Templates
             this.Write("\r\n#if !defined(REGEX_MATCHER_TYPES_AND_CONSTRUCTORS)\r\n#define REGEX_MATCHER_TYPES" +
                     "_AND_CONSTRUCTORS\r\n\r\n");
             
-            #line 10 "C:\Automata\Automata\Templates\AutomataTextTemplate.tt"
+            #line 10 "C:\GitHub\Automata\src\Automata\Templates\AutomataTextTemplate.tt"
   var matchers = new StringBuilder();
 
     foreach (var entry in automata)
@@ -49,7 +49,7 @@ namespace Microsoft.Automata.Templates
             #line hidden
             this.Write("\r\n");
             
-            #line 22 "C:\Automata\Automata\Templates\AutomataTextTemplate.tt"
+            #line 22 "C:\GitHub\Automata\src\Automata\Templates\AutomataTextTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(helperPredicates.Format((name, body) => {
     return string.Format(@"
     static bool {0}(int c)
@@ -62,7 +62,7 @@ namespace Microsoft.Automata.Templates
             #line hidden
             this.Write("\r\n");
             
-            #line 29 "C:\Automata\Automata\Templates\AutomataTextTemplate.tt"
+            #line 29 "C:\GitHub\Automata\src\Automata\Templates\AutomataTextTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(matchers));
             
             #line default
@@ -71,14 +71,14 @@ namespace Microsoft.Automata.Templates
             return this.GenerationEnvironment.ToString();
         }
         
-        #line 33 "C:\Automata\Automata\Templates\AutomataTextTemplate.tt"
+        #line 33 "C:\GitHub\Automata\src\Automata\Templates\AutomataTextTemplate.tt"
  void OutputUTF8ToUTF16Decoder() 
     {
         
         #line default
         #line hidden
         
-        #line 34 "C:\Automata\Automata\Templates\AutomataTextTemplate.tt"
+        #line 34 "C:\GitHub\Automata\src\Automata\Templates\AutomataTextTemplate.tt"
 this.Write("    //*i is the current idex of str, size is the length of str, *i must be in [0." +
         ".size-1], initially 0\r\n    //*r is the the leftover lowsurrogate portion from fi" +
         "rst three bytes in 4byte encoding, intially 0\r\n    //*c is the next UTF16 charac" +
@@ -140,7 +140,7 @@ this.Write("    //*i is the current idex of str, size is the length of str, *i m
         #line default
         #line hidden
         
-        #line 137 "C:\Automata\Automata\Templates\AutomataTextTemplate.tt"
+        #line 137 "C:\GitHub\Automata\src\Automata\Templates\AutomataTextTemplate.tt"
  }
 
     public AutomataTextTemplate(BREXManager manager, Dictionary<string, Automaton<BDD>> automata)

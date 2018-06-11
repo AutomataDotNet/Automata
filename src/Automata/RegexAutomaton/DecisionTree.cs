@@ -327,7 +327,7 @@ namespace Microsoft.Automata
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool IsMember(ushort c)
+        public bool Contains(ushort c)
         {
             return (c < precomputed.Length ? precomputed[c] : bst.Find(c) == 1);
         }

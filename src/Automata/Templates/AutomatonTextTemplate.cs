@@ -17,7 +17,7 @@ namespace Microsoft.Automata.Templates
     /// Class to produce the template output
     /// </summary>
     
-    #line 1 "C:\Automata\Automata\Templates\AutomatonTextTemplate.tt"
+    #line 1 "C:\GitHub\Automata\src\Automata\Templates\AutomatonTextTemplate.tt"
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "14.0.0.0")]
     public partial class AutomatonTextTemplate : AutomatonTextTemplateBase
     {
@@ -29,14 +29,14 @@ namespace Microsoft.Automata.Templates
         {
             this.Write("\r\n    static bool ");
             
-            #line 5 "C:\Automata\Automata\Templates\AutomatonTextTemplate.tt"
+            #line 5 "C:\GitHub\Automata\src\Automata\Templates\AutomatonTextTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(name));
             
             #line default
             #line hidden
             this.Write("(const ");
             
-            #line 5 "C:\Automata\Automata\Templates\AutomatonTextTemplate.tt"
+            #line 5 "C:\GitHub\Automata\src\Automata\Templates\AutomatonTextTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(manager.CppStringTypeName));
             
             #line default
@@ -45,7 +45,7 @@ namespace Microsoft.Automata.Templates
                     "UINT i = 0;\r\n        UINT size = str.size();\r\n        const unsigned char* buffe" +
                     "r = reinterpret_cast<const unsigned char*>(str.buffer());\r\n");
             
-            #line 11 "C:\Automata\Automata\Templates\AutomatonTextTemplate.tt"
+            #line 11 "C:\GitHub\Automata\src\Automata\Templates\AutomatonTextTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(new AutomatonMovesTextTemplate(manager.Solver, helperPredicates, automaton,
                               isAtEndConditionText: "i == size",
                               readNextCharText:
@@ -60,7 +60,7 @@ namespace Microsoft.Automata.Templates
             return this.GenerationEnvironment.ToString();
         }
         
-        #line 19 "C:\Automata\Automata\Templates\AutomatonTextTemplate.tt"
+        #line 19 "C:\GitHub\Automata\src\Automata\Templates\AutomatonTextTemplate.tt"
  public AutomatonTextTemplate(BREXManager manager, BDDHelperPredicates helperPredicates, string name, Automaton<BDD> automaton)
     {
         this.manager = manager;

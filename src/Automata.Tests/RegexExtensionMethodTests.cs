@@ -170,6 +170,75 @@ namespace Automata.Tests
             File.AppendAllText(myconsole, text + "\r\n");
         }
 
+        [TestMethod]
+        public void TestRegex_CompileToSymbolicRegex_Matches_Unsafe()
+        {
+            RegexOptions options = RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture;
+            CharSetSolver css = new CharSetSolver();
+
+            //1 sec timeout for matching
+            Regex[] regexes = Array.ConvertAll(File.ReadAllLines(regexesWithoutAnchorsFile), x => new Regex(x, options, new TimeSpan(0,0,1)));
+
+            ClearLog();
+
+            //make sure k is at most regexes.Length
+            //int k = regexes.Length;
+            int k_from = 0;
+            int k_to = 50; // regexes.Length - 1; 
+            int k = k_to - k_from + 1;
+
+            int sr_comp_ms = System.Environment.TickCount;
+            SymbolicRegex<BV>[] srs = new SymbolicRegex<BV>[k];
+            SymbolicRegex<BV>[] srs_U = new SymbolicRegex<BV>[k];
+            for (int i = 0; i < k; i++)
+            {
+                srs[i] = regexes[k_from + i].Compile(css);
+                srs_U[i] = regexes[k_from + i].Compile(css);
+            }
+            sr_comp_ms = System.Environment.TickCount - sr_comp_ms;
+
+            Log("Compile time(ms): " + sr_comp_ms);
+
+            var str = File.ReadAllText(inputFile);
+
+            //--- aut ---
+            int sr_tot_ms = System.Environment.TickCount;
+            int sr_tot_matches = 0;
+            Tuple<int, int>[] sr_matches = null;
+            for (int i = 0; i < k; i++)
+            {
+                sr_matches = srs[i].Matches(str);
+                sr_tot_matches += sr_matches.Length;
+            }
+            sr_tot_ms = System.Environment.TickCount - sr_tot_ms;
+            //--------------
+
+            Log("AUT: " + sr_tot_ms);
+
+            //--- aut ---
+            int sr_tot_ms_U = System.Environment.TickCount;
+            int sr_tot_matches_U = 0;
+            Tuple<int, int>[] sr_matches_U = null;
+            for (int i = 0; i < k; i++)
+            {
+                sr_matches_U = srs_U[i].Matches_(str);
+                sr_tot_matches_U += sr_matches_U.Length;
+            }
+            sr_tot_ms_U = System.Environment.TickCount - sr_tot_ms_U;
+            //--------------
+
+            Log( "AUT_U: " + sr_tot_ms_U);
+
+            Assert.IsTrue(sr_tot_matches == sr_tot_matches_U);
+
+            //check also that the the last match is the same
+            Assert.AreEqual<Sequence<Tuple<int, int>>>(
+                new Sequence<Tuple<int, int>>(sr_matches), 
+                new Sequence<Tuple<int, int>>(sr_matches_U));
+
+            Console.WriteLine(string.Format("total: AUT:{0}ms, AUT_U:{1}ms, matchcount={2}", sr_tot_ms, sr_tot_ms_U, sr_tot_matches));
+        }
+
 
         [TestMethod]
         public void TestRegex_CompileToSymbolicRegex_Matches()
@@ -178,13 +247,13 @@ namespace Automata.Tests
             CharSetSolver css = new CharSetSolver();
 
             //1 sec timeout for matching
-            Regex[] regexes = Array.ConvertAll(File.ReadAllLines(regexesWithoutAnchorsFile), x => new Regex(x, options, new TimeSpan(0,0,1)));
+            Regex[] regexes = Array.ConvertAll(File.ReadAllLines(regexesWithoutAnchorsFile), x => new Regex(x, options, new TimeSpan(0, 0, 1)));
 
 
             ClearLog();
 
             //make sure k is at most regexes.Length, regexes.Length is around 1600
-            int k = 50;
+            int k = 20;
 
             int sr_comp_ms = System.Environment.TickCount;
             SymbolicRegex<BV>[] srs = new SymbolicRegex<BV>[k];
@@ -232,7 +301,7 @@ namespace Automata.Tests
             sr_tot_ms = System.Environment.TickCount - sr_tot_ms;
             //--------------
 
-            Log( "AUT: " + sr_tot_ms);
+            Log("AUT: " + sr_tot_ms);
 
             //--- .net ---
             int re_tot_ms = System.Environment.TickCount;
@@ -247,6 +316,7 @@ namespace Automata.Tests
             }
             re_tot_ms = System.Environment.TickCount - re_tot_ms;
             //--------------
+            
 
             Log(".NET: " + re_tot_ms);
 
@@ -254,10 +324,9 @@ namespace Automata.Tests
             Assert.IsTrue(sr_tot_matches <= re_tot_matches + 5);
             Assert.IsTrue(re_tot_matches <= sr_tot_matches + 5);
 
+
             Console.WriteLine(string.Format("total: AUT:{0}ms, .NET:{1}ms, matchcount={2}", sr_tot_ms, re_tot_ms, re_tot_matches));
         }
-
-
         public void GenerateInputFile()
         {
             if (!File.Exists(inputFile))
