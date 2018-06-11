@@ -184,7 +184,7 @@ namespace Automata.Tests
             //make sure k is at most regexes.Length
             //int k = regexes.Length;
             int k_from = 0;
-            int k_to = 50; // regexes.Length - 1; 
+            int k_to = regexes.Length - 1; 
             int k = k_to - k_from + 1;
 
             int sr_comp_ms = System.Environment.TickCount;

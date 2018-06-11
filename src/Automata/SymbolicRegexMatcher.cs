@@ -378,7 +378,82 @@ namespace Microsoft.Automata
                 p = delta[offset];
                 if (p == 0)
                 {
-                    //p is undefined
+                    CreateNewTransition(q, atom, offset, out p, out regex);
+                }
+                else
+                {
+                    regex = (p < StateLimit ? state2regex[p] : state2regexExtra[p]);
+                }
+                #endregion
+            }
+            else
+            {
+                #region use deltaExtra
+                int[] q_trans = deltaExtra[q];
+                p = q_trans[atom_id];
+                if (p == 0)
+                {
+                    CreateNewTransitionExtra(q, atom_id, atom, q_trans, out p, out regex);
+                }
+                else
+                {
+                    regex = (p < StateLimit ? state2regex[p] : state2regexExtra[p]);
+                }
+                #endregion
+            }
+            #endregion
+            return p;
+        }
+
+        /// <summary>
+        /// Critical region for threadsafe applications for defining a new transition from q when q is larger that StateLimit
+        /// </summary>
+        private void CreateNewTransitionExtra(int q, int atom_id, S atom, int[] q_trans, out int p, out SymbolicRegex<S> regex)
+        {
+            lock (this)
+            {
+                //check if meanwhile q_trans[atom_id] has become defined possibly by another thread
+                int p1 = q_trans[atom_id];
+                if (p1 != 0)
+                {
+                    p = p1;
+                    regex = state2regex[p1];
+                }
+                else
+                {
+                    //p is still undefined
+                    var q_regex = state2regexExtra[q];
+                    var deriv = q_regex.MkDerivative(atom);
+                    if (!regex2state.TryGetValue(deriv, out p))
+                    {
+                        p = nextStateId++;
+                        regex2state[deriv] = p;
+                        // we know at this point that p >= MaxNrOfStates
+                        state2regexExtra[p] = deriv;
+                        deltaExtra[p] = new int[K];
+                    }
+                    q_trans[atom_id] = p;
+                    regex = deriv;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Critical region for threadsafe applications for defining a new transition
+        /// </summary>
+        private void CreateNewTransition(int q, S atom, int offset, out int p, out SymbolicRegex<S> regex)
+        {
+            lock (this)
+            {
+                //check if meanwhile delta[offset] has become defined possibly by another thread
+                int p1 = delta[offset];
+                if (p1 != 0)
+                {
+                    p = p1;
+                    regex = state2regex[p1];
+                }
+                else
+                {
                     var q_regex = state2regex[q];
                     var deriv = q_regex.MkDerivative(atom);
                     if (!regex2state.TryGetValue(deriv, out p))
@@ -395,41 +470,7 @@ namespace Microsoft.Automata
                     delta[offset] = p;
                     regex = deriv;
                 }
-                else
-                {
-                    regex = (p < StateLimit ? state2regex[p] : state2regexExtra[p]);
-                }
-                #endregion
             }
-            else
-            {
-                #region use deltaExtra
-                int[] q_trans = deltaExtra[q];
-                p = q_trans[atom_id];
-                if (p == 0)
-                {
-                    //p is undefined
-                    var q_regex = state2regexExtra[q];
-                    var deriv = q_regex.MkDerivative(atom);
-                    if (!regex2state.TryGetValue(deriv, out p))
-                    {
-                        p = nextStateId++;
-                        regex2state[deriv] = p;
-                        // we know at this point that p >= MaxNrOfStates
-                        state2regexExtra[p] = deriv;
-                        deltaExtra[p] = new int[K];
-                    }
-                    q_trans[atom_id] = p;
-                    regex = deriv;
-                }
-                else
-                {
-                    regex = (p < StateLimit ? state2regex[p] : state2regexExtra[p]);
-                }
-                #endregion
-            }
-            #endregion
-            return p;
         }
 
         #region safe version of Matches and IsMatch for string input
@@ -534,68 +575,7 @@ namespace Microsoft.Automata
                     int c = input[i];
                     int p;
 
-                    //p = Delta(c, q, out regex);
-                    #region copy&paste region of the definition of Delta being inlined
-                    int atom_id = (dt.precomputed.Length > c ? dt.precomputed[c] : dt.bst.Find(c));
-                    S atom = atoms[atom_id];
-                    if (q < StateLimit)
-                    {
-                        #region use delta
-                        int offset = (q * K) + atom_id;
-                        p = delta[offset];
-                        if (p == 0)
-                        {
-                            //p is undefined
-                            var q_regex = state2regex[q];
-                            var deriv = q_regex.MkDerivative(atom);
-                            if (!regex2state.TryGetValue(deriv, out p))
-                            {
-                                p = nextStateId++;
-                                regex2state[deriv] = p;
-                                if (p < StateLimit)
-                                    state2regex[p] = deriv;
-                                else
-                                    state2regexExtra[p] = deriv;
-                                if (p >= StateLimit)
-                                    deltaExtra[p] = new int[K];
-                            }
-                            delta[offset] = p;
-                            regex = deriv;
-                        }
-                        else
-                        {
-                            regex = (p < StateLimit ? state2regex[p] : state2regexExtra[p]);
-                        }
-                        #endregion
-                    }
-                    else
-                    {
-                        #region use deltaExtra
-                        int[] q_trans = deltaExtra[q];
-                        p = q_trans[atom_id];
-                        if (p == 0)
-                        {
-                            //p is undefined
-                            var q_regex = state2regexExtra[q];
-                            var deriv = q_regex.MkDerivative(atom);
-                            if (!regex2state.TryGetValue(deriv, out p))
-                            {
-                                p = nextStateId++;
-                                regex2state[deriv] = p;
-                                // we know at this point that p >= MaxNrOfStates
-                                state2regexExtra[p] = deriv;
-                                deltaExtra[p] = new int[K];
-                            }
-                            q_trans[atom_id] = p;
-                            regex = deriv;
-                        }
-                        else
-                        {
-                            regex = (p < StateLimit ? state2regex[p] : state2regexExtra[p]);
-                        }
-                        #endregion
-                    }
-                    #endregion
+                    p = Delta(c, q, out regex);
 
                     if (regex == regex.builder.dotStar) //(regex.IsEverything)
                     {
@@ -658,68 +638,8 @@ namespace Microsoft.Automata
                 int c = input[i];
                 int p;
                 //TBD: anchors
-                //p = Delta(c, q, out regex);
-                #region copy&paste region of the definition of Delta being inlined
-                int atom_id = (dt.precomputed.Length > c ? dt.precomputed[c] : dt.bst.Find(c));
-                S atom = atoms[atom_id];
-                if (q < StateLimit)
-                {
-                    #region use delta
-                    int offset = (q * K) + atom_id;
-                    p = delta[offset];
-                    if (p == 0)
-                    {
-                        //p is undefined
-                        var q_regex = state2regex[q];
-                        var deriv = q_regex.MkDerivative(atom);
-                        if (!regex2state.TryGetValue(deriv, out p))
-                        {
-                            p = nextStateId++;
-                            regex2state[deriv] = p;
-                            if (p < StateLimit)
-                                state2regex[p] = deriv;
-                            else
-                                state2regexExtra[p] = deriv;
-                            if (p >= StateLimit)
-                                deltaExtra[p] = new int[K];
-                        }
-                        delta[offset] = p;
-                        regex = deriv;
-                    }
-                    else
-                    {
-                        regex = (p < StateLimit ? state2regex[p] : state2regexExtra[p]);
-                    }
-                    #endregion
-                }
-                else
-                {
-                    #region use deltaExtra
-                    int[] q_trans = deltaExtra[q];
-                    p = q_trans[atom_id];
-                    if (p == 0)
-                    {
-                        //p is undefined
-                        var q_regex = state2regexExtra[q];
-                        var deriv = q_regex.MkDerivative(atom);
-                        if (!regex2state.TryGetValue(deriv, out p))
-                        {
-                            p = nextStateId++;
-                            regex2state[deriv] = p;
-                            // we know at this point that p >= MaxNrOfStates
-                            state2regexExtra[p] = deriv;
-                            deltaExtra[p] = new int[K];
-                        }
-                        q_trans[atom_id] = p;
-                        regex = deriv;
-                    }
-                    else
-                    {
-                        regex = (p < StateLimit ? state2regex[p] : state2regexExtra[p]);
-                    }
-                    #endregion
-                }
-                #endregion
+                p = Delta(c, q, out regex);
+
 
                 if (regex.isNullable)
                 {
@@ -786,68 +706,7 @@ namespace Microsoft.Automata
                 //TBD: anchors
                 c = input[i];
 
-                //p = Delta(c, q, out regex);
-                #region copy&paste region of the definition of Delta being inlined
-                int atom_id = (dt.precomputed.Length > c ? dt.precomputed[c] : dt.bst.Find(c));
-                S atom = atoms[atom_id];
-                if (q < StateLimit)
-                {
-                    #region use delta
-                    int offset = (q * K) + atom_id;
-                    p = delta[offset];
-                    if (p == 0)
-                    {
-                        //p is undefined
-                        var q_regex = state2regex[q];
-                        var deriv = q_regex.MkDerivative(atom);
-                        if (!regex2state.TryGetValue(deriv, out p))
-                        {
-                            p = nextStateId++;
-                            regex2state[deriv] = p;
-                            if (p < StateLimit)
-                                state2regex[p] = deriv;
-                            else
-                                state2regexExtra[p] = deriv;
-                            if (p >= StateLimit)
-                                deltaExtra[p] = new int[K];
-                        }
-                        delta[offset] = p;
-                        regex = deriv;
-                    }
-                    else
-                    {
-                        regex = (p < StateLimit ? state2regex[p] : state2regexExtra[p]);
-                    }
-                    #endregion
-                }
-                else
-                {
-                    #region use deltaExtra
-                    int[] q_trans = deltaExtra[q];
-                    p = q_trans[atom_id];
-                    if (p == 0)
-                    {
-                        //p is undefined
-                        var q_regex = state2regexExtra[q];
-                        var deriv = q_regex.MkDerivative(atom);
-                        if (!regex2state.TryGetValue(deriv, out p))
-                        {
-                            p = nextStateId++;
-                            regex2state[deriv] = p;
-                            // we know at this point that p >= MaxNrOfStates
-                            state2regexExtra[p] = deriv;
-                            deltaExtra[p] = new int[K];
-                        }
-                        q_trans[atom_id] = p;
-                        regex = deriv;
-                    }
-                    else
-                    {
-                        regex = (p < StateLimit ? state2regex[p] : state2regexExtra[p]);
-                    }
-                    #endregion
-                }
-                #endregion
+                p = Delta(c, q, out regex);
 
                 if (regex.isNullable)
                 {
@@ -904,68 +763,7 @@ namespace Microsoft.Automata
                 int c = input[i];
                 int p;
 
-                //p = Delta(c, q, out regex);
-                #region copy&paste region of the definition of Delta being inlined
-                int atom_id = (dt.precomputed.Length > c ? dt.precomputed[c] : dt.bst.Find(c));
-                S atom = atoms[atom_id];
-                if (q < StateLimit)
-                {
-                    #region use delta
-                    int offset = (q * K) + atom_id;
-                    p = delta[offset];
-                    if (p == 0)
-                    {
-                        //p is undefined
-                        var q_regex = state2regex[q];
-                        var deriv = q_regex.MkDerivative(atom);
-                        if (!regex2state.TryGetValue(deriv, out p))
-                        {
-                            p = nextStateId++;
-                            regex2state[deriv] = p;
-                            if (p < StateLimit)
-                                state2regex[p] = deriv;
-                            else
-                                state2regexExtra[p] = deriv;
-                            if (p >= StateLimit)
-                                deltaExtra[p] = new int[K];
-                        }
-                        delta[offset] = p;
-                        regex = deriv;
-                    }
-                    else
-                    {
-                        regex = (p < StateLimit ? state2regex[p] : state2regexExtra[p]);
-                    }
-                    #endregion
-                }
-                else
-                {
-                    #region use deltaExtra
-                    int[] q_trans = deltaExtra[q];
-                    p = q_trans[atom_id];
-                    if (p == 0)
-                    {
-                        //p is undefined
-                        var q_regex = state2regexExtra[q];
-                        var deriv = q_regex.MkDerivative(atom);
-                        if (!regex2state.TryGetValue(deriv, out p))
-                        {
-                            p = nextStateId++;
-                            regex2state[deriv] = p;
-                            // we know at this point that p >= MaxNrOfStates
-                            state2regexExtra[p] = deriv;
-                            deltaExtra[p] = new int[K];
-                        }
-                        q_trans[atom_id] = p;
-                        regex = deriv;
-                    }
-                    else
-                    {
-                        regex = (p < StateLimit ? state2regex[p] : state2regexExtra[p]);
-                    }
-                    #endregion
-                }
-                #endregion
+                p = Delta(c, q, out regex);
 
                 if (regex.isNullable)
                 {
@@ -1055,68 +853,7 @@ namespace Microsoft.Automata
                 int c = input[i];
                 int p;
 
-                //p = Delta(c, q, out regex);
-                #region copy&paste region of the definition of Delta being inlined
-                int atom_id = (dt.precomputed.Length > c ? dt.precomputed[c] : dt.bst.Find(c));
-                S atom = atoms[atom_id];
-                if (q < StateLimit)
-                {
-                    #region use delta
-                    int offset = (q * K) + atom_id;
-                    p = delta[offset];
-                    if (p == 0)
-                    {
-                        //p is undefined
-                        var q_regex = state2regex[q];
-                        var deriv = q_regex.MkDerivative(atom);
-                        if (!regex2state.TryGetValue(deriv, out p))
-                        {
-                            p = nextStateId++;
-                            regex2state[deriv] = p;
-                            if (p < StateLimit)
-                                state2regex[p] = deriv;
-                            else
-                                state2regexExtra[p] = deriv;
-                            if (p >= StateLimit)
-                                deltaExtra[p] = new int[K];
-                        }
-                        delta[offset] = p;
-                        regex = deriv;
-                    }
-                    else
-                    {
-                        regex = (p < StateLimit ? state2regex[p] : state2regexExtra[p]);
-                    }
-                    #endregion
-                }
-                else
-                {
-                    #region use deltaExtra
-                    int[] q_trans = deltaExtra[q];
-                    p = q_trans[atom_id];
-                    if (p == 0)
-                    {
-                        //p is undefined
-                        var q_regex = state2regexExtra[q];
-                        var deriv = q_regex.MkDerivative(atom);
-                        if (!regex2state.TryGetValue(deriv, out p))
-                        {
-                            p = nextStateId++;
-                            regex2state[deriv] = p;
-                            // we know at this point that p >= MaxNrOfStates
-                            state2regexExtra[p] = deriv;
-                            deltaExtra[p] = new int[K];
-                        }
-                        q_trans[atom_id] = p;
-                        regex = deriv;
-                    }
-                    else
-                    {
-                        regex = (p < StateLimit ? state2regex[p] : state2regexExtra[p]);
-                    }
-                    #endregion
-                }
-                #endregion
+                p = Delta(c, q, out regex);
 
                 if (regex.isNullable)
                 {
@@ -1276,68 +1013,7 @@ namespace Microsoft.Automata
                 int c = input[i];
                 int p;
 
-                //p = Delta(c, q, out regex);
-                #region copy&paste region of the definition of Delta being inlined
-                int atom_id = (dt.precomputed.Length > c ? dt.precomputed[c] : dt.bst.Find(c));
-                S atom = atoms[atom_id];
-                if (q < StateLimit)
-                {
-                    #region use delta
-                    int offset = (q * K) + atom_id;
-                    p = delta[offset];
-                    if (p == 0)
-                    {
-                        //p is undefined
-                        var q_regex = state2regex[q];
-                        var deriv = q_regex.MkDerivative(atom);
-                        if (!regex2state.TryGetValue(deriv, out p))
-                        {
-                            p = nextStateId++;
-                            regex2state[deriv] = p;
-                            if (p < StateLimit)
-                                state2regex[p] = deriv;
-                            else
-                                state2regexExtra[p] = deriv;
-                            if (p >= StateLimit)
-                                deltaExtra[p] = new int[K];
-                        }
-                        delta[offset] = p;
-                        regex = deriv;
-                    }
-                    else
-                    {
-                        regex = (p < StateLimit ? state2regex[p] : state2regexExtra[p]);
-                    }
-                    #endregion
-                }
-                else
-                {
-                    #region use deltaExtra
-                    int[] q_trans = deltaExtra[q];
-                    p = q_trans[atom_id];
-                    if (p == 0)
-                    {
-                        //p is undefined
-                        var q_regex = state2regexExtra[q];
-                        var deriv = q_regex.MkDerivative(atom);
-                        if (!regex2state.TryGetValue(deriv, out p))
-                        {
-                            p = nextStateId++;
-                            regex2state[deriv] = p;
-                            // we know at this point that p >= MaxNrOfStates
-                            state2regexExtra[p] = deriv;
-                            deltaExtra[p] = new int[K];
-                        }
-                        q_trans[atom_id] = p;
-                        regex = deriv;
-                    }
-                    else
-                    {
-                        regex = (p < StateLimit ? state2regex[p] : state2regexExtra[p]);
-                    }
-                    #endregion
-                }
-                #endregion
+                p = Delta(c, q, out regex);
 
                 if (regex.isNullable)
                 {
@@ -1426,68 +1102,7 @@ namespace Microsoft.Automata
                 int c = input[i];
                 int p;
 
-                //p = Delta(c, q, out regex);
-                #region copy&paste region of the definition of Delta being inlined
-                int atom_id = (dt.precomputed.Length > c ? dt.precomputed[c] : dt.bst.Find(c));
-                S atom = atoms[atom_id];
-                if (q < StateLimit)
-                {
-                    #region use delta
-                    int offset = (q * K) + atom_id;
-                    p = delta[offset];
-                    if (p == 0)
-                    {
-                        //p is undefined
-                        var q_regex = state2regex[q];
-                        var deriv = q_regex.MkDerivative(atom);
-                        if (!regex2state.TryGetValue(deriv, out p))
-                        {
-                            p = nextStateId++;
-                            regex2state[deriv] = p;
-                            if (p < StateLimit)
-                                state2regex[p] = deriv;
-                            else
-                                state2regexExtra[p] = deriv;
-                            if (p >= StateLimit)
-                                deltaExtra[p] = new int[K];
-                        }
-                        delta[offset] = p;
-                        regex = deriv;
-                    }
-                    else
-                    {
-                        regex = (p < StateLimit ? state2regex[p] : state2regexExtra[p]);
-                    }
-                    #endregion
-                }
-                else
-                {
-                    #region use deltaExtra
-                    int[] q_trans = deltaExtra[q];
-                    p = q_trans[atom_id];
-                    if (p == 0)
-                    {
-                        //p is undefined
-                        var q_regex = state2regexExtra[q];
-                        var deriv = q_regex.MkDerivative(atom);
-                        if (!regex2state.TryGetValue(deriv, out p))
-                        {
-                            p = nextStateId++;
-                            regex2state[deriv] = p;
-                            // we know at this point that p >= MaxNrOfStates
-                            state2regexExtra[p] = deriv;
-                            deltaExtra[p] = new int[K];
-                        }
-                        q_trans[atom_id] = p;
-                        regex = deriv;
-                    }
-                    else
-                    {
-                        regex = (p < StateLimit ? state2regex[p] : state2regexExtra[p]);
-                    }
-                    #endregion
-                }
-                #endregion
+                p = Delta(c, q, out regex);
 
                 if (regex.isNullable)
                 {
