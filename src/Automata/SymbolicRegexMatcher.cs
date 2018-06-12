@@ -345,10 +345,54 @@ namespace Microsoft.Automata
             {
                 char c = input[0];
                 q = Delta(c, q, out regex);
+
+
                 for (int i = 1; i < input.Length; i++)
                 {
                     c = input[i];
-                    q = Delta(c, q, out regex);
+
+                    int p = 0;
+
+#if INLINE
+                    #region copy&paste region of the definition of Delta being inlined
+                int atom_id = (dt.precomputed.Length > c ? dt.precomputed[c] : dt.bst.Find(c));
+                S atom = atoms[atom_id];
+                if (q < StateLimit)
+                {
+                    #region use delta
+                    int offset = (q * K) + atom_id;
+                    p = delta[offset];
+                    if (p == 0)
+                    {
+                        CreateNewTransition(q, atom, offset, out p, out regex);
+                    }
+                    else
+                    {
+                        regex = (p < StateLimit ? state2regex[p] : state2regexExtra[p]);
+                    }
+                    #endregion
+                }
+                else
+                {
+                    #region use deltaExtra
+                    int[] q_trans = deltaExtra[q];
+                    p = q_trans[atom_id];
+                    if (p == 0)
+                    {
+                        CreateNewTransitionExtra(q, atom_id, atom, q_trans, out p, out regex);
+                    }
+                    else
+                    {
+                        regex = (p < StateLimit ? state2regex[p] : state2regexExtra[p]);
+                    }
+                    #endregion
+                }
+                    #endregion
+#else
+                    p = Delta(c, q, out regex);
+#endif
+
+                    q = p;
                 }
                 return q;
             }
@@ -408,6 +452,8 @@ namespace Microsoft.Automata
         /// <summary>
         /// Critical region for threadsafe applications for defining a new transition from q when q is larger that StateLimit
         /// </summary>
+        /// 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void CreateNewTransitionExtra(int q, int atom_id, S atom, int[] q_trans, out int p, out SymbolicRegex<S> regex)
         {
             lock (this)
@@ -441,6 +487,7 @@ namespace Microsoft.Automata
         /// <summary>
         /// Critical region for threadsafe applications for defining a new transition
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void CreateNewTransition(int q, S atom, int offset, out int p, out SymbolicRegex<S> regex)
         {
             lock (this)
@@ -575,7 +622,44 @@ namespace Microsoft.Automata
                     int c = input[i];
                     int p;
 
+#if INLINE
+                    #region copy&paste region of the definition of Delta being inlined
+                int atom_id = (dt.precomputed.Length > c ? dt.precomputed[c] : dt.bst.Find(c));
+                S atom = atoms[atom_id];
+                if (q < StateLimit)
+                {
+                    #region use delta
+                    int offset = (q * K) + atom_id;
+                    p = delta[offset];
+                    if (p == 0)
+                    {
+                        CreateNewTransition(q, atom, offset, out p, out regex);
+                    }
+                    else
+                    {
+                        regex = (p < StateLimit ? state2regex[p] : state2regexExtra[p]);
+                    }
+                    #endregion
+                }
+                else
+                {
+                    #region use deltaExtra
+                    int[] q_trans = deltaExtra[q];
+                    p = q_trans[atom_id];
+                    if (p == 0)
+                    {
+                        CreateNewTransitionExtra(q, atom_id, atom, q_trans, out p, out regex);
+                    }
+                    else
+                    {
+                        regex = (p < StateLimit ? state2regex[p] : state2regexExtra[p]);
+                    }
+                    #endregion
+                }
+                    #endregion
+#else
                     p = Delta(c, q, out regex);
+#endif
 
                     if (regex == regex.builder.dotStar) //(regex.IsEverything)
                     {
@@ -637,8 +721,47 @@ namespace Microsoft.Automata
                 SymbolicRegex<S> regex;
                 int c = input[i];
                 int p;
+
                 //TBD: anchors
+
+#if INLINE
+                #region copy&paste region of the definition of Delta being inlined
+                int atom_id = (dt.precomputed.Length > c ? dt.precomputed[c] : dt.bst.Find(c));
+                S atom = atoms[atom_id];
+                if (q < StateLimit)
+                {
+                #region use delta
+                    int offset = (q * K) + atom_id;
+                    p = delta[offset];
+                    if (p == 0)
+                    {
+                        CreateNewTransition(q, atom, offset, out p, out regex);
+                    }
+                    else
+                    {
+                        regex = (p < StateLimit ? state2regex[p] : state2regexExtra[p]);
+                    }
+                #endregion
+                }
+                else
+                {
+                #region use deltaExtra
+                    int[] q_trans = deltaExtra[q];
+                    p = q_trans[atom_id];
+                    if (p == 0)
+                    {
+                        CreateNewTransitionExtra(q, atom_id, atom, q_trans, out p, out regex);
+                    }
+                    else
+                    {
+                        regex = (p < StateLimit ? state2regex[p] : state2regexExtra[p]);
+                    }
+                #endregion
+                }
+                #endregion
+#else
                 p = Delta(c, q, out regex);
+#endif
 
 
                 if (regex.isNullable)
@@ -706,7 +829,44 @@ namespace Microsoft.Automata
                 //TBD: anchors
                 c = input[i];
 
+#if INLINE
+                #region copy&paste region of the definition of Delta being inlined
+                int atom_id = (dt.precomputed.Length > c ? dt.precomputed[c] : dt.bst.Find(c));
+                S atom = atoms[atom_id];
+                if (q < StateLimit)
+                {
+                #region use delta
+                    int offset = (q * K) + atom_id;
+                    p = delta[offset];
+                    if (p == 0)
+                    {
+                        CreateNewTransition(q, atom, offset, out p, out regex);
+                    }
+                    else
+                    {
+                        regex = (p < StateLimit ? state2regex[p] : state2regexExtra[p]);
+                    }
+                #endregion
+                }
+                else
+                {
+                #region use deltaExtra
+                    int[] q_trans = deltaExtra[q];
+                    p = q_trans[atom_id];
+                    if (p == 0)
+                    {
+                        CreateNewTransitionExtra(q, atom_id, atom, q_trans, out p, out regex);
+                    }
+                    else
+                    {
+                        regex = (p < StateLimit ? state2regex[p] : state2regexExtra[p]);
+                    }
+                #endregion
+                }
+                #endregion
+#else
                 p = Delta(c, q, out regex);
+#endif
 
                 if (regex.isNullable)
                 {
@@ -763,7 +923,44 @@ namespace Microsoft.Automata
                 int c = input[i];
                 int p;
 
+#if INLINE
+                #region copy&paste region of the definition of Delta being inlined
+                int atom_id = (dt.precomputed.Length > c ? dt.precomputed[c] : dt.bst.Find(c));
+                S atom = atoms[atom_id];
+                if (q < StateLimit)
+                {
+                #region use delta
+                    int offset = (q * K) + atom_id;
+                    p = delta[offset];
+                    if (p == 0)
+                    {
+                        CreateNewTransition(q, atom, offset, out p, out regex);
+                    }
+                    else
+                    {
+                        regex = (p < StateLimit ? state2regex[p] : state2regexExtra[p]);
+                    }
+                #endregion
+                }
+                else
+                {
+                #region use deltaExtra
+                    int[] q_trans = deltaExtra[q];
+                    p = q_trans[atom_id];
+                    if (p == 0)
+                    {
+                        CreateNewTransitionExtra(q, atom_id, atom, q_trans, out p, out regex);
+                    }
+                    else
+                    {
+                        regex = (p < StateLimit ? state2regex[p] : state2regexExtra[p]);
+                    }
+                #endregion
+                }
+                #endregion
+#else
                 p = Delta(c, q, out regex);
+#endif
 
                 if (regex.isNullable)
                 {
@@ -853,7 +1050,44 @@ namespace Microsoft.Automata
                 int c = input[i];
                 int p;
 
+#if INLINE
+                #region copy&paste region of the definition of Delta being inlined
+                int atom_id = (dt.precomputed.Length > c ? dt.precomputed[c] : dt.bst.Find(c));
+                S atom = atoms[atom_id];
+                if (q < StateLimit)
+                {
+                #region use delta
+                    int offset = (q * K) + atom_id;
+                    p = delta[offset];
+                    if (p == 0)
+                    {
+                        CreateNewTransition(q, atom, offset, out p, out regex);
+                    }
+                    else
+                    {
+                        regex = (p < StateLimit ? state2regex[p] : state2regexExtra[p]);
+                    }
+                #endregion
+                }
+                else
+                {
+                #region use deltaExtra
+                    int[] q_trans = deltaExtra[q];
+                    p = q_trans[atom_id];
+                    if (p == 0)
+                    {
+                        CreateNewTransitionExtra(q, atom_id, atom, q_trans, out p, out regex);
+                    }
+                    else
+                    {
+                        regex = (p < StateLimit ? state2regex[p] : state2regexExtra[p]);
+                    }
+                #endregion
+                }
+                #endregion
+#else
                 p = Delta(c, q, out regex);
+#endif
 
                 if (regex.isNullable)
                 {
@@ -1013,7 +1247,44 @@ namespace Microsoft.Automata
                 int c = input[i];
                 int p;
 
+#if INLINE
+                #region copy&paste region of the definition of Delta being inlined
+                int atom_id = (dt.precomputed.Length > c ? dt.precomputed[c] : dt.bst.Find(c));
+                S atom = atoms[atom_id];
+                if (q < StateLimit)
+                {
+                    #region use delta
+                    int offset = (q * K) + atom_id;
+                    p = delta[offset];
+                    if (p == 0)
+                    {
+                        CreateNewTransition(q, atom, offset, out p, out regex);
+                    }
+                    else
+                    {
+                        regex = (p < StateLimit ? state2regex[p] : state2regexExtra[p]);
+                    }
+                    #endregion
+                }
+                else
+                {
+                    #region use deltaExtra
+                    int[] q_trans = deltaExtra[q];
+                    p = q_trans[atom_id];
+                    if (p == 0)
+                    {
+                        CreateNewTransitionExtra(q, atom_id, atom, q_trans, out p, out regex);
+                    }
+                    else
+                    {
+                        regex = (p < StateLimit ? state2regex[p] : state2regexExtra[p]);
+                    }
+                    #endregion
+                }
+                #endregion
+#else
                 p = Delta(c, q, out regex);
+#endif
 
                 if (regex.isNullable)
                 {
@@ -1102,7 +1373,44 @@ namespace Microsoft.Automata
                 int c = input[i];
                 int p;
 
+#if INLINE
+                #region copy&paste region of the definition of Delta being inlined
+                int atom_id = (dt.precomputed.Length > c ? dt.precomputed[c] : dt.bst.Find(c));
+                S atom = atoms[atom_id];
+                if (q < StateLimit)
+                {
+                #region use delta
+                    int offset = (q * K) + atom_id;
+                    p = delta[offset];
+                    if (p == 0)
+                    {
+                        CreateNewTransition(q, atom, offset, out p, out regex);
+                    }
+                    else
+                    {
+                        regex = (p < StateLimit ? state2regex[p] : state2regexExtra[p]);
+                    }
+                #endregion
+                }
+                else
+                {
+                #region use deltaExtra
+                    int[] q_trans = deltaExtra[q];
+                    p = q_trans[atom_id];
+                    if (p == 0)
+                    {
+                        CreateNewTransitionExtra(q, atom_id, atom, q_trans, out p, out regex);
+                    }
+                    else
+                    {
+                        regex = (p < StateLimit ? state2regex[p] : state2regexExtra[p]);
+                    }
+                #endregion
+                }
+                #endregion
+#else
                 p = Delta(c, q, out regex);
+#endif
 
                 if (regex.isNullable)
                 {
@@ -1112,7 +1420,7 @@ namespace Microsoft.Automata
                 else if (regex == regex.builder.nothing)
                 {
                     i_q0 = i_q0_A1;
-                    //p is a deadend state so any further saerch is meaningless
+                    //p is a deadend state so any further search is meaningless
                     return k;
                 }
 
@@ -1124,9 +1432,9 @@ namespace Microsoft.Automata
             return i;
         }
 
-        #endregion
+#endregion
 
-        #region Specialized IndexOf
+#region Specialized IndexOf
         /// <summary>
         ///  Find first occurrence of value in input starting from index i.
         /// </summary>
@@ -1188,10 +1496,10 @@ namespace Microsoft.Automata
             ushort firstchar = substring[0];
             while (i < k1)
             {
-                if (substring.Length == 1)
+                //if (substring.Length == 1)
                     i = VectorizedIndexOf.UnsafeIndexOf1(input, i, firstchar, A_StartSet_Vec[0]);
-                else
-                    i = VectorizedIndexOf.UnsafeIndexOf2(input, i, substring, A_First_Vec, A_Second_Vec);
+                //else
+                //    i = VectorizedIndexOf.UnsafeIndexOf2(input, i, substring, A_First_Vec, A_Second_Vec);
                 if (i == -1)
                     return -1;
                 int j = 1;
@@ -1208,6 +1516,6 @@ namespace Microsoft.Automata
             //and the pattern s includes I or K, the match in s will then not be found
             //return input.IndexOf(substring, i, (caseInsensitive ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal));
         }
-        #endregion
+#endregion
     }
 }
