@@ -16,6 +16,7 @@ namespace Automata.Tests
         static string regexesFile = "../../../../Automata.Tests/Samples/regexes.txt";
         static string inputFile = "../../../../Automata.Tests/Samples/input.txt";
         static string regexesWithoutAnchorsFile = "../../../../Automata.Tests/Samples/regexesWithoutAnchors.txt";
+        //static string regexesWithoutAnchorsFile = "../../../../Automata.Tests/Samples/regex_tiny.txt";
         static string regexesPerfFile_IgnoreCaseTrue = "regexesPerf_IgnoreCaseTrue.txt";
         static string regexesPerfFile_IgnoreCaseFalse = "regexesPerf_IgnoreCaseFalse.txt";
         static string regexesPerfFile_IsMatch_IgnoreCaseTrue = "regexesPerf_IsMatch_IgnoreCaseTrue.txt";
@@ -183,7 +184,7 @@ namespace Automata.Tests
 
             //make sure k is at most regexes.Length
             //int k = regexes.Length;
-            int k_from = 0;
+            int k_from =0;
             int k_to = regexes.Length - 1; 
             int k = k_to - k_from + 1;
 
@@ -438,12 +439,12 @@ namespace Automata.Tests
                 //----------------------------
 
                 // regex 1366 causes a .NET regex bug to give wrong result
-                //if (i != 1366)
-                //{
-                //    ValidateMatches(re, sr, str, sr_res, re_res);
-                //}
+                if (i != 1366)
+                {
+                    ValidateMatches(re, sr, str, sr_res, re_res);
+                }
                 // ---- due to small semantic differences this assert may not always be true ---
-                Assert.IsTrue(sr_res.Length == re_res.Length);
+                //Assert.IsTrue(sr_res.Length == re_res.Length);
                 //--- accumulate total matching times ---
                 sr_tot += sr_t;
                 re_tot += re_t;

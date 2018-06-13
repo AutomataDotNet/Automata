@@ -127,15 +127,6 @@ namespace Microsoft.Automata
             }
         }
 
-        static string Show(Vector<ushort> vec)
-        {
-            //string s = "";
-            //for (int i = 0; i < Vector<ushort>.Count; i++)
-            //    s += ((char)vec[i]).ToString();
-            //return s;
-            return new string(new char[] { (char)vec[0],(char)vec[1],(char)vec[2],(char)vec[3], (char)vec[4],(char)vec[5],(char)vec[6],(char)vec[7],(char)vec[8],(char)vec[9],(char)vec[10],(char)vec[11],(char)vec[12],(char)vec[13],(char)vec[14],(char)vec[15]});
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe static int UnsafeIndexOfByte(byte[] input, int start, byte[] toMatch)
         {

@@ -22,8 +22,6 @@ namespace Microsoft.Automata
 
         /// <summary>
         /// Set of elements that matter as first element of A. 
-        /// Characters that matter are mapped to 1. 
-        /// Characters that dont matter are mapped to 0.
         /// </summary>
         BooleanDecisionTree A_StartSet;
 
@@ -32,24 +30,22 @@ namespace Microsoft.Automata
         /// </summary>
         int A_StartSet_Size;
 
-        /// <summary>
-        /// Expilcit characters in A_StartSet if defined
-        /// </summary>
-        char[] A_StartSet_array = null;
+        //Vector<ushort> A_First_Vec;
 
-        Vector<ushort> A_First_Vec;
-
-        Vector<ushort> A_Second_Vec;
-
-        Vector<ushort>[] A_StartSet_Vec;
+        //Vector<ushort> A_Second_Vec;
 
         /// <summary>
-        /// Set of first byte of UTF8 encoded characters.
-        /// Characters that matter are mapped to true. 
-        /// Characters that dont matter are mapped to false.
-        /// This array has size 256.
+        /// If not null then contains all relevant start characters as vectors
         /// </summary>
-        bool[] A_StartSetAsByteArray = new bool[256];
+        Vector<ushort>[] A_StartSet_Vec = null;
+
+        ///// <summary>
+        ///// Set of first byte of UTF8 encoded characters.
+        ///// Characters that matter are mapped to true. 
+        ///// Characters that dont matter are mapped to false.
+        ///// This array has size 256.
+        ///// </summary>
+        //bool[] A_StartSetAsByteArray = new bool[256];
 
         /// <summary>
         /// if nonempty then A has that fixed prefix
@@ -195,7 +191,7 @@ namespace Microsoft.Automata
         /// </summary>
         /// <param name="sr">given symbolic regex</param>
         /// <param name="StateLimit">limit on the number of states kept in a preallocated array (default is 1000)</param>
-        internal SymbolicRegexMatcher(SymbolicRegex<S> sr, int StateLimit = 1000, int startSetSizeLimit = 256)
+        internal SymbolicRegexMatcher(SymbolicRegex<S> sr, int StateLimit = 1000, int startSetSizeLimit = 1)
         {
             this.StartSetSizeLimit = startSetSizeLimit;
             this.builder = sr.builder;
@@ -256,35 +252,28 @@ namespace Microsoft.Automata
             }
 
             BDD A_startSet_BDD = builder.solver.ConvertToCharSet(A.GetStartSet());
-            var A_startSet_ranges = A_startSet_BDD.ToRanges();
-            uint A_startSet_count = 0;
-            for (int i = 0; i < A_startSet_ranges.Length; i++)
-                A_startSet_count += A_startSet_ranges[i].Item2 - A_startSet_ranges[i].Item1 + 1;
-            this.A_StartSet_Size = (int)A_startSet_count;
+            this.A_StartSet_Size = (int)builder.solver.CharSetProvider.ComputeDomainSize(A_startSet_BDD);
             if (A_StartSet_Size <= startSetSizeLimit)
             {
-                this.A_StartSet_array = new char[A_StartSet_Size];
-                int i = 0;
-                foreach (char c in builder.solver.CharSetProvider.GenerateAllCharacters(A_startSet_BDD))
-                    this.A_StartSet_array[i++] = c;
-                A_StartSet_Vec = A_StartSet_array.Select(x => new Vector<ushort>(x)).ToArray();
+                char[] startchars = new List<char>(builder.solver.CharSetProvider.GenerateAllCharacters(A_startSet_BDD)).ToArray();
+                A_StartSet_Vec = Array.ConvertAll(startchars, c => new Vector<ushort>(c));
             }
             this.A_StartSet = BooleanDecisionTree.Create(builder.solver.CharSetProvider, A_startSet_BDD);
 
-            //consider the UTF8 encoded first byte
-            for (ushort i = 0; i < 128; i++)
-            {
-                //relevant ASCII characters
-                this.A_StartSetAsByteArray[i] = this.A_StartSet.Contains(i);
-            }
-            //to be on the safe side, set all other bytes to be relevant
-            //TBD: set only those bytes to be relevant 
-            //that are potentially the first byte encoding of a relevant character
-            for (ushort i = 128; i < 256; i++)
-            {
-                //ASCII is not encoded
-                this.A_StartSetAsByteArray[i] = true;
-            }
+            ////consider the UTF8 encoded first byte
+            //for (ushort i = 0; i < 128; i++)
+            //{
+            //    //relevant ASCII characters
+            //    this.A_StartSetAsByteArray[i] = this.A_StartSet.Contains(i);
+            //}
+            ////to be on the safe side, set all other bytes to be relevant
+            ////TBD: set only those bytes to be relevant 
+            ////that are potentially the first byte encoding of a relevant character
+            //for (ushort i = 128; i < 256; i++)
+            //{
+            //    //ASCII is not encoded
+            //    this.A_StartSetAsByteArray[i] = true;
+            //}
 
             SymbolicRegex<S> tmp = A;
             this.A_prefix_array = A.GetPrefix();
@@ -299,33 +288,34 @@ namespace Microsoft.Automata
             this.Ar_skipStateRegex = tmp;
 
 
-            if (this.A_prefix.Length > 1)
-            {
-                var first = new List<char>(builder.solver.CharSetProvider.GenerateAllCharacters(
-                    builder.solver.ConvertToCharSet(this.A_prefix_array[0])));
-                var second = new List<char>(builder.solver.CharSetProvider.GenerateAllCharacters(
-                   builder.solver.ConvertToCharSet(this.A_prefix_array[1])));
+            //---- seems not useful --- 
+            //if (this.A_prefix.Length > 1)
+            //{
+            //    var first = new List<char>(builder.solver.CharSetProvider.GenerateAllCharacters(
+            //        builder.solver.ConvertToCharSet(this.A_prefix_array[0])));
+            //    var second = new List<char>(builder.solver.CharSetProvider.GenerateAllCharacters(
+            //       builder.solver.ConvertToCharSet(this.A_prefix_array[1])));
 
-                ushort[] chars1 = new ushort[Vector<ushort>.Count];
-                int i1 = 0;
-                foreach (var c in first)
-                    chars1[i1++] = c;
-                //fill out the rest of the array with the first element
-                if (i1 < Vector<ushort>.Count - 1)
-                    while (i1 < Vector<ushort>.Count)
-                        chars1[i1++] = chars1[0];
-                this.A_First_Vec = new Vector<ushort>(chars1);
+            //    ushort[] chars1 = new ushort[Vector<ushort>.Count];
+            //    int i1 = 0;
+            //    foreach (var c in first)
+            //        chars1[i1++] = c;
+            //    //fill out the rest of the array with the first element
+            //    if (i1 < Vector<ushort>.Count - 1)
+            //        while (i1 < Vector<ushort>.Count)
+            //            chars1[i1++] = chars1[0];
+            //    this.A_First_Vec = new Vector<ushort>(chars1);
 
-                ushort[] chars2 = new ushort[Vector<ushort>.Count];
-                int i2 = 0;
-                foreach (var c in second)
-                    chars2[i2++] = c;
-                //fill out the rest of the array with the first element
-                if (i2 < Vector<ushort>.Count - 1)
-                    while (i2 < Vector<ushort>.Count)
-                        chars2[i2++] = chars2[0];
-                this.A_Second_Vec = new Vector<ushort>(chars2);
-            }
+            //    ushort[] chars2 = new ushort[Vector<ushort>.Count];
+            //    int i2 = 0;
+            //    foreach (var c in second)
+            //        chars2[i2++] = c;
+            //    //fill out the rest of the array with the first element
+            //    if (i2 < Vector<ushort>.Count - 1)
+            //        while (i2 < Vector<ushort>.Count)
+            //            chars2[i2++] = chars2[0];
+            //    this.A_Second_Vec = new Vector<ushort>(chars2);
+            //}
         }
 
         /// <summary>
@@ -1109,48 +1099,6 @@ namespace Microsoft.Automata
             return i;
         }
 
-        /// <summary>
-        ///  Find first occurrence of s in input starting from index i.
-        /// </summary>
-        /// <param name="input">input string to search in</param>
-        /// <param name="k">length of input string</param>
-        /// <param name="s">the substring that is searched for</param>
-        /// <param name="i">the start index in input</param>
-        /// <param name="caseInsensitive">if true then the search is case insensitive</param>
-        /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        int IndexOf(string input, string s, int i, bool caseInsensitive)
-        {
-            //TBD: StringComparison.OrdinalIgnoreCase works incorrectly when s includes a unicode case-equivalent I, or K
-            //and the pattern s includes I or K, the match in s will then not be found
-            return input.IndexOf(s, i, (caseInsensitive ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal));
-        }
-
-        /// <summary>
-        ///  Find first occurrence of startset element in input starting from index i.
-        /// </summary>
-        /// <param name="input">input string to search in</param>
-        /// <param name="i">the start index in input to search from</param>
-        /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        int IndexOfStartset(string input, int i)
-        {
-            int k = input.Length;
-            int start_pos = -1;
-            while (i < k)
-            {
-                char c = input[i];
-                bool res = this.A_StartSet.Contains(c);
-                if (res)
-                {
-                    start_pos = i;
-                    break;
-                }
-                i += 1;
-            }
-            return start_pos;
-        }
-
         #endregion
 
         #region unsafe version of Matches for string input
@@ -1229,7 +1177,7 @@ namespace Microsoft.Automata
             {
                 if (q == q0_A1)
                 {
-                    if (this.A_StartSet_array == null)
+                    if (this.A_StartSet_Vec == null)
                         i = IndexOfStartset(input, i);
                     else
                         i = VectorizedIndexOf.UnsafeIndexOf(input, i, this.A_StartSet, A_StartSet_Vec);
@@ -1307,23 +1255,20 @@ namespace Microsoft.Automata
         }
 
         /// <summary>
-        /// FindFinalState optimized for the case when A starts with a fixed prefix
+        /// FindFinalState optimized for the case when A starts with a fixed prefix and does not ignore case
         /// </summary>
         private int FindFinalStatePositionOpt_(string input, int i, out int i_q0)
         {
             int k = input.Length;
             int q = q0_A1;
             int i_q0_A1 = i;
-            var prefix = this.A_prefix;
+            var A_prefix_length = this.A_prefix.Length;
             //it is important to use Ordinal/OrdinalIgnoreCase to avoid culture dependent semantics of IndexOf
             StringComparison comparison = (this.A_fixedPrefix_ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
             while (i < k)
             {
                 SymbolicRegex<S> regex = null;
 
-                // ++++ the following prefix optimization can be commented out without affecting correctness ++++
-                // but this optimization has a huge perfomance boost when fixed prefix exists .... in the order of 10x
-                //
                 #region prefix optimization 
                 //stay in the initial state if the prefix does not match
                 //thus advance the current position to the 
@@ -1332,7 +1277,10 @@ namespace Microsoft.Automata
                 {
                     i_q0_A1 = i;
 
-                    i = IndexOf_(input, prefix, i, this.A_fixedPrefix_ignoreCase);
+                    if (this.A_fixedPrefix_ignoreCase)
+                        i = input.IndexOf(A_prefix, i, comparison);
+                    else
+                        i = IndexOfStartPrefix_(input, i);
 
                     if (i == -1)
                     {
@@ -1353,7 +1301,7 @@ namespace Microsoft.Automata
                         regex = this.A1_skipStateRegex;
 
                         //skip the prefix
-                        i = i + prefix.Length;
+                        i = i + A_prefix_length;
                         if (regex.isNullable)
                         {
                             i_q0 = i_q0_A1;
@@ -1432,9 +1380,27 @@ namespace Microsoft.Automata
             return i;
         }
 
-#endregion
+        #endregion
 
-#region Specialized IndexOf
+        #region Specialized IndexOf
+        /// <summary>
+        ///  Find first occurrence of startset element in input starting from index i.
+        /// </summary>
+        /// <param name="input">input string to search in</param>
+        /// <param name="i">the start index in input to search from</param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        int IndexOfStartset(string input, int i)
+        {
+            int k = input.Length;
+            while (i < k && !A_StartSet.Contains(input[i]))
+                i += 1;
+            if (i == k)
+                return -1;
+            else
+                return i;
+        }
+
         /// <summary>
         ///  Find first occurrence of value in input starting from index i.
         /// </summary>
@@ -1480,30 +1446,25 @@ namespace Microsoft.Automata
 
         /// <summary>
         ///  Find first occurrence of s in input starting from index i.
+        ///  This method is called when A has nonemmpty prefix and ingorecase is false
         /// </summary>
         /// <param name="input">input string to search in</param>
-        /// <param name="k">length of input string</param>
-        /// <param name="substring">the substring that is searched for</param>
         /// <param name="i">the start index in input</param>
-        /// <param name="caseInsensitive">if true then the search is case insensitive</param>
         /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        int IndexOf_(string input, string substring, int i, bool caseInsensitive)
+        int IndexOfStartPrefix_(string input, int i)
         {
             int k = input.Length;
-            int l = substring.Length;
+            int l = this.A_prefix.Length;
             int k1 = k - l + 1;
-            ushort firstchar = substring[0];
+            ushort firstchar = this.A_prefix[0];
             while (i < k1)
             {
-                //if (substring.Length == 1)
-                    i = VectorizedIndexOf.UnsafeIndexOf1(input, i, firstchar, A_StartSet_Vec[0]);
-                //else
-                //    i = VectorizedIndexOf.UnsafeIndexOf2(input, i, substring, A_First_Vec, A_Second_Vec);
+                i = VectorizedIndexOf.UnsafeIndexOf1(input, i, firstchar, A_StartSet_Vec[0]);
                 if (i == -1)
                     return -1;
                 int j = 1;
-                while (j < l && input[i + j] == substring[j])
+                while (j < l && input[i + j] == this.A_prefix[j])
                     j += 1;
                 if (j == l)
                     return i;
@@ -1511,11 +1472,8 @@ namespace Microsoft.Automata
                 i += 1;
             }
             return -1;
-
-            //TBD: StringComparison.OrdinalIgnoreCase works incorrectly when s includes a unicode case-equivalent I, or K
-            //and the pattern s includes I or K, the match in s will then not be found
-            //return input.IndexOf(substring, i, (caseInsensitive ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal));
         }
-#endregion
+
+        #endregion
     }
 }
