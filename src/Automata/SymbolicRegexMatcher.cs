@@ -1166,90 +1166,97 @@ namespace Microsoft.Automata
         /// <param name="i">start position</param>
         /// <param name="i_q0">last position the initial state of A1 was visited</param>
         /// <returns></returns>
-        private int FindFinalStatePosition_(string input, int i, out int i_q0)
+        unsafe private int FindFinalStatePosition_(string input, int i, out int i_q0)
         {
-            int lastI = 0;
             int k = input.Length;
             int q = q0_A1;
             int i_q0_A1 = i;
-
-            while (i < k)
-            {
-                if (q == q0_A1)
+            fixed (char* inputp = input)
+                while (i < k)
                 {
-                    if (this.A_StartSet_Vec == null)
-                        i = IndexOfStartset(input, i);
-                    else
-                        i = VectorizedIndexOf.UnsafeIndexOf(input, i, this.A_StartSet, A_StartSet_Vec);
-
-                    if (i == -1)
+                    if (q == q0_A1)
                     {
-                        i_q0 = i_q0_A1;
-                        return k;
-                    }
-                    i_q0_A1 = i;
-                }
+                        if (this.A_StartSet_Vec == null)
+                        {
+                            i = IndexOfStartset_(inputp, k, i);
+                        }
+                        else if (A_StartSet_Vec.Length == 1)
+                        {
+                            i = VectorizedIndexOf.UnsafeIndexOf(inputp, k, i, this.A_StartSet, A_StartSet_Vec[0]);
+                        }
+                        else
+                        {
+                            i = VectorizedIndexOf.UnsafeIndexOf(inputp, k, i, this.A_StartSet, A_StartSet_Vec);
+                        }
 
-                //TBD: anchors
-                SymbolicRegex<S> regex;
-                int c = input[i];
-                int p;
+                        if (i == -1)
+                        {
+                            i_q0 = i_q0_A1;
+                            return k;
+                        }
+                        i_q0_A1 = i;
+                    }
+
+                    //TBD: anchors
+                    SymbolicRegex<S> regex;
+                    int c = inputp[i];
+                    int p;
 
 #if INLINE
-                #region copy&paste region of the definition of Delta being inlined
-                int atom_id = (dt.precomputed.Length > c ? dt.precomputed[c] : dt.bst.Find(c));
-                S atom = atoms[atom_id];
-                if (q < StateLimit)
-                {
-                    #region use delta
-                    int offset = (q * K) + atom_id;
-                    p = delta[offset];
-                    if (p == 0)
+                    #region copy&paste region of the definition of Delta being inlined
+                    int atom_id = (dt.precomputed.Length > c ? dt.precomputed[c] : dt.bst.Find(c));
+                    S atom = atoms[atom_id];
+                    if (q < StateLimit)
                     {
-                        CreateNewTransition(q, atom, offset, out p, out regex);
+                        #region use delta
+                        int offset = (q * K) + atom_id;
+                        p = delta[offset];
+                        if (p == 0)
+                        {
+                            CreateNewTransition(q, atom, offset, out p, out regex);
+                        }
+                        else
+                        {
+                            regex = (p < StateLimit ? state2regex[p] : state2regexExtra[p]);
+                        }
+                        #endregion
                     }
                     else
                     {
-                        regex = (p < StateLimit ? state2regex[p] : state2regexExtra[p]);
+                        #region use deltaExtra
+                        int[] q_trans = deltaExtra[q];
+                        p = q_trans[atom_id];
+                        if (p == 0)
+                        {
+                            CreateNewTransitionExtra(q, atom_id, atom, q_trans, out p, out regex);
+                        }
+                        else
+                        {
+                            regex = (p < StateLimit ? state2regex[p] : state2regexExtra[p]);
+                        }
+                        #endregion
                     }
                     #endregion
-                }
-                else
-                {
-                    #region use deltaExtra
-                    int[] q_trans = deltaExtra[q];
-                    p = q_trans[atom_id];
-                    if (p == 0)
-                    {
-                        CreateNewTransitionExtra(q, atom_id, atom, q_trans, out p, out regex);
-                    }
-                    else
-                    {
-                        regex = (p < StateLimit ? state2regex[p] : state2regexExtra[p]);
-                    }
-                    #endregion
-                }
-                #endregion
 #else
                 p = Delta(c, q, out regex);
 #endif
 
-                if (regex.isNullable)
-                {
-                    //p is a final state so match has been found
-                    break;
-                }
-                else if (regex == regex.builder.nothing)
-                {
-                    //p is a deadend state so any further search is meaningless
-                    i_q0 = i_q0_A1;
-                    return k;
-                }
+                    if (regex.isNullable)
+                    {
+                        //p is a final state so match has been found
+                        break;
+                    }
+                    else if (regex == regex.builder.nothing)
+                    {
+                        //p is a deadend state so any further search is meaningless
+                        i_q0 = i_q0_A1;
+                        return k;
+                    }
 
-                //continue from the target state
-                q = p;
-                i += 1;
-            }
+                    //continue from the target state
+                    q = p;
+                    i += 1;
+                }
             i_q0 = i_q0_A1;
             return i;
         }
@@ -1257,7 +1264,7 @@ namespace Microsoft.Automata
         /// <summary>
         /// FindFinalState optimized for the case when A starts with a fixed prefix and does not ignore case
         /// </summary>
-        private int FindFinalStatePositionOpt_(string input, int i, out int i_q0)
+        unsafe private int FindFinalStatePositionOpt_(string input, int i, out int i_q0)
         {
             int k = input.Length;
             int q = q0_A1;
@@ -1265,119 +1272,122 @@ namespace Microsoft.Automata
             var A_prefix_length = this.A_prefix.Length;
             //it is important to use Ordinal/OrdinalIgnoreCase to avoid culture dependent semantics of IndexOf
             StringComparison comparison = (this.A_fixedPrefix_ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
-            while (i < k)
+            fixed (char* inputp = input)
             {
-                SymbolicRegex<S> regex = null;
-
-                #region prefix optimization 
-                //stay in the initial state if the prefix does not match
-                //thus advance the current position to the 
-                //first position where the prefix does match
-                if (q == q0_A1)
+                while (i < k)
                 {
-                    i_q0_A1 = i;
+                    SymbolicRegex<S> regex = null;
 
-                    if (this.A_fixedPrefix_ignoreCase)
-                        i = input.IndexOf(A_prefix, i, comparison);
-                    else
-                        i = IndexOfStartPrefix_(input, i);
-
-                    if (i == -1)
+                    #region prefix optimization 
+                    //stay in the initial state if the prefix does not match
+                    //thus advance the current position to the 
+                    //first position where the prefix does match
+                    if (q == q0_A1)
                     {
-                        //if a matching position does not exist then IndexOf returns -1
-                        //so set i = k to match the while loop behavior
-                        i = k;
-                        break;
-                    }
-                    else
-                    {
-                        //compute the end state for the A prefix
-                        //skip directly to the resulting state
-                        // --- i.e. does the loop ---
-                        //for (int j = 0; j < prefix.Length; j++)
-                        //    q = Delta(prefix[j], q, out regex);
-                        // ---
-                        q = this.A1_skipState;
-                        regex = this.A1_skipStateRegex;
+                        i_q0_A1 = i;
 
-                        //skip the prefix
-                        i = i + A_prefix_length;
-                        if (regex.isNullable)
+                        if (this.A_fixedPrefix_ignoreCase)
+                            i = input.IndexOf(A_prefix, i, comparison);
+                        else
+                            i = IndexOfStartPrefix_(inputp, k, i);
+
+                        if (i == -1)
                         {
-                            i_q0 = i_q0_A1;
-                            //return the last position of the match
-                            return i - 1;
+                            //if a matching position does not exist then IndexOf returns -1
+                            //so set i = k to match the while loop behavior
+                            i = k;
+                            break;
                         }
-                        if (i == k)
+                        else
                         {
-                            i_q0 = i_q0_A1;
-                            return k;
+                            //compute the end state for the A prefix
+                            //skip directly to the resulting state
+                            // --- i.e. does the loop ---
+                            //for (int j = 0; j < prefix.Length; j++)
+                            //    q = Delta(prefix[j], q, out regex);
+                            // ---
+                            q = this.A1_skipState;
+                            regex = this.A1_skipStateRegex;
+
+                            //skip the prefix
+                            i = i + A_prefix_length;
+                            if (regex.isNullable)
+                            {
+                                i_q0 = i_q0_A1;
+                                //return the last position of the match
+                                return i - 1;
+                            }
+                            if (i == k)
+                            {
+                                i_q0 = i_q0_A1;
+                                return k;
+                            }
                         }
                     }
-                }
-                #endregion
+                    #endregion
 
-                //TBD: anchors
-                int c = input[i];
-                int p;
+                    //TBD: anchors
+                    int c = inputp[i];
+                    int p;
 
 #if INLINE
-                #region copy&paste region of the definition of Delta being inlined
-                int atom_id = (dt.precomputed.Length > c ? dt.precomputed[c] : dt.bst.Find(c));
-                S atom = atoms[atom_id];
-                if (q < StateLimit)
-                {
-                #region use delta
-                    int offset = (q * K) + atom_id;
-                    p = delta[offset];
-                    if (p == 0)
+                    #region copy&paste region of the definition of Delta being inlined
+                    int atom_id = (dt.precomputed.Length > c ? dt.precomputed[c] : dt.bst.Find(c));
+                    S atom = atoms[atom_id];
+                    if (q < StateLimit)
                     {
-                        CreateNewTransition(q, atom, offset, out p, out regex);
+                        #region use delta
+                        int offset = (q * K) + atom_id;
+                        p = delta[offset];
+                        if (p == 0)
+                        {
+                            CreateNewTransition(q, atom, offset, out p, out regex);
+                        }
+                        else
+                        {
+                            regex = (p < StateLimit ? state2regex[p] : state2regexExtra[p]);
+                        }
+                        #endregion
                     }
                     else
                     {
-                        regex = (p < StateLimit ? state2regex[p] : state2regexExtra[p]);
+                        #region use deltaExtra
+                        int[] q_trans = deltaExtra[q];
+                        p = q_trans[atom_id];
+                        if (p == 0)
+                        {
+                            CreateNewTransitionExtra(q, atom_id, atom, q_trans, out p, out regex);
+                        }
+                        else
+                        {
+                            regex = (p < StateLimit ? state2regex[p] : state2regexExtra[p]);
+                        }
+                        #endregion
                     }
-                #endregion
-                }
-                else
-                {
-                #region use deltaExtra
-                    int[] q_trans = deltaExtra[q];
-                    p = q_trans[atom_id];
-                    if (p == 0)
-                    {
-                        CreateNewTransitionExtra(q, atom_id, atom, q_trans, out p, out regex);
-                    }
-                    else
-                    {
-                        regex = (p < StateLimit ? state2regex[p] : state2regexExtra[p]);
-                    }
-                #endregion
-                }
-                #endregion
+                    #endregion
 #else
                 p = Delta(c, q, out regex);
 #endif
 
-                if (regex.isNullable)
-                {
-                    //p is a final state so match has been found
-                    break;
-                }
-                else if (regex == regex.builder.nothing)
-                {
-                    i_q0 = i_q0_A1;
-                    //p is a deadend state so any further search is meaningless
-                    return k;
-                }
+                    if (regex.isNullable)
+                    {
+                        //p is a final state so match has been found
+                        break;
+                    }
+                    else if (regex == regex.builder.nothing)
+                    {
+                        i_q0 = i_q0_A1;
+                        //p is a deadend state so any further search is meaningless
+                        return k;
+                    }
 
-                //continue from the target state
-                q = p;
-                i += 1;
+                    //continue from the target state
+                    q = p;
+                    i += 1;
+                }
+                i_q0 = i_q0_A1;
+                return i;
             }
-            i_q0 = i_q0_A1;
-            return i;
         }
 
         #endregion
@@ -1393,8 +1403,38 @@ namespace Microsoft.Automata
         int IndexOfStartset(string input, int i)
         {
             int k = input.Length;
-            while (i < k && !A_StartSet.Contains(input[i]))
-                i += 1;
+            while (i < k) 
+            {
+                var input_i = input[i];
+                if (input_i < A_StartSet.precomputed.Length ? A_StartSet.precomputed[input_i] : A_StartSet.bst.Find(input_i) == 1)
+                    break;
+                else
+                    i += 1;
+            }
+            if (i == k)
+                return -1;
+            else
+                return i;
+        }
+
+        /// <summary>
+        ///  Find first occurrence of startset element in input starting from index i.
+        /// </summary>
+        /// <param name="input">input string to search in</param>
+        /// <param name="k">length of the input</param>
+        /// <param name="i">the start index in input to search from</param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        unsafe int IndexOfStartset_(char* input, int k, int i)
+        {
+            while (i < k)
+            {
+                var input_i = input[i];
+                if (input_i < A_StartSet.precomputed.Length ? A_StartSet.precomputed[input_i] : A_StartSet.bst.Find(input_i) == 1)
+                    break;
+                else
+                    i += 1;
+            }
             if (i == k)
                 return -1;
             else
@@ -1449,27 +1489,31 @@ namespace Microsoft.Automata
         ///  This method is called when A has nonemmpty prefix and ingorecase is false
         /// </summary>
         /// <param name="input">input string to search in</param>
+        /// <param name="k">length of input string</param>
         /// <param name="i">the start index in input</param>
         /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        int IndexOfStartPrefix_(string input, int i)
+        unsafe int IndexOfStartPrefix_(char* input, int k, int i)
         {
-            int k = input.Length;
             int l = this.A_prefix.Length;
             int k1 = k - l + 1;
-            ushort firstchar = this.A_prefix[0];
-            while (i < k1)
+            var vec = A_StartSet_Vec[0];
+            fixed (char* p = this.A_prefix)
             {
-                i = VectorizedIndexOf.UnsafeIndexOf1(input, i, firstchar, A_StartSet_Vec[0]);
-                if (i == -1)
-                    return -1;
-                int j = 1;
-                while (j < l && input[i + j] == this.A_prefix[j])
-                    j += 1;
-                if (j == l)
-                    return i;
+                while (i < k1)
+                {
+                    i = VectorizedIndexOf.UnsafeIndexOf1(input, k, i, p[0], vec);
 
-                i += 1;
+                    if (i == -1)
+                        return -1;
+                    int j = 1;
+                    while (j < l && input[i + j] == p[j])
+                        j += 1;
+                    if (j == l)
+                        return i;
+
+                    i += 1;
+                }
             }
             return -1;
         }

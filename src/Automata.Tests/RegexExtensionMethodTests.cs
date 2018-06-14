@@ -169,7 +169,7 @@ namespace Automata.Tests
         void Log(string text)
         {
             File.AppendAllText(myconsole, text + "\r\n");
-        }
+        }   
 
         [TestMethod]
         public void TestRegex_CompileToSymbolicRegex_Matches_Unsafe()
@@ -184,7 +184,7 @@ namespace Automata.Tests
 
             //make sure k is at most regexes.Length
             //int k = regexes.Length;
-            int k_from =0;
+            int k_from = 0;
             int k_to = regexes.Length - 1; 
             int k = k_to - k_from + 1;
 

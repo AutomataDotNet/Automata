@@ -2,37 +2,47 @@
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using Microsoft.Automata;
+using System.Collections;
+using System.Collections.Generic;
+using System;
 
 namespace Microsoft.Automata
 {
     public static class VectorizedIndexOf
     {
+        static int vecSizeUshort = Vector<ushort>.Count;
+        static int vecSizeUint = Vector<uint>.Count;
+        static int vecSizeByte = Vector<byte>.Count;
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal unsafe static int UnsafeIndexOf(this string input, int start, BooleanDecisionTree toMatch, Vector<ushort>[] toMatchVecs)
+        internal unsafe static int UnsafeIndexOf(char* chars, int length, int start, BooleanDecisionTree toMatch, Vector<ushort>[] toMatchVecs)
         {
             //System.Diagnostics.Debug.Assert(Vector.IsHardwareAccelerated);
-            fixed (char* chars = input)
+            fixed (bool* toMatch_precomputed = toMatch.precomputed)
             {
-                var vecSize = Vector<ushort>.Count;
-                var length = input.Length;
                 int i = start;
-                int lastVec = length - vecSize;
-                for (; i <= lastVec; i += vecSize)
+                int lastVec = length - vecSizeUshort;
+                int toMatch_precomputed_length = toMatch.precomputed.Length;
+                int toMatchVecs_Length = toMatchVecs.Length;
+                for (; i <= lastVec; i += vecSizeUshort)
                 {
                     var vec = Unsafe.Read<Vector<ushort>>(chars + i);
-                    for (int k = 0; k < toMatchVecs.Length; k++)
+                    for (int k = 0; k < toMatchVecs_Length; k++)
                     {
                         var searchVec = toMatchVecs[k];
                         if (Vector.EqualsAny(vec, searchVec))
                         {
-                            for (int j = 0; j < vecSize; ++j)
+                            for (int j = 0; j < vecSizeUshort; ++j)
                             {
-                                if (toMatch.Contains(chars[i + j])) return i + j;
+                                int ij = i + j;
+                                var c = chars[ij];
+                                if (c < toMatch_precomputed_length ? toMatch_precomputed[c] : toMatch.bst.Find(c) == 1)
+                                    return ij;
                             }
                         }
                     }
                 }
-                for (; i < input.Length; ++i)
+                for (; i < length; ++i)
                 {
                     if (toMatch.Contains(chars[i])) return i;
                 }
@@ -41,32 +51,60 @@ namespace Microsoft.Automata
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal unsafe static int UnsafeIndexOf1(this string input, int start, ushort toMatch, Vector<ushort> toMatchVec)
+        internal unsafe static int UnsafeIndexOf(char* chars, int length, int start, BooleanDecisionTree toMatch, Vector<ushort> toMatchVec)
         {
-            System.Diagnostics.Debug.Assert(Vector.IsHardwareAccelerated);
-            fixed (char* chars = input)
+            //System.Diagnostics.Debug.Assert(Vector.IsHardwareAccelerated);
+            fixed (bool* toMatch_precomputed = toMatch.precomputed)
             {
-                var vecSize = Vector<ushort>.Count;
-                var length = input.Length;
                 int i = start;
-                int lastVec = length - vecSize;
-                for (; i <= lastVec; i += vecSize)
+                int lastVec = length - vecSizeUshort;
+                int toMatch_precomputed_length = toMatch.precomputed.Length;
+                for (; i <= lastVec; i += vecSizeUshort)
                 {
                     var vec = Unsafe.Read<Vector<ushort>>(chars + i);
-                    if (Vector.EqualsAny(vec, toMatchVec))
+                    var searchVec = toMatchVec;
+                    if (Vector.EqualsAny(vec, searchVec))
                     {
-                        for (int j = 0; j < vecSize; ++j)
+                        for (int j = 0; j < vecSizeUshort; ++j)
                         {
-                            if (toMatch == chars[i + j]) return i + j;
+                            int ij = i + j;
+                            var c = chars[ij];
+                            if (c < toMatch_precomputed_length ? toMatch_precomputed[c] : toMatch.bst.Find(c) == 1)
+                                return ij;
                         }
                     }
                 }
-                for (; i < input.Length; ++i)
+                for (; i < length; ++i)
                 {
-                    if (toMatch == chars[i]) return i;
+                    if (toMatch.Contains(chars[i])) return i;
                 }
                 return -1;
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal unsafe static int UnsafeIndexOf1(char* chars, int length, int start, ushort toMatch, Vector<ushort> toMatchVec)
+        {
+            //System.Diagnostics.Debug.Assert(Vector.IsHardwareAccelerated);
+            int i = start;
+            int lastVec = length - vecSizeUshort;
+            for (; i <= lastVec; i += vecSizeUshort)
+            {
+                var vec = Unsafe.Read<Vector<ushort>>(chars + i);
+                if (Vector.EqualsAny(vec, toMatchVec))
+                {
+                    for (int j = 0; j < vecSizeUshort; ++j)
+                    {
+                        int ij = i + j;
+                        if (toMatch == chars[ij]) return ij;
+                    }
+                }
+            }
+            for (; i < length; ++i)
+            {
+                if (toMatch == chars[i]) return i;
+            }
+            return -1;
         }
 
         /// <summary>
@@ -74,57 +112,44 @@ namespace Microsoft.Automata
         /// </summary>
         /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal unsafe static int UnsafeIndexOf2(this string input, int start, string substring, Vector<ushort> toMatchVec1, Vector<ushort> toMatchVec2)
+        internal unsafe static int UnsafeIndexOf2(char* input, int length, int start, char first, char second)
         {
-            //uint matchBoth = (((uint)toMatch) << 16) | toMatch2;
-            //var matchBothVec = new Vector<uint>(matchBoth);
-            System.Diagnostics.Debug.Assert(Vector.IsHardwareAccelerated);
-            fixed (char* chars = input)
-            fixed (char* substrp = substring)
+            uint toMatch = (((uint)first) << 16) | second;
+            Vector<uint> toMatchVec = new Vector<uint>(toMatch);
+            int i = start;
+
+            int lastVec = length - vecSizeUint;
+
+            uint[] elems = new uint[vecSizeUint];
+
+            //stop vecsize+1 before the end because of +1 lookahead
+            for (; i < lastVec; i += vecSizeUint)
             {
-                var stepSize = Vector<ushort>.Count - 1;
-                var length = input.Length;
-                int i = start;
-                int lastVec = length - stepSize;
-                int k = substring.Length;
-                ushort firstChar = substrp[0];
-                ushort secondChar = substrp[1];
-                for (; i <= lastVec; i += stepSize)
+                for (int j = 0; j < vecSizeUint; j++)
                 {
-                    var vec = Unsafe.Read<Vector<ushort>>(chars + i);
-                    if (Vector.EqualsAny(vec, toMatchVec1) && Vector.EqualsAny(vec, toMatchVec2))
+                    elems[j] = (((uint)(input[i + j])) << 16) | input[i + j + 1];
+                }
+                var vec = new Vector<uint>(elems);
+                if (Vector.EqualsAny(vec, toMatchVec))
+                {
+                    for (int j = 0; j < vecSizeUshort; ++j)
                     {
-                        for (int j = 0; j < stepSize; ++j)
+                        int ij = i + j;
+                        if (first == input[ij] && second == input[ij + 1])
                         {
-                            int ij = i + j;
-                            if (firstChar == chars[ij])
-                            {
-                                //check the rest of the input also 
-                                if (ij + k < length)
-                                {
-                                    int l = 1;
-                                    while (l < k && substrp[l] == chars[ij + l])
-                                        l += 1;
-                                    if (l == k)
-                                        return ij;
-                                }
-                            }
+                            return ij;
                         }
                     }
                 }
-                for (; i < input.Length - k + 1; ++i)
-                {
-                    if (firstChar == chars[i])
-                    {
-                        int l = 1;
-                        while (l < k && substrp[l] == chars[i + l])
-                            l += 1;
-                        if (l == k)
-                            return i;
-                    }
-                }
-                return -1;
             }
+            for (; i < length - 1; ++i)
+            {
+                if (first == input[i] && second == input[i + 1])
+                {
+                    return i;
+                }
+            }
+            return -1;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -133,18 +158,17 @@ namespace Microsoft.Automata
             var toMatchVecs = toMatch.Select(x => new Vector<byte>(x)).ToArray();
             fixed (byte* bytes = input)
             {
-                var vecSize = Vector<byte>.Count;
                 var length = input.Length;
                 int i = start;
-                int lastVec = length - vecSize;
-                for (; i <= lastVec; i += vecSize)
+                int lastVec = length - vecSizeUshort;
+                for (; i <= lastVec; i += vecSizeUshort)
                 {
                     var vec = Unsafe.Read<Vector<byte>>(bytes + i);
                     foreach (var searchVec in toMatchVecs)
                     {
                         if (Vector.EqualsAny(vec, searchVec))
                         {
-                            for (int j = 0; j < vecSize; ++j)
+                            for (int j = 0; j < vecSizeUshort; ++j)
                             {
                                 if (toMatch.Contains(input[i + j])) return i + j;
                             }
@@ -163,18 +187,17 @@ namespace Microsoft.Automata
         public static int IndexOfByte(byte[] input, int start, byte[] toMatch)
         {
             var toMatchVecs = toMatch.Select(x => new Vector<byte>(x)).ToArray();
-            var vecSize = Vector<byte>.Count;
             var length = input.Length;
             int i = start;
-            int lastVec = length - vecSize;
-            for (; i <= lastVec; i += vecSize)
+            int lastVec = length - vecSizeUshort;
+            for (; i <= lastVec; i += vecSizeUshort)
             {
                 var vec = new Vector<byte>(input, i);
                 foreach (var searchVec in toMatchVecs)
                 {
                     if (Vector.EqualsAny(vec, searchVec))
                     {
-                        for (int j = 0; j < vecSize; ++j)
+                        for (int j = 0; j < vecSizeUshort; ++j)
                         {
                             if (toMatch.Contains(input[i + j])) return i + j;
                         }
