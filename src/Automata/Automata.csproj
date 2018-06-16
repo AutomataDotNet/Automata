@@ -214,6 +214,7 @@
     </Compile>
     <Compile Include="Internal\ThreeAutomaton.cs" />
     <Compile Include="Internal\UnionFindHopKarp.cs" />
+    <Compile Include="Utilities\UTF8Decoder.cs" />
     <Compile Include="Utilities\VectorizedIndexOf.cs" />
   </ItemGroup>
   <ItemGroup>

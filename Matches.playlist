@@ -1,1 +1,1 @@
-<Playlist Version="1.0"><Add Test="Automata.Tests.RegexExtensionMethodTests.TestRegex_CompileToSymbolicRegex_Matches_Unsafe" /></Playlist>
+<Playlist Version="1.0"><Add Test="Automata.Tests.RegexExtensionMethodTests.TestRegex_CompileToSymbolicRegex_Matches_Unsafe" /><Add Test="Automata.Tests.RegexExtensionMethodTests.TestRegex_CompileToSymbolicRegex_Matches_Comparison" /></Playlist>

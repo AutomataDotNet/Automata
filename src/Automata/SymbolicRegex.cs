@@ -1120,6 +1120,25 @@ namespace Microsoft.Automata
         }
 
         /// <summary>
+        /// Find all matches in the given input string encoded as UTF8 byte array
+        /// Returns array of pairs (index, length) such that the subarray matches the regex. 
+        /// This regex must not accept the empty string.
+        /// </summary>
+        public Tuple<int, int>[] Matches(byte[] input)
+        {
+            if (this.isNullable)
+                throw new AutomataException(AutomataExceptionKind.MustNotAcceptEmptyString);
+            else if (input == null || input.Length == 0)
+                throw new AutomataException(AutomataExceptionKind.InvalidArgument);
+            else
+            {
+                if (matcher == null)
+                    matcher = new SymbolicRegexMatcher<S>(this);
+                return matcher.MatchesUTF8(input);
+            }
+        }
+
+        /// <summary>
         /// Find all matches in the given input string.
         /// Returns array of pairs (index, length) such that input.Substring(index, length) matches the regex. 
         /// This regex must not accept the empty string.

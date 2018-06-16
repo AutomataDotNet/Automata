@@ -53,6 +53,16 @@ namespace Microsoft.Automata
         string A_prefix;
 
         /// <summary>
+        /// if nonempty then A has that fixed prefix
+        /// </summary>>
+        byte[] A_prefixUTF8;
+
+        /// <summary>
+        /// First byte of A_prefixUTF8 in vector
+        /// </summary>
+        Vector<byte> A_prefixUTF8_first_byte;
+
+        /// <summary>
         /// predicate array corresponding to fixed prefix of A
         /// </summary>
         S[] A_prefix_array;
@@ -278,6 +288,11 @@ namespace Microsoft.Automata
             SymbolicRegex<S> tmp = A;
             this.A_prefix_array = A.GetPrefix();
             this.A_prefix = A.FixedPrefix;
+            this.A_prefixUTF8 = System.Text.UnicodeEncoding.UTF8.GetBytes(this.A_prefix);
+            if (this.A_prefix != string.Empty)
+            {
+                this.A_prefixUTF8_first_byte = new Vector<byte>(this.A_prefixUTF8[0]);
+            }
             this.A_fixedPrefix_ignoreCase = A.IgnoreCaseOfFixedPrefix;
             this.A1_skipState = DeltaPlus(A_prefix, q0_A1, out tmp);
             this.A1_skipStateRegex = tmp;
@@ -513,9 +528,8 @@ namespace Microsoft.Automata
         #region safe version of Matches and IsMatch for string input
 
         /// <summary>
-        /// Generate all earliest maximal matches. We know that k is at least 2.
-        /// <paramref name="input">pointer to input string</paramref>
-        /// <paramref name="k">length of input string</paramref>
+        /// Generate all earliest maximal matches.
+        /// <paramref name="input">input string</paramref>
         /// </summary>
         internal Tuple<int, int>[] Matches(string input)
         {
@@ -573,7 +587,7 @@ namespace Microsoft.Automata
 
             if (this.A.containsAnchors)
             {
-                //separate case when A contains anchors
+                #region separate case when A contains anchors
                 //TBD prefix optimization  ay still be important here 
                 //but the prefix needs to be computed based on A ... but with start anchors removed or treated specially
                 if (A2 == null)
@@ -667,6 +681,7 @@ namespace Microsoft.Automata
                     i += 1;
                 }
                 return regex.isNullable;
+                #endregion
             }
             else
             {
@@ -1421,6 +1436,47 @@ namespace Microsoft.Automata
         ///  Find first occurrence of startset element in input starting from index i.
         /// </summary>
         /// <param name="input">input string to search in</param>
+        /// <param name="i">the start index in input to search from</param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        int IndexOfStartsetUTF8(byte[] input, int i, ref int surrogate_codepoint)
+        {
+            int k = input.Length;
+            int step = 1;
+            int codepoint = 0;
+            while (i < k)
+            {
+                int c = input[i];
+                if (c > 0x7F)
+                {
+                    UTF8Decoder.DecodeNextNonASCII(input, i, out step, out codepoint);
+                    if (codepoint > 0xFFFF)
+                    {
+                        throw new NotImplementedException("surrogate pairs");
+                    }
+                    else
+                    {
+                        c = codepoint;
+                    }
+                }
+
+                if (c < A_StartSet.precomputed.Length ? A_StartSet.precomputed[c] : A_StartSet.bst.Find(c) == 1)
+                    break;
+                else
+                {
+                    i += step; 
+                }
+            }
+            if (i == k)
+                return -1;
+            else
+                return i;
+        }
+
+        /// <summary>
+        ///  Find first occurrence of startset element in input starting from index i.
+        /// </summary>
+        /// <param name="input">input string to search in</param>
         /// <param name="k">length of the input</param>
         /// <param name="i">the start index in input to search from</param>
         /// <returns></returns>
@@ -1516,6 +1572,520 @@ namespace Microsoft.Automata
                 }
             }
             return -1;
+        }
+
+        #endregion
+
+        #region Matches that uses UTF-8 encoded byte array as input
+
+        /// <summary>
+        /// Generate all earliest maximal matches.
+        /// <paramref name="input">pointer to input string</paramref>
+        /// </summary>
+        internal Tuple<int, int>[] MatchesUTF8(byte[] input)
+        {
+            int k = input.Length;
+
+            //stores the accumulated matches
+            List<Tuple<int, int>> matches = new List<Tuple<int, int>>();
+
+            //find the first accepting state
+            //initial start position in the input is i = 0
+            int i = 0;
+
+            //after a match is found the match_start_boundary becomes 
+            //the first postion after the last match
+            //enforced when inlcude_overlaps == false
+            int match_start_boundary = 0;
+
+            int surrogate_codepoint = 0;   
+
+            //TBD: dont enforce match_start_boundary when match overlaps are allowed
+            bool A_has_nonempty_prefix = (A.FixedPrefix != string.Empty);
+            while (true)
+            {
+                int i_q0_A1;
+                //TBD: optimize for the case when A starts with a fixed prefix
+                i = FindFinalStatePositionUTF8(input, i, ref surrogate_codepoint, out i_q0_A1);
+
+                if (i == k)
+                {
+                    //end of input has been reached without reaching a final state, so no more matches
+                    break;
+                }
+
+                int i_start = FindStartPositionUTF8(input, i, ref surrogate_codepoint, i_q0_A1);
+
+                int i_end = FindEndPositionUTF8(input, i_start, ref surrogate_codepoint);
+
+                var newmatch = new Tuple<int, int>(i_start, i_end + 1 - i_start);
+                matches.Add(newmatch);
+
+                //continue matching from the position following last match
+                i = i_end + 1;
+                match_start_boundary = i;
+            }
+
+            return matches.ToArray();
+        }
+
+        /// <summary>
+        /// Find match end position using A, end position is known to exist.
+        /// </summary>
+        /// <param name="input">input array</param>
+        /// <param name="i">start position</param>
+        /// <param name="surrogate_codepoint">surrogate codepoint</param>
+        /// <returns></returns>
+        private int FindEndPositionUTF8(byte[] input, int i, ref int surrogate_codepoint)
+        {
+            int k = input.Length;
+            int i_end = k;
+            int q = q0_A;
+            int step = 0;
+            int codepoint = 0;
+            while (i < k)
+            {
+                SymbolicRegex<S> regex;
+
+                ushort c;
+                #region c = current UTF16 character
+                if (surrogate_codepoint == 0)
+                {
+                    c = input[i];
+                    if (c > 0x7F)
+                    {
+                        int x;
+                        UTF8Decoder.DecodeNextNonASCII(input, i, out x, out codepoint);
+                        if (codepoint > 0xFFFF)
+                        {
+                            surrogate_codepoint = codepoint;
+                            c = UTF8Decoder.HighSurrogate(codepoint);
+                            //do not increment i yet because L is pending
+                            step = 0;
+                        }
+                        else
+                        {
+                            c = (ushort)codepoint;
+                            //step is either 2 or 3, i.e. either 2 or 3 UTF-8-byte encoding
+                            step = x;
+                        }
+                    }
+                }
+                else
+                {
+                    c = UTF8Decoder.LowSurrogate(surrogate_codepoint);
+                    //reset the surrogate_codepoint
+                    surrogate_codepoint = 0;
+                    //increment i by 4 since low surrogate has now been read
+                    step = 4;
+                }
+                #endregion
+
+                int p;
+
+                //TBD: anchors
+
+#if INLINE
+                #region copy&paste region of the definition of Delta being inlined
+                int atom_id = (dt.precomputed.Length > c ? dt.precomputed[c] : dt.bst.Find(c));
+                S atom = atoms[atom_id];
+                if (q < StateLimit)
+                {
+                    #region use delta
+                    int offset = (q * K) + atom_id;
+                    p = delta[offset];
+                    if (p == 0)
+                    {
+                        CreateNewTransition(q, atom, offset, out p, out regex);
+                    }
+                    else
+                    {
+                        regex = (p < StateLimit ? state2regex[p] : state2regexExtra[p]);
+                    }
+                    #endregion
+                }
+                else
+                {
+                    #region use deltaExtra
+                    int[] q_trans = deltaExtra[q];
+                    p = q_trans[atom_id];
+                    if (p == 0)
+                    {
+                        CreateNewTransitionExtra(q, atom_id, atom, q_trans, out p, out regex);
+                    }
+                    else
+                    {
+                        regex = (p < StateLimit ? state2regex[p] : state2regexExtra[p]);
+                    }
+                    #endregion
+                }
+                #endregion
+#else
+                p = Delta(c, q, out regex);
+#endif
+
+
+                if (regex.isNullable)
+                {
+                    //accepting state has been reached
+                    //record the position 
+                    i_end = i;
+                }
+                else if (regex == builder.nothing)
+                {
+                    //nonaccepting sink state (deadend) has been reached in A
+                    //so the match ended when the last i_end was updated
+                    break;
+                }
+                q = p;
+                if (c > 0x7F)
+                    i += step;
+                else
+                    i += 1;
+            }
+            if (i_end == k)
+                throw new AutomataException(AutomataExceptionKind.InternalError);
+            return i_end;
+        }
+
+        /// <summary>
+        /// Walk back in reverse using Ar to find the start position of match, start position is known to exist.
+        /// </summary>
+        /// <param name="input">the input array</param>
+        /// <param name="i">position to start walking back from, i points at the last character of the match</param>
+        /// <param name="match_start_boundary">do not pass this boundary when walking back</param>
+        /// <param name="surrogate_codepoint">surrogate codepoint</param>
+        /// <returns></returns>
+        private int FindStartPositionUTF8(byte[] input, int i, ref int surrogate_codepoint, int match_start_boundary)
+        {
+            int q = q0_Ar;
+            SymbolicRegex<S> regex = null;
+            //A_r may have a fixed sequence
+            if (this.Ar_prefix.Length > 0)
+            {
+                //skip back the prefix portion of Ar
+                q = this.Ar_skipState;
+                regex = this.Ar_skipStateRegex;
+                i = i - this.Ar_prefix.Length;
+            }
+            if (i == -1)
+            {
+                //we reached the beginning of the input, thus the state q must be accepting
+                if (!regex.isNullable)
+                    throw new AutomataException(AutomataExceptionKind.InternalError);
+                return 0;
+            }
+
+            int last_start = -1;
+            if (regex != null && regex.isNullable)
+            {
+                //the whole prefix of Ar was in reverse a prefix of A
+                last_start = i + 1;
+            }
+
+            //walk back to the accepting state of Ar
+            int p;
+            ushort c;
+            int step = 0;
+            int codepoint;
+            while (i >= match_start_boundary)
+            {
+                //observe that the input is reversed 
+                //so input[k-1] is the first character 
+                //and input[0] is the last character
+                //but encoding is not reversed
+                //TBD: anchors
+
+                #region c = current UTF16 character
+                if (surrogate_codepoint == 0)
+                {
+                    //not in the middel of surrogate codepoint 
+                    c = input[i];
+                    if (c > 0x7F)
+                    {
+                        int _;
+                        UTF8Decoder.DecodeNextNonASCII(input, i, out _, out codepoint);
+                        if (codepoint > 0xFFFF)
+                        {
+                            //given codepoint = ((H - 0xD800) * 0x400) + (L - 0xDC00) + 0x10000
+                            surrogate_codepoint = codepoint;
+                            //compute c = L (going backwards) 
+                            c = (ushort)(((surrogate_codepoint - 0x10000) & 0x3FF) | 0xDC00);
+                        }
+                        else
+                        {
+                            c = (ushort)codepoint;
+                        }
+                    }
+                }
+                else
+                {
+                    //given surrogate_codepoint = ((H - 0xD800) * 0x400) + (L - 0xDC00) + 0x10000
+                    //compute c = H (going backwards)
+                    c = (ushort)(((surrogate_codepoint - 0x10000) >> 10) | 0xD800);
+                    //reset the surrogate codepoint 
+                    surrogate_codepoint = 0;
+                }
+                #endregion
+
+#if INLINE
+                #region copy&paste region of the definition of Delta being inlined
+                int atom_id = (dt.precomputed.Length > c ? dt.precomputed[c] : dt.bst.Find(c));
+                S atom = atoms[atom_id];
+                if (q < StateLimit)
+                {
+                    #region use delta
+                    int offset = (q * K) + atom_id;
+                    p = delta[offset];
+                    if (p == 0)
+                    {
+                        CreateNewTransition(q, atom, offset, out p, out regex);
+                    }
+                    else
+                    {
+                        regex = (p < StateLimit ? state2regex[p] : state2regexExtra[p]);
+                    }
+                    #endregion
+                }
+                else
+                {
+                    #region use deltaExtra
+                    int[] q_trans = deltaExtra[q];
+                    p = q_trans[atom_id];
+                    if (p == 0)
+                    {
+                        CreateNewTransitionExtra(q, atom_id, atom, q_trans, out p, out regex);
+                    }
+                    else
+                    {
+                        regex = (p < StateLimit ? state2regex[p] : state2regexExtra[p]);
+                    }
+                    #endregion
+                }
+                #endregion
+#else
+                p = Delta(c, q, out regex);
+#endif
+
+                if (regex.isNullable)
+                {
+                    //earliest start point so far
+                    //this must happen at some point 
+                    //or else A1 would not have reached a 
+                    //final state after match_start_boundary
+                    last_start = i;
+                    //TBD: under some conditions we can break here
+                    //break;
+                }
+                else if (regex == this.builder.nothing)
+                {
+                    //the previous i_start was in fact the earliest
+                    surrogate_codepoint = 0;
+                    break;
+                }
+                if (surrogate_codepoint == 0)
+                {
+                    i = i - 1;
+                    //step back to the previous input, /while input[i] is not a start-byte take a step back
+                    //check (0x7F < b && b < 0xC0) imples that 0111.1111 < b < 1100.0000
+                    //so b cannot be ascii 0xxx.xxxx or startbyte 110x.xxxx or 1110.xxxx or 1111.0xxx
+                    while ((i >= match_start_boundary) && (0x7F < input[i] && input[i] < 0xC0))
+                        i = i - 1;
+                }
+                q = p;
+            }
+            if (last_start == -1)
+                throw new AutomataException(AutomataExceptionKind.InternalError);
+            return last_start;
+        }
+
+        /// <summary>
+        /// Return the position of the last character that leads to a final state in A1
+        /// </summary>
+        /// <param name="input">given input array</param>
+        /// <param name="i">start position</param>
+        /// <param name="i_q0">last position the initial state of A1 was visited</param>
+        /// <param name="surrogate_codepoint">surrogate codepoint</param>
+        /// <returns></returns>
+        private int FindFinalStatePositionUTF8(byte[] input, int i, ref int surrogate_codepoint,  out int i_q0)
+        {
+            int k = input.Length;
+            int q = q0_A1;
+            int i_q0_A1 = i;
+            int step = 0;
+            int codepoint;
+            SymbolicRegex<S> regex;
+            bool prefix_optimize = (!this.A_fixedPrefix_ignoreCase) && this.A_prefixUTF8.Length > 1;
+            while (i < k)
+            {
+                if (q == q0_A1)
+                {
+                    if (prefix_optimize)
+                    {
+                        #region prefix optimization when A has a fixed prefix and is case-sensitive
+                        //stay in the initial state if the prefix does not match
+                        //thus advance the current position to the 
+                        //first position where the prefix does match
+                        i_q0_A1 = i;
+
+                        i = VectorizedIndexOf.IndexOfByteSeq(input, i, this.A_prefixUTF8, this.A_prefixUTF8_first_byte);
+
+                        if (i == -1)
+                        {
+                            //if a matching position does not exist then IndexOf returns -1
+                            //so set i = k to match the while loop behavior
+                            i = k;
+                            break;
+                        }
+                        else
+                        {
+                            //compute the end state for the A prefix
+                            //skip directly to the resulting state
+                            // --- i.e. do the loop ---
+                            //for (int j = 0; j < prefix.Length; j++)
+                            //    q = Delta(prefix[j], q, out regex);
+                            // ---
+                            q = this.A1_skipState;
+                            regex = this.A1_skipStateRegex;
+
+                            //skip the prefix
+                            i = i + this.A_prefixUTF8.Length;
+                            if (regex.isNullable)
+                            {
+                                i_q0 = i_q0_A1;
+                                //return the last position of the match
+                                //make sure to step back to the start byte
+                                i = i - 1;
+                                //while input[i] is not a start-byte take a step back
+                                while (0x7F < input[i] && input[i] < 0xC0)
+                                    i = i - 1;
+                            }
+                            if (i == k)
+                            {
+                                i_q0 = i_q0_A1;
+                                return k;
+                            }
+                        }
+                        #endregion
+                    }
+                    else
+                    {
+                        i = (this.A_prefixUTF8.Length == 0 ?
+                            IndexOfStartsetUTF8(input, i, ref surrogate_codepoint) :
+                            VectorizedIndexOf.IndexOfByte(input, i, this.A_prefixUTF8[0], this.A_prefixUTF8_first_byte));
+
+                        if (i == -1)
+                        {
+                            i_q0 = i_q0_A1;
+                            return k;
+                        }
+                        i_q0_A1 = i;
+                    }
+                }
+
+                ushort c;
+
+                #region c = current UTF16 character
+                if (surrogate_codepoint == 0)
+                {
+                    c = input[i];
+                    if (c > 0x7F)
+                    {
+                        int x;
+                        UTF8Decoder.DecodeNextNonASCII(input, i, out x, out codepoint);
+                        if (codepoint > 0xFFFF)
+                        {
+                            //given codepoint = ((H - 0xD800) * 0x400) + (L - 0xDC00) + 0x10000
+                            surrogate_codepoint = codepoint;
+                            //compute c = H 
+                            c = (ushort)(((codepoint - 0x10000) >> 10) | 0xD800);
+                            //do not increment i yet because L is pending
+                            step = 0;
+                        }
+                        else
+                        {
+                            c = (ushort)codepoint;
+                            //step is either 2 or 3, i.e. either 2 or 3 UTF-8-byte encoding
+                            step = x;
+                        }
+                    }
+                }
+                else
+                {
+                    //given surrogate_codepoint = ((H - 0xD800) * 0x400) + (L - 0xDC00) + 0x10000
+                    //compute c = L 
+                    c = (ushort)(((surrogate_codepoint - 0x10000) & 0x3FF) | 0xDC00);
+                    //reset the surrogate_codepoint
+                    surrogate_codepoint = 0;
+                    //increment i by 4 since low surrogate has now been read
+                    step = 4;
+                }
+                #endregion
+
+
+                //TBD: anchors
+                int p;
+
+#if INLINE
+                #region copy&paste region of the definition of Delta being inlined
+                int atom_id = (dt.precomputed.Length > c ? dt.precomputed[c] : dt.bst.Find(c));
+                S atom = atoms[atom_id];
+                if (q < StateLimit)
+                {
+                    #region use delta
+                    int offset = (q * K) + atom_id;
+                    p = delta[offset];
+                    if (p == 0)
+                    {
+                        CreateNewTransition(q, atom, offset, out p, out regex);
+                    }
+                    else
+                    {
+                        regex = (p < StateLimit ? state2regex[p] : state2regexExtra[p]);
+                    }
+                    #endregion
+                }
+                else
+                {
+                    #region use deltaExtra
+                    int[] q_trans = deltaExtra[q];
+                    p = q_trans[atom_id];
+                    if (p == 0)
+                    {
+                        CreateNewTransitionExtra(q, atom_id, atom, q_trans, out p, out regex);
+                    }
+                    else
+                    {
+                        regex = (p < StateLimit ? state2regex[p] : state2regexExtra[p]);
+                    }
+                    #endregion
+                }
+                #endregion
+#else
+                p = Delta(c, q, out regex);
+#endif
+
+                if (regex.isNullable)
+                {
+                    //p is a final state so match has been found
+                    break;
+                }
+                else if (regex == regex.builder.nothing)
+                {
+                    //p is a deadend state so any further search is meaningless
+                    i_q0 = i_q0_A1;
+                    return k;
+                }
+
+                //continue from the target state
+                q = p;
+                if (c > 0x7F)
+                    i += step;
+                else
+                    i += 1;
+            }
+            i_q0 = i_q0_A1;
+            return i;
         }
 
         #endregion

@@ -106,7 +106,6 @@ namespace Automata.Tests
             }
         }
 
-
         Random rnd = new Random(123);
         private string CreateRandomString(int k)
         {
@@ -172,7 +171,7 @@ namespace Automata.Tests
         }   
 
         [TestMethod]
-        public void TestRegex_CompileToSymbolicRegex_Matches_Unsafe()
+        public void TestRegex_CompileToSymbolicRegex_Matches_Comparison()
         {
             RegexOptions options = RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture;
             CharSetSolver css = new CharSetSolver();
@@ -184,25 +183,42 @@ namespace Automata.Tests
 
             //make sure k is at most regexes.Length
             //int k = regexes.Length;
-            int k_from = 0;
-            int k_to = regexes.Length - 1; 
+            int k_from = 1;
+            int k_to = 1; // regexes.Length - 1; 
             int k = k_to - k_from + 1;
 
             int sr_comp_ms = System.Environment.TickCount;
             SymbolicRegex<BV>[] srs = new SymbolicRegex<BV>[k];
             SymbolicRegex<BV>[] srs_U = new SymbolicRegex<BV>[k];
+            SymbolicRegex<BV>[] srs_B = new SymbolicRegex<BV>[k];
             for (int i = 0; i < k; i++)
             {
                 srs[i] = regexes[k_from + i].Compile(css);
-                srs_U[i] = regexes[k_from + i].Compile(css);
             }
             sr_comp_ms = System.Environment.TickCount - sr_comp_ms;
+
+            for (int i = 0; i < k; i++)
+            {
+                srs_U[i] = regexes[k_from + i].Compile(css);
+                srs_B[i] = regexes[k_from + i].Compile(css);
+            }
 
             Log("Compile time(ms): " + sr_comp_ms);
 
             var str = File.ReadAllText(inputFile);
+            var str1 = new StringBuilder();
+            for (int i = 0; i < str.Length; i++)
+            {
+                char c = str[i];
+                if (!(char.IsHighSurrogate(c) || char.IsLowSurrogate(c)))
+                    str1.Append(c);
+            }
+            //eliminate surrogates
+            str = str1.ToString();
+            var bytes = System.Text.UnicodeEncoding.UTF8.GetBytes(str);
+            Assert.IsFalse(Array.Exists(bytes, b => (b & 0xF0) == 0xF0));
 
-            //--- aut ---
+            //------
             int sr_tot_ms = System.Environment.TickCount;
             int sr_tot_matches = 0;
             Tuple<int, int>[] sr_matches = null;
@@ -214,9 +230,9 @@ namespace Automata.Tests
             sr_tot_ms = System.Environment.TickCount - sr_tot_ms;
             //--------------
 
-            Log("AUT: " + sr_tot_ms);
+            Log("Matches(string): " + sr_tot_ms);
 
-            //--- aut ---
+            //------
             int sr_tot_ms_U = System.Environment.TickCount;
             int sr_tot_matches_U = 0;
             Tuple<int, int>[] sr_matches_U = null;
@@ -228,18 +244,35 @@ namespace Automata.Tests
             sr_tot_ms_U = System.Environment.TickCount - sr_tot_ms_U;
             //--------------
 
-            Log( "AUT_U: " + sr_tot_ms_U);
+            Log("Matches_(string): " + sr_tot_ms_U);
+
+            //------
+            int sr_tot_ms_B = System.Environment.TickCount;
+            int sr_tot_matches_B = 0;
+            Tuple<int, int>[] sr_matches_B = null;
+            for (int i = 0; i < k; i++)
+            {
+                sr_matches_B = srs_B[i].Matches(bytes);
+                sr_tot_matches_B += sr_matches_B.Length;
+            }
+            sr_tot_ms_B = System.Environment.TickCount - sr_tot_ms_B;
+            //--------------
+
+            Log("Matches(byte[]): " + sr_tot_ms_B);
+
+            //var diff = new HashSet<Tuple<int, int>>(sr_matches);
+            //diff.ExceptWith(sr_matches_B);
 
             Assert.IsTrue(sr_tot_matches == sr_tot_matches_U);
+            Assert.IsTrue(sr_tot_matches == sr_tot_matches_B);
 
             //check also that the the last match is the same
             Assert.AreEqual<Sequence<Tuple<int, int>>>(
                 new Sequence<Tuple<int, int>>(sr_matches), 
                 new Sequence<Tuple<int, int>>(sr_matches_U));
 
-            Console.WriteLine(string.Format("total: AUT:{0}ms, AUT_U:{1}ms, matchcount={2}", sr_tot_ms, sr_tot_ms_U, sr_tot_matches));
+            Console.WriteLine(string.Format("total: Matches(string):{0}ms, Matches_(string):{1}ms,  Matches(byte[]):{2}ms, matchcount={3}", sr_tot_ms, sr_tot_ms_U, sr_tot_ms_B, sr_tot_matches));
         }
-
 
         [TestMethod]
         public void TestRegex_CompileToSymbolicRegex_Matches()
@@ -328,6 +361,8 @@ namespace Automata.Tests
 
             Console.WriteLine(string.Format("total: AUT:{0}ms, .NET:{1}ms, matchcount={2}", sr_tot_ms, re_tot_ms, re_tot_matches));
         }
+
+
         public void GenerateInputFile()
         {
             if (!File.Exists(inputFile))

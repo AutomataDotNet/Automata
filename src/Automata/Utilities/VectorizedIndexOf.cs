@@ -10,9 +10,9 @@ namespace Microsoft.Automata
 {
     public static class VectorizedIndexOf
     {
-        static int vecSizeUshort = Vector<ushort>.Count;
-        static int vecSizeUint = Vector<uint>.Count;
-        static int vecSizeByte = Vector<byte>.Count;
+        static int vecUshortSize = Vector<ushort>.Count;
+        static int vecUintSize = Vector<uint>.Count;    
+        static int vecByteSize = Vector<byte>.Count;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal unsafe static int UnsafeIndexOf(char* chars, int length, int start, BooleanDecisionTree toMatch, Vector<ushort>[] toMatchVecs)
@@ -21,10 +21,10 @@ namespace Microsoft.Automata
             fixed (bool* toMatch_precomputed = toMatch.precomputed)
             {
                 int i = start;
-                int lastVec = length - vecSizeUshort;
+                int lastVec = length - vecUshortSize;
                 int toMatch_precomputed_length = toMatch.precomputed.Length;
                 int toMatchVecs_Length = toMatchVecs.Length;
-                for (; i <= lastVec; i += vecSizeUshort)
+                for (; i <= lastVec; i += vecUshortSize)
                 {
                     var vec = Unsafe.Read<Vector<ushort>>(chars + i);
                     for (int k = 0; k < toMatchVecs_Length; k++)
@@ -32,7 +32,7 @@ namespace Microsoft.Automata
                         var searchVec = toMatchVecs[k];
                         if (Vector.EqualsAny(vec, searchVec))
                         {
-                            for (int j = 0; j < vecSizeUshort; ++j)
+                            for (int j = 0; j < vecUshortSize; ++j)
                             {
                                 int ij = i + j;
                                 var c = chars[ij];
@@ -57,15 +57,15 @@ namespace Microsoft.Automata
             fixed (bool* toMatch_precomputed = toMatch.precomputed)
             {
                 int i = start;
-                int lastVec = length - vecSizeUshort;
+                int lastVec = length - vecUshortSize;
                 int toMatch_precomputed_length = toMatch.precomputed.Length;
-                for (; i <= lastVec; i += vecSizeUshort)
+                for (; i <= lastVec; i += vecUshortSize)
                 {
                     var vec = Unsafe.Read<Vector<ushort>>(chars + i);
                     var searchVec = toMatchVec;
                     if (Vector.EqualsAny(vec, searchVec))
                     {
-                        for (int j = 0; j < vecSizeUshort; ++j)
+                        for (int j = 0; j < vecUshortSize; ++j)
                         {
                             int ij = i + j;
                             var c = chars[ij];
@@ -87,13 +87,13 @@ namespace Microsoft.Automata
         {
             //System.Diagnostics.Debug.Assert(Vector.IsHardwareAccelerated);
             int i = start;
-            int lastVec = length - vecSizeUshort;
-            for (; i <= lastVec; i += vecSizeUshort)
+            int lastVec = length - vecUshortSize;
+            for (; i <= lastVec; i += vecUshortSize)
             {
                 var vec = Unsafe.Read<Vector<ushort>>(chars + i);
                 if (Vector.EqualsAny(vec, toMatchVec))
                 {
-                    for (int j = 0; j < vecSizeUshort; ++j)
+                    for (int j = 0; j < vecUshortSize; ++j)
                     {
                         int ij = i + j;
                         if (toMatch == chars[ij]) return ij;
@@ -107,68 +107,23 @@ namespace Microsoft.Automata
             return -1;
         }
 
-        /// <summary>
-        /// here substring.Length > 1, toMatchVec1 is first character and toMatchVec2 is second character
-        /// </summary>
-        /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal unsafe static int UnsafeIndexOf2(char* input, int length, int start, char first, char second)
-        {
-            uint toMatch = (((uint)first) << 16) | second;
-            Vector<uint> toMatchVec = new Vector<uint>(toMatch);
-            int i = start;
-
-            int lastVec = length - vecSizeUint;
-
-            uint[] elems = new uint[vecSizeUint];
-
-            //stop vecsize+1 before the end because of +1 lookahead
-            for (; i < lastVec; i += vecSizeUint)
-            {
-                for (int j = 0; j < vecSizeUint; j++)
-                {
-                    elems[j] = (((uint)(input[i + j])) << 16) | input[i + j + 1];
-                }
-                var vec = new Vector<uint>(elems);
-                if (Vector.EqualsAny(vec, toMatchVec))
-                {
-                    for (int j = 0; j < vecSizeUshort; ++j)
-                    {
-                        int ij = i + j;
-                        if (first == input[ij] && second == input[ij + 1])
-                        {
-                            return ij;
-                        }
-                    }
-                }
-            }
-            for (; i < length - 1; ++i)
-            {
-                if (first == input[i] && second == input[i + 1])
-                {
-                    return i;
-                }
-            }
-            return -1;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe static int UnsafeIndexOfByte(byte[] input, int start, byte[] toMatch)
+        internal unsafe static int UnsafeIndexOfByte(byte[] input, int start, byte[] toMatch)
         {
             var toMatchVecs = toMatch.Select(x => new Vector<byte>(x)).ToArray();
             fixed (byte* bytes = input)
             {
                 var length = input.Length;
                 int i = start;
-                int lastVec = length - vecSizeUshort;
-                for (; i <= lastVec; i += vecSizeUshort)
+                int lastVec = length - vecByteSize;
+                for (; i <= lastVec; i += vecByteSize)
                 {
                     var vec = Unsafe.Read<Vector<byte>>(bytes + i);
                     foreach (var searchVec in toMatchVecs)
                     {
                         if (Vector.EqualsAny(vec, searchVec))
                         {
-                            for (int j = 0; j < vecSizeUshort; ++j)
+                            for (int j = 0; j < vecUshortSize; ++j)
                             {
                                 if (toMatch.Contains(input[i + j])) return i + j;
                             }
@@ -184,31 +139,72 @@ namespace Microsoft.Automata
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int IndexOfByte(byte[] input, int start, byte[] toMatch)
+        public static int IndexOfByte(byte[] input, int i, byte toMatch, Vector<byte> toMatchVec)
         {
-            var toMatchVecs = toMatch.Select(x => new Vector<byte>(x)).ToArray();
-            var length = input.Length;
-            int i = start;
-            int lastVec = length - vecSizeUshort;
-            for (; i <= lastVec; i += vecSizeUshort)
+            int lastVec = input.Length - vecByteSize;
+            while (i <= lastVec && !Vector.EqualsAny(new Vector<byte>(input, i), toMatchVec))
+                i += vecByteSize;
+            return Array.IndexOf<byte>(input, toMatch, i);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int IndexOfByteSeq(byte[] input, int i, byte[] seqToMatch, Vector<byte> firstToMatchVec)
+        {
+            int length = input.Length;
+            int lastVec = length - vecByteSize;
+            byte firstToMatch = seqToMatch[0];
+            int seqToMatch_length = seqToMatch.Length;
+            while (i <= lastVec)
             {
-                var vec = new Vector<byte>(input, i);
-                foreach (var searchVec in toMatchVecs)
+                if (Vector.EqualsAny(new Vector<byte>(input, i), firstToMatchVec))
                 {
-                    if (Vector.EqualsAny(vec, searchVec))
+                    i = Array.IndexOf<byte>(input, firstToMatch, i);
+                    if (i + seqToMatch_length > length)
+                        return -1;
+                    int j = 1;
+                    while (j < seqToMatch_length && input[i + j] == seqToMatch[j])
+                        j += 1;
+                    if (j == seqToMatch_length)
+                        return i;
+                    else
                     {
-                        for (int j = 0; j < vecSizeUshort; ++j)
-                        {
-                            if (toMatch.Contains(input[i + j])) return i + j;
-                        }
+                        i += 1;
                     }
                 }
+                else
+                {
+                    i += vecByteSize;
+                }
             }
-            for (; i < input.Length; ++i)
+            i = Array.IndexOf<byte>(input, firstToMatch, i);
+            if (i + seqToMatch_length > length)
+                return -1;
+            int j1 = 1;
+            while (j1 < seqToMatch_length && input[i + j1] == seqToMatch[j1])
+                j1 += 1;
+            if (j1 == seqToMatch_length)
+                return i;
+            else
+                return -1;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal unsafe static int UnsafeIndexOfByte(byte[] input, int i, byte toMatch, Vector<byte> toMatchVec)
+        {
+            var length = input.Length;
+            int lastVec = length - vecByteSize;
+            fixed (byte* bytes = input)
             {
-                if (toMatch.Contains(input[i])) return i;
+                for (; i <= lastVec; i += vecByteSize)
+                {
+                    var vec = Unsafe.Read<Vector<byte>>(bytes + i);
+                    if (Vector.EqualsAny(vec, toMatchVec))
+                    {
+                        return Array.IndexOf<byte>(input, toMatch, i);
+                    }
+                }
+                return Array.IndexOf<byte>(input, toMatch, i);
             }
-            return -1;
         }
     }
 }
