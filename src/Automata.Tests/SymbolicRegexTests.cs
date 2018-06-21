@@ -339,7 +339,7 @@ namespace Automata.Tests
         {
             var regex = @"^\w\d\w{1,8}$";
             CharSetSolver css = new CharSetSolver();
-            var sr = css.RegexConverter.ConvertToSymbolicRegex(regex);
+            var sr = css.RegexConverter.ConvertToSymbolicRegex(regex, RegexOptions.None, true);
             Func<string, BDD[]> F = s => Array.ConvertAll<char, BDD>(s.ToCharArray(), c => css.MkCharConstraint(c));
             Assert.IsTrue(sr.IsMatch("a0d"));
             Assert.IsFalse(sr.IsMatch("a0"));
@@ -353,9 +353,9 @@ namespace Automata.Tests
         [TestMethod]
         public void TestDerivative_IsMatch2()
         {
-            var regex = @"^(abc$|bbd|add|dde|ddd){1,2000}$";
+            var regex = @"^(abc|bbd|add|dde|ddd){1,2000}$";
             CharSetSolver css = new CharSetSolver();
-            var sr = css.RegexConverter.ConvertToSymbolicRegex(regex);
+            var sr = css.RegexConverter.ConvertToSymbolicRegex(regex, RegexOptions.None, true);
             Func<string, BDD[]> F = s => Array.ConvertAll<char, BDD>(s.ToCharArray(), c => css.MkCharConstraint(c));
             Assert.IsTrue(sr.IsMatch("addddd"));
             Assert.IsFalse(sr.IsMatch("adddddd"));
@@ -441,17 +441,17 @@ namespace Automata.Tests
         }
 
         [TestMethod]
-        public void TestDerivative_IsMatch_WithAnchors()
+        public void TestDerivative_IsMatch_LargeLoop()
         {
-            var R = new Regex(@"(^ab|x|ba$){1,20000}");
-            CharSetSolver css = new CharSetSolver();
-            var sr = css.RegexConverter.ConvertToSymbolicRegex(R, true);
+            var R = new Regex(@"(ab|x|ba){1,20000}");
+            var sr = R.Compile();
             Assert.IsTrue(sr.IsMatch("abba"));
             Assert.IsTrue(sr.IsMatch("abxxx"));
             Assert.IsTrue(sr.IsMatch("ab"));
             Assert.IsTrue(sr.IsMatch("abxxxba"));
-            Assert.IsFalse(sr.IsMatch("baba"));
-            Assert.IsFalse(sr.IsMatch("abab"));
+            Assert.IsTrue(sr.IsMatch("baba"));
+            Assert.IsTrue(sr.IsMatch("abab"));
+            Assert.IsFalse(sr.IsMatch("aayybb"));
         }
 
         [TestMethod]

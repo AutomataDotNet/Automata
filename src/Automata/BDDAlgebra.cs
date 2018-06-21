@@ -17,6 +17,7 @@ namespace Microsoft.Automata
         BDD OmitBit(BDD bdd, int bit);
         BDD ShiftRight(BDD bdd, int k = 1);
         BDD ShiftLeft(BDD bdd, int k = 1);
+        Tuple<BDD,BDD>[] Partition(BDD bdd, int k);
     }
 
     /// <summary>
@@ -50,7 +51,7 @@ namespace Microsoft.Automata
         //internalize the creation of all charsets so that any two charsets with same bit and children are the same pointers
         Dictionary<BvSetKey, BDD> bvsetCache = new Dictionary<BvSetKey, BDD>();
 
-        internal BDD MkBvSet(int nr, BDD one, BDD zero)
+        public BDD MkBvSet(int nr, BDD one, BDD zero)
         {
             var key = new BvSetKey(nr, one, zero);
             BDD set;
@@ -366,7 +367,6 @@ namespace Microsoft.Automata
             }
             return s;
         }
-
 
         /// <summary>
         /// Make a set containing all integers whose bits up to maxBit equal n.
@@ -1088,6 +1088,90 @@ namespace Microsoft.Automata
             return bddMap[2];
         }
         #endregion
+
+
+        #region partitioning into a disjunction of products
+
+        public Tuple<BDD,BDD>[] Partition(BDD set, int ordinal)
+        {
+            if (set.IsEmpty)
+            {
+                return new Tuple<BDD, BDD>[] { };
+            }
+            else
+            {
+                BDD[] lower;
+                if (set.IsLeaf || set.Ordinal <= ordinal)
+                    lower = new BDD[] { set };
+                else
+                {
+                    List<BDD> lower_list = new List<BDD>();
+                    HashSet<BDD> done = new HashSet<BDD>();
+                    SimpleStack<BDD> stack = new SimpleStack<BDD>();
+                    stack.Push(set);
+                    done.Add(set);
+                    while (stack.IsNonempty)
+                    {
+                        BDD bdd = stack.Pop();
+                        if (bdd.IsLeaf || bdd.Ordinal <= ordinal)
+                        {
+                            if (!bdd.IsEmpty)
+                                lower_list.Add(bdd);
+                        }
+                        else
+                        {
+                            if (done.Add(bdd.Zero))
+                                stack.Push(bdd.Zero);
+                            if (done.Add(bdd.One))
+                                stack.Push(bdd.One);
+                        }
+                    }
+                    lower = lower_list.ToArray();
+                }
+                var pairs = Array.ConvertAll(lower, x => new Tuple<BDD,BDD>(x, ReplaceNode(set, x, ordinal)));
+                return pairs;
+            }
+        }
+
+        BDD ReplaceNode(BDD bdd, BDD node, int ordinal)
+        {
+            return ReplaceNode_(new Dictionary<BDD, BDD>(), bdd, node, ordinal);
+        }
+
+        BDD ReplaceNode_(Dictionary<BDD, BDD> ReplaceNode_Cache, BDD bdd, BDD node, int ordinal)
+        {
+            BDD res;
+            if (ReplaceNode_Cache.TryGetValue(bdd, out res))
+                return res;
+            else if (bdd == node)
+            {
+                res = this.True;
+            }
+            else
+            {
+                if (bdd.IsLeaf || bdd.Ordinal <= ordinal)
+                {
+                    res = this.False;
+                }
+                else
+                {
+                    var zero = ReplaceNode_(ReplaceNode_Cache, bdd.Zero, node, ordinal);
+                    var one = ReplaceNode_(ReplaceNode_Cache, bdd.One, node, ordinal);
+                    if (one == zero)
+                    {
+                        res = one;
+                    }
+                    else
+                    {
+                        res = this.MkBvSet(bdd.Ordinal, one, zero);
+                    }
+                }
+            }
+            ReplaceNode_Cache[bdd] = res;
+            return res;
+        }
+
+        #endregion
     }
 
     /// <summary>
@@ -1610,6 +1694,11 @@ namespace Microsoft.Automata
         public IMonadicPredicate<BDD, T> MkDiff(IMonadicPredicate<BDD, T> predicate1, IMonadicPredicate<BDD, T> predicate2)
         {
             return MkAnd(predicate1, MkNot(predicate2));
+        }
+
+        public BvSetPair[] Partition(BDD bdd, int k)
+        {
+            throw new NotImplementedException();
         }
     }
 

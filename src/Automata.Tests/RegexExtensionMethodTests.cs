@@ -145,8 +145,8 @@ namespace Automata.Tests
         [TestMethod]
         public void TestRegex_CompileToSymbolicRegex_Matches_IgnoreCaseTrue()
         {
-            File.WriteAllText(myconsole, "");
-            GenerateInputFile();
+            ClearLog();
+            //GenerateInputFile();
             RegexOptions options = RegexOptions.Compiled | RegexOptions.IgnoreCase;
             TestRegex_CompileToSymbolicRegex_Matches_Helper(options);
         }
@@ -154,9 +154,8 @@ namespace Automata.Tests
         [TestMethod]
         public void TestRegex_CompileToSymbolicRegex_Matches_IgnoreCaseFalse()
         {
-            //clear the possible previous output
-            File.WriteAllText(myconsole,"");
-            GenerateInputFile();
+            ClearLog();
+            //GenerateInputFile();
             RegexOptions options = RegexOptions.Compiled;
             TestRegex_CompileToSymbolicRegex_Matches_Helper(options);
         }
@@ -165,26 +164,27 @@ namespace Automata.Tests
         {
             File.WriteAllText(myconsole, "");
         }
+
         void Log(string text)
         {
             File.AppendAllText(myconsole, text + "\r\n");
-        }   
+        }
 
         [TestMethod]
-        public void TestRegex_CompileToSymbolicRegex_Matches_Comparison()
+        unsafe public void TestRegex_CompileToSymbolicRegex_Matches_Comparison()
         {
             RegexOptions options = RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture;
             CharSetSolver css = new CharSetSolver();
 
             //1 sec timeout for matching
-            Regex[] regexes = Array.ConvertAll(File.ReadAllLines(regexesWithoutAnchorsFile), x => new Regex(x, options, new TimeSpan(0,0,1)));
+            Regex[] regexes = Array.ConvertAll(File.ReadAllLines(regexesWithoutAnchorsFile), x => new Regex(x, options, new TimeSpan(0, 0, 1)));
 
             ClearLog();
 
             //make sure k is at most regexes.Length
             //int k = regexes.Length;
             int k_from = 1;
-            int k_to = 1; // regexes.Length - 1; 
+            int k_to = 50; // regexes.Length - 1; 
             int k = k_to - k_from + 1;
 
             int sr_comp_ms = System.Environment.TickCount;
@@ -218,60 +218,63 @@ namespace Automata.Tests
             var bytes = System.Text.UnicodeEncoding.UTF8.GetBytes(str);
             Assert.IsFalse(Array.Exists(bytes, b => (b & 0xF0) == 0xF0));
 
-            //------
-            int sr_tot_ms = System.Environment.TickCount;
-            int sr_tot_matches = 0;
-            Tuple<int, int>[] sr_matches = null;
-            for (int i = 0; i < k; i++)
+            fixed (char* strp = str)
             {
-                sr_matches = srs[i].Matches(str);
-                sr_tot_matches += sr_matches.Length;
+                //------
+                int sr_tot_ms = System.Environment.TickCount;
+                int sr_tot_matches = 0;
+                Tuple<int, int>[] sr_matches = null;
+                for (int i = 0; i < k; i++)
+                {
+                    sr_matches = srs[i].Matches(str);
+                    sr_tot_matches += sr_matches.Length;
+                }
+                sr_tot_ms = System.Environment.TickCount - sr_tot_ms;
+                //--------------
+
+                Log("Matches(string): " + sr_tot_ms);
+
+                //------
+                int sr_tot_ms_U = System.Environment.TickCount;
+                int sr_tot_matches_U = 0;
+                Tuple<int, int>[] sr_matches_U = null;
+                for (int i = 0; i < k; i++)
+                {
+                    sr_matches_U = srs_U[i].Matches_(str);
+                    sr_tot_matches_U += sr_matches_U.Length;
+                }
+                sr_tot_ms_U = System.Environment.TickCount - sr_tot_ms_U;
+                //--------------
+
+                Log("Matches_(string): " + sr_tot_ms_U);
+
+                ////------
+                //int sr_tot_ms_B = System.Environment.TickCount;
+                //int sr_tot_matches_B = 0;
+                //Tuple<int, int>[] sr_matches_B = null;
+                //for (int i = 0; i < k; i++)
+                //{
+                //    sr_matches_B = srs_B[i].Matches(bytes);
+                //    sr_tot_matches_B += sr_matches_B.Length;
+                //}
+                //sr_tot_ms_B = System.Environment.TickCount - sr_tot_ms_B;
+                ////--------------
+
+                //Log("Matches(byte[]): " + sr_tot_ms_B);
+
+                //var diff = new HashSet<Tuple<int, int>>(sr_matches);
+                //diff.ExceptWith(sr_matches_B);
+
+                Assert.IsTrue(sr_tot_matches == sr_tot_matches_U);
+                //Assert.IsTrue(sr_tot_matches == sr_tot_matches_B);
+
+                //check also that the the last match is the same
+                Assert.AreEqual<Sequence<Tuple<int, int>>>(
+                    new Sequence<Tuple<int, int>>(sr_matches),
+                    new Sequence<Tuple<int, int>>(sr_matches_U));
+
+                Console.WriteLine(string.Format("total: Matches(string):{0}ms, Matches_(char):{1}ms, matchcount={2}", sr_tot_ms, sr_tot_ms_U, sr_tot_matches));
             }
-            sr_tot_ms = System.Environment.TickCount - sr_tot_ms;
-            //--------------
-
-            Log("Matches(string): " + sr_tot_ms);
-
-            //------
-            int sr_tot_ms_U = System.Environment.TickCount;
-            int sr_tot_matches_U = 0;
-            Tuple<int, int>[] sr_matches_U = null;
-            for (int i = 0; i < k; i++)
-            {
-                sr_matches_U = srs_U[i].Matches_(str);
-                sr_tot_matches_U += sr_matches_U.Length;
-            }
-            sr_tot_ms_U = System.Environment.TickCount - sr_tot_ms_U;
-            //--------------
-
-            Log("Matches_(string): " + sr_tot_ms_U);
-
-            //------
-            int sr_tot_ms_B = System.Environment.TickCount;
-            int sr_tot_matches_B = 0;
-            Tuple<int, int>[] sr_matches_B = null;
-            for (int i = 0; i < k; i++)
-            {
-                sr_matches_B = srs_B[i].Matches(bytes);
-                sr_tot_matches_B += sr_matches_B.Length;
-            }
-            sr_tot_ms_B = System.Environment.TickCount - sr_tot_ms_B;
-            //--------------
-
-            Log("Matches(byte[]): " + sr_tot_ms_B);
-
-            //var diff = new HashSet<Tuple<int, int>>(sr_matches);
-            //diff.ExceptWith(sr_matches_B);
-
-            Assert.IsTrue(sr_tot_matches == sr_tot_matches_U);
-            Assert.IsTrue(sr_tot_matches == sr_tot_matches_B);
-
-            //check also that the the last match is the same
-            Assert.AreEqual<Sequence<Tuple<int, int>>>(
-                new Sequence<Tuple<int, int>>(sr_matches), 
-                new Sequence<Tuple<int, int>>(sr_matches_U));
-
-            Console.WriteLine(string.Format("total: Matches(string):{0}ms, Matches_(string):{1}ms,  Matches(byte[]):{2}ms, matchcount={3}", sr_tot_ms, sr_tot_ms_U, sr_tot_ms_B, sr_tot_matches));
         }
 
         [TestMethod]
@@ -302,19 +305,23 @@ namespace Automata.Tests
             //first filter out those regexes that cause tiomeout in .net
 
             HashSet<int> timeouts = new HashSet<int>();
-            //--- .net ---
-            for (int i = 0; i < k; i++)
+            if (k > 20)
             {
-                try
+                //some regexes above 20 cause timeouts, exclude those
+                //--- .net ---
+                for (int i = 0; i < k; i++)
                 {
-                    var re_matches = regexes[i].Matches(str);
-                    int tmp = re_matches.Count;
-                    Log("ok: " + i);
-                }
-                catch (System.Text.RegularExpressions.RegexMatchTimeoutException)
-                {
-                    timeouts.Add(i);
-                    Log("timeout: " + i);
+                    try
+                    {
+                        var re_matches = regexes[i].Matches(str);
+                        int tmp = re_matches.Count;
+                        Log("ok: " + i);
+                    }
+                    catch (System.Text.RegularExpressions.RegexMatchTimeoutException)
+                    {
+                        timeouts.Add(i);
+                        Log("timeout: " + i);
+                    }
                 }
             }
             //-------------
@@ -426,7 +433,7 @@ namespace Automata.Tests
             var strArray = str.ToCharArray();
             int k = str.Length;
             CharSetSolver css = new CharSetSolver();
-            for (int i = 0; i < 50; i++)
+            for (int i = 0; i < 10; i++)
             {
                 var re = regexes[i];
                 var sr = re.Compile(css);

@@ -56,32 +56,33 @@ namespace Automata.Tests
         [TestMethod]
         public void GenerateMatchesTest1()
         {
-            var r = new Regex("^(fox*o|bar|ba+zz)*$");
+            var r = new Regex("(fox*o|bar|ba+zz)");
             //r.Display("DFA",true);
             var aut = r.Compile();
-            var matches = aut.Matches("foofoxxxobaaaazzbar");
-            Assert.IsTrue(matches.Length == 4);
-            Assert.IsTrue(matches[0].Item1 == 0 && matches[0].Item2 == 2);
-            Assert.IsTrue(matches[1].Item1 == 3 && matches[1].Item2 == 8);
-            Assert.IsTrue(matches[2].Item1 == 9 && matches[2].Item2 == 15);
-            Assert.IsTrue(matches[3].Item1 == 16 && matches[3].Item2 == 18);
+            var str = "foofoxxxobaaaazzbar";
+            var matches = aut.Matches(str);
+            ValidateAgainstDotNet(r, str, matches);
+        }
+
+        private static void ValidateAgainstDotNet(Regex r, string str, Tuple<int, int>[] matches)
+        {
+            var regex_matches = r.Matches(str);
+            Assert.AreEqual<int>(matches.Length, regex_matches.Count);
+            foreach (Match match in regex_matches)
+            {
+                Assert.IsTrue(Array.Exists(matches, m => m.Item1 == match.Index && m.Item2 == match.Length));
+            }
         }
 
         [TestMethod]
         public void GenerateMatchesTest2()
         {
             string pattern = @"(abc|aBe)";
-            string input = "aaaabcccaBe";
+            string str = "aaaabcccaBe";
             var r = new Regex(pattern);
-            //r.Display();
             var aut = r.Compile();
-            var matches = aut.Matches(input);
-            Assert.IsTrue(matches.Length == 2);
-            for (int i = 0; i < 2; i++)
-            {
-                var substring = input.Substring(matches[i].Item1, matches[i].Item2 + 1 - matches[i].Item1);
-                Assert.IsTrue(Regex.IsMatch(substring, pattern));
-            }
+            var matches = aut.Matches(str);
+            ValidateAgainstDotNet(r, str, matches);
         }
 
         [TestMethod]
@@ -93,12 +94,7 @@ namespace Automata.Tests
             //r.Display();
             var aut = r.Compile();
             var matches = aut.Matches(input);
-            Assert.IsTrue(matches.Length == 3); 
-            for (int i = 0; i < 3; i++)
-            {
-                var substring = input.Substring(matches[i].Item1, matches[i].Item2 + 1 - matches[i].Item1);
-                Assert.IsTrue(Regex.IsMatch(substring, pattern));
-            }
+            ValidateAgainstDotNet(r, input, matches);
         }
     }
 }

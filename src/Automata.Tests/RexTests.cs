@@ -18,7 +18,7 @@ namespace Microsoft.Automata.Tests
     public class RexTests
     {
 
-        static string regexesFile = "../../../regexes.txt";
+        static string regexesFile = "../../../samples/regexes.txt";
         public RexTests()
         {
             //

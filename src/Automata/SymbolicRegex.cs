@@ -70,6 +70,9 @@ namespace Microsoft.Automata
             }
         }
 
+        /// <summary>
+        /// Enumerates all choices if this is an Or node.
+        /// </summary>
         public IEnumerable<SymbolicRegex<S>> EnumerateAlts()
         {
             if (this.kind == SymbolicRegexKind.Or)
@@ -1124,7 +1127,7 @@ namespace Microsoft.Automata
         /// Returns array of pairs (index, length) such that the subarray matches the regex. 
         /// This regex must not accept the empty string.
         /// </summary>
-        public Tuple<int, int>[] Matches(byte[] input)
+        internal Tuple<int, int>[] Matches(byte[] input)
         {
             if (this.isNullable)
                 throw new AutomataException(AutomataExceptionKind.MustNotAcceptEmptyString);
@@ -1138,6 +1141,7 @@ namespace Microsoft.Automata
             }
         }
 
+#if UNSAFE
         /// <summary>
         /// Find all matches in the given input string.
         /// Returns array of pairs (index, length) such that input.Substring(index, length) matches the regex. 
@@ -1157,6 +1161,7 @@ namespace Microsoft.Automata
                 return matcher.Matches_(input);
             }
         }
+#endif
 
         ///// <summary>
         ///// Find all matches in the given input string.
@@ -1202,7 +1207,7 @@ namespace Microsoft.Automata
             {
                 if (fixedPrefix == null)
                 {
-                    #region compute fixedPrefix
+#region compute fixedPrefix
                     S[] prefix = GetPrefix();
                     if (prefix.Length == 0)
                     {
@@ -1284,7 +1289,7 @@ namespace Microsoft.Automata
                             }
                         }
                     }
-                    #endregion
+#endregion
                 }
                 return fixedPrefix;
             }
@@ -1422,7 +1427,7 @@ namespace Microsoft.Automata
             {
                 foreach (var elem in elems)
                 {
-                    #region start foreach
+#region start foreach
                     if (elem.IsEverything)
                         return everything;
                     else if (!elem.IsNothing)
@@ -1523,7 +1528,7 @@ namespace Microsoft.Automata
                                 }
                         }
                     }
-                    #endregion
+#endregion
                 }
                 //if any element of other is covered in loops then omit it
                 var others1 = new HashSet<SymbolicRegex<S>>();

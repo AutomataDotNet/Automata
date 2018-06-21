@@ -10,7 +10,7 @@ namespace Microsoft.Automata.Utilities
     /// <summary>
     /// Methods for decoding UTF8 encoded strings.
     /// </summary>
-    public static class UTF8Decoder
+    public static class UTF8Encoding
     {
         /// <summary>
         /// Incremental UTF8 to UTF16 decoder. Outputs the next UTF-16 character and advances the current input position.
@@ -220,6 +220,63 @@ namespace Microsoft.Automata.Utilities
             //compute L 
             var cp = (ushort)(((codepoint - 0x10000) & 0x3FF) | 0xDC00);
             return cp;
+        }
+
+        public static Tuple<BDD,BDD>[] Extract2ByteUTF8Encodings(BDD set)
+        {
+            CharSetSolver css = set.algebra as CharSetSolver;
+            if (css == null)
+                throw new AutomataException(AutomataExceptionKind.NotSupported);
+
+            var twobyterange = css.MkCharSetFromRange('\x80', '\u07FF');
+            var uptoFF = css.MkCharSetFromRange('\0', '\xFF');
+
+            var b6 = set.algebra.MkBitTrue(6);
+            var b7 = set.algebra.MkBitTrue(7);
+            var b5_false = set.algebra.MkBitFalse(5);
+            var b6_false = set.algebra.MkBitFalse(6);
+
+            var byte1_mask = b7 & b6 & b5_false & uptoFF;
+            var byte2_mask = b7 & b6_false & uptoFF;
+
+            var d2 = set & twobyterange;
+            var partition = d2.Partition(5);
+            var res = Array.ConvertAll(partition, x => new Tuple<BDD, BDD>(css.OmitBitsAbove(x.Item2 >> 6, 5) & byte1_mask, x.Item1 & byte2_mask));
+
+            return res;
+        }
+
+        public static Tuple<BDD, Tuple<BDD, BDD>[]>[] Extract3ByteUTF8Encodings(BDD set)
+        {
+            var alg = set.algebra;
+            CharSetSolver css = alg as CharSetSolver;
+            if (css == null)
+                throw new AutomataException(AutomataExceptionKind.NotSupported);
+
+            var surrogates = css.MkCharSetFromRange('\uD800', '\uDFFF');
+            var threebyterange = css.MkCharSetFromRange('\u0800', '\uFFFF').Diff(surrogates);
+            var uptoFF = css.MkCharSetFromRange('\0', '\xFF');
+
+            var set3 = set & threebyterange;
+
+            var lowerpartition = set3.Partition(11);
+
+            var b5 = alg.MkBitTrue(5);
+            var b6 = alg.MkBitTrue(6);
+            var b7 = alg.MkBitTrue(7);
+            var b4_false = alg.MkBitFalse(4);
+            var b6_false = alg.MkBitFalse(6);
+
+            var start_mask = b7 & b6 & b5 & b4_false & uptoFF;
+            var val_mask = b7 & b6_false & uptoFF;
+
+            var partition = Array.ConvertAll(lowerpartition, x => new Tuple<BDD,Tuple<BDD, BDD>[]>(
+                css.OmitBitsAbove(x.Item2 >> 12, 4) & start_mask,
+                                  Array.ConvertAll<Tuple<BDD, BDD>, Tuple<BDD, BDD>>(x.Item1.Partition(5),
+                                  y => new Tuple<BDD, BDD>(css.OmitBitsAbove(y.Item2 >> 6, 6) & val_mask, y.Item1 & val_mask))
+                ));
+
+            return partition;
         }
     }
 }

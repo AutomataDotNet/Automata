@@ -23,7 +23,7 @@ namespace Microsoft.Automata
         public readonly BDD Zero;
 
 
-        protected IBDDAlgebra algebra;
+        public readonly IBDDAlgebra algebra;
 
         /// <summary>
         /// Ordinal of this bit if nonleaf
@@ -227,6 +227,21 @@ namespace Microsoft.Automata
         public BDD Not()
         {
             return algebra.MkNot(this);
+        }
+
+        public Tuple<BDD,BDD>[] Partition(int k)
+        {
+            return algebra.Partition(this, k);
+        }
+
+        public static BDD operator >>(BDD x, int k)
+        {
+            return x.algebra.ShiftRight(x, k);
+        }
+
+        public static BDD operator <<(BDD x, int k)
+        {
+            return x.algebra.ShiftLeft(x, k);
         }
 
         public static BDD operator &(BDD x, BDD y)

@@ -107,11 +107,8 @@
     <Compile Include="SymbolicRegexTests.cs" />
     <Compile Include="ThreeAutomataTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="UTF8EncodingTests.cs" />
     <Compile Include="UtilitiesTests.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="regexes.txt" />
-    <Content Include="regexesWithoutAnchors.txt" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Automata\Automata.csproj">
