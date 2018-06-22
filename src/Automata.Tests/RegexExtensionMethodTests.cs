@@ -608,8 +608,8 @@ namespace Automata.Tests
             //Regex r = new Regex("[\u0081-\uFFFF]{1,}", RegexOptions.IgnoreCase | RegexOptions.Compiled);
             Regex r = new Regex("[\u212A-\u212B]{1,}", RegexOptions.IgnoreCase);
             Regex r2 = new Regex("[\u212A\u212B]{1,}", RegexOptions.IgnoreCase);
-            Assert.IsFalse(r.IsMatch("\u212AkK")); //<--- BUG 
-            Assert.IsTrue(r2.IsMatch("\u212AkK")); //<--- correct
+            Assert.IsFalse(r.IsMatch("k")); //<--- BUG 
+            Assert.IsTrue(r2.IsMatch("k")); //<--- correct
         }
     }
 }

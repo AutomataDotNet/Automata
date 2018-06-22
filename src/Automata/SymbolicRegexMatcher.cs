@@ -201,7 +201,7 @@ namespace Microsoft.Automata
         /// </summary>
         /// <param name="sr">given symbolic regex</param>
         /// <param name="StateLimit">limit on the number of states kept in a preallocated array (default is 1000)</param>
-        internal SymbolicRegexMatcher(SymbolicRegex<S> sr, int StateLimit = 1000, int startSetSizeLimit = 1)
+        internal SymbolicRegexMatcher(SymbolicRegex<S> sr, int StateLimit = 10000, int startSetSizeLimit = 1)
         {
             this.StartSetSizeLimit = startSetSizeLimit;
             this.builder = sr.builder;
@@ -468,7 +468,10 @@ namespace Microsoft.Automata
                 if (p1 != 0)
                 {
                     p = p1;
-                    regex = state2regex[p1];
+                    if (p1 < StateLimit)
+                        regex = state2regex[p1];
+                    else
+                        regex = state2regexExtra[p1];
                 }
                 else
                 {
@@ -492,7 +495,7 @@ namespace Microsoft.Automata
         /// <summary>
         /// Critical region for threadsafe applications for defining a new transition
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void CreateNewTransition(int q, S atom, int offset, out int p, out SymbolicRegex<S> regex)
         {
             lock (this)
@@ -502,7 +505,10 @@ namespace Microsoft.Automata
                 if (p1 != 0)
                 {
                     p = p1;
-                    regex = state2regex[p1];
+                    if (p1 < StateLimit)
+                        regex = state2regex[p1];
+                    else
+                        regex = state2regexExtra[p1];
                 }
                 else
                 {
