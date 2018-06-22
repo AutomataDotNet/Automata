@@ -1105,8 +1105,10 @@ namespace Microsoft.Automata
         {
             if (this.isNullable)
                 throw new AutomataException(AutomataExceptionKind.MustNotAcceptEmptyString);
-            else if (string.IsNullOrEmpty(input))
+            else if (input == null)
                 throw new AutomataException(AutomataExceptionKind.InvalidArgument);
+            else if (input == string.Empty)
+                return new Tuple<int, int>[] { };
             else if (input.Length == 1)
             {
                 if (IsMatch(input))
@@ -1131,8 +1133,10 @@ namespace Microsoft.Automata
         {
             if (this.isNullable)
                 throw new AutomataException(AutomataExceptionKind.MustNotAcceptEmptyString);
-            else if (input == null || input.Length == 0)
+            else if (input == null)
                 throw new AutomataException(AutomataExceptionKind.InvalidArgument);
+            else if (input.Length == 0)
+                return new Tuple<int, int>[] { };
             else
             {
                 if (matcher == null)
@@ -1152,8 +1156,10 @@ namespace Microsoft.Automata
         {
             if (this.isNullable)
                 throw new AutomataException(AutomataExceptionKind.MustNotAcceptEmptyString);
-            else if (string.IsNullOrEmpty(input))
+            else if (input == null)
                 throw new AutomataException(AutomataExceptionKind.InvalidArgument);
+            else if (input == string.Empty)
+                return new Tuple<int, int>[] { };
             else
             {
                 if (matcher == null)
