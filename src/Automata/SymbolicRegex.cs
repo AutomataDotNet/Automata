@@ -1388,6 +1388,117 @@ namespace Microsoft.Automata
                     }
             }
         }
+
+        /// <summary>
+        /// Unwind the regex and show the resulting state graph
+        /// </summary>
+        /// <param name="bound">roughly the maximum number of states</param>
+        /// <param name="name">name for the graph, used also as .dgml file name</param>
+        public void ShowGraph(int bound = 0, string name = "DFA")
+        {
+            DirectedGraphs.DgmlWriter.ShowGraph<S>(-1, Unwind(bound), name);
+        }
+
+        /// <summary>
+        /// Unwind the regex into an automaton that can be displayed as a graph.
+        /// </summary>
+        /// <param name="bound">roughly the maximum number of states, 0 or negative value means no bound</param>
+        public IAutomaton<S> Unwind(int bound = 0)
+        {
+            return new SymbolicRegexGraph(this, bound);
+        }
+
+        internal class SymbolicRegexGraph : IAutomaton<S>
+        {
+            SymbolicRegex<S> sr;
+            Dictionary<SymbolicRegex<S>, int> stateIdMap = new Dictionary<SymbolicRegex<S>, int>();
+            Dictionary<int, SymbolicRegex<S>> states = new Dictionary<int, SymbolicRegex<S>>();
+            List<Move<S>> moves = new List<Move<S>>();
+            IPartitionedCharAlgebra<S> bva;
+
+            internal SymbolicRegexGraph(SymbolicRegex<S> sr, int bound = 0)
+            {
+                this.sr = sr;
+                if (!(sr.builder.solver is IPartitionedCharAlgebra<S>))
+                    throw new AutomataException(AutomataExceptionKind.NotSupported);
+                this.bva = sr.builder.solver as IPartitionedCharAlgebra<S>;
+
+                Func<int, S, Tuple<int, S>> Pair = (x, y) => new Tuple<int, S>(x, y);
+
+                stateIdMap[sr] = 0;
+                states[0] = sr;
+                var stack = new Stack<int>();
+                stack.Push(0);
+                int nextstate = 1;
+                while (stack.Count > 0 && (bound <= 0 || nextstate <= bound))
+                {
+                    var q = stack.Pop();
+                    foreach (var c in bva.GetPartition())
+                    {
+                        var q_deriv = states[q].MkDerivative(c);
+                        //ignore the deadend state
+                        if (!q_deriv.IsNothing)
+                        {
+                            int p;
+                            if (!stateIdMap.TryGetValue(q_deriv, out p))
+                            {
+                                p = nextstate++;
+                                stateIdMap[q_deriv] = p;
+                                states[p] = q_deriv;
+                                stack.Push(p);
+                            }
+                            moves.Add(Move<S>.Create(q, p, c));
+                        }
+                    }
+                }
+            }
+
+            public IBooleanAlgebra<S> Algebra
+            {
+                get
+                {
+                    return sr.builder.solver;
+                }
+            }
+
+            public int InitialState
+            {
+                get
+                {
+                    return 0;
+                }
+            }
+
+            public string DescribeLabel(S lab)
+            {
+                return sr.builder.solver.PrettyPrint(lab);
+            }
+
+            public string DescribeStartLabel()
+            {
+                return "";
+            }
+
+            public string DescribeState(int state)
+            {
+                return states[state].ToString();
+            }
+
+            public IEnumerable<Move<S>> GetMoves()
+            {
+                return moves;
+            }
+
+            public IEnumerable<int> GetStates()
+            {
+                return states.Keys;
+            }
+
+            public bool IsFinalState(int state)
+            {
+                return states[state].isNullable;
+            }
+        }
     }
 
     /// <summary>

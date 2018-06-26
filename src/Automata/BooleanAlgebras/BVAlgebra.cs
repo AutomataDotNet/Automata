@@ -10,7 +10,7 @@ namespace Microsoft.Automata
     /// <summary>
     /// Bit vector algebra
     /// </summary>
-    public class BVAlgebra : ICharAlgebra<BV>
+    public class BVAlgebra : IPartitionedCharAlgebra<BV>
     {
         int nrOfBits;
         MintermGenerator<BV> mtg;
@@ -766,6 +766,11 @@ namespace Microsoft.Automata
                 return res;
             else
                 return null;
+        }
+
+        public BV[] GetPartition()
+        {
+            return atoms;
         }
     }
 

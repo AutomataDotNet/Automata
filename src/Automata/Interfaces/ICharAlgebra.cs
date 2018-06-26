@@ -76,5 +76,17 @@ namespace Microsoft.Automata
         /// </summary>
         char ChooseUniformly(PRED s);
     }
+
+    /// <summary>
+    /// Extends ICharAlgebra with a partition of the whole domain
+    /// </summary>
+    /// <typeparam name="PRED"></typeparam>
+    public interface IPartitionedCharAlgebra<PRED> : ICharAlgebra<PRED>
+    {
+        /// <summary>
+        /// Returns a partition of the full domain.
+        /// </summary>
+        PRED[] GetPartition();
+    }
 }
 

@@ -759,5 +759,16 @@ namespace Automata.Tests
             return s;
         }
 
+        [TestMethod]
+        public void TestDerivative_BasicCreation()
+        {
+            //var regex = new Regex("[ab]*a[ab]{0,5}", RegexOptions.Singleline);
+            var regex = new Regex(@"ab{0,5}ea{0,5}d");
+            var sr = regex.Compile();
+            var aut = sr.Unwind();
+            Assert.IsTrue(aut.DescribeState(aut.InitialState) == sr.ToString());
+            //sr.ShowGraph();
+        }
+
     }
 }
