@@ -29,6 +29,58 @@ namespace Microsoft.Automata
             return sr_bv;
         }
 
+        /// <summary>
+        /// Tries to compile a regex into a symbolic regex
+        /// </summary>
+        /// <param name="regex">given regex</param>
+        /// <param name="result">if the return value is true then this is the result of compilation</param>
+        /// <param name="whyfailed">if the return value is false then this is the reason why compilation failed</param>
+        /// <param name="css">given solver, if null a new one is created</param>
+        /// <param name="simplify">if true then lower loop bounds are unwound (default is true)</param>
+        public static bool TryCompile(this Regex regex, out SymbolicRegex<BV> result, out string whyfailed, CharSetSolver css = null, bool simplify = true)
+        {
+            if (css == null)
+                css = new CharSetSolver();
+            try
+            {
+                result = Compile(regex, css, simplify);
+                whyfailed = "";
+                return true;
+            }
+            catch (AutomataException e)
+            {
+                result = null;
+                whyfailed = e.Message;
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Returns true if the regex can be compiled into a symbolic regex.
+        /// </summary>
+        /// <param name="regex">given regex</param>
+        /// <param name="whynot">if the return value is false, reason why compilation is not supported</param>
+        /// <returns></returns>
+        public static bool IsCompileSupported(this Regex regex, out string whynot)
+        {
+            var css = new CharSetSolver();
+            try
+            {
+                var sr_bdd = css.RegexConverter.ConvertToSymbolicRegex(regex, true);
+                whynot = "";
+                return true;
+            }
+            catch (AutomataException e)
+            {
+                whynot = e.Message;
+                return false;
+            }
+            finally
+            {
+                css.Dispose();
+            }
+        }
+
         internal static SymbolicRegex<BDD> ConvertToSymbolicRegexBDD(this Regex regex, CharSetSolver css, bool simplify = true)
         {
             var sr_bdd = css.RegexConverter.ConvertToSymbolicRegex(regex, true);

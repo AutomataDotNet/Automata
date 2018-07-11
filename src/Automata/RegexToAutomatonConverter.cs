@@ -701,61 +701,56 @@ namespace Microsoft.Automata
                     return this.srBuilder.endAnchor;
                 case RegexNode.Eol:
                     return this.srBuilder.eolAnchor;
-                case RegexNode.Lazyloop:
                 case RegexNode.Loop:
                     return this.srBuilder.MkLoop(ConvertNodeToSymbolicRegex(node._children[0]), node._m, node._n);
                 case RegexNode.Multi:
                     return ConvertNodeMultiToSymbolicRegex(node);
-                case RegexNode.Notonelazy:
                 case RegexNode.Notone:
                     return ConvertNodeNotoneToSymbolicRegex(node);
                 case RegexNode.Notoneloop:
                     return ConvertNodeNotoneloopToSymbolicRegex(node);
-                case RegexNode.Onelazy:
                 case RegexNode.One:
                     return ConvertNodeOneToSymbolicRegex(node);
                 case RegexNode.Oneloop:
                     return ConvertNodeOneloopToSymbolicRegex(node);
-                case RegexNode.Setlazy:
                 case RegexNode.Set:
                     return ConvertNodeSetToSymbolicRegex(node);
                 case RegexNode.Setloop:
                     return ConvertNodeSetloopToSymbolicRegex(node);
-                case RegexNode.ECMABoundary:
-                case RegexNode.Boundary:
-                    throw new NotImplementedException();
-                case RegexNode.Nothing:
-                    throw new NotImplementedException();
-                //currently not supported cases
-                //case RegexNode.Lazyloop:
-                //throw new AutomataException("Regex construct not supported: lazy constructs *? +? ?? {,}?");
-                //case RegexNode.Notonelazy:
-                //    throw new AutomataException("Regex construct not supported: lazy construct .*?");
-                //case RegexNode.Onelazy:
-                //    throw new AutomataException("Regex construct not supported: lazy construct a*?");
-                //case RegexNode.Setlazy:
-                //    throw new AutomataException(@"Regex construct not supported: lazy construct \d*?");
-                case RegexNode.Nonboundary:
-                case RegexNode.NonECMABoundary:
-                    throw new AutomataException(@"Regex construct not supported: \B");
-                case RegexNode.Greedy:
-                    throw new AutomataException("Regex construct not supported: greedy constructs (?>) (?<)");
-                case RegexNode.Group:
-                    throw new AutomataException("Regex construct not supported: grouping (?:)");
-                case RegexNode.Prevent:
-                    throw new AutomataException("Regex construct not supported: prevent constructs (?!) (?<!)");
-                case RegexNode.Require:
-                    throw new AutomataException("Regex construct not supported: require constructs (?=) (?<=)");
                 case RegexNode.Testgroup:
                     return MkIfThenElse(ConvertNodeToSymbolicRegex(node._children[0]), ConvertNodeToSymbolicRegex(node._children[1]), ConvertNodeToSymbolicRegex(node._children[2]));
-                case RegexNode.Testref:
-                    throw new AutomataException("Regex construct not supported: test cosntruct (?(n) | )");
-                case RegexNode.Ref:
-                    throw new AutomataException(@"Regex construct not supported: references \1");
+                case RegexNode.ECMABoundary:
+                case RegexNode.Boundary:
+                    throw new AutomataException(@"Not implemented: word-boundary \b");
+                case RegexNode.Nonboundary:
+                case RegexNode.NonECMABoundary:
+                    throw new AutomataException(@"Not implemented: non-word-boundary \B");
+                case RegexNode.Nothing:
+                    throw new AutomataException(@"Not implemented: Nothing");
+                case RegexNode.Lazyloop:
+                    throw new AutomataException("Not implemented: lazy constructs *? +? ?? {,}?");
+                case RegexNode.Notonelazy:
+                    throw new AutomataException("Not implemented: lazy loop .*?");
+                case RegexNode.Onelazy:
+                   throw new AutomataException("Not implemented: lazy loop  a*?");
+                case RegexNode.Setlazy:
+                    throw new AutomataException(@"Not implemented: lazy loop \d*?");
+                case RegexNode.Greedy:
+                    throw new AutomataException("Not implemented: greedy constructs (?>) (?<)");
                 case RegexNode.Start:
-                    throw new AutomataException(@"Regex construct not supported: \G");
+                    throw new AutomataException(@"Not implemented: \G");
+                case RegexNode.Group:
+                    throw new AutomataException("Not supported: grouping (?:)");
+                case RegexNode.Prevent:
+                    throw new AutomataException("Not supported: prevent constructs (?!) (?<!)");
+                case RegexNode.Require:
+                    throw new AutomataException("Not supported: require constructs (?=) (?<=)");
+                case RegexNode.Testref:
+                    throw new AutomataException("Not supported: test construct (?(n) | )");
+                case RegexNode.Ref:
+                    throw new AutomataException(@"Not supported: references \1");
                 default:
-                    throw new AutomataException(AutomataExceptionKind.UnrecognizedRegex);
+                    throw new AutomataException(@"Unexpected regex construct");
             }
         }
 

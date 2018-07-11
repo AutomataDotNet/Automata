@@ -602,7 +602,7 @@ namespace Automata.Tests
             Assert.IsTrue(regex_matches.SetEquals(sr_matches));
         }
 
-        [TestMethod]
+        //[TestMethod]
         public void TestRegex_Bug_IsMatch()
         {
             //Regex r = new Regex("[\u0081-\uFFFF]{1,}", RegexOptions.IgnoreCase | RegexOptions.Compiled);
@@ -610,6 +610,51 @@ namespace Automata.Tests
             Regex r2 = new Regex("[\u212A\u212B]{1,}", RegexOptions.IgnoreCase);
             Assert.IsFalse(r.IsMatch("k")); //<--- BUG 
             Assert.IsTrue(r2.IsMatch("k")); //<--- correct
+        }
+
+        [TestMethod]
+        public void TestRegex_TryCompile()
+        {
+            TestSuccess(@"foo.*bar");
+            TestSuccess(@"(foo).+bar?");
+            TestFailure(@"foo\bbar", @"\b");
+            TestFailure(@"foo\Bbar", @"\B");
+            TestFailure(@"foo\Gbar", @"\G");
+            TestFailure(@"\w*?", "lazy loop");
+            TestFailure(@"b*?", "lazy loop");
+            TestFailure(@"a{3,4}?", "lazy loop");    
+            TestFailure(@"(\w)\1", "references");
+            TestFailure(@"(?!un)\w+", "prevent constructs");
+            TestFailure(@"(?<!un)\w+", "prevent constructs");
+            TestFailure(@"(?<=un)\w+", "require constructs");
+            TestFailure(@"(?=un)\w+", "require constructs");
+            TestFailure(@"((?'4'a)(?(4))a|b)\w+", "test construct");
+        }
+
+        private static void TestFailure(string r, string reason)
+        {
+            var regex = new Regex(r);
+            string failure;
+            string whynot;
+            SymbolicRegex<BV> sr;
+            bool ok = regex.TryCompile(out sr, out failure);
+            bool ok2 = regex.IsCompileSupported(out whynot);
+            Assert.IsFalse(ok);
+            Assert.IsFalse(ok2);
+            Assert.IsTrue(failure.Contains(reason));
+            Assert.AreEqual<string>(failure, whynot);
+            Assert.IsTrue(sr == null);
+        }
+
+        private static void TestSuccess(string r)
+        {
+            var regex = new Regex(r);
+            string failure;
+            SymbolicRegex<BV> sr;
+            bool ok = regex.TryCompile(out sr, out failure);
+            Assert.IsTrue(ok);
+            Assert.IsTrue(failure == "");
+            Assert.IsTrue(sr != null);
         }
     }
 }

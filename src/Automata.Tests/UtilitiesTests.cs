@@ -11,7 +11,7 @@ namespace Automata.Tests
     [TestClass]
     public class UtilitiesTests
     {
-        [TestMethod]
+        //[TestMethod]
         public void TestIgnoreCaseTransformer()
         {
             CharSetSolver solver = new CharSetSolver();
