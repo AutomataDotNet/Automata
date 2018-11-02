@@ -95,7 +95,7 @@ namespace Automata.Tests
             string a = "aaaaaaaaaaaaaaaaaaaa";
             //takes time exponential in the length of a
             int t = 0;
-            for (int i = 0; i < 15; i++)
+            for (int i = 0; i < 10; i++)
             {
                 t = System.Environment.TickCount;
                 EvilRegex.IsMatch(a);
@@ -103,17 +103,17 @@ namespace Automata.Tests
                 TestContext.WriteLine("{0}, {1}", a.Length, t);
                 a += "a";
             }
-            Assert.IsTrue(t > 1000);
+            Assert.IsTrue(t > 100);
         }
 
         [TestMethod]
         public void TestEvilRegex2()
         {
             Regex EvilRegex = new Regex(@"^(([^\0])+.)+[\0]([^\0])+$", RegexOptions.Compiled | (RegexOptions.Singleline));
-            string a = "text....with 35.....xxxxx.....chars";
+            string a = "text....with .....xxx...chars";
             //takes time exponential in the length of a
             int t = 0;
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < 2; i++)
             {
                 t = System.Environment.TickCount;
                 bool res = EvilRegex.IsMatch(a);
@@ -121,7 +121,7 @@ namespace Automata.Tests
                 TestContext.WriteLine("{0}, {1}", a.Length, t);
                 a += "a";
             }
-            Assert.IsTrue(t > 1000);
+            Assert.IsTrue(t > 100);
         }
 
         [TestMethod]
@@ -177,6 +177,19 @@ namespace Automata.Tests
             var matcher = aut.Determinize().Minimize().Compile();
             var regexc = testregex.Compile();
             //aut.ShowGraph();
+        }
+
+        [TestMethod]
+        public void TestRegexComplement()
+        {
+            CharSetSolver css = new CharSetSolver();
+            Regex L1 = new Regex("^(([^>]|><)*(>|>[^<].*))$", RegexOptions.Singleline);
+            var A1 = css.Convert(L1.ToString(), L1.Options);
+            Regex L1n = new Regex("^([^>]([^>]|><)*(>|>[^<].*))$", RegexOptions.Singleline);
+            var A1n = css.Convert(L1n.ToString(), L1n.Options);
+            var A3 = A1.Minus(A1n).Minimize();
+            var L3 = css.ConvertToRegex(A3);
+            Console.WriteLine(L3);
         }
     }
 }

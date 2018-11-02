@@ -38,14 +38,14 @@ namespace Automata.Tests
             string a = "aaaaaaaaaaaaaaaaaaaa";
             //takes time exponential in the length of a
             int t = 0;
-            for (int i = 0; i < 15; i++)
+            for (int i = 0; i < 10; i++)
             {
                 t = System.Environment.TickCount;
                 EvilRegex.IsMatch(a);
                 t = System.Environment.TickCount - t;
                 a += "a";
             }
-            Assert.IsTrue(t > 1000);
+            Assert.IsTrue(t > 100);
             var solver = new CharSetSolver();
             var fa = solver.Convert(regex);
             var fadet = fa.Determinize().Minimize();
@@ -95,6 +95,56 @@ namespace Automata.Tests
             var aut = r.Compile();
             var matches = aut.Matches(input);
             ValidateAgainstDotNet(r, input, matches);
+        }
+
+        [TestMethod]
+        public void TestIntersect_ManyRegexes()
+        {
+            //at least one upper case
+            Regex A = new Regex(".*[A-Z].*", RegexOptions.Singleline);
+            //at least one digit
+            Regex B = new Regex(".*[0-9].*", RegexOptions.Singleline);
+            //length is between 8 and 10 characters
+            Regex C = new Regex(".{8,10}", RegexOptions.Singleline);
+            //contains no spaces
+            Regex D = new Regex(@"\S*");
+            var matcher = A.Compile(B,C,D);
+            //forget the context, no more compilations are made
+            RegexExtensionMethods.Context = null;
+            //matcher.ShowGraph(0, "matcher", false, false);
+            string input = "this is some text containing two matches: th1sMatch and also This123456 but not This123 or this1234567 or this1234";
+            var matches = matcher.Matches(input);
+            Assert.IsTrue(matches.Length == 2);
+            Assert.AreEqual<string>("th1sMatch", input.Substring(matches[0].Item1, matches[0].Item2));
+            Assert.AreEqual<string>("This123456", input.Substring(matches[1].Item1, matches[1].Item2));
+        }
+
+        [TestMethod]
+        public void TestIntersect_ConvertFromITE()
+        {
+            //contains a and b
+            Regex A = new Regex("(?(.*a.*)(.*b.*)|[x-[x]])", RegexOptions.Singleline);
+            var matcher = A.Compile();
+            //matcher.ShowGraph();
+            Assert.IsTrue(matcher.Kind == SymbolicRegexKind.And);
+            Assert.IsTrue(A.IsMatch("fooagggbmmm"));
+            Assert.IsFalse(A.IsMatch("fooagggmmm"));
+        }
+
+        [TestMethod]
+        public void TestIntersect_EmptyPredicateDisallowed()
+        {
+            //contains a and b
+            Regex A = new Regex("(?([x-[x]])([x-[x]])|[x-[x]])", RegexOptions.Singleline);
+            try
+            {
+                var matcher = A.Compile();
+                Assert.Fail("previous line must throw an exception");
+            }
+            catch (AutomataException e)
+            {
+                Assert.IsTrue(e.kind == AutomataExceptionKind.SetIsEmpty);
+            }
         }
     }
 }

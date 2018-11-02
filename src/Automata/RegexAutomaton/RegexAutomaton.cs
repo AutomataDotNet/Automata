@@ -8,6 +8,7 @@ using Microsoft.Automata.BooleanAlgebras;
 
 namespace Microsoft.Automata
 {
+    /*
     /// <summary>
     /// Represents in-memory generated automaton from a .NET regex that is optimized for matching.
     /// </summary>
@@ -275,4 +276,5 @@ namespace Microsoft.Automata
             return aut;
         }
     }
+    */
 }

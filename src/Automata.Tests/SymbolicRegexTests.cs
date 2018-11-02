@@ -108,9 +108,13 @@ namespace Automata.Tests
             Assert.IsTrue(r9.Kind == SymbolicRegexKind.Loop);
             Assert.AreEqual<string>(@".*", r9.ToString());
             //-----
-            var a_complement = css.RegexConverter.ConvertToSymbolicRegex(@"(?(a)|[0-[0]])", RegexOptions.Singleline);
+            var a_complement = css.RegexConverter.ConvertToSymbolicRegex(@"(?(a)[0-[0]]|.*)", RegexOptions.Singleline);
             Assert.IsTrue(a_complement.Kind == SymbolicRegexKind.IfThenElse);
-            Assert.AreEqual<string>(@"(?(.*a.*).*|[0-[0]])", a_complement.ToString());
+            Assert.AreEqual<string>(@"(?(.*a.*)[0-[0]]|.*)", a_complement.ToString());
+            //-----
+            var conj = css.RegexConverter.ConvertToSymbolicRegex(@"(?(.*b.*)(.*a.*)|[a-z-[a-z]])", RegexOptions.Singleline);
+            Assert.IsTrue(conj.Kind == SymbolicRegexKind.And);
+            Assert.AreEqual<string>(@"(?(.*a.*)(.*b.*)|[0-[0]])", conj.ToString());
             //-----
         }
 
@@ -588,8 +592,8 @@ namespace Automata.Tests
         public void TestSymbolicRegex_Matches_abc()
         {
             var regex = new Regex("abc", RegexOptions.IgnoreCase);
-            var solver = new CharSetSolver();
-            var sr = regex.Compile(solver);
+            //var solver = new CharSetSolver();
+            var sr = regex.Compile();
             var input = "xbxabcabxxxxaBCabcxx";
             Func<int, int, Tuple<int, int>> f = (x, y) => new Tuple<int, int>(x, y);
             var expectedMatches = new Sequence<Tuple<int, int>>(f(3, 3), f(12, 3), f(15, 3));
@@ -601,8 +605,8 @@ namespace Automata.Tests
         public void TestSymbolicRegex_Matches_simple_loops()
         {
             var regex = new Regex("bcd|(cc)+|e+");
-            var solver = new CharSetSolver();
-            var sr = regex.Compile(solver);
+            //var solver = new CharSetSolver();
+            var sr = regex.Compile();
             var input = "cccccbcdeeeee";
             Func<int, int, Tuple<int, int>> f = (x, y) => new Tuple<int, int>(x, y);
             var expectedMatches = new Sequence<Tuple<int, int>>(f(0, 4), f(5, 3), f(8, 5));
@@ -614,8 +618,8 @@ namespace Automata.Tests
         public void TestSymbolicRegex_Matches_bounded_loops()
         {
             var regex = new Regex("a{2,4}");
-            var solver = new CharSetSolver();
-            var sr = regex.Compile(solver);
+            //var solver = new CharSetSolver();
+            var sr = regex.Compile();
             var input = "..aaaaaaaaaaa..";
             Func<int, int, Tuple<int, int>> f = (x, y) => new Tuple<int, int>(x, y);
             var expectedMatches = new Sequence<Tuple<int, int>>(f(2,4),f(6,4),f(10,3));
@@ -741,9 +745,9 @@ namespace Automata.Tests
         [TestMethod]
         public void TestSymbolicRegexBV_IsMatch()
         {
-            var css = new CharSetSolver();
+            //var css = new CharSetSolver();
             var R = new Regex(@"^abc[\0-\xFF]+$");
-            var sr = R.Compile(css);
+            var sr = R.Compile();
             var str = "abc" + CreateRandomString(1000);
             Assert.IsTrue(sr.IsMatch(str));
             Assert.IsFalse(sr.IsMatch(str + "\uFFFD\uFFFD"));

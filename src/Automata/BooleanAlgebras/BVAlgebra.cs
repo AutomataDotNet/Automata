@@ -14,8 +14,10 @@ namespace Microsoft.Automata
     {
         int nrOfBits;
         MintermGenerator<BV> mtg;
-        CharSetSolver solver;
+        //CharSetSolver solver;
         internal DecisionTree dtree;
+
+        Chooser chooser = new Chooser();
 
         BV zero;
         BV ones;
@@ -25,30 +27,41 @@ namespace Microsoft.Automata
 
         internal BV[] atoms;
 
-        internal BDD[] minterms;
+        //internal BDD[] minterms;
 
-        Dictionary<BDD, BV> predMap = new Dictionary<BDD, BV>();
+        IntervalSet[] partition;
 
-        public BV MapPredToBV(BDD pred)
+        public ulong ComputeDomainSize(BV set)
+        {
+            int size = 0;
+            for (int i = 0; i < atoms.Length; i++)
+            {
+                if (IsSatisfiable(set & atoms[i]))
+                    size += partition[i].Count;
+            }
+            return (ulong)size;
+        }
+
+        public BV MapPredToBV(BDD pred, BDD[] minterms)
         {
             if (pred == null)
                 return null;
+            var alg = pred.algebra;
             BV bv;
-            if (!predMap.TryGetValue(pred, out bv))
-            {
-                bv = zero;
-                for (int i = 0; i < minterms.Length; i++)
-                    if (solver.IsSatisfiable(solver.MkAnd(pred, minterms[i])))
-                        bv = bv | MkBV(i);
-                predMap[pred] = bv;
-            }
+
+            bv = zero;
+            for (int i = 0; i < minterms.Length; i++)
+                if (alg.IsSatisfiable(alg.MkAnd(pred, minterms[i])))
+                    bv = bv | MkBV(i);
+
             return bv;
         }
 
-        public BVAlgebra(CharSetSolver solver, BDD[] minterms)
+        public BVAlgebra(CharSetSolver solver, BDD[] minterms, Tuple<uint,uint>[][] partition)
         {
-            this.minterms = minterms;
-            this.solver = solver;
+            this.partition = Array.ConvertAll(partition, p => new IntervalSet(p));
+            //this.minterms = minterms;
+            //this.solver = solver;
             this.nrOfBits = minterms.Length;
             var K = (nrOfBits - 1) / 64;
             int last = nrOfBits % 64;
@@ -114,7 +127,7 @@ namespace Microsoft.Automata
         {
             get
             {
-                return solver.Encoding;
+                throw new NotSupportedException();
             }
         }
 
@@ -122,7 +135,7 @@ namespace Microsoft.Automata
         {
             get
             {
-                return solver;
+                throw new NotSupportedException();
             }
         }
 
@@ -626,7 +639,7 @@ namespace Microsoft.Automata
 
         public BV MkRangeConstraint(char lower, char upper, bool caseInsensitive = false)
         {
-            throw new AutomataException(AutomataExceptionKind.NotSupported);
+            throw new NotSupportedException();
         }
 
         public BV MkCharConstraint(char c, bool caseInsensitive = false)
@@ -656,11 +669,13 @@ namespace Microsoft.Automata
         {
             if (set == null)
                 return null;
+            var alg = set.algebra;
             BV res = this.zero;
-            for (int i = 0; i < minterms.Length; i++)
+            for (int i = 0; i < partition.Length; i++)
             {
-                var conj = solver.MkAnd(minterms[i], set);
-                if (solver.IsSatisfiable(conj))
+                BDD bdd_i = partition[i].AsBDD(alg);
+                var conj = alg.MkAnd(bdd_i, set);
+                if (alg.IsSatisfiable(conj))
                 {
                     res = res | atoms[i];
                 }
@@ -668,7 +683,7 @@ namespace Microsoft.Automata
             return res;
         }
 
-        public bool TryConvertToCharSet(BV pred, out BDD set)
+        public bool TryConvertToCharSet(IBDDAlgebra solver, BV pred, out BDD set)
         {
             BDD res = solver.False;
             if (!pred.Equals(this.zero))
@@ -677,7 +692,10 @@ namespace Microsoft.Automata
                 {
                     //construct the union of the corresponding atoms
                     if (!(pred & atoms[i]).Equals(this.zero))
-                        res = solver.MkOr(res, minterms[i]);
+                    {
+                        BDD bdd_i = partition[i].AsBDD(solver);
+                        res = solver.MkOr(res, bdd_i);
+                    }
                 }
             }
             set = res;
@@ -696,6 +714,8 @@ namespace Microsoft.Automata
 
         public string PrettyPrint(BV bv)
         {
+            return bv.ToString();
+            /*
             BDD set = solver.CharSetProvider.False;
             for (int i = 0; i < (nrOfBits < 64 ? nrOfBits : 64); i++)
             {
@@ -719,6 +739,7 @@ namespace Microsoft.Automata
             }
             var res = solver.CharSetProvider.PrettyPrint(set);
             return res;
+            */
         }
 
         public string PrettyPrint(BV t, Func<BV, string> varLookup)
@@ -731,46 +752,69 @@ namespace Microsoft.Automata
             throw new NotImplementedException();
         }
 
-        /// <summary>
-        /// Choose a random member from the BV set.
-        /// The member is chosen from the union of the underlying minterm BDDs corresponding to s.
-        /// </summary>
         public uint Choose(BV s)
         {
-            if (s.Equals(this.zero))
-                throw new AutomataException(AutomataExceptionKind.SetIsEmpty);
-            BDD bdd;
-            TryConvertToCharSet(s, out bdd);
-            var res = solver.Choose(bdd);
-            return res;
+            for (int i = 0; i < atoms.Length; i++)
+            {
+                if (IsSatisfiable(atoms[i] & s))
+                {
+                    return (char)partition[i].Min;
+                }
+            }
+            throw new AutomataException(AutomataExceptionKind.SetIsEmpty);
         }
 
         /// <summary>
         /// Choose a random member uniformly at random from the BV set.
-        /// The member is chosen from the union of the underlying minterm BDDs corresponding to s.
         /// </summary>
         public char ChooseUniformly(BV s)
         {
-            if (s.Equals(this.zero))
-                throw new AutomataException(AutomataExceptionKind.SetIsEmpty);
-            BDD bdd;
-            TryConvertToCharSet(s, out bdd);
-            var res = solver.ChooseUniformly(bdd);
-            return res;
+            int K = (int)ComputeDomainSize(s);
+            int k = chooser.Choose(K);
+            for (int i = 0; i < atoms.Length; i++)
+            {
+                if (IsSatisfiable(atoms[i] & s))
+                {
+                    if (k < partition[i].Count)
+                        return (char)partition[i][k];
+                    else
+                        k = k - partition[i].Count;
+                }
+            }
+            throw new AutomataException(AutomataExceptionKind.SetIsEmpty);
         }
 
-        public BDD ConvertToCharSet(BV pred)
+        public BDD ConvertToCharSet(IBDDAlgebra solver, BV pred)
         {
-            BDD res;
-            if (TryConvertToCharSet(pred, out res))
-                return res;
-            else
-                return null;
+            BDD res = solver.False;
+            if (!pred.Equals(this.zero))
+            {
+                for (int i = 0; i < atoms.Length; i++)
+                {
+                    //construct the union of the corresponding atoms
+                    if (!(pred & atoms[i]).Equals(this.zero))
+                    {
+                        BDD bdd_i = partition[i].AsBDD(solver);
+                        res = solver.MkOr(res, bdd_i);
+                    }
+                }
+            }
+            return res;
         }
 
         public BV[] GetPartition()
         {
             return atoms;
+        }
+
+        public IEnumerable<char> GenerateAllCharacters(BV set)
+        {
+            for (int i = 0; i < atoms.Length; i++)
+            {
+                if (IsSatisfiable(atoms[i] & set))
+                    foreach (uint elem in partition[i].Enumerate())
+                        yield return (char)elem;
+            }
         }
     }
 
@@ -1011,6 +1055,86 @@ namespace Microsoft.Automata
                     }
                 }
                 return this.first.CompareTo(that.first);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Represents a sorted finite set of finite intervals representing characters
+    /// </summary>
+    public class IntervalSet
+    {
+        Tuple<uint, uint>[] intervals;
+
+        internal IntervalSet(params Tuple<uint, uint>[] intervals)
+        {
+            this.intervals = intervals;
+        }
+
+        public uint this[int index]
+        {
+            get {
+                int k = index;
+                for (int i = 0; i < intervals.Length; i++)
+                {
+                    int ith_size = (int)intervals[i].Item2 - (int)intervals[i].Item1 + 1;
+                    if (k < ith_size)
+                        return intervals[i].Item1 + (uint)k;
+                    else
+                        k = k - ith_size;
+                }
+                throw new IndexOutOfRangeException();
+            }
+        }
+
+        int count = -1;
+
+        /// <summary>
+        /// Number of elements in the set
+        /// </summary>
+        public int Count
+        {
+            get
+            {
+                if (count == -1)
+                {
+                    int s = 0;
+                    for (int i=0; i < intervals.Length; i++)
+                    {
+                        s += (int)intervals[i].Item2 - (int)intervals[i].Item1 + 1;
+                    }
+                    count = s;
+                }
+                return count;
+            }
+        }
+
+        /// <summary>
+        /// The least element in the set, provided Count != 0.
+        /// </summary>
+        public uint Min
+        {
+            get
+            {
+                return intervals[0].Item1;
+            }
+        }
+
+        public BDD AsBDD(IBDDAlgebra alg)
+        {
+            var res = alg.False;
+            for (int i = 0; i < intervals.Length; i++)
+                res = res | alg.MkSetFromRange(intervals[i].Item1, intervals[i].Item2, 15);
+            return res;
+        }
+
+        public IEnumerable<uint> Enumerate()
+        {
+            for (int i = 0; i < intervals.Length; i++)
+            {
+                for (uint j = intervals[i].Item1; j < intervals[i].Item2; j++)
+                    yield return j;
+                yield return intervals[i].Item2;
             }
         }
     }

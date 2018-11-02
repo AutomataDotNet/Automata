@@ -201,7 +201,7 @@ namespace Microsoft.Automata
         /// </summary>
         /// <param name="sr">given symbolic regex</param>
         /// <param name="StateLimit">limit on the number of states kept in a preallocated array (default is 1000)</param>
-        internal SymbolicRegexMatcher(SymbolicRegex<S> sr, int StateLimit = 10000, int startSetSizeLimit = 1)
+        internal SymbolicRegexMatcher(SymbolicRegex<S> sr, CharSetSolver css, BDD[] minterms, int StateLimit = 10000, int startSetSizeLimit = 1)
         {
             this.StartSetSizeLimit = startSetSizeLimit;
             this.builder = sr.builder;
@@ -214,8 +214,8 @@ namespace Microsoft.Automata
             }
             else if (sr.Solver is CharSetSolver)
             {
-                atoms = sr.ComputeMinterms();
-                dt = DecisionTree.Create(sr.Solver as CharSetSolver, atoms as BDD[]);
+                atoms = minterms as S[];
+                dt = DecisionTree.Create(sr.Solver as CharSetSolver, minterms);
             }
             else
             {
@@ -261,14 +261,16 @@ namespace Microsoft.Automata
                 this.deltaExtra[q0_A] = new int[K];
             }
 
-            BDD A_startSet_BDD = builder.solver.ConvertToCharSet(A.GetStartSet());
-            this.A_StartSet_Size = (int)builder.solver.CharSetProvider.ComputeDomainSize(A_startSet_BDD);
+            var A_startset = A.GetStartSet();
+            this.A_StartSet_Size = (int)builder.solver.ComputeDomainSize(A_startset);
             if (A_StartSet_Size <= startSetSizeLimit)
             {
-                char[] startchars = new List<char>(builder.solver.CharSetProvider.GenerateAllCharacters(A_startSet_BDD)).ToArray();
+                char[] startchars = new List<char>(builder.solver.GenerateAllCharacters(A_startset)).ToArray();
                 A_StartSet_Vec = Array.ConvertAll(startchars, c => new Vector<ushort>(c));
             }
-            this.A_StartSet = BooleanDecisionTree.Create(builder.solver.CharSetProvider, A_startSet_BDD);
+
+            BDD A_startSet_BDD = builder.solver.ConvertToCharSet(css, A_startset);
+            this.A_StartSet = BooleanDecisionTree.Create(css, A_startSet_BDD);
 
             ////consider the UTF8 encoded first byte
             //for (ushort i = 0; i < 128; i++)
@@ -287,7 +289,7 @@ namespace Microsoft.Automata
 
             SymbolicRegex<S> tmp = A;
             this.A_prefix_array = A.GetPrefix();
-            this.A_prefix = A.FixedPrefix;
+            this.A_prefix = A.GetFixedPrefix(css);
             this.A_prefixUTF8 = System.Text.UnicodeEncoding.UTF8.GetBytes(this.A_prefix);
             if (this.A_prefix != string.Empty)
             {
@@ -298,7 +300,7 @@ namespace Microsoft.Automata
             this.A1_skipStateRegex = tmp;
 
             this.Ar_prefix = Ar.GetPrefix();
-            var Ar_prefix_repr = new string(Array.ConvertAll(this.Ar_prefix, x => (char)sr.Solver.CharSetProvider.GetMin(sr.Solver.ConvertToCharSet(x))));
+            var Ar_prefix_repr = new string(Array.ConvertAll(this.Ar_prefix, x => (char)css.GetMin(sr.Solver.ConvertToCharSet(css, x))));
             this.Ar_skipState = DeltaPlus(Ar_prefix_repr, q0_Ar, out tmp);
             this.Ar_skipStateRegex = tmp;
 
@@ -554,7 +556,7 @@ namespace Microsoft.Automata
             int match_start_boundary = 0;
 
             //TBD: dont enforce match_start_boundary when match overlaps are allowed
-            bool A_has_nonempty_prefix = (A.FixedPrefix != string.Empty);
+            bool A_has_nonempty_prefix = (this.A_prefix != string.Empty);
             while (true)
             {
                 int i_q0_A1;
@@ -694,7 +696,7 @@ namespace Microsoft.Automata
                 //reuse A1
                 int i;
                 int i_q0;
-                if (A.FixedPrefix != string.Empty)
+                if (this.A_prefix != string.Empty)
                 {
                     i = FindFinalStatePositionOpt(input, 0, out i_q0);
                 }
@@ -1146,7 +1148,7 @@ namespace Microsoft.Automata
             int match_start_boundary = 0;
 
             //TBD: dont enforce match_start_boundary when match overlaps are allowed
-            bool A_has_nonempty_prefix = (A.FixedPrefix != string.Empty);
+            bool A_has_nonempty_prefix = (this.A_prefix != string.Empty);
             fixed (char* inputp = input)
                 while (true)
                 {
@@ -1793,7 +1795,7 @@ namespace Microsoft.Automata
             int surrogate_codepoint = 0;   
 
             //TBD: dont enforce match_start_boundary when match overlaps are allowed
-            bool A_has_nonempty_prefix = (A.FixedPrefix != string.Empty);
+            bool A_has_nonempty_prefix = (this.A_prefix != string.Empty);
             while (true)
             {
                 int i_q0_A1;

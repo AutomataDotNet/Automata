@@ -38,14 +38,20 @@ namespace Microsoft.Automata
         PRED ConvertFromCharSet(BDD set);
 
         /// <summary>
-        /// Try to convert a predicate into a set of characters.
+        /// Compute the number of elements in the set
         /// </summary>
-        bool TryConvertToCharSet(PRED pred, out BDD set);
+        ulong ComputeDomainSize(PRED set);
 
         /// <summary>
-        /// Conv a predicate into a set of characters. Returns default(PRED) is the converion fails.
+        /// Enumerate all characters in the set
         /// </summary>
-        BDD ConvertToCharSet(PRED pred);
+        /// <param name="set">given set</param>
+        IEnumerable<char> GenerateAllCharacters(PRED set);
+
+        /// <summary>
+        /// Convert a predicate into a set of characters.
+        /// </summary>
+        BDD ConvertToCharSet(IBDDAlgebra solver, PRED pred);
 
         /// <summary>
         /// Gets the underlying character set solver.
@@ -75,6 +81,8 @@ namespace Microsoft.Automata
         /// Chooses a random character uniformly at random from a nonempty set s.
         /// </summary>
         char ChooseUniformly(PRED s);
+
+
     }
 
     /// <summary>

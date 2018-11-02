@@ -282,5 +282,6 @@ namespace Microsoft.Automata
         InvalidArgument_IndexOutOfRange,
         InternalError_SymbolicRegex,
         MustNotAcceptEmptyString,
+        MatcherIsUninitialized,
     }
 }

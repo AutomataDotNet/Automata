@@ -395,13 +395,6 @@ namespace Microsoft.Automata
 
         #endregion
 
-
-        public bool TryConvertToCharSet(HashSet<Tuple<char, char>> pred, out BDD set)
-        {
-            set = null;
-            return false;
-        }
-
         public HashSet<Tuple<char, char>> MkSet(uint e)
         {
             return new HashSet<Tuple<char, char>>(new Tuple<char, char>[] { new Tuple<char, char>((char)e, (char)e) });
@@ -470,13 +463,19 @@ namespace Microsoft.Automata
             throw new NotImplementedException();
         }
 
-        public BDD ConvertToCharSet(HashSet<Tuple<char, char>> pred)
+        public BDD ConvertToCharSet(IBDDAlgebra alg, HashSet<Tuple<char, char>> pred)
         {
-            BDD set;
-            if (TryConvertToCharSet(pred, out set))
-                return set;
-            else
-                return null;
+            throw new NotImplementedException();
+        }
+
+        public ulong ComputeDomainSize(HashSet<Tuple<char, char>> set)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IEnumerable<char> GenerateAllCharacters(HashSet<Tuple<char, char>> set)
+        {
+            throw new NotImplementedException();
         }
     }
 }

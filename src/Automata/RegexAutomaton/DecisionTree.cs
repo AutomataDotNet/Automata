@@ -14,7 +14,6 @@ namespace Microsoft.Automata
     {
         internal int[] precomputed;
         internal BST bst;
-        internal BDD[] partition;
 
         internal BST Tree
         {
@@ -24,11 +23,10 @@ namespace Microsoft.Automata
             }
         }
 
-        private DecisionTree(int[] precomputed, BST bst, BDD[] partition)
+        private DecisionTree(int[] precomputed, BST bst)
         {
             this.precomputed = precomputed;
             this.bst = bst;
-            this.partition = partition;
         }
 
         /// <summary>
@@ -42,17 +40,17 @@ namespace Microsoft.Automata
         {
             if (partition.Length == 1)
                 //there is no partition, everything maps to one symbol e.g. in .*
-                return new DecisionTree(new int[] { }, new BST(0, null, null), partition);
+                return new DecisionTree(new int[] { }, new BST(0, null, null));
 
             if (precomputeLimit == 0)
-                return new DecisionTree(new int[] { }, MkBST(new PartitionCut(solver, partition), 0, 0xFFFF), partition);
+                return new DecisionTree(new int[] { }, MkBST(new PartitionCut(solver, partition), 0, 0xFFFF));
 
             int[] precomp = Precompute(solver, partition, precomputeLimit);
             BST bst = null;
             if (precomputeLimit < ushort.MaxValue)
                 bst = MkBST(new PartitionCut(solver, partition), precomputeLimit + 1, ushort.MaxValue);
 
-            return new DecisionTree(precomp, bst, partition);
+            return new DecisionTree(precomp, bst);
         }
 
         private static int[] Precompute(CharSetSolver solver, BDD[] partition, int precomputeLimit)
@@ -79,6 +77,7 @@ namespace Microsoft.Automata
             }
             return precomp;
         }
+
         private static BST MkBST(PartitionCut partition, int from, int to)
         {
             var cut = partition.Cut(from, to);
@@ -241,7 +240,6 @@ namespace Microsoft.Automata
     {
         internal bool[] precomputed;
         internal DecisionTree.BST bst;
-        internal BDD domain;
 
         internal DecisionTree.BST Tree
         {
@@ -251,15 +249,15 @@ namespace Microsoft.Automata
             }
         }
 
-        private BooleanDecisionTree(bool[] precomputed, DecisionTree.BST bst, BDD domain)
+        private BooleanDecisionTree(bool[] precomputed, DecisionTree.BST bst)
         {
             this.precomputed = precomputed;
             this.bst = bst;
-            this.domain = domain;
         }
 
         /// <summary>
-        /// Crteate a decision tree that maps a character into a partion block id
+        /// Crteate a decision tree that maps a character into a partion block id.
+        /// References to solver and domain are not saved in the resulting decision tree.
         /// </summary>
         /// <param name="solver">character alberbra</param>
         /// <param name="domain">elements that map to true</param>
@@ -268,16 +266,16 @@ namespace Microsoft.Automata
         internal static BooleanDecisionTree Create(CharSetSolver solver, BDD domain, ushort precomputeLimit = 0xFF)
         {
             BDD domain_compl = solver.MkNot(domain);
-            var partition = new BDD[] { domain_compl, domain };
+            var partition = (domain_compl.IsEmpty ? new BDD[] { domain } : new BDD[] { domain_compl, domain });
             if (precomputeLimit == 0)
-                return new BooleanDecisionTree(new bool[] { }, MkBST(new DecisionTree.PartitionCut(solver, partition), 0, 0xFFFF), domain);
+                return new BooleanDecisionTree(new bool[] { }, MkBST(new DecisionTree.PartitionCut(solver, partition), 0, 0xFFFF));
 
             bool[] precomp = Precompute(solver, domain, precomputeLimit);
             DecisionTree.BST bst = null;
             if (precomputeLimit < ushort.MaxValue)
                 bst = MkBST(new DecisionTree.PartitionCut(solver, partition), precomputeLimit + 1, ushort.MaxValue);
 
-            return new BooleanDecisionTree(precomp, bst, domain);
+            return new BooleanDecisionTree(precomp, bst);
         }
 
         private static bool[] Precompute(CharSetSolver solver, BDD domain, int precomputeLimit)
@@ -297,6 +295,7 @@ namespace Microsoft.Automata
             }
             return precomp;
         }
+
         private static DecisionTree.BST MkBST(DecisionTree.PartitionCut partition, int from, int to)
         {
             var cut = partition.Cut(from, to);

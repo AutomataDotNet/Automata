@@ -1,5 +1,6 @@
 ﻿using System.Text.RegularExpressions;
 using System.Collections.Generic;
+using System;
 
 namespace Microsoft.Automata
 {
@@ -8,25 +9,71 @@ namespace Microsoft.Automata
     /// </summary>
     public static class RegexExtensionMethods
     {
+        internal static CharSetSolver context = null;
+
         /// <summary>
-        /// Copmiles a regex into a symbolic regex
+        /// Context is a static field that is reused by the Compile and TryCompile methods and is shared accross regexes.
+        /// To forget the context set its value to null.
         /// </summary>
-        /// <param name="regex">given regex</param>
-        /// <param name="css">given solver, if null a new one is created</param>
-        /// <param name="simplify">if true then lower loop bounds are unwound (default is true)</param>
-        /// <returns></returns>
-        public static SymbolicRegex<BV> Compile(this Regex regex, CharSetSolver css = null, bool simplify = true)
+        public static CharSetSolver Context 
         {
-            if (css == null)
-                css = new CharSetSolver();
-            var sr_bdd = css.RegexConverter.ConvertToSymbolicRegex(regex, true);
-            BVAlgebra bva = new BVAlgebra(css, sr_bdd.ComputeMinterms());
-            SymbolicRegexBuilder<BV> builder = new SymbolicRegexBuilder<BV>(bva);
-            var sr_bv = sr_bdd.builder.Transform<BV>(sr_bdd, builder, builder.solver.ConvertFromCharSet);
-            if (simplify)
+            get
+            {
+                return context;
+            }
+            set
+            {
+                context = value;
+            }
+        }
+
+        /// <summary>
+        /// Sets the value of the static Context field to null and allows the solver to be garbage collected.
+        /// </summary>
+        public static void ResetContext(this Regex regex)
+        {
+            context = null;
+        }
+
+        /// <summary>
+        /// Compiles this regex and possibly other regexes into a common symbolic regex representing their intersection
+        /// </summary>
+        /// <param name="regex">this regex</param>
+        /// <param name="regexes">more regexes to intersect with</param>
+        /// <returns></returns>
+        public static SymbolicRegex<BV> Compile(this Regex regex, params Regex[] regexes)
+        {
+            if (context == null)
+                context = new CharSetSolver();
+            if (regexes.Length == 0)
+            {
+                var sr_bdd = context.RegexConverter.ConvertToSymbolicRegex(regex, true);
+                var partition = sr_bdd.ComputeMinterms();
+                var rangeSets = Array.ConvertAll(partition, part => part.ToRanges());
+                BVAlgebra bva = new BVAlgebra(context, partition, rangeSets);
+                SymbolicRegexBuilder<BV> builder = new SymbolicRegexBuilder<BV>(bva);
+                var sr_bv = sr_bdd.builder.Transform<BV>(sr_bdd, builder, builder.solver.ConvertFromCharSet);
                 sr_bv = sr_bv.Simplify();
-            sr_bv.InitializeMatcher();
-            return sr_bv;
+                sr_bv.InitializeMatcher(context, partition);
+                return sr_bv;
+            }
+            else
+            {
+                var first = context.RegexConverter.ConvertToSymbolicRegex(regex, true).Simplify();
+                var others = Array.ConvertAll(regexes, r => context.RegexConverter.ConvertToSymbolicRegex(r, true).Simplify());
+                var all = new SymbolicRegex<BDD>[1 + regexes.Length];
+                all[0] = first;
+                for (int i = 1; i <= others.Length; i++)
+                    all[i] = others[i - 1];
+                var conj = first.builder.MkAnd(all);
+                var partition = conj.ComputeMinterms();
+                var rangeSets = Array.ConvertAll(partition, part => part.ToRanges());
+                BVAlgebra bva = new BVAlgebra(context, partition, rangeSets);
+                SymbolicRegexBuilder<BV> builder = new SymbolicRegexBuilder<BV>(bva);
+                var res = conj.builder.Transform<BV>(conj, builder, builder.solver.ConvertFromCharSet);
+                res.InitializeMatcher(context, partition);
+                return res;
+            }
         }
 
         /// <summary>
@@ -35,15 +82,12 @@ namespace Microsoft.Automata
         /// <param name="regex">given regex</param>
         /// <param name="result">if the return value is true then this is the result of compilation</param>
         /// <param name="whyfailed">if the return value is false then this is the reason why compilation failed</param>
-        /// <param name="css">given solver, if null a new one is created</param>
-        /// <param name="simplify">if true then lower loop bounds are unwound (default is true)</param>
-        public static bool TryCompile(this Regex regex, out SymbolicRegex<BV> result, out string whyfailed, CharSetSolver css = null, bool simplify = true)
+        /// <param name="regexes">other regexes to be intersected with given regex</param>
+        public static bool TryCompile(this Regex regex,  out SymbolicRegex<BV> result, out string whyfailed, params Regex[] regexes)
         {
-            if (css == null)
-                css = new CharSetSolver();
             try
             {
-                result = Compile(regex, css, simplify);
+                result = Compile(regex, regexes);
                 whyfailed = "";
                 return true;
             }
@@ -186,7 +230,7 @@ namespace Microsoft.Automata
             var aut_det = aut.Determinize(timeout);
             var aut_min_c = aut_det.Minimize().Complement();
             var pattern = solver.ConvertToRegex(aut_min_c);
-            return new Regex(pattern);
+            return new Regex(pattern, regex.Options);
         }
     }
 }

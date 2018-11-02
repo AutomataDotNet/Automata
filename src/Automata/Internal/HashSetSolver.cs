@@ -332,18 +332,9 @@ namespace Microsoft.Automata
         #endregion
 
 
-        public bool TryConvertToCharSet(HashSet<char> pred, out BDD set)
+        public BDD ConvertToCharSet(IBDDAlgebra alg, HashSet<char> pred)
         {
-            set = ConvertToCharSet(pred);
-            return true;
-        }
-
-        public BDD ConvertToCharSet(HashSet<char> pred)
-        {
-            BDD res = this.CharSetProvider.False;
-            foreach (var c in pred)
-                res = this.CharSetProvider.MkCharConstraint(c) | res;
-            return res;
+            throw new NotImplementedException();
         }
 
         public HashSet<char> MkSet(uint e)
@@ -421,6 +412,21 @@ namespace Microsoft.Automata
         }
 
         public char ChooseUniformly(HashSet<char> s)
+        {
+            throw new NotImplementedException();
+        }
+
+        public int ComputeDomainSize(HashSet<char> set)
+        {
+            return set.Count;
+        }
+
+        ulong ICharAlgebra<HashSet<char>>.ComputeDomainSize(HashSet<char> set)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IEnumerable<char> GenerateAllCharacters(HashSet<char> set)
         {
             throw new NotImplementedException();
         }

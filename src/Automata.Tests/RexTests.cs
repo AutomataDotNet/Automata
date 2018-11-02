@@ -96,7 +96,7 @@ namespace Microsoft.Automata.Tests
             string[] regexes = File.ReadAllLines(regexesFile);
             List<int> exclude = new List<int>();
 
-            int rxCount = 200; //number of strings to be generated for each regex
+            int rxCount = 100; //number of strings to be generated for each regex
             for (int i = 1; i < regexes.Length; i++)
                 foreach (string s in rex.GenerateMembers(RegexOptions.None, rxCount, regexes[i]))
                     if (!exclude.Contains(i))
@@ -114,8 +114,8 @@ namespace Microsoft.Automata.Tests
             int rxCount = 100; //number of strings to be generated for each regex
             for (int i = 1; i < regexes.Length; i++)
                 foreach (string s in rex.GenerateMembers(RegexOptions.Multiline, rxCount, regexes[i]))
-                    //if (!exclude.Contains(i))
-                    Assert.IsTrue(Rex.RexEngine.IsMatch(s, regexes[i], RegexOptions.Multiline), "regex on line " + i + " in Samples/regexes.txt");
+                    if (!exclude.Contains(i))
+                        Assert.IsTrue(Rex.RexEngine.IsMatch(s, regexes[i], RegexOptions.Multiline), "regex on line " + i + " in Samples/regexes.txt");
         }
 
         [TestMethod]

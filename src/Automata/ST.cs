@@ -1917,9 +1917,9 @@ namespace Microsoft.Automata
                 string x_u = Solver.PrettyPrint(solver.MkEq(InputVar,u), LookupVarName);
                 return x_u;
             }
-            //try to convert the guard into a BvSet first
-            BDD set;
-            if (Solver.TryConvertToCharSet(rule.Guard, out set))
+            //try to convert the guard into a BDD first
+            BDD set = Solver.ConvertToCharSet(Solver.CharSetProvider, rule.Guard);
+            if (set != null)
             {
                 string res = Solver.CharSetProvider.PrettyPrint(set);
                 return res;

@@ -18,6 +18,7 @@ namespace Microsoft.Automata
         BDD ShiftRight(BDD bdd, int k = 1);
         BDD ShiftLeft(BDD bdd, int k = 1);
         Tuple<BDD,BDD>[] Partition(BDD bdd, int k);
+        BDD MkSetFromRange(uint lower, uint upper, int maxbit);
     }
 
     /// <summary>
@@ -1697,6 +1698,11 @@ namespace Microsoft.Automata
         }
 
         public BvSetPair[] Partition(BDD bdd, int k)
+        {
+            throw new NotImplementedException();
+        }
+
+        public BDD MkSetFromRange(uint lower, uint upper, int maxbit)
         {
             throw new NotImplementedException();
         }

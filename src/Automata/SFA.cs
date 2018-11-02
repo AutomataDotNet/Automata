@@ -722,8 +722,8 @@ namespace Microsoft.Automata
                 else
                 {
 
-                    BDD cond = null;
-                    if (!solver.TryConvertToCharSet(move.Label, out cond))
+                    BDD cond = solver.ConvertToCharSet(solver.CharSetProvider, move.Label);
+                    if (cond!=null)
                         throw new AutomataException(AutomataExceptionKind.ConditionCannotBeConvertedToCharSet);
 
                     mem[move.Label] = cond;

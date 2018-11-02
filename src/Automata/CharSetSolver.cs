@@ -1124,6 +1124,12 @@ namespace Microsoft.Automata
                 yield return (char)c;
         }
 
+        public IEnumerable<char> GenerateAllCharacters(BDD set)
+        {
+            return GenerateAllCharacters(set, false);
+        }
+
+
         /// <summary>
         /// Calculate the number of elements in the set.
         /// </summary>
@@ -1223,7 +1229,7 @@ namespace Microsoft.Automata
             return true;
         }
 
-        public BDD ConvertToCharSet(BDD pred)
+        public BDD ConvertToCharSet(IBDDAlgebra alg, BDD pred)
         {
             return pred;
         }

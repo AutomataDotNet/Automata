@@ -73,6 +73,27 @@ namespace Microsoft.Automata
         }
 
         /// <summary>
+        /// Make a conjunction of given regexes, simplify by eliminating regexes that accept everything
+        /// </summary>
+        public SymbolicRegex<S> MkAnd(params SymbolicRegex<S>[] regexes)
+        {
+            if (regexes.Length < 1)
+                throw new AutomataException(AutomataExceptionKind.InvalidArgument);
+
+            var sr = regexes[regexes.Length - 1];
+
+            for (int i = regexes.Length - 2; i >= 0; i--)
+            {
+                var re = sr;
+                sr = this.MkAnd2(regexes[i], re);
+                if (sr.IsNothing)
+                    return this.nothing;
+            }
+
+            return sr;
+        }
+
+        /// <summary>
         /// Make a disjunction of given regexes, simplify by eliminating any regex that accepts no inputs
         /// </summary>
         public SymbolicRegex<S> MkOr(SymbolicRegexSet<S> regexset)
@@ -100,6 +121,37 @@ namespace Microsoft.Automata
                 var or = SymbolicRegex<S>.MkOr(this, x, y);
                 return or;
             }
+        }
+
+        SymbolicRegex<S> MkAnd2(SymbolicRegex<S> x, SymbolicRegex<S> y)
+        {
+            if (x.IsNothing || y.IsNothing)
+                return this.nothing;
+            else if (x.IsEverything)
+                return y;
+            else if (y.IsEverything)
+                return x;
+            else
+            {
+                var and = SymbolicRegex<S>.MkAnd(this, x, y);
+                return and;
+            }
+        }
+
+        /// <summary>
+        /// Make a conjunction of given regexes, simplify by eliminating any regex that accepts all inputs, 
+        /// returns the empty regex if the regex accepts nothing
+        /// </summary>
+        public SymbolicRegex<S> MkAnd(SymbolicRegexSet<S> regexset)
+        {
+            if (regexset.IsNothing)
+                return this.nothing;
+            else if (regexset.IsEverything)
+                return this.dotStar;
+            else if (regexset.IsSigleton)
+                return regexset.GetTheElement();
+            else
+                return SymbolicRegex<S>.MkAnd(this, regexset);
         }
 
         /// <summary>
@@ -186,7 +238,8 @@ namespace Microsoft.Automata
         }
 
         /// <summary>
-        /// Make an if-then-else regex (?(cond)left|right)
+        /// Make an if-then-else regex (?(cond)left|right), 
+        /// or create it as conjuction if right is false
         /// </summary>
         /// <param name="cond">condition</param>
         /// <param name="left">true case</param>
@@ -301,6 +354,13 @@ namespace Microsoft.Automata
                         #region or
                         var choices = sr.alts.RemoveAnchors(isBeg, isEnd);
                         return this.MkOr(choices);
+                        #endregion
+                    }
+                case SymbolicRegexKind.And:
+                    {
+                        #region and
+                        var conjuncts = sr.alts.RemoveAnchors(isBeg, isEnd);
+                        return this.MkAnd(conjuncts);
                         #endregion
                     }
                 case SymbolicRegexKind.StartAnchor:
@@ -466,6 +526,13 @@ namespace Microsoft.Automata
                             return this.MkOr(alts_deriv);
                             #endregion
                         }
+                    case SymbolicRegexKind.And:
+                        {
+                            #region d(a,A & B) = d(a,A) & d(a,B)
+                            var derivs = sr.alts.MkDerivative(elem, isFirst, isLast);
+                            return this.MkAnd(derivs);
+                            #endregion
+                        }
                     default: //ITE 
                         {
                             #region d(a,Ite(A,B,C)) = Ite(d(a,A),d(a,B),d(a,C))
@@ -508,6 +575,8 @@ namespace Microsoft.Automata
                     return builderT.MkLoop(Transform(sr.left, builderT, predicateTransformer), sr.lower, sr.upper);
                 case SymbolicRegexKind.Or:
                     return builderT.MkOr(sr.alts.Transform(builderT, predicateTransformer));
+                case SymbolicRegexKind.And:
+                    return builderT.MkAnd(sr.alts.Transform(builderT, predicateTransformer));
                 case SymbolicRegexKind.Concat:
                     return builderT.MkConcat(Transform(sr.left, builderT, predicateTransformer),
                         Transform(sr.right, builderT, predicateTransformer));

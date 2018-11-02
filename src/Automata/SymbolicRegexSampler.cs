@@ -82,6 +82,10 @@ namespace Microsoft.Automata
                     var alts = Array.ConvertAll(re.alts.ToArray(), UnrollRE);
                     newRoot = builder.MkOr(alts);
                     break;
+                case SymbolicRegexKind.And:
+                    var conj = Array.ConvertAll(re.alts.ToArray(), UnrollRE);
+                    newRoot = builder.MkAnd(conj);
+                    break;
                 case SymbolicRegexKind.Loop:
                     newRoot = UnrollRE(UnrollLoop(re));
                     break;
@@ -114,7 +118,7 @@ namespace Microsoft.Automata
 
         string GenerateRandomMember(SymbolicRegex<S> root)
         {
-            // TODO: ITE is currently not supported.
+            // TODO: ITE, And: are currently not supported.
             string sample = "";
             Stack<SymbolicRegex<S>> nodeQueue = new Stack<SymbolicRegex<S>>();
             SymbolicRegex<S> curNode = null;

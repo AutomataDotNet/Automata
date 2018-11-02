@@ -65,6 +65,10 @@ namespace Microsoft.Automata
                     return "=";
                 case ';':
                     return ";";
+                //case '<':
+                //    return "<";
+                //case '>':
+                //    return ">";
                 //case '\"':
                 //    return "\\\"";
                 //case '\'':
