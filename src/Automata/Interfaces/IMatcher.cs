@@ -27,7 +27,7 @@ namespace Microsoft.Automata
         /// <param name="input">given iput string</param>
         /// <param name="startat">start position in the input</param>
         /// <param name="limit">as soon as this many matches have been found the search terminates, 0 or negative value means that there is now bound, default is 0</param>
-        Tuple<int, int>[] Matches(string input, int startat = 0, int limit = 0);
+        Tuple<int, int>[] Matches(string input, int limit = 0, int startat = 0);
     }
 
     /// <summary>

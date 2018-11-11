@@ -116,7 +116,73 @@ namespace Automata.Tests
         }
 
 
+        [TestMethod]
+        public void TestSerialization_Roundtrip_SingleRegex()
+        {
+            var m1 = new Regex(@"[0-9]+").Compile();
+            var s1 = new FileStream("test.bin", FileMode.OpenOrCreate);
+            new BinaryFormatter().Serialize(s1, m1);
+            s1.Close();
+            var s2 = new FileStream("test.bin", FileMode.Open);
+            var m2 = (IMatcher)new BinaryFormatter().Deserialize(s2);
+            s2.Close();
+            var input = "acac1111ghdfhdg22dfd3fd";
+            var all = m2.Matches(input);
+            var two = m2.Matches(input, 2);
+            Assert.IsTrue(all.Length == 3);
+            Assert.IsTrue(two.Length == 2);
+            Assert.AreEqual<string>("1111", input.Substring(all[0].Item1, all[0].Item2));
+            Assert.AreEqual<string>("1111", input.Substring(two[0].Item1, two[0].Item2));
+            Assert.AreEqual<string>("22", input.Substring(all[1].Item1, all[1].Item2));
+            Assert.AreEqual<string>("22", input.Substring(two[1].Item1, two[1].Item2));
+            Assert.AreEqual<string>("3", input.Substring(all[2].Item1, all[2].Item2));
+        }
 
+        [TestMethod]
+        public void TestSerialization_Roundtrip_MultiRegex()
+        { 
+            var r1 = new Regex(".*[0-9].*");
+            var r2 = new Regex(".*[A-Z].*");
+            var r3 = new Regex(@"[^\s]{3,5}");
+            //creates a conjunction-pattern of the three regexes, 
+            //order is not important, r2.Compile(r3, r1) is the same
+            var m1 = r1.Compile(r2, r3);
+            var s1 = new FileStream("test.bin", FileMode.OpenOrCreate);
+            new BinaryFormatter().Serialize(s1, m1);
+            s1.Close();
+            var s2 = new FileStream("test.bin", FileMode.Open);
+            var m2 = (IMatcher)new BinaryFormatter().Deserialize(s2);
+            s2.Close();
+            var input = "asd 1X1s dsd 77777 AAAAA sdsd 3B3sbsbsb ggg";
+            var all = m2.Matches(input);
+            Assert.IsTrue(all.Length == 2);
+            Assert.AreEqual<string>("1X1s", input.Substring(all[0].Item1, all[0].Item2));
+            Assert.AreEqual<string>("3B3sb", input.Substring(all[1].Item1, all[1].Item2));
+        }
+
+        [TestMethod]
+        public void TestSerialization_Roundtrip_SingleRegex_OneMatchAtATime()
+        {
+            var m1 = new Regex(@"[0-9]+").Compile();
+            var s1 = new FileStream("test.bin", FileMode.OpenOrCreate);
+            new BinaryFormatter().Serialize(s1, m1);
+            s1.Close();
+            var s2 = new FileStream("test.bin", FileMode.Open);
+            var m2 = (IMatcher)new BinaryFormatter().Deserialize(s2);
+            s2.Close();
+            var input = "acac1111ghdfhdg22dfd3fd";
+            //first match
+            var first = m2.Matches(input, 1, 0);
+            Assert.AreEqual<string>("1111", input.Substring(first[0].Item1, first[0].Item2));
+            //second match
+            var start2 = first[0].Item1 + first[0].Item2 + 1;
+            var second = m2.Matches(input, 1, start2);
+            Assert.AreEqual<string>("22", input.Substring(second[0].Item1, second[0].Item2));
+            //third match
+            var start3 = second[0].Item1 + second[0].Item2 + 1;
+            var third = m2.Matches(input, 1, start3);
+            Assert.AreEqual<string>("3", input.Substring(third[0].Item1, third[0].Item2));
+        }
 
         static void SerializeObjectToFile(string file, object obj)
         {
