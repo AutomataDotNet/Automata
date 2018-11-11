@@ -41,38 +41,38 @@ namespace Microsoft.Automata
         /// <param name="regex">this regex</param>
         /// <param name="regexes">more regexes to intersect with</param>
         /// <returns></returns>
-        public static SymbolicRegex<BV> Compile(this Regex regex, params Regex[] regexes)
+        public static IMatcher Compile(this Regex regex, params Regex[] regexes)
         {
             if (context == null)
                 context = new CharSetSolver();
             if (regexes.Length == 0)
             {
                 var sr_bdd = context.RegexConverter.ConvertToSymbolicRegex(regex, true);
+                var srBuilder = context.RegexConverter.srBuilder;
                 var partition = sr_bdd.ComputeMinterms();
-                var rangeSets = Array.ConvertAll(partition, part => part.ToRanges());
-                BVAlgebra bva = new BVAlgebra(context, partition, rangeSets);
+                BVAlgebra bva = BVAlgebra.Create(context, partition);
                 SymbolicRegexBuilder<BV> builder = new SymbolicRegexBuilder<BV>(bva);
-                var sr_bv = sr_bdd.builder.Transform<BV>(sr_bdd, builder, builder.solver.ConvertFromCharSet);
+                var sr_bv = srBuilder.Transform<BV>(sr_bdd, builder, builder.solver.ConvertFromCharSet);
                 sr_bv = sr_bv.Simplify();
-                sr_bv.InitializeMatcher(context, partition);
-                return sr_bv;
+                var matcher = new SymbolicRegex<BV>(builder, sr_bv, context, partition);
+                return matcher;
             }
             else
             {
                 var first = context.RegexConverter.ConvertToSymbolicRegex(regex, true).Simplify();
                 var others = Array.ConvertAll(regexes, r => context.RegexConverter.ConvertToSymbolicRegex(r, true).Simplify());
-                var all = new SymbolicRegex<BDD>[1 + regexes.Length];
+                var all = new SymbolicRegexNode<BDD>[1 + regexes.Length];
                 all[0] = first;
                 for (int i = 1; i <= others.Length; i++)
                     all[i] = others[i - 1];
-                var conj = first.builder.MkAnd(all);
+                var srBuilder = context.RegexConverter.srBuilder;
+                var conj = srBuilder.MkAnd(all);
                 var partition = conj.ComputeMinterms();
-                var rangeSets = Array.ConvertAll(partition, part => part.ToRanges());
-                BVAlgebra bva = new BVAlgebra(context, partition, rangeSets);
+                BVAlgebra bva = BVAlgebra.Create(context, partition);
                 SymbolicRegexBuilder<BV> builder = new SymbolicRegexBuilder<BV>(bva);
-                var res = conj.builder.Transform<BV>(conj, builder, builder.solver.ConvertFromCharSet);
-                res.InitializeMatcher(context, partition);
-                return res;
+                var res = context.RegexConverter.srBuilder.Transform<BV>(conj, builder, builder.solver.ConvertFromCharSet);
+                var matcher = new SymbolicRegex<BV>(builder, res, context, partition);
+                return matcher;
             }
         }
 
@@ -83,7 +83,7 @@ namespace Microsoft.Automata
         /// <param name="result">if the return value is true then this is the result of compilation</param>
         /// <param name="whyfailed">if the return value is false then this is the reason why compilation failed</param>
         /// <param name="regexes">other regexes to be intersected with given regex</param>
-        public static bool TryCompile(this Regex regex,  out SymbolicRegex<BV> result, out string whyfailed, params Regex[] regexes)
+        public static bool TryCompile(this Regex regex,  out IMatcher result, out string whyfailed, params Regex[] regexes)
         {
             try
             {
@@ -125,7 +125,7 @@ namespace Microsoft.Automata
             }
         }
 
-        internal static SymbolicRegex<BDD> ConvertToSymbolicRegexBDD(this Regex regex, CharSetSolver css, bool simplify = true)
+        internal static SymbolicRegexNode<BDD> ConvertToSymbolicRegexBDD(this Regex regex, CharSetSolver css, bool simplify = true)
         {
             var sr_bdd = css.RegexConverter.ConvertToSymbolicRegex(regex, true);
             if (simplify)
@@ -193,7 +193,7 @@ namespace Microsoft.Automata
             if (charClassRestriction != null)
                 sr = sr.Restrict(solver.MkCharSetFromRegexCharClass(charClassRestriction));
 
-            var sampler = new SymbolicRegexSampler<BDD>(sr, maxUnroll, cornerCaseProb);
+            var sampler = new SymbolicRegexSampler<BDD>(solver.RegexConverter.srBuilder, sr, maxUnroll, cornerCaseProb);
             return sampler.GenerateRandomMember();
         }
 
@@ -213,7 +213,7 @@ namespace Microsoft.Automata
             if (charClassRestriction != null)
                 sr = sr.Restrict(solver.MkCharSetFromRegexCharClass(charClassRestriction));
 
-            var sampler = new SymbolicRegexSampler<BDD>(sr, maxUnroll, cornerCaseProb);
+            var sampler = new SymbolicRegexSampler<BDD>(solver.RegexConverter.srBuilder, sr, maxUnroll, cornerCaseProb);
             return sampler.GetPositiveDataset(size);
         }
 

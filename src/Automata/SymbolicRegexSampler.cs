@@ -19,16 +19,16 @@ namespace Microsoft.Automata
 
         Random rand;
         int maxUnroll;
-        SymbolicRegex<S> sr;
+        SymbolicRegexNode<S> sr;
         SymbolicRegexBuilder<S> builder;
 
-        public SymbolicRegexSampler(SymbolicRegex<S> sr, int maxUnroll, int cornerCaseProb = 5, int maxSamplingIter = 3)
+        public SymbolicRegexSampler(SymbolicRegexBuilder<S> builder, SymbolicRegexNode<S> sr, int maxUnroll, int cornerCaseProb = 5, int maxSamplingIter = 3)
         {
             this.cornerCaseProb = cornerCaseProb;
             this.maxSamplingIter = maxSamplingIter;
             this.maxUnroll = maxUnroll;
             this.sr = sr;
-            this.builder = sr.builder;
+            this.builder = builder;
             rand = new Random();
         }
 
@@ -62,12 +62,12 @@ namespace Microsoft.Automata
             return rand.Next(lb + 1, realUb);
         }
 
-        public SymbolicRegex<S> UnrollRE(SymbolicRegex<S> re)
+        public SymbolicRegexNode<S> UnrollRE(SymbolicRegexNode<S> re)
         {
             // Create a regular expression without loops by unrolling 
             // each loop a random number of times as dictated by the 
             // maxUnroll parameter
-            SymbolicRegex<S> newRoot = null;
+            SymbolicRegexNode<S> newRoot = null;
             switch (re.Kind)
             {
                 case SymbolicRegexKind.Concat:
@@ -79,11 +79,11 @@ namespace Microsoft.Automata
                         UnrollRE(re.Left), UnrollRE(re.Right));
                     break;
                 case SymbolicRegexKind.Or:
-                    var alts = Array.ConvertAll(re.alts.ToArray(), UnrollRE);
+                    var alts = Array.ConvertAll(re.alts.ToArray(builder), UnrollRE);
                     newRoot = builder.MkOr(alts);
                     break;
                 case SymbolicRegexKind.And:
-                    var conj = Array.ConvertAll(re.alts.ToArray(), UnrollRE);
+                    var conj = Array.ConvertAll(re.alts.ToArray(builder), UnrollRE);
                     newRoot = builder.MkAnd(conj);
                     break;
                 case SymbolicRegexKind.Loop:
@@ -96,7 +96,7 @@ namespace Microsoft.Automata
             return newRoot;
         }
 
-        private SymbolicRegex<S> UnrollLoop(SymbolicRegex<S> node)
+        private SymbolicRegexNode<S> UnrollLoop(SymbolicRegexNode<S> node)
         {
             // select the number of times the loop will be unrolled
             int times = SampleLoopIterations(node.LowerBound, node.UpperBound);
@@ -107,8 +107,8 @@ namespace Microsoft.Automata
                 case 1:
                     return node.Left;
             }
-            SymbolicRegex<S> loop = node.Left;
-            SymbolicRegex<S> root = node.Left;
+            SymbolicRegexNode<S> loop = node.Left;
+            SymbolicRegexNode<S> root = node.Left;
             for (int i = 0; i < times - 1; i++)
             {
                 root = builder.MkConcat(root, loop);
@@ -116,12 +116,12 @@ namespace Microsoft.Automata
             return root;
         }
 
-        string GenerateRandomMember(SymbolicRegex<S> root)
+        string GenerateRandomMember(SymbolicRegexBuilder<S> builder, SymbolicRegexNode<S> root)
         {
             // TODO: ITE, And: are currently not supported.
             string sample = "";
-            Stack<SymbolicRegex<S>> nodeQueue = new Stack<SymbolicRegex<S>>();
-            SymbolicRegex<S> curNode = null;
+            Stack<SymbolicRegexNode<S>> nodeQueue = new Stack<SymbolicRegexNode<S>>();
+            SymbolicRegexNode<S> curNode = null;
 
             nodeQueue.Push(UnrollRE(root));
             while (nodeQueue.Count > 0 || curNode != null)
@@ -152,7 +152,7 @@ namespace Microsoft.Automata
                     case SymbolicRegexKind.Or:
                         int choice = rand.Next(curNode.OrCount);
                         int i = 0;
-                        foreach (var elem in curNode.Alts)
+                        foreach (var elem in curNode.alts)
                         {
                             if (i == choice)
                             {
@@ -176,7 +176,7 @@ namespace Microsoft.Automata
 
         public string GenerateRandomMember()
         {
-            return GenerateRandomMember(sr);
+            return GenerateRandomMember(this.builder, sr);
         }
 
         public HashSet<string> GetPositiveDataset(int sampleNum)

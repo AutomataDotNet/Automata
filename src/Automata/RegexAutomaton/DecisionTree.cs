@@ -1,16 +1,14 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
 
 namespace Microsoft.Automata
 {
     /// <summary>
     /// Decision tree for mapping character ranges into corresponding partition block ids
     /// </summary>
-    internal class DecisionTree
+    [Serializable]
+    internal class DecisionTree : ISerializable
     {
         internal int[] precomputed;
         internal BST bst;
@@ -23,7 +21,7 @@ namespace Microsoft.Automata
             }
         }
 
-        private DecisionTree(int[] precomputed, BST bst)
+        public DecisionTree(int[] precomputed, BST bst)
         {
             this.precomputed = precomputed;
             this.bst = bst;
@@ -123,7 +121,8 @@ namespace Microsoft.Automata
         /// <summary>
         /// Used in the decision tree to locate minterm ids of nonascii characters
         /// </summary>
-        internal class BST
+        [Serializable]
+        internal class BST : ISerializable
         {
             int node;
             BST left;
@@ -170,11 +169,41 @@ namespace Microsoft.Automata
                 else
                     return right.Find(charCode);
             }
-            internal BST(int node, BST left, BST right)
+
+            public BST(int node, BST left, BST right)
             {
                 this.node = node;
                 this.left = left;
                 this.right = right;
+            }
+
+            #region serialization
+            /// <summary>
+            /// Serialize
+            /// </summary>
+            public void GetObjectData(SerializationInfo info, StreamingContext context)
+            {
+                info.AddValue("n", node);
+                info.AddValue("l", left);
+                info.AddValue("r", right);
+            }
+            /// <summary>
+            /// Deserialize
+            /// </summary>
+            public BST(SerializationInfo info, StreamingContext context)
+            {
+                node = info.GetInt32("n");
+                left = info.GetValue("l", typeof(BST)) as BST;
+                right = info.GetValue("r", typeof(BST)) as BST;
+            }
+            #endregion
+
+            public override string ToString()
+            {
+                if (IsLeaf)
+                    return string.Format("leaf({0})", node);
+                else
+                    return string.Format("tree({0},{1},{2})", node, left, right);
             }
         }
 
@@ -231,11 +260,36 @@ namespace Microsoft.Automata
                 return res;
             }
         }
+
+        #region serialization
+        /// <summary>
+        /// Serialize
+        /// </summary>
+        public void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            info.AddValue("p", precomputed);
+            info.AddValue("b", bst);
+        }
+        /// <summary>
+        /// Deserialize
+        /// </summary>
+        public DecisionTree(SerializationInfo info, StreamingContext context)
+        {
+            precomputed = (int[])info.GetValue("p", typeof(int[]));
+            bst = info.GetValue("b", typeof(BST)) as BST;
+        }
+        #endregion
+
+        public override string ToString()
+        {
+            return string.Format("DecisionTree({0},{1})", new Sequence<int>(precomputed).ToString(), bst);
+        }
     }
 
     /// <summary>
     /// Decision tree for mapping character ranges into corresponding partition block ids
     /// </summary>
+    [Serializable]
     internal class BooleanDecisionTree
     {
         internal bool[] precomputed;
@@ -249,7 +303,7 @@ namespace Microsoft.Automata
             }
         }
 
-        private BooleanDecisionTree(bool[] precomputed, DecisionTree.BST bst)
+        internal BooleanDecisionTree(bool[] precomputed, DecisionTree.BST bst)
         {
             this.precomputed = precomputed;
             this.bst = bst;
@@ -331,116 +385,28 @@ namespace Microsoft.Automata
             return (c < precomputed.Length ? precomputed[c] : bst.Find(c) == 1);
         }
 
-        ///// <summary>
-        ///// Used in the decision tree to locate minterm ids of nonascii characters
-        ///// </summary>
-        //internal class BST
-        //{
-        //    int node;
-        //    BST left;
-        //    BST right;
+        #region serialization
+        /// <summary>
+        /// Serialize
+        /// </summary>
+        public void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            info.AddValue("p", precomputed);
+            info.AddValue("b", bst);
+        }
+        /// <summary>
+        /// Deserialize
+        /// </summary>
+        public BooleanDecisionTree(SerializationInfo info, StreamingContext context)
+        {
+            precomputed = (bool[])info.GetValue("p", typeof(bool[]));
+            bst = info.GetValue("b", typeof(DecisionTree.BST)) as DecisionTree.BST;
+        }
+        #endregion
 
-        //    internal BST Left
-        //    {
-        //        get
-        //        {
-        //            return left;
-        //        }
-        //    }
-
-        //    internal BST Right
-        //    {
-        //        get
-        //        {
-        //            return right;
-        //        }
-        //    }
-
-        //    internal bool IsLeaf
-        //    {
-        //        get
-        //        {
-        //            return left == null;
-        //        }
-        //    }
-
-        //    internal int Node
-        //    {
-        //        get
-        //        {
-        //            return node;
-        //        }
-        //    }
-
-        //    internal int Find(int charCode)
-        //    {
-        //        if (left == null)
-        //            return node; //return the leaf
-        //        else if (charCode < node)
-        //            return left.Find(charCode);
-        //        else
-        //            return right.Find(charCode);
-        //    }
-        //    internal BST(int node, BST left, BST right)
-        //    {
-        //        this.node = node;
-        //        this.left = left;
-        //        this.right = right;
-        //    }
-        //}
-
-        ///// <summary>
-        ///// Represents a cut of the original partition wrt some interval
-        ///// </summary>
-        //private class PartitionCut
-        //{
-        //    BDD[] blocks;
-        //    CharSetSolver solver;
-        //    internal PartitionCut(CharSetSolver solver, BDD[] blocks)
-        //    {
-        //        this.blocks = blocks;
-        //        this.solver = solver;
-        //    }
-
-        //    internal bool IsEmpty
-        //    {
-        //        get
-        //        {
-        //            return Array.TrueForAll(blocks, b => b.IsEmpty);
-        //        }
-        //    }
-
-        //    internal int GetSigletonId()
-        //    {
-        //        int id = -1;
-        //        for (int i = 0; i < blocks.Length; i++)
-        //        {
-        //            if (!blocks[i].IsEmpty)
-        //            {
-        //                if (id >= 0)
-        //                    //there is more than one nonempty block
-        //                    return -1;
-        //                else
-        //                    id = i;
-        //            }
-        //        }
-        //        return id;
-        //    }
-
-        //    internal PartitionCut Cut(int lower, int upper)
-        //    {
-        //        var set = solver.MkCharSetFromRange((char)lower, (char)upper);
-        //        var newblocks = Array.ConvertAll(blocks, b => solver.MkAnd(b, set));
-        //        return new PartitionCut(solver, newblocks);
-        //    }
-
-        //    public override string ToString()
-        //    {
-        //        string res = "";
-        //        for (int i = 0; i < blocks.Length; i++)
-        //            res += solver.PrettyPrint(blocks[i]) + (i < blocks.Length - 1 ? "," : "");
-        //        return res;
-        //    }
-        //}
+        public override string ToString()
+        {
+            return string.Format("DecisionTree({0},{1})", new Sequence<bool>(precomputed).ToString(), bst);
+        }
     }
 }

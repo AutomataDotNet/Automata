@@ -283,5 +283,6 @@ namespace Microsoft.Automata
         InternalError_SymbolicRegex,
         MustNotAcceptEmptyString,
         MatcherIsUninitialized,
+        SerializationNotSupported,
     }
 }

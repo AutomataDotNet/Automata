@@ -4,6 +4,8 @@ using System.Text;
 using Microsoft.Automata;
 using Microsoft.Automata.Utilities;
 using Microsoft.Automata.BooleanAlgebras;
+using System.IO;
+using System.Runtime.Serialization;
 
 namespace Microsoft.Automata
 {
@@ -5428,12 +5430,17 @@ namespace Microsoft.Automata
             this.Automaton = automaton;
         }
 
-        public bool IsMatch(string input)
+        public bool IsMatch(string input, int start = 0)
         {
-            return Automaton.IsMatch(input);
+            return Automaton.IsMatch(input.Substring(0));
         }
 
-        public Tuple<int, int>[] Matches(string input)
+        public Tuple<int, int>[] Matches(string input, int start=0, int limit = 0)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new NotImplementedException();
         }

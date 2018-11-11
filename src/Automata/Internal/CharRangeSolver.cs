@@ -477,5 +477,10 @@ namespace Microsoft.Automata
         {
             throw new NotImplementedException();
         }
+
+        public HashSet<Tuple<char, char>>[] GetPartition()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

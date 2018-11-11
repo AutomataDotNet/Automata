@@ -23,8 +23,7 @@ namespace Microsoft.Automata.Tests
             var all = css.MkOr(minterms);
             Assert.IsTrue(all.IsFull);
             Assert.AreEqual(5, minterms.Length);
-            var rangeSets = Array.ConvertAll(minterms, m => m.ToRanges());
-            var bva = new BVAlgebra(css, minterms, rangeSets);
+            var bva = BVAlgebra.Create(css, minterms);
             var bv1 = bva.MkBV(1, 2);
             var bv2 = bva.MkBV(2, 3, 4);
             var a = bva.MkCharConstraint('A');
@@ -46,8 +45,7 @@ namespace Microsoft.Automata.Tests
             var regexa = new Regex("(?i:a)");
             var aut = css.Convert("(?i:a)");
             var aut_minterms = css.RegexConverter.ConvertToSymbolicRegex(regexa, true).ComputeMinterms();
-            var rangeSets = Array.ConvertAll(aut_minterms, m => m.ToRanges());
-            var aut_bva = new BVAlgebra(css, aut_minterms, rangeSets);
+            var aut_bva = BVAlgebra.Create(css, aut_minterms);
             var aut_BV = aut.ReplaceAlgebra<BV>(bdd => aut_bva.MapPredToBV(bdd, aut_minterms), aut_bva);
             //aut_BV.ShowGraph("aut_BV");
             var aut_BV_det = aut_BV.Determinize().Minimize();
@@ -71,8 +69,7 @@ namespace Microsoft.Automata.Tests
             var autom1 = css.Convert(regex1.ToString());
             //dfa1.ShowGraph("dfa1");
             var minterms1 = css.RegexConverter.ConvertToSymbolicRegex(regex1).ComputeMinterms();
-            var rangeSets = Array.ConvertAll(minterms1, m => m.ToRanges());
-            BVAlgebra bva = new BVAlgebra(css, minterms1, rangeSets);
+            BVAlgebra bva = BVAlgebra.Create(css, minterms1);
             var autom1_bv = autom1.ReplaceAlgebra(bdd => bva.MapPredToBV(bdd, minterms1), bva);
             //autom1_bv.ShowGraph("autom1_bv");
             var dfa1_bv = autom1_bv.Determinize();
@@ -87,8 +84,7 @@ namespace Microsoft.Automata.Tests
             var regex = new Regex(@"^\w\d$");
             var minterms = css.RegexConverter.ConvertToSymbolicRegex(regex).ComputeMinterms();
             Assert.IsTrue(minterms.Length == 3);
-            var rangeSets = Array.ConvertAll(minterms, m => m.ToRanges());
-            BVAlgebra bva = new BVAlgebra(css, minterms, rangeSets);
+            BVAlgebra bva = BVAlgebra.Create(css, minterms);
             var relativeminterms = new List<Tuple<bool[], BV>>(bva.GenerateMinterms(bva.atoms));
             Assert.AreEqual<int>(3, relativeminterms.Count);
         }
@@ -99,9 +95,8 @@ namespace Microsoft.Automata.Tests
             var css = new CharSetSolver();
             var regex = new Regex(@"^\w\d$");
             var minterms = css.RegexConverter.ConvertToSymbolicRegex(regex).ComputeMinterms();
-            var rangeSets = Array.ConvertAll(minterms, m => m.ToRanges());
             Assert.IsTrue(minterms.Length == 3);
-            BVAlgebra bva = new BVAlgebra(css, minterms, rangeSets);
+            BVAlgebra bva = BVAlgebra.Create(css, minterms);
             var phi = bva.atoms[0] & bva.atoms[1];
             Assert.IsFalse(bva.IsSatisfiable(phi));
             var psi = bva.atoms[0] & ~bva.atoms[1];

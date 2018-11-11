@@ -1,35 +1,35 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
 
 namespace Microsoft.Automata
 {
     /// <summary>
     /// Bit vector algebra
     /// </summary>
-    public class BVAlgebra : IPartitionedCharAlgebra<BV>
+    [Serializable]
+    public class BVAlgebra : ICharAlgebra<BV>, ISerializable
     {
-        int nrOfBits;
-        MintermGenerator<BV> mtg;
-        //CharSetSolver solver;
         internal DecisionTree dtree;
-
-        Chooser chooser = new Chooser();
-
-        BV zero;
-        BV ones;
-
-        ulong[] all0;
-        ulong[] all1;
-
-        internal BV[] atoms;
-
-        //internal BDD[] minterms;
-
         IntervalSet[] partition;
+
+        [NonSerialized]
+        int nrOfBits;
+        [NonSerialized]
+        MintermGenerator<BV> mtg;
+        [NonSerialized]
+        Chooser chooser = new Chooser();
+        [NonSerialized]
+        BV zero;
+        [NonSerialized]
+        BV ones;
+        [NonSerialized]
+        ulong[] all0;
+        [NonSerialized]
+        ulong[] all1;
+        [NonSerialized]
+        internal BV[] atoms;
 
         public ulong ComputeDomainSize(BV set)
         {
@@ -57,12 +57,21 @@ namespace Microsoft.Automata
             return bv;
         }
 
-        public BVAlgebra(CharSetSolver solver, BDD[] minterms, Tuple<uint,uint>[][] partition)
+        public static BVAlgebra Create(CharSetSolver solver, BDD[] minterms)
         {
-            this.partition = Array.ConvertAll(partition, p => new IntervalSet(p));
-            //this.minterms = minterms;
-            //this.solver = solver;
-            this.nrOfBits = minterms.Length;
+            var dtree = DecisionTree.Create(solver, minterms);
+            var partitionBase = Array.ConvertAll(minterms, m => m.ToRanges());
+            var partition = Array.ConvertAll(partitionBase, p => new IntervalSet(p));
+            return new BVAlgebra(dtree, partition);
+        }
+
+        private BVAlgebra(DecisionTree dtree, IntervalSet[] partition)
+        {
+            this.dtree = dtree;
+            this.partition = partition;
+            //is deserialized
+            int m = partition.Length;
+            this.nrOfBits = m;
             var K = (nrOfBits - 1) / 64;
             int last = nrOfBits % 64;
             ulong lastMask = (last == 0 ? ulong.MaxValue : (((ulong)1 << last) - 1));
@@ -80,12 +89,11 @@ namespace Microsoft.Automata
                     all1[i] = lastMask;
                 }
             }
-            this.zero = new BV(minterms.Length,  0, all0);
-            this.ones = new BV(minterms.Length, (K==0 ? lastMask : ulong.MaxValue), all1);
+            this.zero = new BV(m, 0, all0);
+            this.ones = new BV(m, (K == 0 ? lastMask : ulong.MaxValue), all1);
             this.mtg = new MintermGenerator<BV>(this);
-            this.dtree = DecisionTree.Create(solver, minterms);
-            this.atoms = new BV[minterms.Length];
-            for (int i = 0; i < minterms.Length; i++)
+            this.atoms = new BV[m];
+            for (int i = 0; i < m; i++)
             {
                 atoms[i] = MkBV(i);
             }
@@ -702,54 +710,30 @@ namespace Microsoft.Automata
             return true;
         }
 
-        public BV MkCharPredicate(string name, BV pred)
-        {
-            throw new NotImplementedException();
-        }
-
-        public BV MkSet(uint e)
-        {
-            throw new NotImplementedException();
-        }
-
+        /// <summary>
+        /// Pretty print the bitvector predicate as a character class.
+        /// </summary>
+        /// <param name="bv">given bitvector predicate</param>
         public string PrettyPrint(BV bv)
         {
-            return bv.ToString();
-            /*
-            BDD set = solver.CharSetProvider.False;
-            for (int i = 0; i < (nrOfBits < 64 ? nrOfBits : 64); i++)
-            {
-                if ((bv.first & ((ulong)1 << i)) != 0)
-                {
-                    set = set | minterms[i];
-                }
-            }
-            for (int j = 0; j < bv.more.Length; j++)
-            {
-                for (int i = 0; i < 64; i++)
-                {
-                    if ((j + 1) * 64 + i < nrOfBits)
-                    {
-                        if ((bv.more[j] & ((ulong)1 << i)) != 0)
-                        {
-                            set = set | minterms[(((j + 1) * 64) + i)];
-                        }
-                    }
-                }
-            }
-            var res = solver.CharSetProvider.PrettyPrint(set);
+            var lab1 = PrettyPrintHelper(bv, false);
+            var lab2 = PrettyPrintHelper(~bv, true);
+            if (lab1.Length <= lab2.Length)
+                return lab1;
+            else
+                return lab2;
+
+        }
+
+        string PrettyPrintHelper(BV bv, bool complement)
+        {
+            List<IntervalSet> sets = new List<IntervalSet>();
+            for (int i = 0; i < atoms.Length; i++)
+                if (IsSatisfiable(bv & atoms[i]))
+                    sets.Add(partition[i]);
+            var set = IntervalSet.Merge(sets);
+            var res = set.ToCharacterClass(complement);
             return res;
-            */
-        }
-
-        public string PrettyPrint(BV t, Func<BV, string> varLookup)
-        {
-            throw new NotImplementedException();
-        }
-
-        public string PrettyPrintCS(BV t, Func<BV, string> varLookup)
-        {
-            throw new NotImplementedException();
         }
 
         public uint Choose(BV s)
@@ -816,326 +800,47 @@ namespace Microsoft.Automata
                         yield return (char)elem;
             }
         }
-    }
 
-    /// <summary>
-    /// Represents a bitvector
-    /// </summary>
-    public class BV : IComparable
-    {
-        int nrOfBits;
-        internal ulong first;
-        internal ulong[] more;
-
+        #region serialization
         /// <summary>
-        /// Constructs a bitvector
+        /// Serialize
         /// </summary>
-        /// <param name="first">first 64 bits</param>
-        /// <param name="more">remaining bits in 64 increments</param>
-        internal BV(int nrOfBits, ulong first, params ulong[] more) 
+        public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            this.nrOfBits = nrOfBits;
-            this.first = first;
-            this.more = more;
+            info.AddValue("d", dtree);
+            info.AddValue("p", partition);
         }
 
         /// <summary>
-        /// Bitwise AND
+        /// Deserialize
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static BV operator &(BV x, BV y)
+        public BVAlgebra(SerializationInfo info, StreamingContext context)
+            : this((DecisionTree)info.GetValue("d", typeof(DecisionTree)), (IntervalSet[])info.GetValue("p", typeof(IntervalSet[])))
         {
-            int k = (x.more.Length <= y.more.Length ? x.more.Length : y.more.Length);
-            var first = x.first & y.first;
-            var more = new ulong[k];
-            for (int i = 0; i < k; i++)
-            {
-                more[i] = x.more[i] & y.more[i];
-            }
-            return new BV(x.nrOfBits, first, more);
+        }
+        #endregion
+
+        #region not implemented
+        public BV MkCharPredicate(string name, BV pred)
+        {
+            throw new NotImplementedException();
         }
 
-        /// <summary>
-        /// Bitwise OR
-        /// </summary>
-        public static BV operator |(BV x, BV y)
+        public BV MkSet(uint e)
         {
-            int k = (x.more.Length <= y.more.Length ? x.more.Length : y.more.Length);
-            var first = x.first | y.first;
-            var more = new ulong[k];
-            for (int i = 0; i < k; i++)
-            {
-                more[i] = x.more[i] | y.more[i];
-            }
-            return new BV(x.nrOfBits, first, more);
+            throw new NotImplementedException();
         }
 
-        /// <summary>
-        /// Bitwise XOR
-        /// </summary>
-        public static BV operator ^(BV x, BV y)
+        public string PrettyPrint(BV t, Func<BV, string> varLookup)
         {
-            int k = (x.more.Length <= y.more.Length ? x.more.Length : y.more.Length);
-            var first = x.first ^ y.first;
-            var more = new ulong[x.more.Length];
-            for (int i = 0; i < x.more.Length; i++)
-            {
-                more[i] = x.more[i] ^ y.more[i];
-            }
-            return new BV(x.nrOfBits, first, more);
+            throw new NotImplementedException();
         }
 
-        /// <summary>
-        /// Bitwise NOT
-        /// </summary>
-        public static BV operator ~(BV x)
+        public string PrettyPrintCS(BV t, Func<BV, string> varLookup)
         {
-            var first = ~x.first;
-            if (x.nrOfBits < 64)
-                first = first & (((ulong)1 << x.nrOfBits) - 1);
-            var more = new ulong[x.more.Length];
-            int remNrOfBits = x.nrOfBits;
-            for (int i = 0; i < x.more.Length; i++)
-            {
-                remNrOfBits = x.nrOfBits - 64;
-                more[i] = ~x.more[i];
-                if (remNrOfBits < 64)
-                    more[i] = more[i] & (((ulong)1 << x.nrOfBits) - 1);
-            }
-            var notx = new BV(x.nrOfBits, first, more);
-            return notx;
+            throw new NotImplementedException();
         }
+        #endregion
 
-        /// <summary>
-        /// less than
-        /// </summary>
-        public static bool operator <(BV x, BV y)
-        {
-            return x.CompareTo(y) < 0;
-        }
-
-        /// <summary>
-        /// greater than
-        /// </summary>
-        public static bool operator >(BV x, BV y)
-        {
-            return x.CompareTo(y) > 0;
-        }
-
-        /// <summary>
-        /// less than or equal
-        /// </summary>
-        public static bool operator <=(BV x, BV y)
-        {
-            return x.CompareTo(y) <= 0;
-        }
-
-        /// <summary>
-        /// greater than or equal
-        /// </summary>
-        public static bool operator >=(BV x, BV y)
-        {
-            return x.CompareTo(y) >= 0;
-        }
-
-        /// <summary>
-        /// Shows which bits are true
-        /// </summary>
-        public override string ToString()
-        {
-            List<int> bits = new List<int>();
-            for (int i = 0; i < (nrOfBits < 64 ? nrOfBits : 64); i++)
-            {
-                if ((first & ((ulong)1 << i)) != 0)
-                {
-                    bits.Add(i);
-                }
-            }
-            for (int j = 0; j < more.Length; j++)
-            {
-                for (int i = 0; i < 64; i++)
-                {
-                    if ((j + 1) * 64 + i < nrOfBits)
-                    {
-                        if ((more[j] & ((ulong)1 << i)) != 0)
-                        {
-                            bits.Add(((j + 1) * 64) + i);
-                        }
-                    }
-                }
-            }
-            return DisplayIntervals(bits);
-        }
-
-        internal static string DisplayIntervals(List<int> bits)
-        {
-            List<Tuple<int, int>> intervals = new List<Tuple<int, int>>();
-            int last = -1;
-            foreach (var b in bits)
-            {
-                if (last == -1)
-                {
-                    intervals.Add(new Tuple<int, int>(b, b));
-                    last = 0;
-                }
-                else if (intervals[last].Item2 == b - 1)
-                {
-                    intervals[last] = new Tuple<int, int>(intervals[last].Item1, b);
-                }
-                else
-                {
-                    intervals.Add(new Tuple<int, int>(b, b));
-                    last += 1;
-                }
-            }
-            string res = "";
-            foreach (var pair in intervals)
-            {
-                if (res != "")
-                    res += ",";
-                if (pair.Item1 == pair.Item2)
-                    res += pair.Item1;
-                else if (pair.Item2 == pair.Item1 + 1)
-                    res += pair.Item1 + "," + pair.Item2;
-                else
-                    res += pair.Item1 + ".." + pair.Item2;
-            }
-            return  "[" + res + "]";
-        }
-
-        public override bool Equals(object obj)
-        {
-            BV bv = obj as BV;
-            if (bv == null)
-                return false;
-            if (this == bv)
-                return true;
-            if (this.first != bv.first)
-                return false;
-            if (bv.more.Length != this.more.Length)
-                return false;
-            for (int i = 0; i < more.Length; i++)
-            {
-                if (more[i] != bv.more[i])
-                    return false;
-            }
-            return true;
-        }
-
-        public override int GetHashCode()
-        {
-            int h = first.GetHashCode();
-            for (int i = 0; i < more.Length; i++)
-            {
-                h = (h << 5) ^ more[i].GetHashCode();
-            }
-            return h;
-        }
-
-        public int CompareTo(object obj)
-        {
-            BV that = obj as BV;
-            if (that == null)
-                return 1;
-            else if (this.nrOfBits != that.nrOfBits)
-                return (this.nrOfBits.CompareTo(that.nrOfBits));
-            else
-            {
-                int k = this.more.Length;
-                if (k > 0)
-                {
-                    int i = k - 1;
-                    while (i >= 0)
-                    {
-                        var comp = this.more[i].CompareTo(that.more[i]);
-                        if (comp == 0)
-                            i = i - 1;
-                        else
-                            return comp;
-                    }
-                }
-                return this.first.CompareTo(that.first);
-            }
-        }
-    }
-
-    /// <summary>
-    /// Represents a sorted finite set of finite intervals representing characters
-    /// </summary>
-    public class IntervalSet
-    {
-        Tuple<uint, uint>[] intervals;
-
-        internal IntervalSet(params Tuple<uint, uint>[] intervals)
-        {
-            this.intervals = intervals;
-        }
-
-        public uint this[int index]
-        {
-            get {
-                int k = index;
-                for (int i = 0; i < intervals.Length; i++)
-                {
-                    int ith_size = (int)intervals[i].Item2 - (int)intervals[i].Item1 + 1;
-                    if (k < ith_size)
-                        return intervals[i].Item1 + (uint)k;
-                    else
-                        k = k - ith_size;
-                }
-                throw new IndexOutOfRangeException();
-            }
-        }
-
-        int count = -1;
-
-        /// <summary>
-        /// Number of elements in the set
-        /// </summary>
-        public int Count
-        {
-            get
-            {
-                if (count == -1)
-                {
-                    int s = 0;
-                    for (int i=0; i < intervals.Length; i++)
-                    {
-                        s += (int)intervals[i].Item2 - (int)intervals[i].Item1 + 1;
-                    }
-                    count = s;
-                }
-                return count;
-            }
-        }
-
-        /// <summary>
-        /// The least element in the set, provided Count != 0.
-        /// </summary>
-        public uint Min
-        {
-            get
-            {
-                return intervals[0].Item1;
-            }
-        }
-
-        public BDD AsBDD(IBDDAlgebra alg)
-        {
-            var res = alg.False;
-            for (int i = 0; i < intervals.Length; i++)
-                res = res | alg.MkSetFromRange(intervals[i].Item1, intervals[i].Item2, 15);
-            return res;
-        }
-
-        public IEnumerable<uint> Enumerate()
-        {
-            for (int i = 0; i < intervals.Length; i++)
-            {
-                for (uint j = intervals[i].Item1; j < intervals[i].Item2; j++)
-                    yield return j;
-                yield return intervals[i].Item2;
-            }
-        }
     }
 }

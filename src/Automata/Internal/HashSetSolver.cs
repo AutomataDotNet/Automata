@@ -430,5 +430,10 @@ namespace Microsoft.Automata
         {
             throw new NotImplementedException();
         }
+
+        public HashSet<char>[] GetPartition()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

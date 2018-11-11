@@ -91,10 +91,12 @@
       <HintPath>..\..\packages\System.Runtime.CompilerServices.Unsafe.4.5.0\lib\netstandard1.0\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="System.Web" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BooleanAlgebras\BV64Algebra.cs" />
     <Compile Include="BooleanAlgebras\BVAlgebra.cs" />
+    <Compile Include="BV.cs" />
     <Compile Include="Internal\AutomataAlgebra.cs" />
     <Compile Include="AutomataException.cs" />
     <Compile Include="Automaton.cs" />
@@ -148,10 +150,11 @@
     <Compile Include="Internal\IntSet.cs" />
     <Compile Include="Internal\UnicodeCategoryTheory.cs" />
     <Compile Include="Internal\UnicodeCategoryTheoryProviders.cs" />
+    <Compile Include="IntervalSet.cs" />
     <Compile Include="RegexAutomaton\DecisionTree.cs" />
     <Compile Include="RegexAutomaton\RegexAutomaton.cs" />
     <Compile Include="RegexExtensionMethods.cs" />
-    <Compile Include="SymbolicRegex.cs" />
+    <Compile Include="SymbolicRegexNode.cs" />
     <Compile Include="SymbolicRegexBuilder.cs" />
     <Compile Include="SymbolicRegexMatcher.cs" />
     <Compile Include="SymbolicRegexSampler.cs" />
@@ -242,6 +245,10 @@
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PreBuildEvent>
+    </PreBuildEvent>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

@@ -66,6 +66,8 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Runtime.Serialization.Formatters.Soap" />
+    <Reference Include="System.Web" />
   </ItemGroup>
   <Choose>
     <When Condition="('$(VisualStudioVersion)' == '10.0' or '$(VisualStudioVersion)' == '') and '$(TargetFrameworkVersion)' == 'v3.5'">
@@ -103,6 +105,7 @@
     <Compile Include="RexTests.cs" />
     <Compile Include="SampleRegexes.cs" />
     <Compile Include="SCCTest.cs" />
+    <Compile Include="SerializationTests.cs" />
     <Compile Include="SpecialRegexTests.cs" />
     <Compile Include="SymbolicRegexTests.cs" />
     <Compile Include="ThreeAutomataTest.cs" />
@@ -111,13 +114,13 @@
     <Compile Include="UtilitiesTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Automata\Automata.csproj">
-      <Project>{b5e695df-c033-4938-94dd-ac6ecbeab36b}</Project>
-      <Name>Automata</Name>
-    </ProjectReference>
+    <None Include="AutomataKey.snk" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="AutomataKey.snk" />
+    <ProjectReference Include="..\Automata\Automata.csproj">
+      <Project>{bc861e29-027d-4ac6-ab24-a7b0cd0fb5e8}</Project>
+      <Name>Automata</Name>
+    </ProjectReference>
   </ItemGroup>
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">

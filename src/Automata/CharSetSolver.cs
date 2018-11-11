@@ -1408,6 +1408,11 @@ namespace Microsoft.Automata
             new Microsoft.Automata.Utilities.CppCodeGenerator(this, c, n, exportIsMatch, OptimzeForAsciiInput, regexes).GenerateMatcherToFile(path);
         }
 
+        public BDD[] GetPartition()
+        {
+            throw new NotSupportedException();
+        }
+
         #endregion
     }
 }

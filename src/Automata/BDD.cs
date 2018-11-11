@@ -119,28 +119,35 @@ namespace Microsoft.Automata
 
         public override string ToString()
         {
-            if (IsLeaf)
+            if (algebra is ICharAlgebra<BDD>)
             {
-                return PrintLeaf();
+                return (algebra as ICharAlgebra<BDD>).PrettyPrint(this);
             }
             else
             {
-
-                var sb = new System.Text.StringBuilder();
-                sb.Append("{");
-                foreach (var s in EnumCases())
+                if (IsLeaf)
                 {
-                    if (sb.Length > 1)
-                        sb.Append("|");
-                    if (sb.Length > 1000)
-                    {
-                        sb.Append("...");
-                        break;
-                    }
-                    sb.Append(s);
+                    return PrintLeaf();
                 }
-                sb.Append("}");
-                return sb.ToString();
+                else
+                {
+
+                    var sb = new System.Text.StringBuilder();
+                    sb.Append("{");
+                    foreach (var s in EnumCases())
+                    {
+                        if (sb.Length > 1)
+                            sb.Append("|");
+                        if (sb.Length > 1000)
+                        {
+                            sb.Append("...");
+                            break;
+                        }
+                        sb.Append(s);
+                    }
+                    sb.Append("}");
+                    return sb.ToString();
+                }
             }
         }
 

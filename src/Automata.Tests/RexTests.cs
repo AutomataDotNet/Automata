@@ -95,9 +95,12 @@ namespace Microsoft.Automata.Tests
             var rex = new Microsoft.Automata.Rex.RexEngine(BitWidth.BV16);
             string[] regexes = File.ReadAllLines(regexesFile);
             List<int> exclude = new List<int>();
+            exclude.Add(299);
 
-            int rxCount = 100; //number of strings to be generated for each regex
-            for (int i = 1; i < regexes.Length; i++)
+            int k = (regexes.Length < 400 ? regexes.Length : 400);
+
+            int rxCount = 10; //number of strings to be generated for each regex
+            for (int i = 1; i < k; i++)
                 foreach (string s in rex.GenerateMembers(RegexOptions.None, rxCount, regexes[i]))
                     if (!exclude.Contains(i))
                         if (!Rex.RexEngine.IsMatch(s, regexes[i], RegexOptions.None))
@@ -110,9 +113,10 @@ namespace Microsoft.Automata.Tests
             Rex.RexEngine rex = new Rex.RexEngine(BitWidth.BV16);
             string[] regexes = File.ReadAllLines(regexesFile);
             List<int> exclude = new List<int>();
+            exclude.Add(299);
 
-            int rxCount = 100; //number of strings to be generated for each regex
-            for (int i = 1; i < regexes.Length; i++)
+            int rxCount = 10; //number of strings to be generated for each regex
+            for (int i = 0; i < regexes.Length; i++)
                 foreach (string s in rex.GenerateMembers(RegexOptions.Multiline, rxCount, regexes[i]))
                     if (!exclude.Contains(i))
                         Assert.IsTrue(Rex.RexEngine.IsMatch(s, regexes[i], RegexOptions.Multiline), "regex on line " + i + " in Samples/regexes.txt");

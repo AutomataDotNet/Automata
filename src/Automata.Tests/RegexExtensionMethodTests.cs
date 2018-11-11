@@ -115,29 +115,29 @@ namespace Automata.Tests
             return new string(elems);
         }
 
-        public void TestRegex_GenerateInputFile(int nrOfMatches, int randomTextSizeLimit, SymbolicRegex<BV> sr, int id)
+        internal void TestRegex_GenerateInputFile(SymbolicRegexBuilder<BV> builder, int nrOfMatches, int randomTextSizeLimit, SymbolicRegexNode<BV> sr, int id)
         {
-            string str = TestRegex_GenerateInput(nrOfMatches, randomTextSizeLimit, sr);
+            string str = TestRegex_GenerateInput(builder, nrOfMatches, randomTextSizeLimit, sr);
             File.WriteAllText(regexinputsPath + "input." + id + ".txt", str, System.Text.Encoding.Unicode);
         }
 
-        public string TestRegex_GenerateInput(int nrOfMatches, int randomTextSizeLimit, SymbolicRegex<BV> sr)
+        internal string TestRegex_GenerateInput(SymbolicRegexBuilder<BV> builder, int nrOfMatches, int randomTextSizeLimit, SymbolicRegexNode<BV> sr)
         {
             if (nrOfMatches < 1)
                 throw new ArgumentOutOfRangeException();
 
-            string str = sr.GenerateRandomMember();
+            string str = sr.GenerateRandomMember(builder);
 
             for (int i=1; i < nrOfMatches; i++)
             {
                 if (randomTextSizeLimit > 0)
                 {
                     int k = rnd.Next(0, randomTextSizeLimit);
-                    string tmp = sr.GenerateRandomMember();
+                    string tmp = sr.GenerateRandomMember(builder);
                     int j = rnd.Next(1, tmp.Length);
                     str += tmp.Substring(0, j) + CreateRandomString(k) + tmp.Substring(j);
                 }
-                str += sr.GenerateRandomMember();
+                str += sr.GenerateRandomMember(builder);
             }
             return str;
         }
@@ -190,9 +190,9 @@ namespace Automata.Tests
             int k = k_to - k_from + 1;
 
             int sr_comp_ms = System.Environment.TickCount;
-            SymbolicRegex<BV>[] srs = new SymbolicRegex<BV>[k];
-            SymbolicRegex<BV>[] srs_U = new SymbolicRegex<BV>[k];
-            SymbolicRegex<BV>[] srs_B = new SymbolicRegex<BV>[k];
+            var srs = new IMatcher[k];
+            var srs_U = new IMatcher[k];
+            var srs_B = new IMatcher[k];
             for (int i = 0; i < k; i++)
             {
                 srs[i] = regexes[k_from + i].Compile();
@@ -242,7 +242,7 @@ namespace Automata.Tests
                 Tuple<int, int>[] sr_matches_U = null;
                 for (int i = 0; i < k; i++)
                 {
-                    sr_matches_U = srs_U[i].Matches_(str);
+                    sr_matches_U = srs_U[i].Matches(str);
                     sr_tot_matches_U += sr_matches_U.Length;
                 }
                 sr_tot_ms_U = System.Environment.TickCount - sr_tot_ms_U;
@@ -297,7 +297,7 @@ namespace Automata.Tests
                 int k = 20;
 
                 int sr_comp_ms = System.Environment.TickCount;
-                SymbolicRegex<BV>[] srs = new SymbolicRegex<BV>[k];
+                var srs = new IMatcher[k];
                 for (int i = 0; i < k; i++)
                     srs[i] = regexes[i].Compile();
                 sr_comp_ms = System.Environment.TickCount - sr_comp_ms;
@@ -386,13 +386,13 @@ namespace Automata.Tests
             {
                 //CharSetSolver css = new CharSetSolver();
                 Regex[] regexes = Array.ConvertAll(File.ReadAllLines(regexesWithoutAnchorsFile), x => new Regex(x));
-                SymbolicRegex<BV>[] matchers = Array.ConvertAll(regexes, r => r.Compile());
+                IMatcher[] matchers = Array.ConvertAll(regexes, r => r.Compile());
 
                 StringBuilder sb = new StringBuilder();
                 for (int j = 0; j < 1; j++)
                     for (int i = 0; i < regexes.Length; i++)
                     {
-                        sb.Append(matchers[i].GenerateRandomMember());
+                        sb.Append(((SymbolicRegex<BV>)matchers[i]).A.GenerateRandomMember(((SymbolicRegex<BV>)matchers[i]).builder));
                         sb.Append(CreateRandomString(10000));
                     }
                 File.WriteAllText(inputFile, sb.ToString(), Encoding.Unicode);
@@ -422,8 +422,8 @@ namespace Automata.Tests
             List<string> filtered = new List<string>();
             foreach (var regex in regexes)
             {
-                var sr = regex.Compile();
-                if (!sr.containsAnchors && !sr.isNullable)
+                var sr = (SymbolicRegex<BV>)regex.Compile();
+                if (!sr.A.containsAnchors && !sr.A.isNullable)
                     filtered.Add(regex.ToString());
             }
             File.WriteAllLines(regexesFile, filtered.ToArray());
@@ -516,16 +516,16 @@ namespace Automata.Tests
             int sr_tot_ms = 0;
             int re_tot_ms = 0;
             //repeat each test that many times
-            int matchRepeatCount = 100;
-            int randomBlockLimit = 100000;
+            int matchRepeatCount = 10;
+            int randomBlockLimit = 1000;
             int timeouts = 0;
             //CharSetSolver css = new CharSetSolver();
-            for (int i = 33; i < 34; i++)
+            for (int i = 0; i < 34; i++)
             {
                 var re = regexes[i];
                 var sr = re.Compile();
 
-                var str = sr.GenerateRandomMember();
+                var str = ((SymbolicRegex<BV>)sr).A.GenerateRandomMember(((SymbolicRegex<BV>)sr).builder);
                 str = CreateRandomString(randomBlockLimit) + str + CreateRandomString(randomBlockLimit);
 
                 //--------------------------------
@@ -569,11 +569,11 @@ namespace Automata.Tests
                 Console.WriteLine(string.Format("{0}, sr:{1}ms({2}ms), re:{3}ms({4}ms)\r\n", i + 1, sr_t, sr_tot_ms, re_t, re_tot_ms));
 
             }
-            Console.WriteLine(string.Format("total: sr:{0}ms, re:{1}ms, speedup={2}\r\n", sr_tot_ms, re_tot_ms, re_tot_ms / sr_tot_ms));
+            Console.WriteLine(string.Format("total: sr:{0}ms, re:{1}ms, speedup={2}\r\n", sr_tot_ms, re_tot_ms, re_tot_ms / (sr_tot_ms == 0 ? 1 : sr_tot_ms)));
             Console.WriteLine(string.Format("re timeouts: {0}\r\n", timeouts));
         }
 
-        private static void ValidateMatches(Regex re, SymbolicRegex<BV> sr, string str, Tuple<int, int>[] sr_res, Tuple<int, int>[] re_res)
+        private static void ValidateMatches(Regex re, IMatcher sr, string str, Tuple<int, int>[] sr_res, Tuple<int, int>[] re_res)
         {
 
             //--- correctness check of different matches ---
@@ -598,9 +598,9 @@ namespace Automata.Tests
         public void TestRegex_CompileToSymbolicRegex_one()
         {
             var regex = new Regex("[0-9A-Za-z]+");
-            var sr = regex.Compile();
+            var sr = (SymbolicRegex<BV>)regex.Compile();
             int size = 50;
-            var dataset = sr.GetPositiveDataset(size);
+            var dataset = sr.A.GetPositiveDataset(sr.builder, size);
             string str = "";
             foreach (var s in dataset)
             {
@@ -649,7 +649,7 @@ namespace Automata.Tests
             var regex = new Regex(r);
             string failure;
             string whynot;
-            SymbolicRegex<BV> sr;
+            IMatcher sr;
             bool ok = regex.TryCompile(out sr, out failure);
             bool ok2 = regex.IsCompileSupported(out whynot);
             Assert.IsFalse(ok);
@@ -663,7 +663,7 @@ namespace Automata.Tests
         {
             var regex = new Regex(r);
             string failure;
-            SymbolicRegex<BV> sr;
+            IMatcher sr;
             bool ok = regex.TryCompile(out sr, out failure);
             Assert.IsTrue(ok);
             Assert.IsTrue(failure == "");
@@ -677,7 +677,8 @@ namespace Automata.Tests
             Regex[] regexes = Array.ConvertAll(File.ReadAllLines(regexesWithoutAnchorsFile), x => new Regex(x, options, new TimeSpan(0, 0, 1)));
             //var css = new CharSetSolver();
             int t = System.Environment.TickCount;
-            var srs = new SymbolicRegex<BV>[regexes.Length];
+            var srs = new IMatcher[regexes.Length];
+            int k = (regexes.Length < 100 ? regexes.Length : 100);
             for (int i=0; i < regexes.Length; i++)
             {
                 string reason;
@@ -685,6 +686,158 @@ namespace Automata.Tests
             }
             t = System.Environment.TickCount - t;
             Console.WriteLine(t);
+        }
+
+        [TestMethod]
+        public void TestRegex_Compile_Serialize_Deserialize_Match_Rexexes()
+        {
+            TestRegex_Compile_Serialize_Deserialize_Match_Rexexes_helper();
+        }
+
+        [TestMethod]
+        public void TestRegex_Compile_Serialize_Deserialize_Match_Rexexes_1()
+        {
+            TestRegex_Compile_Serialize_Deserialize_Match_Rexexes_helper(1);
+        }
+
+
+        public void TestRegex_Compile_Serialize_Deserialize_Match_Rexexes_helper(int matchlimit = 0)
+        {
+            RegexOptions options = RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture;
+
+            //1 sec timeout for matching
+            Regex[] regexes_ = Array.ConvertAll(File.ReadAllLines(regexesWithoutAnchorsFile), x => new Regex(x, options, new TimeSpan(0, 0, 5)));
+            string whynot;
+            Regex[] regexes = Array.FindAll(regexes_, r => r.IsCompileSupported(out whynot));
+            Regex[] regexes6 = Array.ConvertAll(regexes_, x => new Regex(x.ToString(), x.Options, new TimeSpan(0, 0, 6)));
+
+            //var srs = (SymbolicRegexMatcher<BDD>[])Array.ConvertAll(regexes, r => r.Compile());
+
+            ClearLog();
+
+            //make sure k is at most regexes.Length, regexes.Length is around 1600
+            int k = (regexes.Length < 10 ? regexes.Length : 10);
+
+            int sr_comp_ms = System.Environment.TickCount;
+            var srs = new SymbolicRegex<BV>[k];
+            for (int i = 0; i < k; i++)
+                srs[i] = (SymbolicRegex<BV>)regexes[i].Compile();
+            sr_comp_ms = System.Environment.TickCount - sr_comp_ms;
+
+            Log("Compile time(ms): " + sr_comp_ms);
+
+            //var formatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
+            var formatter = new System.Web.UI.ObjectStateFormatter();
+            //--- soap formatter does not support generic types
+            //var formatter = new System.Runtime.Serialization.Formatters.Soap.SoapFormatter();
+
+            int sr_ser_ms = System.Environment.TickCount;
+            for (int i = 0; i < k; i++)
+                srs[i].Serialize(string.Format("sr{0}.bin", i), formatter);
+            sr_ser_ms = System.Environment.TickCount - sr_ser_ms;
+
+            Log("Serialization time(ms): " + sr_ser_ms);
+
+            int sr_deser_ms = System.Environment.TickCount;
+            var srs_ = new SymbolicRegex<BV>[k];
+            for (int i = 0; i < k; i++)
+                srs_[i] = SymbolicRegex<BV>.Deserialize(string.Format("sr{0}.bin", i), formatter);
+            sr_deser_ms = System.Environment.TickCount - sr_deser_ms;
+
+            Log("Deserialization time(ms): " + sr_deser_ms);
+
+            var str = File.ReadAllText(inputFile);
+
+            //first filter out those regexes that cause tiomeout in .net
+
+            HashSet<int> timeouts = new HashSet<int>();
+            timeouts.Add(4);
+            timeouts.Add(137);
+
+
+            //some regexes cause timeouts, exclude those
+            //--- .net ---
+            for (int i = 0; i < k; i++)
+            {
+                if (!timeouts.Contains(i))
+                    try
+                    {
+                        var re_matches = regexes[i].Matches(str);
+                        int tmp = re_matches.Count;
+                        Log("ok: " + i);
+                    }
+                    catch (System.Text.RegularExpressions.RegexMatchTimeoutException)
+                    {
+                        timeouts.Add(i);
+                        Log("timeout: " + i);
+                    }
+            }
+
+            //-------------
+
+
+            //--- aut ---
+            int sr_tot_ms = System.Environment.TickCount;
+            int sr_tot_matches = 0;
+            for (int i = 0; i < k; i++)
+            {
+                //here we could also allow the regexes that timed out in .net
+                //but the Assert below would fail
+                if (!timeouts.Contains(i))
+                {
+                    var sr_matches = srs[i].Matches(str, matchlimit);
+                    sr_tot_matches += sr_matches.Length;
+                }
+            }
+            sr_tot_ms = System.Environment.TickCount - sr_tot_ms;
+            //--------------
+
+            Log("AUT: " + sr_tot_ms);
+
+            //--- deserialized versions ---
+            int sr_tot_ms_d = System.Environment.TickCount;
+            int sr_tot_matches_d = 0;
+            for (int i = 0; i < k; i++)
+            {
+                //here we could also allow the regexes that timed out in .net
+                //but the Assert below would fail
+                if (!timeouts.Contains(i))
+                {
+                    var sr_matches_d = srs_[i].Matches(str, matchlimit);
+                    sr_tot_matches_d += sr_matches_d.Length;
+                }
+            }
+            sr_tot_ms_d = System.Environment.TickCount - sr_tot_ms_d;
+            //--------------
+
+            Log("AUT_d: " + sr_tot_ms_d);
+
+            //--- .net matching on regexes that did not timeout---
+            //use here trhe regexes with larger timeout to avoid borderline cases
+            int re_tot_ms = System.Environment.TickCount;
+            int re_tot_matches = 0;
+            for (int i = 0; i < k; i++)
+            {
+                if (!timeouts.Contains(i))
+                {
+                    var re_matches = regexes6[i].Matches(str);
+                    re_tot_matches += (matchlimit <= 0 ? re_matches.Count : Math.Min(re_matches.Count, matchlimit));
+                }
+            }
+            re_tot_ms = System.Environment.TickCount - re_tot_ms;
+            //--------------
+
+
+            Log(".NET: " + re_tot_ms);
+
+            Assert.AreEqual<int>(sr_tot_matches, sr_tot_matches_d);
+
+            //allow some variation (+- 5 in either direction)
+            Assert.IsTrue(sr_tot_matches <= re_tot_matches + 5);
+            Assert.IsTrue(re_tot_matches <= sr_tot_matches + 5);
+
+
+            Console.WriteLine(string.Format("total: AUT:{0}ms osr deser{3}, .NET:{1}ms, matchcount={2}", sr_tot_ms, re_tot_ms, re_tot_matches, sr_tot_ms_d));
         }
     }
 }

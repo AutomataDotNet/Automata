@@ -374,7 +374,7 @@ namespace Automata.Tests
                 if (!excluded.Contains(i))
                     regexes.Add(regexesAll[i]);
 
-            int K = 50; //number of pos/neg strings to be generated for each regex
+            int K = 10; //number of pos/neg strings to be generated for each regex
             for (int i = 1; i < 100; i++)
             {
                 try

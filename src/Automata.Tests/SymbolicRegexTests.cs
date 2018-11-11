@@ -284,7 +284,7 @@ namespace Automata.Tests
             CharSetSolver solver = new CharSetSolver(BitWidth.BV7);
             string regex = @"^(a|b)cccc(d|e)kkkk(f|l)$";
             var sr = solver.RegexConverter.ConvertToSymbolicRegex(regex);
-            var sampler = new SymbolicRegexSampler<BDD>(sr, 10);
+            var sampler = new SymbolicRegexSampler<BDD>(solver.RegexConverter.srBuilder, sr, 10);
             Assert.IsTrue(sampler.GetPositiveDataset(1000).Count == 8, "Incomplete Dataset");
         }
 
@@ -294,7 +294,7 @@ namespace Automata.Tests
             CharSetSolver solver = new CharSetSolver(BitWidth.BV7);
             string regex = @"^(a(b*)c)*$";
             var sr = solver.RegexConverter.ConvertToSymbolicRegex(regex);
-            var sampler = new SymbolicRegexSampler<BDD>(sr, 15);
+            var sampler = new SymbolicRegexSampler<BDD>(solver.RegexConverter.srBuilder, sr, 15);
             Assert.IsTrue(sampler.GetPositiveDataset(1000).Count > 100, "Incomplete Dataset");
         }
 
@@ -304,7 +304,7 @@ namespace Automata.Tests
             CharSetSolver solver = new CharSetSolver(BitWidth.BV7);
             string regex = @"^bcd$";
             var sr = solver.RegexConverter.ConvertToSymbolicRegex(regex);
-            var sampler = new SymbolicRegexSampler<BDD>(sr, 15);
+            var sampler = new SymbolicRegexSampler<BDD>(solver.RegexConverter.srBuilder, sr, 15);
             Assert.IsTrue(sampler.GetPositiveDataset(100).Count == 1, "Too large Dataset");
         }
 
@@ -345,13 +345,14 @@ namespace Automata.Tests
             CharSetSolver css = new CharSetSolver();
             var sr = css.RegexConverter.ConvertToSymbolicRegex(regex, RegexOptions.None, true);
             Func<string, BDD[]> F = s => Array.ConvertAll<char, BDD>(s.ToCharArray(), c => css.MkCharConstraint(c));
-            Assert.IsTrue(sr.IsMatch("a0d"));
-            Assert.IsFalse(sr.IsMatch("a0"));
-            Assert.IsTrue(sr.IsMatch("a5def"));
-            Assert.IsFalse(sr.IsMatch("aa"));
-            Assert.IsTrue(sr.IsMatch("a3abcdefg"));
-            Assert.IsTrue(sr.IsMatch("a3abcdefgh"));
-            Assert.IsFalse(sr.IsMatch("a3abcdefghi"));
+            var matcher = new SymbolicRegex<BDD>(css.RegexConverter.srBuilder, sr, css, sr.ComputeMinterms());
+            Assert.IsTrue(matcher.IsMatch("a0d"));
+            Assert.IsFalse(matcher.IsMatch("a0"));
+            Assert.IsTrue(matcher.IsMatch("a5def"));
+            Assert.IsFalse(matcher.IsMatch("aa"));
+            Assert.IsTrue(matcher.IsMatch("a3abcdefg"));
+            Assert.IsTrue(matcher.IsMatch("a3abcdefgh"));
+            Assert.IsFalse(matcher.IsMatch("a3abcdefghi"));
         }
 
         [TestMethod]
@@ -361,13 +362,9 @@ namespace Automata.Tests
             CharSetSolver css = new CharSetSolver();
             var sr = css.RegexConverter.ConvertToSymbolicRegex(regex, RegexOptions.None, true);
             Func<string, BDD[]> F = s => Array.ConvertAll<char, BDD>(s.ToCharArray(), c => css.MkCharConstraint(c));
-            Assert.IsTrue(sr.IsMatch("addddd"));
-            Assert.IsFalse(sr.IsMatch("adddddd"));
-            //    var R = new Regex(regex);
-            //    Assert.IsTrue(R.IsMatch("addddd"));
-            //    var matches = R.Matches("xxxxadddddexxxxxadddddxxxxabc");
-            //    Assert.IsTrue(matches.Count == 3);
-            //
+            var matcher = new SymbolicRegex<BDD>(css.RegexConverter.srBuilder, sr, css, sr.ComputeMinterms());
+            Assert.IsTrue(matcher.IsMatch("addddd"));
+            Assert.IsFalse(matcher.IsMatch("adddddd"));
         }
 
         [TestMethod]
@@ -377,8 +374,9 @@ namespace Automata.Tests
             var R1 = new Regex(@"(ab|ba)+", RegexOptions.Singleline);
             CharSetSolver css = new CharSetSolver();
             var sr = css.RegexConverter.ConvertToSymbolicRegex(R, true);
-            Assert.IsTrue(sr.IsMatch("xxabbabbaba"));
-            Assert.IsTrue(sr.IsMatch("abba"));
+            var matcher = new SymbolicRegex<BDD>(css.RegexConverter.srBuilder, sr, css, sr.ComputeMinterms());
+            Assert.IsTrue(matcher.IsMatch("xxabbabbaba"));
+            Assert.IsTrue(matcher.IsMatch("abba"));
             Assert.IsTrue(R1.IsMatch("baba"));
             Assert.IsFalse(R1.IsMatch("bb"));
             var matches = R1.Matches("xxabbabbaba");
@@ -394,7 +392,8 @@ namespace Automata.Tests
             var R = new Regex(@"(ab|ba)+|ababbba", RegexOptions.Singleline);
             CharSetSolver css = new CharSetSolver();
             var sr = css.RegexConverter.ConvertToSymbolicRegex(R, true);
-            Assert.IsTrue(sr.IsMatch("ababba"));
+            var matcher = new SymbolicRegex<BDD>(css.RegexConverter.srBuilder, sr, css, sr.ComputeMinterms());
+            Assert.IsTrue(matcher.IsMatch("ababba"));
             var matches = R.Matches("xaababbba");
             Assert.IsTrue(matches.Count == 2);
             Assert.IsTrue(matches[0].Value == "abab");
@@ -415,19 +414,21 @@ namespace Automata.Tests
             //A1.ShowGraph("A1");
             var sr = css.RegexConverter.ConvertToSymbolicRegex(R, true);
             var sr1 = css.RegexConverter.ConvertToSymbolicRegex(R1, true);
-            Assert.IsTrue(sr.IsMatch("aa"));
-            Assert.IsTrue(sr.IsMatch("abbbbbbbbbba"));
-            Assert.IsTrue(sr.IsMatch("bbb"));
-            Assert.IsTrue(sr.IsMatch("bbbaaaaaaaaa"));
-            Assert.IsFalse(sr.IsMatch("baba"));
-            Assert.IsFalse(sr.IsMatch("abab"));
+            var matcher = new SymbolicRegex<BDD>(css.RegexConverter.srBuilder, sr, css, sr.ComputeMinterms());
+            var matcher1 = new SymbolicRegex<BDD>(css.RegexConverter.srBuilder, sr1, css, sr1.ComputeMinterms());
+            Assert.IsTrue(matcher.IsMatch("aa"));
+            Assert.IsTrue(matcher.IsMatch("abbbbbbbbbba"));
+            Assert.IsTrue(matcher.IsMatch("bbb"));
+            Assert.IsTrue(matcher.IsMatch("bbbaaaaaaaaa"));
+            Assert.IsFalse(matcher.IsMatch("baba"));
+            Assert.IsFalse(matcher.IsMatch("abab"));
             //--------------
-            Assert.IsTrue(sr1.IsMatch("xxxxaa"));
-            Assert.IsTrue(sr1.IsMatch("xxabbbbbbbbbba"));
-            Assert.IsTrue(sr1.IsMatch("xxbbb"));
-            Assert.IsTrue(sr1.IsMatch("xxxbbbaaaaaaaaa"));
-            Assert.IsFalse(sr1.IsMatch("babab"));
-            Assert.IsFalse(sr1.IsMatch("ababx"));
+            Assert.IsTrue(matcher1.IsMatch("xxxxaa"));
+            Assert.IsTrue(matcher1.IsMatch("xxabbbbbbbbbba"));
+            Assert.IsTrue(matcher1.IsMatch("xxbbb"));
+            Assert.IsTrue(matcher1.IsMatch("xxxbbbaaaaaaaaa"));
+            Assert.IsFalse(matcher1.IsMatch("babab"));
+            Assert.IsFalse(matcher1.IsMatch("ababx"));
             //---
             var R2 = new Regex(@"bbba*|ab*a", RegexOptions.Singleline);
             var matches = R2.Matches("xxabbba");
@@ -466,18 +467,20 @@ namespace Automata.Tests
             var R1 = new Regex(@"abc");
             var sr1 = css.RegexConverter.ConvertToSymbolicRegex(R1, true);
             var rev1 = sr1.Reverse();
-            Assert.IsTrue(rev1.IsMatch("cba"));
+            var matcher1 = new SymbolicRegex<BDD>(css.RegexConverter.srBuilder, rev1, css, rev1.ComputeMinterms());
+            Assert.IsTrue(matcher1.IsMatch("cba"));
             //-----
             var R2 = new Regex(@"^(foo|ab+d)+$");
             var sr2 = css.RegexConverter.ConvertToSymbolicRegex(R2, true);
             var rev2 = sr2.Reverse();
+            var matcher2 = new SymbolicRegex<BDD>(css.RegexConverter.srBuilder, rev2, css, rev2.ComputeMinterms());
             Assert.IsTrue(sr2.Equals(rev2.Reverse()));
-            Assert.IsTrue(rev2.IsMatch("oof"));
-            Assert.IsTrue(rev2.IsMatch("oofdbbaoofoofdbbadba"));
-            var sampler = new SymbolicRegexSampler<BDD>(rev2, 10);
+            Assert.IsTrue(matcher2.IsMatch("oof"));
+            Assert.IsTrue(matcher2.IsMatch("oofdbbaoofoofdbbadba"));
+            var sampler = new SymbolicRegexSampler<BDD>(css.RegexConverter.srBuilder, rev2, 10);
             var samples = sampler.GetPositiveDataset(100);
             foreach (var sample in samples)
-                Assert.IsTrue(rev2.IsMatch(sample));
+                Assert.IsTrue(matcher2.IsMatch(sample));
         }
 
         //[TestMethod]
@@ -737,9 +740,10 @@ namespace Automata.Tests
             var css = new CharSetSolver();
             var R = new Regex(@"^abc[\0-\xFF]+$");
             var sr = R.ConvertToSymbolicRegexBDD(css);
+            var matcher = new SymbolicRegex<BDD>(css.RegexConverter.srBuilder, sr, css, sr.ComputeMinterms());
             var str = "abc" + CreateRandomString(1000);
-            Assert.IsTrue(sr.IsMatch(str));
-            Assert.IsFalse(sr.IsMatch(str + "\uFFFD\uFFFD\uFFFD"));
+            Assert.IsTrue(matcher.IsMatch(str));
+            Assert.IsFalse(matcher.IsMatch(str + "\uFFFD\uFFFD\uFFFD"));
         }
 
         [TestMethod]
@@ -770,13 +774,64 @@ namespace Automata.Tests
             //var regex = new Regex(@".*ab{0,5}ea{0,5}d", RegexOptions.Singleline);
             var regex = new Regex("<[^>]*>.*", RegexOptions.Singleline);
             var r_c = regex; //.Complement();
-            var sr = r_c.Compile();
-            var deriv = sr.MkDerivative(sr.builder.solver.MkCharConstraint('<'), true);
-            var aut = sr.Unwind();
+            var sr = (SymbolicRegex<BV>)r_c.Compile();
+            //var deriv = sr.MkDerivative(sr.builder.solver.MkCharConstraint('<'), true);
+            var aut = ((SymbolicRegex<BV>)sr).A.Unwind();
             //regex.Display("minDFA",true);
-            Assert.IsTrue(aut.DescribeState(aut.InitialState) == sr.ToString());
+            Assert.IsTrue(aut.DescribeState(aut.InitialState) == sr.A.ToString());
             //sr.ShowGraph();
         }
 
+        [TestMethod]
+        public void TestSymbolicRegex_Serialization()
+        {
+            var regex = new Regex("abc*", RegexOptions.Singleline);
+            var sr = (SymbolicRegex<BV>)regex.Compile();
+            var B = sr.builder;
+            //
+            var node = B.Deserialize("[1,2]");
+            Assert.IsTrue(node.kind == SymbolicRegexKind.Singleton);
+            Assert.AreEqual<string>(node.Serialize(), "[1,2]");
+            //---
+            var star = B.Deserialize("L(0,*,[2,3])");
+            Assert.IsTrue(star.kind == SymbolicRegexKind.Loop);
+            Assert.IsTrue(star.IsStar);
+            Assert.AreEqual<string>(star.Serialize(), "L(0,*,[2,3])");
+            //---
+            var plus = B.Deserialize("L(1,*,[3,2,1])");
+            Assert.IsTrue(plus.kind == SymbolicRegexKind.Loop);
+            Assert.IsTrue(plus.IsPlus);
+            Assert.AreEqual<string>(plus.Serialize(), "L(1,*,[1,2,3])");
+            //---
+            var dotstar = B.Deserialize("L(0,*,.)");
+            Assert.IsTrue(dotstar.kind == SymbolicRegexKind.Loop);
+            var isdotstar = dotstar.IsDotStar;
+            Assert.IsTrue(isdotstar);
+            Assert.AreEqual<string>(dotstar.Serialize(), "L(0,*,.)");
+            //---
+            var seq = B.Deserialize("S(.,L(0,*,[1]))");
+            Assert.IsTrue(seq.kind == SymbolicRegexKind.Concat);
+            Assert.IsTrue(seq.left.kind == SymbolicRegexKind.Singleton);
+            Assert.IsTrue(seq.right.kind == SymbolicRegexKind.Loop);
+            Assert.AreEqual<string>(seq.Serialize(), "S(.,L(0,*,[1]))");
+            //---
+            var disj = B.Deserialize("D([3],[2],S(.,L(4,7,[1])))");
+            Assert.IsTrue(disj.kind == SymbolicRegexKind.Or);
+            Assert.IsTrue(disj.alts.Count == 3);
+            Assert.AreEqual<string>(disj.Serialize(), "D([2],[3],S(.,L(4,7,[1])))");
+            //---
+            var conj = B.Deserialize("C(.,[2],S(.,L(0,*,[1])))");
+            Assert.IsTrue(conj.kind == SymbolicRegexKind.And);
+            Assert.IsTrue(conj.alts.Count == 3);
+            Assert.AreEqual<string>(conj.Serialize(), "C(.,[2],S(.,L(0,*,[1])))");
+            //---
+            var empty = B.Deserialize("E");
+            Assert.IsTrue(empty.IsEpsilon);
+            Assert.AreEqual<string>(empty.Serialize(), "E");
+            //---
+            var noth = B.Deserialize("[]");
+            Assert.IsTrue(noth.IsNothing);
+            Assert.AreEqual<string>(noth.Serialize(), "[]");
+        }
     }
 }

@@ -4,23 +4,30 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Reflection;
+using System.Runtime.Serialization;
+using System.IO;
 
 namespace Microsoft.Automata
 {
     /// <summary>
-    /// Provides IsMatch method and Matches method.
+    /// Provides IsMatch and Matches methods and extends ISerializable.
     /// </summary>
-    public interface IMatcher
+    public interface IMatcher : ISerializable
     {
         /// <summary>
         /// Returns true iff the input string matches. 
+        /// <param name="input">given iput string</param>
+        /// <param name="startat">start position in the input</param>
         /// </summary>
-        bool IsMatch(string input);
+        bool IsMatch(string input, int startat = 0);
 
         /// <summary>
         /// Returns all matches as pairs (startindex, length) in the input string.
         /// </summary>
-        Tuple<int, int>[] Matches(string input);
+        /// <param name="input">given iput string</param>
+        /// <param name="startat">start position in the input</param>
+        /// <param name="limit">as soon as this many matches have been found the search terminates, 0 or negative value means that there is now bound, default is 0</param>
+        Tuple<int, int>[] Matches(string input, int startat = 0, int limit = 0);
     }
 
     /// <summary>

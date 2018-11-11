@@ -107,11 +107,12 @@ namespace Automata.Tests
             //length is between 8 and 10 characters
             Regex C = new Regex(".{8,10}", RegexOptions.Singleline);
             //contains no spaces
-            Regex D = new Regex(@"\S*");
-            var matcher = A.Compile(B,C,D);
+            Regex D = new Regex(@"[^ ]*");
+            var matcher = (SymbolicRegex<BV>)A.Compile(B,C,D);
             //forget the context, no more compilations are made
             RegexExtensionMethods.Context = null;
-            //matcher.ShowGraph(0, "matcher", false, false);
+            //matcher.A.ShowGraph(0, "matcher", false, false);
+            //matcher.ShowGraph(0, "dotStarMatcher", true, true);
             string input = "this is some text containing two matches: th1sMatch and also This123456 but not This123 or this1234567 or this1234";
             var matches = matcher.Matches(input);
             Assert.IsTrue(matches.Length == 2);
@@ -124,9 +125,9 @@ namespace Automata.Tests
         {
             //contains a and b
             Regex A = new Regex("(?(.*a.*)(.*b.*)|[x-[x]])", RegexOptions.Singleline);
-            var matcher = A.Compile();
+            var matcher = (SymbolicRegex<BV>)A.Compile();
             //matcher.ShowGraph();
-            Assert.IsTrue(matcher.Kind == SymbolicRegexKind.And);
+            Assert.IsTrue(matcher.A.Kind == SymbolicRegexKind.And);
             Assert.IsTrue(A.IsMatch("fooagggbmmm"));
             Assert.IsFalse(A.IsMatch("fooagggmmm"));
         }
