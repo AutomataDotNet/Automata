@@ -77,6 +77,7 @@ namespace Microsoft.Automata
         /// <summary>
         /// Original regex.
         /// </summary>
+        [NonSerialized]
         internal SymbolicRegexNode<S> A;
 
         /// <summary>

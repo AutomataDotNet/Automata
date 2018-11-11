@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
+using System.Text;
 
 namespace Microsoft.Automata
 {
@@ -11,6 +12,7 @@ namespace Microsoft.Automata
     internal class DecisionTree : ISerializable
     {
         internal int[] precomputed;
+        [NonSerialized]
         internal BST bst;
 
         internal BST Tree
@@ -121,11 +123,13 @@ namespace Microsoft.Automata
         /// <summary>
         /// Used in the decision tree to locate minterm ids of nonascii characters
         /// </summary>
-        [Serializable]
-        internal class BST : ISerializable
+        internal class BST
         {
+            //[NonSerialized]
             int node;
+            //[NonSerialized]
             BST left;
+            //[NonSerialized]
             BST right;
 
             internal BST Left
@@ -177,34 +181,83 @@ namespace Microsoft.Automata
                 this.right = right;
             }
 
-            #region serialization
-            /// <summary>
-            /// Serialize
-            /// </summary>
-            public void GetObjectData(SerializationInfo info, StreamingContext context)
+            public override string ToString()
             {
-                info.AddValue("n", node);
-                info.AddValue("l", left);
-                info.AddValue("r", right);
+                return this.Serialize();
             }
+
+            #region custom serialization
+            void SerializeHelper(StringBuilder sb)
+            {
+                if (IsLeaf)
+                {
+                    sb.Append(string.Format("{0}#", node));
+                }
+                else
+                {
+                    sb.Append("(");
+                    sb.Append(node);
+                    sb.Append(",");
+                    left.SerializeHelper(sb);
+                    sb.Append(",");
+                    right.SerializeHelper(sb);
+                    sb.Append(")");
+                }
+            }
+            public string Serialize()
+            {
+                var sb = new StringBuilder();
+                SerializeHelper(sb);
+                return sb.ToString();
+            }
+
+            public static BST Deserialize(string s)
+            {
+                int tmp;
+                var bst = DeserializeHelper(s, 0, out tmp);
+                return bst;
+            }
+
+            static BST DeserializeHelper(string s, int i, out int next_i)
+            {
+                switch (s[i])
+                {
+                    case '(':
+                        {
+                            int j = s.IndexOf(',', i + 1);
+                            int node = int.Parse(s.Substring(i + 1, j - (i + 1)));
+                            int k;
+                            var left = DeserializeHelper(s, j + 1, out k);
+                            int m;
+                            var right = DeserializeHelper(s, k + 1, out m);
+                            next_i = m + 1;
+                            return new BST(node, left, right);
+                        }
+                    default: //leaf l(node)
+                        {
+                            int j = s.IndexOf('#', i);
+                            int node = int.Parse(s.Substring(i, j - i));
+                            next_i = j + 1;
+                            return new BST(node, null, null);
+                        }
+                }
+            }
+
+            //public void GetObjectData(SerializationInfo info, StreamingContext context)
+            //{
+            //    info.AddValue("bst", this.Serialize());
+            //}
             /// <summary>
             /// Deserialize
             /// </summary>
-            public BST(SerializationInfo info, StreamingContext context)
-            {
-                node = info.GetInt32("n");
-                left = info.GetValue("l", typeof(BST)) as BST;
-                right = info.GetValue("r", typeof(BST)) as BST;
-            }
+            //public BST(SerializationInfo info, StreamingContext context)
+            //{
+            //    var bst = BST.Deserialize(info.GetString("bst"));
+            //    this.node = bst.node;
+            //    this.left = bst.left;
+            //    this.right = bst.right;
+            //}
             #endregion
-
-            public override string ToString()
-            {
-                if (IsLeaf)
-                    return string.Format("leaf({0})", node);
-                else
-                    return string.Format("tree({0},{1},{2})", node, left, right);
-            }
         }
 
         /// <summary>
@@ -268,7 +321,7 @@ namespace Microsoft.Automata
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             info.AddValue("p", precomputed);
-            info.AddValue("b", bst);
+            info.AddValue("b", bst.Serialize());
         }
         /// <summary>
         /// Deserialize
@@ -276,7 +329,7 @@ namespace Microsoft.Automata
         public DecisionTree(SerializationInfo info, StreamingContext context)
         {
             precomputed = (int[])info.GetValue("p", typeof(int[]));
-            bst = info.GetValue("b", typeof(BST)) as BST;
+            bst = BST.Deserialize(info.GetString("b"));
         }
         #endregion
 
@@ -290,9 +343,10 @@ namespace Microsoft.Automata
     /// Decision tree for mapping character ranges into corresponding partition block ids
     /// </summary>
     [Serializable]
-    internal class BooleanDecisionTree
+    internal class BooleanDecisionTree : ISerializable
     {
         internal bool[] precomputed;
+        [NonSerialized]
         internal DecisionTree.BST bst;
 
         internal DecisionTree.BST Tree
@@ -392,7 +446,7 @@ namespace Microsoft.Automata
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             info.AddValue("p", precomputed);
-            info.AddValue("b", bst);
+            info.AddValue("b", bst.Serialize());
         }
         /// <summary>
         /// Deserialize
@@ -400,13 +454,13 @@ namespace Microsoft.Automata
         public BooleanDecisionTree(SerializationInfo info, StreamingContext context)
         {
             precomputed = (bool[])info.GetValue("p", typeof(bool[]));
-            bst = info.GetValue("b", typeof(DecisionTree.BST)) as DecisionTree.BST;
+            this.bst = DecisionTree.BST.Deserialize(info.GetString("b"));
         }
         #endregion
 
         public override string ToString()
         {
-            return string.Format("DecisionTree({0},{1})", new Sequence<bool>(precomputed).ToString(), bst);
+            return string.Format("DecisionTree({0},{1})", new Sequence<bool>(precomputed).ToString(), bst.Serialize());
         }
     }
 }

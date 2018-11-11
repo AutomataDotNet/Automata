@@ -59,6 +59,31 @@ namespace Automata.Tests
         }
 
         [TestMethod]
+        public void TestSerialization_BST()
+        {
+            var left = new DecisionTree.BST(5, null, null);
+            var right = new DecisionTree.BST(20, null, null);
+            var bst1 = new DecisionTree.BST(10, left, right);
+            var bst = new DecisionTree.BST(1, bst1, right);
+            var str = bst.Serialize();
+            var bst2 = DecisionTree.BST.Deserialize(str);
+            Assert.IsTrue(!bst.IsLeaf && !bst.Left.IsLeaf && bst2.Right.IsLeaf);
+            Assert.IsTrue(bst2.Node == 1 && bst2.Left.Node == 10 && bst2.Right.Node == 20);
+            Assert.IsTrue(str == bst2.Serialize());
+        }
+
+        [TestMethod]
+        public void TestSerialization_BST_leaf()
+        {
+            var leaf = new DecisionTree.BST(5, null, null);
+            var s = leaf.Serialize();
+            var bst = DecisionTree.BST.Deserialize(s);
+            Assert.IsTrue(bst.IsLeaf);
+            Assert.IsTrue(bst.Node == 5);
+            Assert.IsTrue(s == bst.Serialize());
+        }
+
+        [TestMethod]
         public void TestSerialization_BVAlgebra()
         {
             var css = new CharSetSolver();

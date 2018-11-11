@@ -709,14 +709,16 @@ namespace Automata.Tests
             Regex[] regexes_ = Array.ConvertAll(File.ReadAllLines(regexesWithoutAnchorsFile), x => new Regex(x, options, new TimeSpan(0, 0, 5)));
             string whynot;
             Regex[] regexes = Array.FindAll(regexes_, r => r.IsCompileSupported(out whynot));
-            Regex[] regexes6 = Array.ConvertAll(regexes_, x => new Regex(x.ToString(), x.Options, new TimeSpan(0, 0, 6)));
+            Regex[] regexes10 = Array.ConvertAll(regexes_, x => new Regex(x.ToString(), x.Options, new TimeSpan(0, 0, 10)));
 
             //var srs = (SymbolicRegexMatcher<BDD>[])Array.ConvertAll(regexes, r => r.Compile());
 
             ClearLog();
 
+            int MAX = 10;
+
             //make sure k is at most regexes.Length, regexes.Length is around 1600
-            int k = (regexes.Length < 10 ? regexes.Length : 10);
+            int k = (regexes.Length < MAX ? regexes.Length : MAX);
 
             int sr_comp_ms = System.Environment.TickCount;
             var srs = new SymbolicRegex<BV>[k];
@@ -820,7 +822,7 @@ namespace Automata.Tests
             {
                 if (!timeouts.Contains(i))
                 {
-                    var re_matches = regexes6[i].Matches(str);
+                    var re_matches = regexes10[i].Matches(str);
                     re_tot_matches += (matchlimit <= 0 ? re_matches.Count : Math.Min(re_matches.Count, matchlimit));
                 }
             }
