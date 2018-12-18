@@ -878,9 +878,9 @@ namespace Microsoft.Automata
             }
         }
 
-        internal string GenerateRandomMember(SymbolicRegexBuilder<S> builder, int maxLoopUnrol = 10, int cornerCaseProb = 5, int maxSamplingIter = 3)
+        internal string GenerateRandomMember(int maxLoopUnrol = 10, int cornerCaseProb = 5, int maxSamplingIter = 3)
         {
-            var sampler = new SymbolicRegexSampler<S>(builder, this, maxLoopUnrol, cornerCaseProb, maxSamplingIter);
+            var sampler = new SymbolicRegexSampler<S>(this.builder, this, maxLoopUnrol, cornerCaseProb, maxSamplingIter);
             return sampler.GenerateRandomMember();
         }
 

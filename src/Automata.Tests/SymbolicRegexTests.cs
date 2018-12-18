@@ -345,7 +345,7 @@ namespace Automata.Tests
             CharSetSolver css = new CharSetSolver();
             var sr = css.RegexConverter.ConvertToSymbolicRegex(regex, RegexOptions.None, true);
             Func<string, BDD[]> F = s => Array.ConvertAll<char, BDD>(s.ToCharArray(), c => css.MkCharConstraint(c));
-            var matcher = new SymbolicRegex<BDD>(css.RegexConverter.srBuilder, sr, css, sr.ComputeMinterms());
+            var matcher = new SymbolicRegex<BDD>(sr, css, sr.ComputeMinterms());
             Assert.IsTrue(matcher.IsMatch("a0d"));
             Assert.IsFalse(matcher.IsMatch("a0"));
             Assert.IsTrue(matcher.IsMatch("a5def"));
@@ -362,7 +362,7 @@ namespace Automata.Tests
             CharSetSolver css = new CharSetSolver();
             var sr = css.RegexConverter.ConvertToSymbolicRegex(regex, RegexOptions.None, true);
             Func<string, BDD[]> F = s => Array.ConvertAll<char, BDD>(s.ToCharArray(), c => css.MkCharConstraint(c));
-            var matcher = new SymbolicRegex<BDD>(css.RegexConverter.srBuilder, sr, css, sr.ComputeMinterms());
+            var matcher = new SymbolicRegex<BDD>(sr, css, sr.ComputeMinterms());
             Assert.IsTrue(matcher.IsMatch("addddd"));
             Assert.IsFalse(matcher.IsMatch("adddddd"));
         }
@@ -374,7 +374,7 @@ namespace Automata.Tests
             var R1 = new Regex(@"(ab|ba)+", RegexOptions.Singleline);
             CharSetSolver css = new CharSetSolver();
             var sr = css.RegexConverter.ConvertToSymbolicRegex(R, true);
-            var matcher = new SymbolicRegex<BDD>(css.RegexConverter.srBuilder, sr, css, sr.ComputeMinterms());
+            var matcher = new SymbolicRegex<BDD>(sr, css, sr.ComputeMinterms());
             Assert.IsTrue(matcher.IsMatch("xxabbabbaba"));
             Assert.IsTrue(matcher.IsMatch("abba"));
             Assert.IsTrue(R1.IsMatch("baba"));
@@ -392,7 +392,7 @@ namespace Automata.Tests
             var R = new Regex(@"(ab|ba)+|ababbba", RegexOptions.Singleline);
             CharSetSolver css = new CharSetSolver();
             var sr = css.RegexConverter.ConvertToSymbolicRegex(R, true);
-            var matcher = new SymbolicRegex<BDD>(css.RegexConverter.srBuilder, sr, css, sr.ComputeMinterms());
+            var matcher = new SymbolicRegex<BDD>(sr, css, sr.ComputeMinterms());
             Assert.IsTrue(matcher.IsMatch("ababba"));
             var matches = R.Matches("xaababbba");
             Assert.IsTrue(matches.Count == 2);
@@ -414,8 +414,8 @@ namespace Automata.Tests
             //A1.ShowGraph("A1");
             var sr = css.RegexConverter.ConvertToSymbolicRegex(R, true);
             var sr1 = css.RegexConverter.ConvertToSymbolicRegex(R1, true);
-            var matcher = new SymbolicRegex<BDD>(css.RegexConverter.srBuilder, sr, css, sr.ComputeMinterms());
-            var matcher1 = new SymbolicRegex<BDD>(css.RegexConverter.srBuilder, sr1, css, sr1.ComputeMinterms());
+            var matcher = new SymbolicRegex<BDD>(sr, css, sr.ComputeMinterms());
+            var matcher1 = new SymbolicRegex<BDD>(sr1, css, sr1.ComputeMinterms());
             Assert.IsTrue(matcher.IsMatch("aa"));
             Assert.IsTrue(matcher.IsMatch("abbbbbbbbbba"));
             Assert.IsTrue(matcher.IsMatch("bbb"));
@@ -467,13 +467,13 @@ namespace Automata.Tests
             var R1 = new Regex(@"abc");
             var sr1 = css.RegexConverter.ConvertToSymbolicRegex(R1, true);
             var rev1 = sr1.Reverse();
-            var matcher1 = new SymbolicRegex<BDD>(css.RegexConverter.srBuilder, rev1, css, rev1.ComputeMinterms());
+            var matcher1 = new SymbolicRegex<BDD>(rev1, css, rev1.ComputeMinterms());
             Assert.IsTrue(matcher1.IsMatch("cba"));
             //-----
             var R2 = new Regex(@"^(foo|ab+d)+$");
             var sr2 = css.RegexConverter.ConvertToSymbolicRegex(R2, true);
             var rev2 = sr2.Reverse();
-            var matcher2 = new SymbolicRegex<BDD>(css.RegexConverter.srBuilder, rev2, css, rev2.ComputeMinterms());
+            var matcher2 = new SymbolicRegex<BDD>(rev2, css, rev2.ComputeMinterms());
             Assert.IsTrue(sr2.Equals(rev2.Reverse()));
             Assert.IsTrue(matcher2.IsMatch("oof"));
             Assert.IsTrue(matcher2.IsMatch("oofdbbaoofoofdbbadba"));
@@ -740,7 +740,7 @@ namespace Automata.Tests
             var css = new CharSetSolver();
             var R = new Regex(@"^abc[\0-\xFF]+$");
             var sr = R.ConvertToSymbolicRegexBDD(css);
-            var matcher = new SymbolicRegex<BDD>(css.RegexConverter.srBuilder, sr, css, sr.ComputeMinterms());
+            var matcher = new SymbolicRegex<BDD>(sr, css, sr.ComputeMinterms());
             var str = "abc" + CreateRandomString(1000);
             Assert.IsTrue(matcher.IsMatch(str));
             Assert.IsFalse(matcher.IsMatch(str + "\uFFFD\uFFFD\uFFFD"));
@@ -774,9 +774,9 @@ namespace Automata.Tests
             //var regex = new Regex(@".*ab{0,5}ea{0,5}d", RegexOptions.Singleline);
             var regex = new Regex("<[^>]*>.*", RegexOptions.Singleline);
             var r_c = regex; //.Complement();
-            var sr = (SymbolicRegex<BV>)r_c.Compile();
+            var sr = (SymbolicRegex<ulong>)r_c.Compile();
             //var deriv = sr.MkDerivative(sr.builder.solver.MkCharConstraint('<'), true);
-            var aut = ((SymbolicRegex<BV>)sr).A.Unwind();
+            var aut = ((SymbolicRegex<ulong>)sr).A.Unwind();
             //regex.Display("minDFA",true);
             Assert.IsTrue(aut.DescribeState(aut.InitialState) == sr.A.ToString());
             //sr.ShowGraph();
@@ -786,7 +786,7 @@ namespace Automata.Tests
         public void TestSymbolicRegex_Serialization()
         {
             var regex = new Regex("abc*", RegexOptions.Singleline);
-            var sr = (SymbolicRegex<BV>)regex.Compile();
+            var sr = (SymbolicRegex<ulong>)regex.Compile();
             var B = sr.builder;
             //
             var node = B.Deserialize("[1,2]");

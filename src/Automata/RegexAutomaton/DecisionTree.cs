@@ -9,8 +9,9 @@ namespace Microsoft.Automata
     /// Decision tree for mapping character ranges into corresponding partition block ids
     /// </summary>
     [Serializable]
-    internal class DecisionTree : ISerializable
+    public class DecisionTree : ISerializable
     {
+        [NonSerialized]
         internal int[] precomputed;
         [NonSerialized]
         internal BST bst;
@@ -123,7 +124,7 @@ namespace Microsoft.Automata
         /// <summary>
         /// Used in the decision tree to locate minterm ids of nonascii characters
         /// </summary>
-        internal class BST
+        public class BST
         {
             //[NonSerialized]
             int node;
@@ -242,21 +243,6 @@ namespace Microsoft.Automata
                         }
                 }
             }
-
-            //public void GetObjectData(SerializationInfo info, StreamingContext context)
-            //{
-            //    info.AddValue("bst", this.Serialize());
-            //}
-            /// <summary>
-            /// Deserialize
-            /// </summary>
-            //public BST(SerializationInfo info, StreamingContext context)
-            //{
-            //    var bst = BST.Deserialize(info.GetString("bst"));
-            //    this.node = bst.node;
-            //    this.left = bst.left;
-            //    this.right = bst.right;
-            //}
             #endregion
         }
 
@@ -320,7 +306,7 @@ namespace Microsoft.Automata
         /// </summary>
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            info.AddValue("p", precomputed);
+            info.AddValue("p", SerializePrecomputed());
             info.AddValue("b", bst.Serialize());
         }
         /// <summary>
@@ -328,8 +314,26 @@ namespace Microsoft.Automata
         /// </summary>
         public DecisionTree(SerializationInfo info, StreamingContext context)
         {
-            precomputed = (int[])info.GetValue("p", typeof(int[]));
+            precomputed = DeserializePrecomputed(info.GetString("p"));
             bst = BST.Deserialize(info.GetString("b"));
+        }
+
+        string SerializePrecomputed()
+        {
+            string s = "";
+            for (int i=0; i < precomputed.Length; i++)
+            {
+                if (i > 0)
+                    s += ",";
+                s += precomputed[i].ToString();
+            }
+            return s;
+        }
+
+        static int[] DeserializePrecomputed(string s)
+        {
+            var vals = Array.ConvertAll(s.Split(','), x => int.Parse(x));
+            return vals;
         }
         #endregion
 
@@ -345,6 +349,7 @@ namespace Microsoft.Automata
     [Serializable]
     internal class BooleanDecisionTree : ISerializable
     {
+        [NonSerialized]
         internal bool[] precomputed;
         [NonSerialized]
         internal DecisionTree.BST bst;
@@ -445,7 +450,7 @@ namespace Microsoft.Automata
         /// </summary>
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            info.AddValue("p", precomputed);
+            info.AddValue("p", SerializePrecomputed());
             info.AddValue("b", bst.Serialize());
         }
         /// <summary>
@@ -453,8 +458,21 @@ namespace Microsoft.Automata
         /// </summary>
         public BooleanDecisionTree(SerializationInfo info, StreamingContext context)
         {
-            precomputed = (bool[])info.GetValue("p", typeof(bool[]));
+            precomputed = DeserializePrecomputed(info.GetString("p"));
             this.bst = DecisionTree.BST.Deserialize(info.GetString("b"));
+        }
+
+        string SerializePrecomputed()
+        {
+            char[] chars = Array.ConvertAll(precomputed, b => (b ? '1' : '0'));
+            var s = new String(chars);
+            return s;
+        }
+
+        static bool[] DeserializePrecomputed(string s)
+        {
+            var vals = Array.ConvertAll(s.ToCharArray(), c => (c == '1' ? true : false));
+            return vals;
         }
         #endregion
 

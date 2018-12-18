@@ -33,11 +33,7 @@ namespace Microsoft.Automata
         Dictionary<S, SymbolicRegexNode<S>> singletonCache = new Dictionary<S, SymbolicRegexNode<S>>();
         Dictionary<SymbolicRegexNode<S>, SymbolicRegexNode<S>> nodeCache = new Dictionary<SymbolicRegexNode<S>, SymbolicRegexNode<S>>();
 
-        #region used by serialization
-        /// <summary>
-        /// Create an placeholder for builder without solver, used by deserializer of SymbolicRegexMatcher
-        /// </summary>
-        SymbolicRegexBuilder()
+        private SymbolicRegexBuilder()
         {
             this.epsilon = SymbolicRegexNode<S>.MkEpsilon(this);
             this.startAnchor = SymbolicRegexNode<S>.MkStartAnchor(this);
@@ -55,15 +51,13 @@ namespace Microsoft.Automata
             this.emptySet = SymbolicRegexSet<S>.MkEmptySet(this);
         }
 
-        internal SymbolicRegexNode<S> Internalize(SymbolicRegexNode<S> node)
+        /// <summary>
+        /// Create a new symbolic regex builder.
+        /// </summary>
+        /// <param name="solver">Effective Boolean algebra over S.</param>
+        internal SymbolicRegexBuilder(ICharAlgebra<S> solver) : this()
         {
-            SymbolicRegexNode<S> nodeRef;
-            if (!nodeCache.TryGetValue(node, out nodeRef))
-            {
-                nodeRef = node;
-                nodeCache[node] = node;
-            }
-            return nodeRef;
+            InitilizeFields(solver);
         }
 
         /// <summary>
@@ -90,15 +84,17 @@ namespace Microsoft.Automata
             this.nodeCache[this.bolRegex] = this.bolRegex;
             this.nodeCache[this.eolRegex] = this.eolRegex;
         }
-        #endregion
 
-        /// <summary>
-        /// Create a new symbolic regex builder.
-        /// </summary>
-        /// <param name="solver">Effective Boolean algebra over S.</param>
-        internal SymbolicRegexBuilder(ICharAlgebra<S> solver) : this()
+
+        internal SymbolicRegexNode<S> Internalize(SymbolicRegexNode<S> node)
         {
-            InitilizeFields(solver);
+            SymbolicRegexNode<S> nodeRef;
+            if (!nodeCache.TryGetValue(node, out nodeRef))
+            {
+                nodeRef = node;
+                nodeCache[node] = node;
+            }
+            return nodeRef;
         }
 
         /// <summary>

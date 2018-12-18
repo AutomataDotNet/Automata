@@ -25,9 +25,14 @@ namespace Microsoft.Automata
         /// Returns all matches as pairs (startindex, length) in the input string.
         /// </summary>
         /// <param name="input">given iput string</param>
-        /// <param name="startat">start position in the input</param>
         /// <param name="limit">as soon as this many matches have been found the search terminates, 0 or negative value means that there is now bound, default is 0</param>
+        /// <param name="startat">start position in the input</param>
         Tuple<int, int>[] Matches(string input, int limit = 0, int startat = 0);
+
+        /// <summary>
+        /// Generate a random string that is a complete match.
+        /// </summary>
+        string GenerateRandomMatch(int maxLoopUnrol = 10, int cornerCaseProb = 5, int maxSamplingIter = 3);
     }
 
     /// <summary>

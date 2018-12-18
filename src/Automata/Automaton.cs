@@ -5444,6 +5444,11 @@ namespace Microsoft.Automata
         {
             throw new NotImplementedException();
         }
+
+        public string GenerateRandomMatch(int maxLoopUnrol = 10, int cornerCaseProb = 5, int maxSamplingIter = 3)
+        {
+            throw new NotImplementedException();
+        }
     }
 
     internal class Block : IEnumerable<int>

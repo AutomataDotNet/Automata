@@ -5,17 +5,44 @@ using System.Runtime.Serialization;
 
 namespace Microsoft.Automata
 {
+    public abstract class BVAlgebraBase
+    {
+        internal DecisionTree dtree;
+        internal IntervalSet[] partition;
+        internal int nrOfBits;
+
+        internal BVAlgebraBase(DecisionTree dtree, IntervalSet[] partition, int nrOfBits)
+        {
+            this.dtree = dtree;
+            this.partition = partition;
+            this.nrOfBits = nrOfBits;
+        }
+
+        protected string SerializePartition()
+        {
+            string s = "";
+            for (int i = 0; i < partition.Length; i++)
+            {
+                if (i > 0)
+                    s += ";";
+                s += partition[i].Serialize();
+            }
+            return s;
+        }
+
+        protected static IntervalSet[] DeserializePartition(string s)
+        {
+            var blocks = s.Split(';');
+            var intervalSets = Array.ConvertAll(blocks, IntervalSet.Parse);
+            return intervalSets;
+        }
+    }
     /// <summary>
     /// Bit vector algebra
     /// </summary>
     [Serializable]
-    public class BVAlgebra : ICharAlgebra<BV>, ISerializable
+    public class BVAlgebra : BVAlgebraBase, ICharAlgebra<BV>, ISerializable
     {
-        internal DecisionTree dtree;
-        IntervalSet[] partition;
-
-        [NonSerialized]
-        int nrOfBits;
         [NonSerialized]
         MintermGenerator<BV> mtg;
         [NonSerialized]
@@ -65,13 +92,9 @@ namespace Microsoft.Automata
             return new BVAlgebra(dtree, partition);
         }
 
-        private BVAlgebra(DecisionTree dtree, IntervalSet[] partition)
+        private BVAlgebra(DecisionTree dtree, IntervalSet[] partition) : base(dtree, partition, partition.Length)
         {
-            this.dtree = dtree;
-            this.partition = partition;
-            //is deserialized
             int m = partition.Length;
-            this.nrOfBits = m;
             var K = (nrOfBits - 1) / 64;
             int last = nrOfBits % 64;
             ulong lastMask = (last == 0 ? ulong.MaxValue : (((ulong)1 << last) - 1));
@@ -808,14 +831,15 @@ namespace Microsoft.Automata
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             info.AddValue("d", dtree);
-            info.AddValue("p", partition);
+            info.AddValue("p", SerializePartition());
         }
 
         /// <summary>
         /// Deserialize
         /// </summary>
         public BVAlgebra(SerializationInfo info, StreamingContext context)
-            : this((DecisionTree)info.GetValue("d", typeof(DecisionTree)), (IntervalSet[])info.GetValue("p", typeof(IntervalSet[])))
+            : this((DecisionTree)info.GetValue("d", typeof(DecisionTree)),
+                  DeserializePartition(info.GetString("p")))
         {
         }
         #endregion

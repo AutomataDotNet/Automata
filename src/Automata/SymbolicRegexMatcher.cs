@@ -10,6 +10,68 @@ using System.IO;
 namespace Microsoft.Automata
 {
     /// <summary>
+    /// Wraps an instance of SymbolicRegex&lt;BV&gt;, the number of needed partition blocks is &gt; 64
+    /// </summary>
+    [Serializable]
+    public class SymbolicRegexBV : SymbolicRegex<BV>
+    {
+        private SymbolicRegexBV(SymbolicRegexBuilder<BV> builder, SymbolicRegexNode<BDD> sr,
+                                CharSetSolver solver, BDD[] minterms, int StateLimit, int startSetSizeLimit)
+            : base(solver.RegexConverter.srBuilder.Transform(sr, builder, builder.solver.ConvertFromCharSet),
+                  solver, minterms, StateLimit, startSetSizeLimit)
+        {
+        }
+
+        /// <summary>
+        /// Is called with minterms.Length at least 65
+        /// </summary
+        internal SymbolicRegexBV(SymbolicRegexNode<BDD> sr,
+                                 CharSetSolver solver, BDD[] minterms, int StateLimit = 1000, int startSetSizeLimit = 1)
+            : this(new SymbolicRegexBuilder<BV>(BVAlgebra.Create(solver, minterms)), sr,
+                  solver, minterms, StateLimit, startSetSizeLimit)
+        {
+        }
+
+        /// <summary>
+        /// Invoked by deserializer
+        /// </summary>
+        public SymbolicRegexBV(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+        }
+    }
+
+    /// <summary>
+    /// Wraps an instance of SymbolicRegex&lt;ulong&gt;, the number of needed partition blocks is &lt; 65
+    /// </summary>
+    [Serializable]
+    public class SymbolicRegexUInt64 : SymbolicRegex<ulong>
+    {
+        private SymbolicRegexUInt64(SymbolicRegexBuilder<ulong> builder, SymbolicRegexNode<BDD> sr,
+                                CharSetSolver solver, BDD[] minterms, int StateLimit, int startSetSizeLimit)
+            : base(solver.RegexConverter.srBuilder.Transform(sr, builder, builder.solver.ConvertFromCharSet),
+                  solver, minterms, StateLimit, startSetSizeLimit)
+        {
+        }
+
+        /// <summary>
+        /// Is called with minterms.Length at most 64
+        /// </summary>
+        internal SymbolicRegexUInt64(SymbolicRegexNode<BDD> sr,
+                                 CharSetSolver solver, BDD[] minterms, int StateLimit = 1000, int startSetSizeLimit = 1)
+            : this(new SymbolicRegexBuilder<ulong>(BV64Algebra.Create(solver, minterms)), sr,
+                  solver, minterms, StateLimit, startSetSizeLimit)
+        {
+        }
+
+        /// <summary>
+        /// Invoked by deserializer
+        /// </summary>
+        public SymbolicRegexUInt64(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+        }
+    }
+
+    /// <summary>
     /// Represents a precompiled form of a regex that implements match generation using symbolic derivatives.
     /// </summary>
     /// <typeparam name="S">character set type</typeparam>
@@ -285,8 +347,8 @@ namespace Microsoft.Automata
             var solver = (ICharAlgebra<S>)info.GetValue("solver", typeof(ICharAlgebra<S>));
             this.builder = new SymbolicRegexBuilder<S>(solver);
 
-            this.atoms = ((ICharAlgebra<S>)builder.solver).GetPartition();
-            this.dt = ((BVAlgebra)builder.solver).dtree;
+            this.atoms = builder.solver.GetPartition();
+            this.dt = ((BVAlgebraBase)builder.solver).dtree;
 
             A = builder.Deserialize(info.GetString("A"));
             this.StateLimit = info.GetInt32("StateLimit");
@@ -394,12 +456,18 @@ namespace Microsoft.Automata
         /// <summary>
         /// Constructs matcher for given symbolic regex
         /// </summary>
-        internal SymbolicRegex(SymbolicRegexBuilder<S> builder, SymbolicRegexNode<S> sr, CharSetSolver css, BDD[] minterms, int StateLimit = 1000, int startSetSizeLimit = 1)
+        internal SymbolicRegex(SymbolicRegexNode<S> sr, CharSetSolver css, BDD[] minterms, int StateLimit = 1000, int startSetSizeLimit = 1)
         {
             this.StartSetSizeLimit = startSetSizeLimit;
-            this.builder = builder;
+            this.builder = sr.builder;
             this.StateLimit = StateLimit;
-            if (builder.solver is BVAlgebra)
+            if (builder.solver is BV64Algebra)
+            {
+                BV64Algebra bva = builder.solver as BV64Algebra;
+                atoms = bva.atoms as S[];
+                dt = bva.dtree;
+            }
+            else if (builder.solver is BVAlgebra)
             {
                 BVAlgebra bva = builder.solver as BVAlgebra;
                 atoms = bva.atoms as S[];
@@ -412,7 +480,7 @@ namespace Microsoft.Automata
             }
             else
             {
-                throw new NotSupportedException(string.Format("only {0} or {1} solver is supported", typeof(BVAlgebra), typeof(CharSetSolver)));
+                throw new NotSupportedException(string.Format("only {0} or {1} or {2} algebra is supported", typeof(BV64Algebra), typeof(BVAlgebra), typeof(CharSetSolver)));
             }
 
             this.A = sr;
@@ -2456,6 +2524,11 @@ namespace Microsoft.Automata
             }
             i_q0 = i_q0_A1;
             return i;
+        }
+
+        public string GenerateRandomMatch(int maxLoopUnrol = 10, int cornerCaseProb = 5, int maxSamplingIter = 3)
+        {
+            return A.GenerateRandomMember(maxLoopUnrol, cornerCaseProb, maxSamplingIter);
         }
         #endregion
     }

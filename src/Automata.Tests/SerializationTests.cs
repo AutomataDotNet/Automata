@@ -14,7 +14,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
-using System.Runtime.Serialization.Formatters.Binary;
+using System.Runtime.Serialization.Formatters.Soap;
 using System.IO;
 using System.Web;
 
@@ -31,8 +31,8 @@ namespace Automata.Tests
             var bst = new DecisionTree.BST(7, bstLeaf1, bstLeaf2);
             var set = new IntervalSet(new Tuple<uint, uint>(0x61, 0x71));
             var dt = new DecisionTree(new int[] { 1, 2, 3 }, bst);
-            SerializeObjectToFile("dt.bin", dt);
-            var dt_ = (DecisionTree)DeserializeObjectFromFile("dt.bin");
+            SerializeObjectToFile_bin("dt.bin", dt);
+            var dt_ = (DecisionTree)DeserializeObjectFromFile_bin("dt.bin");
             Assert.AreEqual<string>(dt.ToString(), dt_.ToString());
         }
 
@@ -44,8 +44,8 @@ namespace Automata.Tests
             var bst = new DecisionTree.BST(7, bstLeaf1, bstLeaf2);
             var set = new IntervalSet(new Tuple<uint, uint>(0x61, 0x71));
             var dt = new BooleanDecisionTree(new bool[] { true, false, true }, bst);
-            SerializeObjectToFile("dt.bin", dt);
-            var dt_ = (BooleanDecisionTree)DeserializeObjectFromFile("dt.bin");
+            SerializeObjectToFile_bin("dt.bin", dt);
+            var dt_ = (BooleanDecisionTree)DeserializeObjectFromFile_bin("dt.bin");
             Assert.AreEqual<string>(dt.ToString(), dt_.ToString());
         }
 
@@ -53,8 +53,8 @@ namespace Automata.Tests
         public void TestSerialization_BV()
         {
             var bv = new BV(100, 1, 1);
-            SerializeObjectToFile("bbv.bin", bv);
-            var bv_ = (BV)DeserializeObjectFromFile("bbv.bin");
+            SerializeObjectToFile_bin("bbv.bin", bv);
+            var bv_ = (BV)DeserializeObjectFromFile_bin("bbv.bin");
             Assert.AreEqual<string>(bv.ToString(), bv_.ToString());
         }
 
@@ -91,9 +91,24 @@ namespace Automata.Tests
             var regex_bdd = regex.ConvertToSymbolicRegexBDD(css);
             var minterms = regex_bdd.ComputeMinterms();
             var bva = BVAlgebra.Create(css, minterms);
-            SerializeObjectToFile("bva.bin", bva);
-            var bva_ = (BVAlgebra)DeserializeObjectFromFile("bva.bin");
-            Assert.AreEqual<int>(bva.atoms.Length, bva_.atoms.Length);
+            SerializeObjectToFile_bin("bva.bin", bva);
+            var bva_ = (BVAlgebra)DeserializeObjectFromFile_bin("bva.bin");
+            Assert.AreEqual<int>(bva.atoms.Length, bva_.nrOfBits);
+            Assert.AreEqual<string>(bva.dtree.ToString(), bva_.dtree.ToString());
+            Assert.AreEqual<Sequence<BV>>(new Sequence<BV>(bva.atoms), new Sequence<BV>(bva_.atoms));
+        }
+
+        [TestMethod]
+        public void TestSerialization_BVAlgebra_Soap()
+        {
+            var css = new CharSetSolver();
+            var regex = new Regex(@"[0-9]");
+            var regex_bdd = regex.ConvertToSymbolicRegexBDD(css);
+            var minterms = regex_bdd.ComputeMinterms();
+            var bva = BVAlgebra.Create(css, minterms);
+            SerializeObjectToFile_soap("bva.soap", bva);
+            var bva_ = (BVAlgebra)DeserializeObjectFromFile_soap("bva.soap");
+            Assert.AreEqual<int>(bva.atoms.Length, bva_.nrOfBits);
             Assert.AreEqual<string>(bva.dtree.ToString(), bva_.dtree.ToString());
             Assert.AreEqual<Sequence<BV>>(new Sequence<BV>(bva.atoms), new Sequence<BV>(bva_.atoms));
         }
@@ -112,18 +127,18 @@ namespace Automata.Tests
         public void TestSerialization_SymbolicRegexMatcher()
         {
             var regex = new Regex(@"[0-9]");
-            var matcher = (SymbolicRegex<BV>)regex.Compile();
+            var matcher = (SymbolicRegex<ulong>)regex.Compile();
             matcher.Serialize("matcher.bin");
-            var matcher_ = SymbolicRegex<BV>.Deserialize("matcher.bin");
+            var matcher_ = SymbolicRegex<ulong>.Deserialize("matcher.bin");
         }
 
         [TestMethod]
         public void TestSerialization_StartAnchorBugFix()
         {
             var regex1 = new Regex(@"b|a{1,2}");
-            var matcher1 = (SymbolicRegex<BV>)regex1.Compile();
+            var matcher1 = (SymbolicRegex<ulong>)regex1.Compile();
             matcher1.Serialize("test1.bin");
-            var matcher1_ = SymbolicRegex<BV>.Deserialize("test1.bin");
+            var matcher1_ = SymbolicRegex<ulong>.Deserialize("test1.bin");
             ////---------------------
             //var regex2 = new Regex(@"b(ba|a)?b");
             //var matcher2 = (SymbolicRegexMatcher<BV>)regex2.Compile();
@@ -140,12 +155,11 @@ namespace Automata.Tests
 
         }
 
-
         [TestMethod]
         public void TestSerialization_Roundtrip_SingleRegex()
         {
-            var m1 = new Regex(@"[0-9]+").Compile();
-            var s1 = new FileStream("test.bin", FileMode.OpenOrCreate);
+            var m1 = new Regex(@"\d+").Compile();
+            var s1 = new FileStream("test.bin", FileMode.Create);
             new BinaryFormatter().Serialize(s1, m1);
             s1.Close();
             var s2 = new FileStream("test.bin", FileMode.Open);
@@ -189,7 +203,7 @@ namespace Automata.Tests
         public void TestSerialization_Roundtrip_SingleRegex_OneMatchAtATime()
         {
             var m1 = new Regex(@"[0-9]+").Compile();
-            var s1 = new FileStream("test.bin", FileMode.OpenOrCreate);
+            var s1 = new FileStream("test.bin", FileMode.Create);
             new BinaryFormatter().Serialize(s1, m1);
             s1.Close();
             var s2 = new FileStream("test.bin", FileMode.Open);
@@ -209,17 +223,75 @@ namespace Automata.Tests
             Assert.AreEqual<string>("3", input.Substring(third[0].Item1, third[0].Item2));
         }
 
-        static void SerializeObjectToFile(string file, object obj)
+        [TestMethod]
+        public void TestSerialization_Roundtrip_SingleRegex_OneMatchAtATime_Soap()
+        {
+            var m1 = new Regex(@"[0-9]+").Compile();
+            var s1 = new FileStream("test.soap", FileMode.OpenOrCreate);
+            new SoapFormatter().Serialize(s1, m1);
+            s1.Close();
+            var s2 = new FileStream("test.soap", FileMode.Open);
+            var m2 = (IMatcher)new SoapFormatter().Deserialize(s2);
+            s2.Close();
+            var input = "acac1111ghdfhdg22dfd3fd";
+            //first match
+            var first = m2.Matches(input, 1, 0);
+            Assert.AreEqual<string>("1111", input.Substring(first[0].Item1, first[0].Item2));
+            //second match
+            var start2 = first[0].Item1 + first[0].Item2 + 1;
+            var second = m2.Matches(input, 1, start2);
+            Assert.AreEqual<string>("22", input.Substring(second[0].Item1, second[0].Item2));
+            //third match
+            var start3 = second[0].Item1 + second[0].Item2 + 1;
+            var third = m2.Matches(input, 1, start3);
+            Assert.AreEqual<string>("3", input.Substring(third[0].Item1, third[0].Item2));
+        }
+
+        public static void SerializeObjectToFile_bin(string file, object obj)
         {
             IFormatter formatter = new BinaryFormatter();
-            Stream stream = new FileStream(file, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None);
+            Stream stream = new FileStream(file, FileMode.Create, FileAccess.Write, FileShare.None);
             formatter.Serialize(stream, obj);
             stream.Close();
         }
 
-        static object DeserializeObjectFromFile(string file)
+        public static void SerializeObjectToFile_soap(string file, object obj)
+        {
+            IFormatter formatter = new SoapFormatter();
+            Stream stream = new FileStream(file, FileMode.Create, FileAccess.Write, FileShare.None);
+            formatter.Serialize(stream, obj);
+            stream.Close();
+        }
+
+        public static void SerializeObjectToFile_osf(string file, object obj)
+        {
+            IFormatter formatter = new System.Web.UI.ObjectStateFormatter();
+            Stream stream = new FileStream(file, FileMode.Create, FileAccess.Write, FileShare.None);
+            formatter.Serialize(stream, obj);
+            stream.Close();
+        }
+
+        public static object DeserializeObjectFromFile_bin(string file)
         {
             IFormatter formatter = new BinaryFormatter();
+            Stream stream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.None);
+            object obj = formatter.Deserialize(stream);
+            stream.Close();
+            return obj;
+        }
+
+        public static object DeserializeObjectFromFile_soap(string file)
+        {
+            IFormatter formatter = new SoapFormatter();
+            Stream stream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.None);
+            object obj = formatter.Deserialize(stream);
+            stream.Close();
+            return obj;
+        }
+
+        public static object DeserializeObjectFromFile_osf(string file)
+        {
+            IFormatter formatter = new System.Web.UI.ObjectStateFormatter();
             Stream stream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.None);
             object obj = formatter.Deserialize(stream);
             stream.Close();

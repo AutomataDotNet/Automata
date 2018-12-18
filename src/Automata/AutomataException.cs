@@ -284,5 +284,6 @@ namespace Microsoft.Automata
         MustNotAcceptEmptyString,
         MatcherIsUninitialized,
         SerializationNotSupported,
+        NrOfMintermsCanBeAtMost64,
     }
 }

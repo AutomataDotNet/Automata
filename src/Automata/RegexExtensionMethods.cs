@@ -45,35 +45,28 @@ namespace Microsoft.Automata
         {
             if (context == null)
                 context = new CharSetSolver();
-            if (regexes.Length == 0)
+
+            var first = context.RegexConverter.ConvertToSymbolicRegex(regex, true).Simplify();
+            var others = Array.ConvertAll(regexes, r => context.RegexConverter.ConvertToSymbolicRegex(r, true).Simplify());
+            var all = new SymbolicRegexNode<BDD>[1 + regexes.Length];
+            all[0] = first;
+            for (int i = 1; i <= others.Length; i++)
+                all[i] = others[i - 1];
+            var srBuilder = context.RegexConverter.srBuilder;
+            var conj = srBuilder.MkAnd(all);
+            var partition = conj.ComputeMinterms();
+            IMatcher matcher;
+            if (partition.Length > 64)
             {
-                var sr_bdd = context.RegexConverter.ConvertToSymbolicRegex(regex, true);
-                var srBuilder = context.RegexConverter.srBuilder;
-                var partition = sr_bdd.ComputeMinterms();
-                BVAlgebra bva = BVAlgebra.Create(context, partition);
-                SymbolicRegexBuilder<BV> builder = new SymbolicRegexBuilder<BV>(bva);
-                var sr_bv = srBuilder.Transform<BV>(sr_bdd, builder, builder.solver.ConvertFromCharSet);
-                sr_bv = sr_bv.Simplify();
-                var matcher = new SymbolicRegex<BV>(builder, sr_bv, context, partition);
-                return matcher;
+                //more than 64 bits needed to represent a set
+                matcher = new SymbolicRegexBV(conj, context, partition);
             }
             else
             {
-                var first = context.RegexConverter.ConvertToSymbolicRegex(regex, true).Simplify();
-                var others = Array.ConvertAll(regexes, r => context.RegexConverter.ConvertToSymbolicRegex(r, true).Simplify());
-                var all = new SymbolicRegexNode<BDD>[1 + regexes.Length];
-                all[0] = first;
-                for (int i = 1; i <= others.Length; i++)
-                    all[i] = others[i - 1];
-                var srBuilder = context.RegexConverter.srBuilder;
-                var conj = srBuilder.MkAnd(all);
-                var partition = conj.ComputeMinterms();
-                BVAlgebra bva = BVAlgebra.Create(context, partition);
-                SymbolicRegexBuilder<BV> builder = new SymbolicRegexBuilder<BV>(bva);
-                var res = context.RegexConverter.srBuilder.Transform<BV>(conj, builder, builder.solver.ConvertFromCharSet);
-                var matcher = new SymbolicRegex<BV>(builder, res, context, partition);
-                return matcher;
+                //enough to use 64 bits
+                matcher = new SymbolicRegexUInt64(conj, context, partition);
             }
+            return matcher;
         }
 
         /// <summary>
@@ -107,10 +100,11 @@ namespace Microsoft.Automata
         /// <returns></returns>
         public static bool IsCompileSupported(this Regex regex, out string whynot)
         {
-            var css = new CharSetSolver();
+            if (context == null)
+                context = new CharSetSolver();
             try
             {
-                var sr_bdd = css.RegexConverter.ConvertToSymbolicRegex(regex, true);
+                var sr_bdd = context.RegexConverter.ConvertToSymbolicRegex(regex, true);
                 whynot = "";
                 return true;
             }
@@ -118,10 +112,6 @@ namespace Microsoft.Automata
             {
                 whynot = e.Message;
                 return false;
-            }
-            finally
-            {
-                css.Dispose();
             }
         }
 

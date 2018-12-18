@@ -126,18 +126,18 @@ namespace Automata.Tests
             if (nrOfMatches < 1)
                 throw new ArgumentOutOfRangeException();
 
-            string str = sr.GenerateRandomMember(builder);
+            string str = sr.GenerateRandomMember();
 
             for (int i=1; i < nrOfMatches; i++)
             {
                 if (randomTextSizeLimit > 0)
                 {
                     int k = rnd.Next(0, randomTextSizeLimit);
-                    string tmp = sr.GenerateRandomMember(builder);
+                    string tmp = sr.GenerateRandomMember();
                     int j = rnd.Next(1, tmp.Length);
                     str += tmp.Substring(0, j) + CreateRandomString(k) + tmp.Substring(j);
                 }
-                str += sr.GenerateRandomMember(builder);
+                str += sr.GenerateRandomMember();
             }
             return str;
         }
@@ -168,6 +168,7 @@ namespace Automata.Tests
         void Log(string text)
         {
             File.AppendAllText(myconsole, text + "\r\n");
+            Console.WriteLine(text);
         }
 
         [TestMethod]
@@ -392,7 +393,7 @@ namespace Automata.Tests
                 for (int j = 0; j < 1; j++)
                     for (int i = 0; i < regexes.Length; i++)
                     {
-                        sb.Append(((SymbolicRegex<BV>)matchers[i]).A.GenerateRandomMember(((SymbolicRegex<BV>)matchers[i]).builder));
+                        sb.Append(((SymbolicRegex<BV>)matchers[i]).A.GenerateRandomMember());
                         sb.Append(CreateRandomString(10000));
                     }
                 File.WriteAllText(inputFile, sb.ToString(), Encoding.Unicode);
@@ -517,7 +518,7 @@ namespace Automata.Tests
             int re_tot_ms = 0;
             //repeat each test that many times
             int matchRepeatCount = 10;
-            int randomBlockLimit = 1000;
+            int randomBlockLimit = 10;
             int timeouts = 0;
             //CharSetSolver css = new CharSetSolver();
             for (int i = 0; i < 34; i++)
@@ -525,7 +526,7 @@ namespace Automata.Tests
                 var re = regexes[i];
                 var sr = re.Compile();
 
-                var str = ((SymbolicRegex<BV>)sr).A.GenerateRandomMember(((SymbolicRegex<BV>)sr).builder);
+                var str = ((SymbolicRegexUInt64)sr).A.GenerateRandomMember();
                 str = CreateRandomString(randomBlockLimit) + str + CreateRandomString(randomBlockLimit);
 
                 //--------------------------------
@@ -597,21 +598,24 @@ namespace Automata.Tests
         [TestMethod]
         public void TestRegex_CompileToSymbolicRegex_one()
         {
-            var regex = new Regex("[0-9A-Za-z]+");
-            var sr = (SymbolicRegex<BV>)regex.Compile();
-            int size = 50;
-            var dataset = sr.A.GetPositiveDataset(sr.builder, size);
+            var regex = new Regex("[A-Za-z]+");
+            var digits = new Regex("[0-9]{2,3}");
+            var sr = regex.Compile();
+            var sr_digits = digits.Compile();
+            int size = 100;
+            var dataset = new HashSet<string>();
+            for (int i = 0; i < size; i++)
+                dataset.Add(sr.GenerateRandomMatch());
+
             string str = "";
             foreach (var s in dataset)
             {
-                int k = new Random().Next(2,10);
-                str += s + SymbolicRegexTests.CreateRandomString(k);
+                str += s + sr_digits.GenerateRandomMatch();
             }
             var sr_matches = new HashSet<Tuple<int,int>>(sr.Matches(str));
             var regex_matches = new HashSet<Tuple<int, int>>();
             foreach (Match match in regex.Matches(str))
                 regex_matches.Add(new Tuple<int, int>(match.Index, match.Length));
-            Assert.IsTrue(regex_matches.Count >= size);
             Assert.IsTrue(regex_matches.SetEquals(sr_matches));
         }
 
@@ -689,13 +693,13 @@ namespace Automata.Tests
         }
 
         [TestMethod]
-        public void TestRegex_Compile_Serialize_Deserialize_Match_Rexexes()
+        public void TestRegex_Compile_Serialize_Deserialize_Match_Regexes()
         {
             TestRegex_Compile_Serialize_Deserialize_Match_Rexexes_helper();
         }
 
         [TestMethod]
-        public void TestRegex_Compile_Serialize_Deserialize_Match_Rexexes_1()
+        public void TestRegex_Compile_Serialize_Deserialize_Match_Regexes_1()
         {
             TestRegex_Compile_Serialize_Deserialize_Match_Rexexes_helper(1);
         }
@@ -721,29 +725,29 @@ namespace Automata.Tests
             int k = (regexes.Length < MAX ? regexes.Length : MAX);
 
             int sr_comp_ms = System.Environment.TickCount;
-            var srs = new SymbolicRegex<BV>[k];
+            var srs = new IMatcher[k];
             for (int i = 0; i < k; i++)
-                srs[i] = (SymbolicRegex<BV>)regexes[i].Compile();
+                srs[i] = regexes[i].Compile();
             sr_comp_ms = System.Environment.TickCount - sr_comp_ms;
 
             Log("Compile time(ms): " + sr_comp_ms);
 
             //var formatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
-            var formatter = new System.Web.UI.ObjectStateFormatter();
+            //var formatter = new System.Web.UI.ObjectStateFormatter();
             //--- soap formatter does not support generic types
             //var formatter = new System.Runtime.Serialization.Formatters.Soap.SoapFormatter();
 
             int sr_ser_ms = System.Environment.TickCount;
             for (int i = 0; i < k; i++)
-                srs[i].Serialize(string.Format("sr{0}.bin", i), formatter);
+                SerializationTests.SerializeObjectToFile_soap(string.Format("sr{0}.soap", i), srs[i]);
             sr_ser_ms = System.Environment.TickCount - sr_ser_ms;
 
             Log("Serialization time(ms): " + sr_ser_ms);
 
             int sr_deser_ms = System.Environment.TickCount;
-            var srs_ = new SymbolicRegex<BV>[k];
+            var srs_ = new IMatcher[k];
             for (int i = 0; i < k; i++)
-                srs_[i] = SymbolicRegex<BV>.Deserialize(string.Format("sr{0}.bin", i), formatter);
+                srs_[i] = (IMatcher)SerializationTests.DeserializeObjectFromFile_soap(string.Format("sr{0}.soap", i));
             sr_deser_ms = System.Environment.TickCount - sr_deser_ms;
 
             Log("Deserialization time(ms): " + sr_deser_ms);

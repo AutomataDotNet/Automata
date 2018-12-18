@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
+using System.Text;
 
 namespace Microsoft.Automata
 {
@@ -160,20 +161,60 @@ namespace Microsoft.Automata
             return ToCharacterClass(false);
         }
 
-        #region serialization
+        #region custom serialization
         /// <summary>
         /// Serialize
         /// </summary>
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            info.AddValue("i", intervals);
+            string s = Serialize();
+            info.AddValue("i", s);
         }
         /// <summary>
         /// Deserialize
         /// </summary>
         public IntervalSet(SerializationInfo info, StreamingContext context)
         {
-            intervals = (Tuple<uint, uint>[])info.GetValue("i", typeof(Tuple<uint, uint>[]));
+            string s = info.GetString("i");
+            intervals = Deserialize(s);
+        }
+
+        /// <summary>
+        /// Returns a string that can be parsed back to IntervalSet
+        /// </summary>
+        public string Serialize()
+        {
+            string s = "";
+            for (int i=0; i < intervals.Length; i++)
+            {
+                if (i > 0)
+                    s += ",";
+                s += intervals[i].Item1.ToString();
+                s += "-";
+                s += intervals[i].Item2.ToString();
+            }
+            return s;
+        }
+
+        static Tuple<uint, uint>[] Deserialize(string s)
+        {
+            Func<string, Tuple<uint, uint>> f = pair =>
+            {
+                string[] vals = pair.Split('-');
+                return new Tuple<uint, uint>(uint.Parse(vals[0]), uint.Parse(vals[1]));
+            };
+            var intervals = Array.ConvertAll(s.Split(','), pair => f(pair));
+            return intervals;
+        }
+
+        /// <summary>
+        /// Parse the interval set from a string s that was produced with Serialize
+        /// </summary>
+        /// <param name="s">given serialization</param>
+        public static IntervalSet Parse(string s)
+        {
+            var intervals = Deserialize(s);
+            return new IntervalSet(intervals);
         }
         #endregion
     }

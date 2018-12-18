@@ -1,23 +1,79 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
 
-namespace Microsoft.Automata.BooleanAlgebras
+namespace Microsoft.Automata
 {
-    class BV64Algebra : IBooleanAlgebra<ulong>
+    /// <summary>
+    /// Bit vector algebra of up to 64 bits
+    /// </summary>
+    [Serializable]
+    public class BV64Algebra : BVAlgebraBase, ICharAlgebra<ulong>, ISerializable
     {
+        [NonSerialized]
         MintermGenerator<ulong> mtg;
-        public BV64Algebra()
+        [NonSerialized]
+        Chooser chooser = new Chooser();
+        [NonSerialized]
+        ulong zero = 0;
+        [NonSerialized]
+        ulong all;
+        [NonSerialized]
+        internal ulong[] atoms;
+
+        public ulong ComputeDomainSize(ulong set)
         {
-            mtg = new MintermGenerator<ulong>(this);
+            int size = 0;
+            for (int i = 0; i < atoms.Length; i++)
+            {
+                if (IsSatisfiable(set & atoms[i]))
+                    size += partition[i].Count;
+            }
+            return (ulong)size;
         }
+
+        public ulong MapPredToBV(BDD pred, BDD[] minterms)
+        {
+            if (pred == null)
+                return zero;
+            var alg = pred.algebra;
+            ulong bv;
+
+            bv = zero;
+            for (int i = 0; i < minterms.Length; i++)
+                if (alg.IsSatisfiable(alg.MkAnd(pred, minterms[i])))
+                    bv = bv | MkBV(i);
+
+            return bv;
+        }
+
+        public static BV64Algebra Create(CharSetSolver solver, BDD[] minterms)
+        {
+            if (minterms.Length > 64)
+                throw new AutomataException(AutomataExceptionKind.NrOfMintermsCanBeAtMost64);
+            var dtree = DecisionTree.Create(solver, minterms);
+            var partitionBase = Array.ConvertAll(minterms, m => m.ToRanges());
+            var partition = Array.ConvertAll(partitionBase, p => new IntervalSet(p));
+            return new BV64Algebra(dtree, partition);
+        }
+
+        private BV64Algebra(DecisionTree dtree, IntervalSet[] partition) : base(dtree, partition, partition.Length)
+        {
+            this.all = ulong.MaxValue >> (64 - this.nrOfBits);
+            this.mtg = new MintermGenerator<ulong>(this);
+            this.atoms = new ulong[this.nrOfBits];
+            for (int i = 0; i < this.nrOfBits; i++)
+            {
+                atoms[i] = ((ulong)1) << i;
+            }
+        }
+
         public ulong False
         {
             get
             {
-                return 0;
+                return zero;
             }
         }
 
@@ -41,38 +97,49 @@ namespace Microsoft.Automata.BooleanAlgebras
         {
             get
             {
-                return ulong.MaxValue;
+                return all;
+            }
+        }
+
+        public BitWidth Encoding
+        {
+            get
+            {
+                throw new NotSupportedException();
+            }
+        }
+
+        public CharSetSolver CharSetProvider
+        {
+            get
+            {
+                throw new NotSupportedException();
             }
         }
 
         public bool AreEquivalent(ulong predicate1, ulong predicate2)
         {
-            return predicate1 == predicate2;
+            return predicate1.Equals(predicate2);
         }
 
         public bool CheckImplication(ulong lhs, ulong rhs)
         {
-            return ((~lhs) | rhs) == ulong.MaxValue;
+            return ((~lhs) | rhs).Equals(this.all);
         }
 
         public bool EvaluateAtom(ulong atom, ulong psi)
         {
-            return (atom & psi) == atom;
+            return (atom & psi).Equals(atom);
         }
 
         public IEnumerable<Tuple<bool[], ulong>> GenerateMinterms(params ulong[] constraints)
         {
-            return mtg.GenerateMinterms(constraints);
+            return this.mtg.GenerateMinterms(constraints);
         }
 
-        /// <summary>
-        /// Gets 2^n where n is the least n such that the bit is set, returns 0 if psi is 0.
-        /// </summary>
         public ulong GetAtom(ulong psi)
         {
-            if (psi == 0)
-                return 0;
-            else if ((psi & 0xFFFFFFFF) != 0)
+            if ((psi & 0xFFFFFFFF) != 0)
             {
                 #region get atom from first word
                 if ((psi & 0xFFFF) != 0)
@@ -440,21 +507,22 @@ namespace Microsoft.Automata.BooleanAlgebras
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsSatisfiable(ulong predicate)
         {
-            return predicate != 0;
+            return !predicate.Equals(zero);
         }
 
         public ulong MkAnd(params ulong[] predicates)
         {
-            ulong res = ulong.MaxValue;
+            var and = all;
             for (int i = 0; i < predicates.Length; i++)
             {
-                res = res & predicates[i];
-                if (res == 0)
-                    return 0;
+                and = and & predicates[i];
+                if (and.Equals(zero))
+                    return zero;
             }
-            return res;
+            return and;
         }
 
         public ulong MkAnd(IEnumerable<ulong> predicates)
@@ -462,39 +530,264 @@ namespace Microsoft.Automata.BooleanAlgebras
             throw new NotImplementedException();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ulong MkAnd(ulong predicate1, ulong predicate2)
         {
             return predicate1 & predicate2;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ulong MkDiff(ulong predicate1, ulong predicate2)
         {
             return predicate1 & ~predicate2;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ulong MkNot(ulong predicate)
         {
-            return ~predicate;
+            return all & ~predicate;
         }
 
         public ulong MkOr(IEnumerable<ulong> predicates)
         {
-            throw new NotImplementedException();
+            var res = zero;
+            foreach (var p in predicates)
+            {
+                res = res | p;
+                if (res == all)
+                    return all;
+            }
+            return res;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ulong MkOr(ulong predicate1, ulong predicate2)
         {
             return predicate1 | predicate2;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ulong MkSymmetricDifference(ulong p1, ulong p2)
         {
-            return p1 ^ p2;
+            return all & (p1 ^ p2);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ulong Simplify(ulong predicate)
         {
             return predicate;
         }
+
+        public ulong MkBV(params int[] truebits)
+        {
+            ulong bv = 0;
+            for (int i = 0; i < truebits.Length; i++)
+            {
+                int b = truebits[i];
+                if (b >= nrOfBits || b < 0)
+                    throw new AutomataException(AutomataExceptionKind.BitOutOfRange);
+                bv = bv | ((ulong)1 << i);
+            }
+            return bv;
+        }
+
+        public ulong MkRangeConstraint(char lower, char upper, bool caseInsensitive = false)
+        {
+            throw new NotSupportedException();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ulong MkCharConstraint(char c, bool caseInsensitive = false)
+        {
+            if (caseInsensitive == true)
+                throw new AutomataException(AutomataExceptionKind.NotSupported);
+            return this.atoms[this.dtree.GetId(c)];
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int GetIdOfChar(char c)
+        {
+            return this.dtree.GetId(c);
+        }
+
+        public ulong MkRangesConstraint(bool caseInsensitive, IEnumerable<char[]> ranges)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Assumes that set is a union of some minterms (or empty).
+        /// If null then 0 is returned.
+        /// </summary>
+        public ulong ConvertFromCharSet(BDD set)
+        {
+            if (set == null)
+                return zero;
+            var alg = set.algebra;
+            ulong res = this.zero;
+            for (int i = 0; i < partition.Length; i++)
+            {
+                BDD bdd_i = partition[i].AsBDD(alg);
+                var conj = alg.MkAnd(bdd_i, set);
+                if (alg.IsSatisfiable(conj))
+                {
+                    res = res | atoms[i];
+                }
+            }
+            return res;
+        }
+
+        public bool TryConvertToCharSet(IBDDAlgebra solver, ulong pred, out BDD set)
+        {
+            BDD res = solver.False;
+            if (!pred.Equals(this.zero))
+            {
+                for (int i = 0; i < atoms.Length; i++)
+                {
+                    //construct the union of the corresponding atoms
+                    if (!(pred & atoms[i]).Equals(this.zero))
+                    {
+                        BDD bdd_i = partition[i].AsBDD(solver);
+                        res = solver.MkOr(res, bdd_i);
+                    }
+                }
+            }
+            set = res;
+            return true;
+        }
+
+        /// <summary>
+        /// Pretty print the bitvector predicate as a character class.
+        /// </summary>
+        /// <param name="bv">given bitvector predicate</param>
+        public string PrettyPrint(ulong bv)
+        {
+            var lab1 = PrettyPrintHelper(bv, false);
+            var lab2 = PrettyPrintHelper(~bv, true);
+            if (lab1.Length <= lab2.Length)
+                return lab1;
+            else
+                return lab2;
+
+        }
+
+        string PrettyPrintHelper(ulong bv, bool complement)
+        {
+            List<IntervalSet> sets = new List<IntervalSet>();
+            for (int i = 0; i < atoms.Length; i++)
+                if (IsSatisfiable(bv & atoms[i]))
+                    sets.Add(partition[i]);
+            var set = IntervalSet.Merge(sets);
+            var res = set.ToCharacterClass(complement);
+            return res;
+        }
+
+        public uint Choose(ulong s)
+        {
+            for (int i = 0; i < atoms.Length; i++)
+            {
+                if (IsSatisfiable(atoms[i] & s))
+                {
+                    return (char)partition[i].Min;
+                }
+            }
+            throw new AutomataException(AutomataExceptionKind.SetIsEmpty);
+        }
+
+        /// <summary>
+        /// Choose a random member uniformly at random from the ulong set.
+        /// </summary>
+        public char ChooseUniformly(ulong s)
+        {
+            int K = (int)ComputeDomainSize(s);
+            int k = chooser.Choose(K);
+            for (int i = 0; i < atoms.Length; i++)
+            {
+                if (IsSatisfiable(atoms[i] & s))
+                {
+                    if (k < partition[i].Count)
+                        return (char)partition[i][k];
+                    else
+                        k = k - partition[i].Count;
+                }
+            }
+            throw new AutomataException(AutomataExceptionKind.SetIsEmpty);
+        }
+
+        public BDD ConvertToCharSet(IBDDAlgebra solver, ulong pred)
+        {
+            BDD res = solver.False;
+            if (!pred.Equals(this.zero))
+            {
+                for (int i = 0; i < atoms.Length; i++)
+                {
+                    //construct the union of the corresponding atoms
+                    if (!(pred & atoms[i]).Equals(this.zero))
+                    {
+                        BDD bdd_i = partition[i].AsBDD(solver);
+                        res = solver.MkOr(res, bdd_i);
+                    }
+                }
+            }
+            return res;
+        }
+
+        public ulong[] GetPartition()
+        {
+            return atoms;
+        }
+
+        public IEnumerable<char> GenerateAllCharacters(ulong set)
+        {
+            for (int i = 0; i < atoms.Length; i++)
+            {
+                if (IsSatisfiable(atoms[i] & set))
+                    foreach (uint elem in partition[i].Enumerate())
+                        yield return (char)elem;
+            }
+        }
+
+        #region serialization
+        /// <summary>
+        /// Serialize
+        /// </summary>
+        public void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            info.AddValue("d", dtree);
+            info.AddValue("p", SerializePartition());
+        }
+
+        /// <summary>
+        /// Deserialize
+        /// </summary>
+        public BV64Algebra(SerializationInfo info, StreamingContext context)
+            : this((DecisionTree)info.GetValue("d", typeof(DecisionTree)), 
+                  DeserializePartition(info.GetString("p")))
+        {
+        }
+        #endregion
+
+        #region not implemented
+        public ulong MkCharPredicate(string name, ulong pred)
+        {
+            throw new NotImplementedException();
+        }
+
+        public ulong MkSet(uint e)
+        {
+            throw new NotImplementedException();
+        }
+
+        public string PrettyPrint(ulong t, Func<ulong, string> varLookup)
+        {
+            throw new NotImplementedException();
+        }
+
+        public string PrettyPrintCS(ulong t, Func<ulong, string> varLookup)
+        {
+            throw new NotImplementedException();
+        }
+        #endregion
+
     }
 }

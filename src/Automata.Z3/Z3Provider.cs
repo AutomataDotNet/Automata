@@ -3638,6 +3638,26 @@ namespace Microsoft.Automata.Z3
         {
             throw new NotSupportedException();
         }
+
+        public ulong ComputeDomainSize(Expr set)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IEnumerable<char> GenerateAllCharacters(Expr set)
+        {
+            throw new NotImplementedException();
+        }
+
+        public BDD ConvertToCharSet(IBDDAlgebra solver, Expr pred)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Expr[] GetPartition()
+        {
+            throw new NotImplementedException();
+        }
     }
 }
 
