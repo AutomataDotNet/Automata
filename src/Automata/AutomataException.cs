@@ -285,5 +285,7 @@ namespace Microsoft.Automata
         MatcherIsUninitialized,
         SerializationNotSupported,
         NrOfMintermsCanBeAtMost64,
+        CounterIndexOutOfRange,
+        ExpectingConjunction,
     }
 }

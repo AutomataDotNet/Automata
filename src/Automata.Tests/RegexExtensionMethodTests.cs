@@ -17,6 +17,7 @@ namespace Automata.Tests
         static string inputFile = "../../../../Automata.Tests/Samples/input.txt";
         static string regexesWithoutAnchorsFile = "../../../../Automata.Tests/Samples/regexesWithoutAnchors.txt";
         //static string regexesWithoutAnchorsFile = "../../../../Automata.Tests/Samples/regex_tiny.txt";
+        static string regexesWithLazyLoops = "../../../../Automata.Tests/Samples/regexesWithLazyLoops.txt";
         static string regexesPerfFile_IgnoreCaseTrue = "regexesPerf_IgnoreCaseTrue.txt";
         static string regexesPerfFile_IgnoreCaseFalse = "regexesPerf_IgnoreCaseFalse.txt";
         static string regexesPerfFile_IsMatch_IgnoreCaseTrue = "regexesPerf_IsMatch_IgnoreCaseTrue.txt";
@@ -430,6 +431,30 @@ namespace Automata.Tests
             File.WriteAllLines(regexesFile, filtered.ToArray());
         }
 
+        List<int> FindRegexesWithLazyLoops()
+        {
+            //set match timeout to 1 second for .net regexes
+            Regex[] regexes = Array.ConvertAll(File.ReadAllLines(regexesWithLazyLoops), x => new Regex(x, RegexOptions.None, new TimeSpan(0, 0, 1)));
+            var res = new List<int>();
+            for (int i = 0; i < regexes.Length; i++)
+            {
+                var re = regexes[i];
+                string reasonWhyNotSupported;
+                var ok = re.IsCompileSupported(out reasonWhyNotSupported);
+                if (!ok)
+                    if (reasonWhyNotSupported.Contains("lazy loop"))
+                        res.Add(i);
+            }
+            return res;
+        }
+        [TestMethod]
+        public void Test_FindRegexesWithLazyLoops()
+        {
+            var res = FindRegexesWithLazyLoops();
+            var regexes = File.ReadAllLines(regexesWithLazyLoops);
+            Assert.IsTrue(res.Count == regexes.Length);
+        }
+
         public void TestRegex_CompileToSymbolicRegex_Matches_Helper(RegexOptions options)
         {
             //set match timeout to 1 second for .net regexes
@@ -444,7 +469,7 @@ namespace Automata.Tests
             var strArray = str.ToCharArray();
             int k = str.Length;
             //CharSetSolver css = new CharSetSolver();
-            for (int i = 0; i < 10; i++)
+            for (int i = 2; i < k; i++)
             {
                 var re = regexes[i];
                 var sr = re.Compile();

@@ -770,16 +770,31 @@ namespace Automata.Tests
         [TestMethod]
         public void TestDerivative_BasicCreation()
         {
-            //var regex = new Regex("[ab]*a[ab]{0,5}", RegexOptions.Singleline);
+            var regex = new Regex("[ab]*a[ab]{0,5}", RegexOptions.Singleline);
             //var regex = new Regex(@".*ab{0,5}ea{0,5}d", RegexOptions.Singleline);
-            var regex = new Regex("<[^>]*>.*", RegexOptions.Singleline);
+            //var regex = new Regex("<[^>]*>.*", RegexOptions.Singleline);
             var r_c = regex; //.Complement();
             var sr = (SymbolicRegex<ulong>)r_c.Compile();
             //var deriv = sr.MkDerivative(sr.builder.solver.MkCharConstraint('<'), true);
             var aut = ((SymbolicRegex<ulong>)sr).A.Unwind();
             //regex.Display("minDFA",true);
             Assert.IsTrue(aut.DescribeState(aut.InitialState) == sr.A.ToString());
-            //sr.ShowGraph();
+            sr.Pattern.ShowGraph();
+        }
+
+        [TestMethod]
+        public void TestDerivative_BasicCreation2()
+        {
+            var regex = new Regex(".*a(c|.*){0,10}", RegexOptions.Singleline);
+            //var regex = new Regex(@".*ab{0,5}ea{0,5}d", RegexOptions.Singleline);
+            //var regex = new Regex("<[^>]*>.*", RegexOptions.Singleline);
+            var r_c = regex; //.Complement();
+            var sr = (SymbolicRegex<ulong>)r_c.Compile();
+            //var deriv = sr.MkDerivative(sr.builder.solver.MkCharConstraint('<'), true);
+            var aut = ((SymbolicRegex<ulong>)sr).A.Unwind();
+            //regex.Display("minDFA",true);
+            Assert.IsTrue(aut.DescribeState(aut.InitialState) == sr.A.ToString());
+            sr.Pattern.ShowGraph();
         }
 
         [TestMethod]

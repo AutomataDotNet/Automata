@@ -86,9 +86,15 @@ namespace Microsoft.Automata.Z3.Internal
             switch (declKind)
             {
                 case Z3_decl_kind.Z3_OP_OR:
-                    return "||";
+                    if (compactview)
+                        return "|";
+                    else
+                        return "||";
                 case Z3_decl_kind.Z3_OP_AND:
-                    return "&&";
+                    if (compactview)
+                        return "&";
+                    else
+                        return "&&";
                 case Z3_decl_kind.Z3_OP_GT:
                 case Z3_decl_kind.Z3_OP_UGT:
                     return ">";
@@ -102,7 +108,10 @@ namespace Microsoft.Automata.Z3.Internal
                 case Z3_decl_kind.Z3_OP_UGEQ:
                     return ">=";
                 case Z3_decl_kind.Z3_OP_EQ:
-                    return "==";
+                    if (compactview)
+                        return "=";
+                    else
+                        return "==";
                 case Z3_decl_kind.Z3_OP_ADD:
                     return "+";
                 case Z3_decl_kind.Z3_OP_SUB:
@@ -146,6 +155,7 @@ namespace Microsoft.Automata.Z3.Internal
             }
         }
 
+        internal bool compactview = false;
         /// <summary>
         /// Returns a pretty printed view of the given term.
         /// </summary>
@@ -187,6 +197,61 @@ namespace Microsoft.Automata.Z3.Internal
                 FuncDecl decl = z3p.GetAppDecl(term);
                 var dkind = decl.DeclKind;
                 Expr[] subterms = z3p.GetAppArgs(term);
+                if (compactview)
+                {
+                    if (dkind == Z3_decl_kind.Z3_OP_DT_CONSTRUCTOR)
+                    {
+                        #region compact viewing of lists
+                        if (decl.Name.ToString().Equals("cons") && subterms.Length == 2)
+                        {
+                            string first = DescribeExpr(subterms[0]);
+                            string rest = DescribeExpr(subterms[1]);
+                            if (rest.StartsWith("[") && rest.EndsWith("]"))
+                            {
+                                if (rest == "[]")
+                                {
+                                    return "[" + first + "]";
+                                }
+                                else
+                                {
+                                    var list = "[" + first + "," +
+                                        rest.Substring(1, rest.Length - 2) + "]";
+                                    return list;
+                                }
+                            }
+                        }
+                        else if (decl.Name.ToString().Equals("nil") && subterms.Length == 0)
+                        {
+                            return "[]";
+                        }
+                        #endregion
+                    }
+                    else if (dkind == Z3_decl_kind.Z3_OP_DT_ACCESSOR)
+                    {
+                        #region view head(tail(tail(c)) as c2
+                        if (decl.Name.ToString().Equals("head") && subterms.Length == 1)
+                        {
+                            var rest_term = subterms[0];
+                            FuncDecl rest_decl = z3p.GetAppDecl(rest_term);
+                            var rest_dkind = rest_decl.DeclKind;
+                            int rest_count = 0;
+                            while (rest_dkind == Z3_decl_kind.Z3_OP_DT_ACCESSOR && rest_decl.Name.ToString().Equals("tail"))
+                            {
+                                rest_term = z3p.GetAppArgs(rest_term)[0];
+                                rest_decl = z3p.GetAppDecl(rest_term);
+                                rest_dkind = rest_decl.DeclKind;
+                                rest_count += 1;
+                            }
+                            var counter_name = DescribeExpr(rest_term);
+                            if (z3p.IsVar(rest_term))
+                            {
+                                counter_name += rest_count;
+                                return counter_name;
+                            }
+                        }
+                        #endregion
+                    }
+                }
                 Expr[] terms;
                 if (dkind == Z3_decl_kind.Z3_OP_NOT)
                 {
@@ -512,7 +577,7 @@ namespace Microsoft.Automata.Z3.Internal
         }
 
 
-        Func<Expr, string> __lookupVarName = null;
+        internal Func<Expr, string> __lookupVarName = null;
         string LookupVarName(Expr var)
         {
             if (__lookupVarName == null)

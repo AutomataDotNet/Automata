@@ -187,7 +187,7 @@ namespace Microsoft.Automata
 
         STBuilder<FUNC, TERM, SORT> STbuilder;
 
-        ST(IContext<FUNC, TERM, SORT> z3p, string name, TERM initReg, 
+        protected ST(IContext<FUNC, TERM, SORT> z3p, string name, TERM initReg, 
             SORT inputSort, SORT outputSort, SORT registerSort, Automaton<Rule<TERM>> automaton, bool noYields)
         {
             this.Name = name;
@@ -910,7 +910,7 @@ namespace Microsoft.Automata
             return AB;
         }
 
-        static IEnumerable<int> ExtractFinalStates(IEnumerable<Move<Rule<TERM>>> moves)
+        internal static IEnumerable<int> ExtractFinalStates(IEnumerable<Move<Rule<TERM>>> moves)
         {
             foreach (var move in moves)
                 if (move.Label.IsFinal)
@@ -1218,7 +1218,7 @@ namespace Microsoft.Automata
 
             var stateMap = new Dictionary<int, Tuple<int, TERM>>();
             var stateIdMap = new Dictionary<Tuple<int, TERM>, int>();
-            var q0 = Tuple.Create(InitialState, InitialRegister);
+            var q0 = Tuple.Create(this.InitialState, InitialRegister);
             stateMap[0] = q0;
             stateIdMap[q0] = 0; //0 is the inital state
             SimpleStack<int> Wnext = new SimpleStack<int>();

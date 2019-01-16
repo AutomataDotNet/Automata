@@ -158,7 +158,7 @@ namespace Automata.Tests
         [TestMethod]
         public void TestSerialization_Roundtrip_SingleRegex()
         {
-            var m1 = new Regex(@"\d+").Compile();
+            var m1 = new Regex(@"[A-Z0-9][0-9]*").Compile();
             var s1 = new FileStream("test.bin", FileMode.Create);
             new BinaryFormatter().Serialize(s1, m1);
             s1.Close();
@@ -186,11 +186,11 @@ namespace Automata.Tests
             //creates a conjunction-pattern of the three regexes, 
             //order is not important, r2.Compile(r3, r1) is the same
             var m1 = r1.Compile(r2, r3);
-            var s1 = new FileStream("test.bin", FileMode.OpenOrCreate);
-            new BinaryFormatter().Serialize(s1, m1);
+            var s1 = new FileStream("test.soap", FileMode.OpenOrCreate);
+            new SoapFormatter().Serialize(s1, m1);
             s1.Close();
-            var s2 = new FileStream("test.bin", FileMode.Open);
-            var m2 = (IMatcher)new BinaryFormatter().Deserialize(s2);
+            var s2 = new FileStream("test.soap", FileMode.Open);
+            var m2 = (IMatcher)new SoapFormatter().Deserialize(s2);
             s2.Close();
             var input = "asd 1X1s dsd 77777 AAAAA sdsd 3B3sbsbsb ggg";
             var all = m2.Matches(input);

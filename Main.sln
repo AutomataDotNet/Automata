@@ -31,6 +31,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MSO.Eval", "src\MSO.Eval\MS
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RegenerateUnicodeTables", "src\RegenerateUnicodeTables\RegenerateUnicodeTables.csproj", "{3C95141E-CF30-40E1-A198-138B14D822F7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CounterAutomata", "src\CounterAutomata\CounterAutomata.csproj", "{29308BFC-D04E-4C27-93BC-91FF026C1A55}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -209,6 +211,18 @@ Global
 		{3C95141E-CF30-40E1-A198-138B14D822F7}.Release|x64.Build.0 = Release|Any CPU
 		{3C95141E-CF30-40E1-A198-138B14D822F7}.Release|x86.ActiveCfg = Release|Any CPU
 		{3C95141E-CF30-40E1-A198-138B14D822F7}.Release|x86.Build.0 = Release|Any CPU
+		{29308BFC-D04E-4C27-93BC-91FF026C1A55}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{29308BFC-D04E-4C27-93BC-91FF026C1A55}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{29308BFC-D04E-4C27-93BC-91FF026C1A55}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{29308BFC-D04E-4C27-93BC-91FF026C1A55}.Debug|x64.Build.0 = Debug|Any CPU
+		{29308BFC-D04E-4C27-93BC-91FF026C1A55}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{29308BFC-D04E-4C27-93BC-91FF026C1A55}.Debug|x86.Build.0 = Debug|Any CPU
+		{29308BFC-D04E-4C27-93BC-91FF026C1A55}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{29308BFC-D04E-4C27-93BC-91FF026C1A55}.Release|Any CPU.Build.0 = Release|Any CPU
+		{29308BFC-D04E-4C27-93BC-91FF026C1A55}.Release|x64.ActiveCfg = Release|Any CPU
+		{29308BFC-D04E-4C27-93BC-91FF026C1A55}.Release|x64.Build.0 = Release|Any CPU
+		{29308BFC-D04E-4C27-93BC-91FF026C1A55}.Release|x86.ActiveCfg = Release|Any CPU
+		{29308BFC-D04E-4C27-93BC-91FF026C1A55}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

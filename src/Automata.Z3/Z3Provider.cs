@@ -238,6 +238,11 @@ namespace Microsoft.Automata.Z3
             }
         }
 
+        public void SetCompactView()
+        {
+            tpp.compactview = true;
+        }
+
         #region Direct Z3 wrappers
 
         /// <summary>
@@ -3296,6 +3301,16 @@ namespace Microsoft.Automata.Z3
             return tpp.DescribeExpr(t);
         }
 
+        public string PrettyPrint2(Expr t, Func<Expr, string> lookupVarName)
+        {
+            tpp.compactview = true;
+            tpp.__lookupVarName = lookupVarName;
+            string res = tpp.DescribeExpr(t);
+            tpp.compactview = false;
+            tpp.__lookupVarName = null;
+            return res;
+        }
+
         /// <summary>
         /// Use lookup to determine if a term is given a particular presentation.
         /// </summary>
@@ -3651,7 +3666,7 @@ namespace Microsoft.Automata.Z3
 
         public BDD ConvertToCharSet(IBDDAlgebra solver, Expr pred)
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         public Expr[] GetPartition()

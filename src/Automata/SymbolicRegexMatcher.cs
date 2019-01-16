@@ -1041,7 +1041,7 @@ namespace Microsoft.Automata
         /// <summary>
         /// Walk back in reverse using Ar to find the start position of match, start position is known to exist.
         /// </summary>
-        /// <param name="input">the input array</param>
+        /// <param name="input">the input string</param>
         /// <param name="i">position to start walking back from, i points at the last character of the match</param>
         /// <param name="match_start_boundary">do not pass this boundary when walking back</param>
         /// <returns></returns>
@@ -1148,7 +1148,7 @@ namespace Microsoft.Automata
         /// <summary>
         /// Return the position of the last character that leads to a final state in A1
         /// </summary>
-        /// <param name="input">given input array</param>
+        /// <param name="input">given input string</param>
         /// <param name="i">start position</param>
         /// <param name="i_q0">last position the initial state of A1 was visited</param>
         /// <returns></returns>
