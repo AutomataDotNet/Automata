@@ -23,10 +23,9 @@ namespace Microsoft.Automata
     /// <summary>
     /// Represents an AST node of a symbolic regex.
     /// </summary>
-    public class SymbolicRegexNode<S>
+    public class SymbolicRegexNode<S> : ICounter
     {
         internal SymbolicRegexBuilder<S> builder;
-
         internal SymbolicRegexKind kind;
         internal int lower = -1;
         internal int upper = -1;
@@ -126,6 +125,28 @@ namespace Microsoft.Automata
             get
             {
                 return lower == 0 && upper == int.MaxValue;
+            }
+        }
+
+        /// <summary>
+        /// Returns true iff this loop has an upper bound
+        /// </summary>
+        public bool HasUpperBound
+        {
+            get
+            {
+                return upper < int.MaxValue;
+            }
+        }
+
+        /// <summary>
+        /// Returns true iff this loop has a lower bound
+        /// </summary>
+        public bool HasLowerBound
+        {
+            get
+            {
+                return lower > 0;
             }
         }
 
@@ -643,7 +664,7 @@ namespace Microsoft.Automata
         }
 
         /// <summary>
-        /// Creates the derivative of the symbolic regex wrt elem. 
+        /// Takes the derivative of the symbolic regex wrt elem. 
         /// Assumes that elem is either a minterm wrt the predicates of the whole regex or a singleton set.
         /// </summary>
         /// <param name="elem">given element wrt which the derivative is taken</param>
@@ -652,6 +673,206 @@ namespace Microsoft.Automata
         {
             return builder.MkDerivative(elem, isFirst, isLast, this);
         }
+
+        /// <summary>
+        /// Takes the Antimirov derivative of the symbolic regex wrt elem. 
+        /// Assumes that elem is either a minterm wrt the predicates of the whole regex or a singleton set.
+        /// </summary>
+        /// <param name="elem">given element wrt which the derivative is taken</param>
+        /// <returns></returns>
+        internal List<ConditionalDerivative<S>> GetConditinalDerivatives(S elem)
+        {
+            return new List<ConditionalDerivative<S>>(builder.EnumerateConditionalDerivatives(elem, this));
+        }
+
+        /// <summary>
+        /// Temporary counter automaton exploration untility
+        /// </summary>
+        /// <returns></returns>
+        internal Automaton<Tuple<Maybe<S>,Sequence<CounterUpdate>>> Explore()
+        {
+            var stateLookup = new Dictionary<SymbolicRegexNode<S>, int>();
+            var regexLookup = new Dictionary<int,SymbolicRegexNode<S>>();
+            stateLookup[this] = 0;
+            int stateid = 2;
+            regexLookup[0] = this;
+            SimpleStack<int> frontier = new SimpleStack<int>();
+            var moves = new List<Move<Tuple<Maybe<S>, Sequence<CounterUpdate>>>>();
+            var finalStates = new HashSet<int>();
+            frontier.Push(0);
+            while (frontier.IsNonempty)
+            {
+                var q = frontier.Pop();
+                var regex = regexLookup[q];
+                //partition corresponds to the alphabet
+                foreach (S a in builder.solver.GetPartition())
+                {
+                    foreach (var cd in builder.EnumerateConditionalDerivatives(a, regex))
+                    {
+                        int p;
+                        if (!stateLookup.TryGetValue(cd.PartialDerivative, out p))
+                        {
+                            p = stateid++;
+                            stateLookup[cd.PartialDerivative] = p;
+                            regexLookup[p] = cd.PartialDerivative;
+                            if (cd.PartialDerivative.isNullable)
+                                finalStates.Add(p);
+                            else if (cd.PartialDerivative.kind == SymbolicRegexKind.Loop)
+                            {
+                                var reset = builder.GetCounterResetConditions(cd.PartialDerivative);
+                                moves.Add(Move<Tuple<Maybe<S>, Sequence<CounterUpdate>>>.Create(p, 1,
+                                    new Tuple<Maybe<S>, Sequence<CounterUpdate>>(Maybe<S>.Nothing, reset)));
+                                finalStates.Add(1);
+                            }
+                            frontier.Push(p);
+                        }
+                        moves.Add(Move<Tuple<Maybe<S>, Sequence<CounterUpdate>>>.Create(q, p,
+                            new Tuple<Maybe<S>, Sequence<CounterUpdate>>(Maybe<S>.Something(a), cd.Condition)));
+                    }
+                }
+            }
+            var aut = Automaton<Tuple<Maybe<S>, Sequence<CounterUpdate>>>.Create(new CABA<S>(builder),
+                0, finalStates, moves);
+            return aut;
+        }
+
+
+        internal class CABA<S> : IBooleanAlgebra<Tuple<Maybe<S>, Sequence<CounterUpdate>>>, IPrettyPrinter<Tuple<Maybe<S>, Sequence<CounterUpdate>>>
+        {
+            SymbolicRegexBuilder<S> builder;
+            public CABA(SymbolicRegexBuilder<S> builder)
+            {
+                this.builder = builder;
+            }
+
+            public string PrettyPrint(Tuple<Maybe<S>, Sequence<CounterUpdate>> t)
+            {
+                if (t.Item1.IsSomething)
+                    return builder.solver.PrettyPrint(t.Item1.Element) + "/" + t.Item2.ToString();
+                else
+                    return t.Item2.ToString();
+            }
+
+            #region not implemented
+            public Tuple<Maybe<S>, Sequence<CounterUpdate>> False
+            {
+                get
+                {
+                    throw new NotImplementedException();
+                }
+            }
+
+            public bool IsAtomic
+            {
+                get
+                {
+                    throw new NotImplementedException();
+                }
+            }
+
+            public bool IsExtensional
+            {
+                get
+                {
+                    throw new NotImplementedException();
+                }
+            }
+
+            public Tuple<Maybe<S>, Sequence<CounterUpdate>> True
+            {
+                get
+                {
+                    throw new NotImplementedException();
+                }
+            }
+
+            public bool AreEquivalent(Tuple<Maybe<S>, Sequence<CounterUpdate>> predicate1, Tuple<Maybe<S>, Sequence<CounterUpdate>> predicate2)
+            {
+                throw new NotImplementedException();
+            }
+
+            public bool CheckImplication(Tuple<Maybe<S>, Sequence<CounterUpdate>> lhs, Tuple<Maybe<S>, Sequence<CounterUpdate>> rhs)
+            {
+                throw new NotImplementedException();
+            }
+
+            public bool EvaluateAtom(Tuple<Maybe<S>, Sequence<CounterUpdate>> atom, Tuple<Maybe<S>, Sequence<CounterUpdate>> psi)
+            {
+                throw new NotImplementedException();
+            }
+
+            public IEnumerable<Tuple<bool[], Tuple<Maybe<S>, Sequence<CounterUpdate>>>> GenerateMinterms(params Tuple<Maybe<S>, Sequence<CounterUpdate>>[] constraints)
+            {
+                throw new NotImplementedException();
+            }
+
+            public Tuple<Maybe<S>, Sequence<CounterUpdate>> GetAtom(Tuple<Maybe<S>, Sequence<CounterUpdate>> psi)
+            {
+                throw new NotImplementedException();
+            }
+
+            public bool IsSatisfiable(Tuple<Maybe<S>, Sequence<CounterUpdate>> predicate)
+            {
+                throw new NotImplementedException();
+            }
+
+            public Tuple<Maybe<S>, Sequence<CounterUpdate>> MkAnd(params Tuple<Maybe<S>, Sequence<CounterUpdate>>[] predicates)
+            {
+                throw new NotImplementedException();
+            }
+
+            public Tuple<Maybe<S>, Sequence<CounterUpdate>> MkAnd(IEnumerable<Tuple<Maybe<S>, Sequence<CounterUpdate>>> predicates)
+            {
+                throw new NotImplementedException();
+            }
+
+            public Tuple<Maybe<S>, Sequence<CounterUpdate>> MkAnd(Tuple<Maybe<S>, Sequence<CounterUpdate>> predicate1, Tuple<Maybe<S>, Sequence<CounterUpdate>> predicate2)
+            {
+                throw new NotImplementedException();
+            }
+
+            public Tuple<Maybe<S>, Sequence<CounterUpdate>> MkDiff(Tuple<Maybe<S>, Sequence<CounterUpdate>> predicate1, Tuple<Maybe<S>, Sequence<CounterUpdate>> predicate2)
+            {
+                throw new NotImplementedException();
+            }
+
+            public Tuple<Maybe<S>, Sequence<CounterUpdate>> MkNot(Tuple<Maybe<S>, Sequence<CounterUpdate>> predicate)
+            {
+                throw new NotImplementedException();
+            }
+
+            public Tuple<Maybe<S>, Sequence<CounterUpdate>> MkOr(IEnumerable<Tuple<Maybe<S>, Sequence<CounterUpdate>>> predicates)
+            {
+                throw new NotImplementedException();
+            }
+
+            public Tuple<Maybe<S>, Sequence<CounterUpdate>> MkOr(Tuple<Maybe<S>, Sequence<CounterUpdate>> predicate1, Tuple<Maybe<S>, Sequence<CounterUpdate>> predicate2)
+            {
+                throw new NotImplementedException();
+            }
+
+            public Tuple<Maybe<S>, Sequence<CounterUpdate>> MkSymmetricDifference(Tuple<Maybe<S>, Sequence<CounterUpdate>> p1, Tuple<Maybe<S>, Sequence<CounterUpdate>> p2)
+            {
+                throw new NotImplementedException();
+            }
+
+            public string PrettyPrint(Tuple<Maybe<S>, Sequence<CounterUpdate>> t, Func<Tuple<Maybe<S>, Sequence<CounterUpdate>>, string> varLookup)
+            {
+                throw new NotImplementedException();
+            }
+
+            public string PrettyPrintCS(Tuple<Maybe<S>, Sequence<CounterUpdate>> t, Func<Tuple<Maybe<S>, Sequence<CounterUpdate>>, string> varLookup)
+            {
+                throw new NotImplementedException();
+            }
+
+            public Tuple<Maybe<S>, Sequence<CounterUpdate>> Simplify(Tuple<Maybe<S>, Sequence<CounterUpdate>> predicate)
+            {
+                throw new NotImplementedException();
+            }
+            #endregion
+        }
+
 
         /// <summary>
         /// true iff epsilon is accepted
@@ -708,18 +929,24 @@ namespace Microsoft.Automata
                     case SymbolicRegexKind.EndAnchor:
                     case SymbolicRegexKind.StartAnchor:
                     case SymbolicRegexKind.Epsilon:
-                        return kind.GetHashCode();
+                        hashcode = kind.GetHashCode();
+                        break;
                     case SymbolicRegexKind.Loop:
-                        return kind.GetHashCode() ^ left.GetHashCode() ^ lower ^ upper;
+                        hashcode = kind.GetHashCode() ^ left.GetHashCode() ^ lower ^ upper;
+                        break;
                     case SymbolicRegexKind.Or:
                     case SymbolicRegexKind.And:
-                        return kind.GetHashCode() ^ alts.GetHashCode();
+                        hashcode = kind.GetHashCode() ^ alts.GetHashCode();
+                        break;
                     case SymbolicRegexKind.Concat:
-                        return left.GetHashCode() + (prime * right.GetHashCode());
+                        hashcode = left.GetHashCode() + (prime * right.GetHashCode());
+                        break;
                     case SymbolicRegexKind.Singleton:
-                        return kind.GetHashCode() ^ set.GetHashCode();
+                        hashcode = kind.GetHashCode() ^ set.GetHashCode();
+                        break;
                     default: //if-then-else
-                        return kind.GetHashCode() ^ iteCond.GetHashCode() ^ (left.GetHashCode() << 1) ^ (right.GetHashCode() << 2);
+                        hashcode = kind.GetHashCode() ^ iteCond.GetHashCode() ^ (left.GetHashCode() << 1) ^ (right.GetHashCode() << 2);
+                        break;
                 }
             }
             return hashcode;
@@ -1227,6 +1454,20 @@ namespace Microsoft.Automata
         public bool IgnoreCaseOfFixedPrefix
         {
             get { return ignoreCaseOfFixedPrefix; }
+        }
+
+        /// <summary>
+        /// If this is a loop then a name of the associated counter
+        /// </summary>
+        public string CounterName
+        {
+            get
+            {
+                if (this.lower >= 0)
+                    return this.builder.GetCounterName(this);
+                else
+                    return null;
+            }
         }
 
         /// <summary>

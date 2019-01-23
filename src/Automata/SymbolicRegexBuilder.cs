@@ -254,7 +254,8 @@ namespace Microsoft.Automata
             }
             else
             {
-                return SymbolicRegexNode<S>.MkLoop(this, regex, lower, upper);
+                var loop = SymbolicRegexNode<S>.MkLoop(this, regex, lower, upper);
+                return loop;
             }
         }
 
@@ -603,6 +604,220 @@ namespace Microsoft.Automata
                         }
                 }
         }
+
+        internal IEnumerable<ConditionalDerivative<S>> EnumerateConditionalDerivatives(S elem, SymbolicRegexNode<S> node)
+        {
+            if (node == this.dotStar)
+                yield return new ConditionalDerivative<S>(this.dotStar);
+            else if (node == this.nothing)
+                yield break;
+            else
+                switch (node.kind)
+                {
+                    case SymbolicRegexKind.Epsilon:
+                        {
+                            yield break;
+                        }
+                    case SymbolicRegexKind.Singleton:
+                        {
+                            #region d(a,R) = epsilon if (a in R) else nothing
+                            if (this.solver.IsSatisfiable(this.solver.MkAnd(elem, node.set)))
+                            {      
+                                yield return new ConditionalDerivative<S>(this.epsilon);
+                            }
+                            yield break;
+                            #endregion
+                        }
+                    case SymbolicRegexKind.Or:
+                        {
+                            #region d(a,A|B) = d(a,A) U d(a,B)
+                            //the hashset is used to eliminate duplicates
+                            //for two different members the derivatives may be the same
+                            var derivs = new HashSet<ConditionalDerivative<S>>();
+                            foreach (var member in node.alts)
+                                foreach (var deriv in this.EnumerateConditionalDerivatives(elem, member))
+                                    if (derivs.Add(deriv))
+                                        yield return deriv;
+                            yield break;
+                            #endregion
+                        }
+                    case SymbolicRegexKind.Concat:
+                        {
+                            #region d(a, AB) = d(a,A)B U (if A nullable then d(a,B))
+                            var derivs = new HashSet<ConditionalDerivative<S>>();
+                            foreach (var deriv in this.EnumerateConditionalDerivatives(elem, node.left))
+                            {
+                                var deriv1 = new ConditionalDerivative<S>(deriv.Condition, 
+                                                    this.MkConcat(deriv.PartialDerivative, node.right));
+                                if (derivs.Add(deriv1))
+                                    yield return deriv1;
+                            }
+
+                            //if first element is a loop with a lower bound
+                            if (node.left.kind == SymbolicRegexKind.Loop && node.left.lower > 0 && !node.left.IsPlus && !node.left.IsMaybe)
+                            {
+                                var reset = GetCounterResetConditions(node.left);
+                                foreach (var deriv in this.EnumerateConditionalDerivatives(elem, node.right))
+                                {
+                                    var deriv1 = new ConditionalDerivative<S>(
+                                                            reset.Append(deriv.Condition),
+                                                            deriv.PartialDerivative);
+                                    if (derivs.Add(deriv1))
+                                        yield return deriv1;
+                                }
+                            }
+                            else
+                            {
+                                if (node.left.isNullable)
+                                {
+                                    foreach (var deriv in this.EnumerateConditionalDerivatives(elem, node.right))
+                                    {
+                                        if (derivs.Add(deriv))
+                                            yield return deriv;
+                                    }
+                                }
+                            }
+                            yield break;
+                            #endregion
+                        }
+                    case SymbolicRegexKind.Loop:
+                        {
+                            #region d(a, R*) = d(a,R)R*
+                            if (node.IsStar)
+                            {
+                                foreach (var step in this.EnumerateConditionalDerivatives(elem, node.left))
+                                {
+                                    var deriv = this.MkConcat(step.PartialDerivative, node);
+                                    var cd = new ConditionalDerivative<S>(step.Condition, deriv);
+                                    yield return cd;
+                                }
+                            }
+                            else if (node.IsPlus)
+                            {
+                                var star = this.MkLoop(node.left);
+                                var expandedloop = this.MkConcat(node.left, star);
+                                foreach (var deriv in this.EnumerateConditionalDerivatives(elem, expandedloop))
+                                    yield return deriv;
+                            }
+                            else if (node.IsMaybe)
+                            {
+                                foreach (var step in this.EnumerateConditionalDerivatives(elem, node.left))
+                                    yield return step;
+                            }
+                            else
+                            {
+                                CounterUpdate ca = new CounterUpdate(node, CounterOp.INCREMENT);
+                                foreach (var step in this.EnumerateConditionalDerivatives(elem, node.left))
+                                {
+                                    var deriv = this.MkConcat(step.PartialDerivative, node);
+                                    var cond = step.Condition.Append(ca);
+                                    var cd = new ConditionalDerivative<S>(cond, deriv);
+                                    yield return cd;
+                                }
+                            }
+                            yield break;
+                            #endregion
+                        }
+                    default: 
+                        {
+                            throw new NotSupportedException("Conditional derivatives not supported for " + node.kind);
+                        }
+                }
+        }
+
+        Dictionary<object, string> counterIdMap = new Dictionary<object, string>();
+        internal string GetCounterName(object id)
+        {
+            string name;
+            if (!counterIdMap.TryGetValue(id, out name))
+            {
+                name = "c" + counterIdMap.Count;
+                counterIdMap[id] = name;
+            }
+            return name;
+        }
+
+        internal Sequence<CounterUpdate> GetCounterResetConditions(SymbolicRegexNode<S> loop)
+        {
+            Sequence<CounterUpdate> bodyreset = Sequence<CounterUpdate>.Empty;
+            if (loop.left.kind == SymbolicRegexKind.Loop && loop.left.lower > 0 && !loop.left.IsPlus && !loop.left.IsMaybe)
+            {
+                bodyreset = GetCounterResetConditions(loop.left);
+            }
+            var reset = bodyreset.Append(new CounterUpdate(loop, CounterOp.RESET));
+            return reset;
+        }
+
+        //internal IEnumerable<Sequence<CounterUpdate>> EnumerateNullabilityConditions(SymbolicRegexNode<S> node)
+        //{
+        //    if (node == this.dotStar)
+        //        yield return Sequence<CounterUpdate>.Empty;
+        //    else if (node == this.nothing)
+        //        yield break;
+        //    else
+        //    {
+        //        var cache = new HashSet<Sequence<CounterUpdate>>();
+        //        switch (node.kind)
+        //        {
+        //            case SymbolicRegexKind.Epsilon:
+        //            case SymbolicRegexKind.Singleton:
+        //                {
+        //                    yield break;
+        //                }
+        //            case SymbolicRegexKind.Or:
+        //                {
+        //                    foreach (var member in node.alts)
+        //                        foreach (var cond in this.EnumerateNullabilityConditions(member))
+        //                            if (cache.Add(cond))
+        //                                yield return cond;
+        //                    yield break;
+        //                }
+        //            case SymbolicRegexKind.Concat:
+        //                {
+        //                    foreach (var cond1 in this.EnumerateNullabilityConditions(node.left))
+        //                        foreach (var cond2 in this.EnumerateNullabilityConditions(node.right))
+        //                            if (cache.Add(cond2))
+        //                                yield return cond1.Append(cond2);
+        //                    yield break;
+        //                }
+        //            case SymbolicRegexKind.Loop:
+        //                {
+        //                    if (node.IsStar)
+        //                        yield return Sequence<CounterUpdate>.Empty;
+        //                    else if (node.IsPlus)
+        //                        foreach (var cond in this.EnumerateNullabilityConditions(node.left))
+        //                            yield return cond;
+        //                    else if (node.IsMaybe)
+        //                    {
+        //                        foreach (var cond in this.EnumerateNullabilityConditions(node.left))
+        //                            if (cache.Add(cond))
+        //                                yield return cond;
+        //                        if (cache.Add(Sequence<CounterUpdate>.Empty))
+        //                            yield return Sequence<CounterUpdate>.Empty;
+        //                    }
+        //                    else
+        //                    {
+        //                        CounterUpdate ca = new CounterUpdate(node, CounterOp.RESET);
+        //                        foreach (var cond in this.EnumerateNullabilityConditions(node.left))
+        //                        {
+        //                            var seq = cond.Append(ca);
+        //                            if (cache.Add(seq))
+        //                                yield return cond.Append(ca);
+        //                        }
+        //                        //if the loop body is not nullable
+        //                        //then the loop itself is nullable if the counter is resettable
+        //                        if (cache.Count == 0)
+        //                            yield return Sequence<CounterUpdate>.Empty.Append(ca);
+        //                    }
+        //                    yield break;
+        //                }
+        //            default:
+        //                {
+        //                    throw new NotSupportedException("Conditional derivatives not supported for " + node.kind);
+        //                }
+        //        }
+        //    }
+        //}
 
         internal SymbolicRegexNode<T> Transform<T>(SymbolicRegexNode<S> sr, SymbolicRegexBuilder<T> builderT, Func<S, T> predicateTransformer)
         {

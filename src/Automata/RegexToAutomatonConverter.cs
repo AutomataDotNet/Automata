@@ -684,9 +684,12 @@ namespace Microsoft.Automata
         /// </summary>
         /// <param name="regex">the given .NET regex</param>
         /// <param name="keepAnchors">if false (default) then anchors are replaced by equivalent regexes</param>
-        public SymbolicRegexNode<S> ConvertToSymbolicRegex(Regex regex, bool keepAnchors = false)
+        public SymbolicRegexNode<S> ConvertToSymbolicRegex(Regex regex, bool keepAnchors = false, bool unwindlowerbounds = false)
         {
-            return ConvertToSymbolicRegex(regex.ToString(), regex.Options, keepAnchors);
+            var node = ConvertToSymbolicRegex(regex.ToString(), regex.Options, keepAnchors);
+            if (unwindlowerbounds)
+                node = node.Simplify();
+            return node;
         }
 
         internal SymbolicRegexNode<S> ConvertNodeToSymbolicRegex(RegexNode node)

@@ -90,6 +90,7 @@
     <Compile Include="CharSetSolverTests.cs" />
     <Compile Include="CharSetTests.cs" />
     <Compile Include="CodeGenTests.cs" />
+    <Compile Include="ConditionalDerivativeTests.cs" />
     <Compile Include="DecisionTreeTests.cs" />
     <Compile Include="DeterminizationTests.cs" />
     <Compile Include="EditDistanceTest.cs" />

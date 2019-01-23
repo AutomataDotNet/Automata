@@ -357,7 +357,13 @@ namespace Microsoft.Automata
             if (css != null)
                 css.ShowGraph(this as Automaton<BDD>, name);
             else
-                DirectedGraphs.DgmlWriter.ShowGraph<T>(-1, this, name);
+            {
+                var pp = algebra as IPrettyPrinter<T>;
+                if (pp != null)
+                    DirectedGraphs.DgmlWriter.ShowGraph<T>(-1, this, name, pp.PrettyPrint);
+                else
+                    DirectedGraphs.DgmlWriter.ShowGraph<T>(-1, this, name);
+            }
         }
 
         /// <summary>

@@ -97,6 +97,8 @@
     <Compile Include="BooleanAlgebras\BV64Algebra.cs" />
     <Compile Include="BooleanAlgebras\BVAlgebra.cs" />
     <Compile Include="BV.cs" />
+    <Compile Include="ConditionalDerivative.cs" />
+    <Compile Include="Interfaces\ICounter.cs" />
     <Compile Include="Internal\AutomataAlgebra.cs" />
     <Compile Include="AutomataException.cs" />
     <Compile Include="Automaton.cs" />
@@ -148,6 +150,7 @@
     <Compile Include="Generated\UnicodeCategoryRanges.cs" />
     <Compile Include="Internal\HashSetSolver.cs" />
     <Compile Include="Internal\IntSet.cs" />
+    <Compile Include="Internal\Maybe.cs" />
     <Compile Include="Internal\UnicodeCategoryTheory.cs" />
     <Compile Include="Internal\UnicodeCategoryTheoryProviders.cs" />
     <Compile Include="IntervalSet.cs" />

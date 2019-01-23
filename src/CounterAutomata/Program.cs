@@ -13,8 +13,8 @@ namespace CounterAutomata
     {
         static void Main(string[] args)
         {
-            //Test1();
-            Test2();
+            Test1();
+            //Test2();
         }
 
         static void Test1()

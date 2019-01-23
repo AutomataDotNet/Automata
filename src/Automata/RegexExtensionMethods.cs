@@ -35,6 +35,8 @@ namespace Microsoft.Automata
             context = null;
         }
 
+        static internal bool UnwindLowerBounds = true;
+
         /// <summary>
         /// Compiles this regex and possibly other regexes into a common symbolic regex representing their intersection
         /// </summary>
@@ -46,8 +48,8 @@ namespace Microsoft.Automata
             if (context == null)
                 context = new CharSetSolver();
 
-            var first = context.RegexConverter.ConvertToSymbolicRegex(regex, true).Simplify();
-            var others = Array.ConvertAll(regexes, r => context.RegexConverter.ConvertToSymbolicRegex(r, true).Simplify());
+            var first = context.RegexConverter.ConvertToSymbolicRegex(regex, true, UnwindLowerBounds);
+            var others = Array.ConvertAll(regexes, r => context.RegexConverter.ConvertToSymbolicRegex(r, true, UnwindLowerBounds));
             var all = new SymbolicRegexNode<BDD>[1 + regexes.Length];
             all[0] = first;
             for (int i = 1; i <= others.Length; i++)
