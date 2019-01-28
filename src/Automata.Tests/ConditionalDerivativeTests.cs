@@ -122,5 +122,15 @@ namespace Automata.Tests
             var aut = q1.Explore();
             aut.ShowGraph("CA2");
         }
+
+        [TestMethod]
+        public void TestConditionalDerivativeExploration3()
+        {
+            RegexExtensionMethods.UnwindLowerBounds = false;
+            var regex = new Regex(".*a(.|..){10,20}", RegexOptions.Singleline);
+            var q1 = ((SymbolicRegex<ulong>)regex.Compile()).Pattern;
+            var aut = q1.Explore();
+            aut.ShowGraph("CA3");
+        }
     }
 }

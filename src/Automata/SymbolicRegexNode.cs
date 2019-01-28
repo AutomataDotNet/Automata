@@ -731,13 +731,27 @@ namespace Microsoft.Automata
                     }
                 }
             }
-            var aut = Automaton<Tuple<Maybe<S>, Sequence<CounterUpdate>>>.Create(new CABA<S>(builder),
+            var aut = Automaton<Tuple<Maybe<S>, Sequence<CounterUpdate>>>.Create(new CABA(builder),
                 0, finalStates, moves);
             return aut;
         }
 
 
-        internal class CABA<S> : IBooleanAlgebra<Tuple<Maybe<S>, Sequence<CounterUpdate>>>, IPrettyPrinter<Tuple<Maybe<S>, Sequence<CounterUpdate>>>
+        internal Sequence<CounterUpdate> GetCounterInitConditions()
+        {
+            if (kind == SymbolicRegexKind.Loop && lower > 0 && !IsPlus && !IsMaybe)
+            {
+                var bodyinit = left.GetCounterInitConditions();
+                var init = bodyinit.Append(new CounterUpdate(this, CounterOp.INIT));
+                return init;
+            }
+            else
+            {
+                return Sequence<CounterUpdate>.Empty;
+            }
+        }
+
+        internal class CABA : IBooleanAlgebra<Tuple<Maybe<S>, Sequence<CounterUpdate>>>, IPrettyPrinter<Tuple<Maybe<S>, Sequence<CounterUpdate>>>
         {
             SymbolicRegexBuilder<S> builder;
             public CABA(SymbolicRegexBuilder<S> builder)
@@ -1536,6 +1550,11 @@ namespace Microsoft.Automata
         public IAutomaton<S> Unwind(int bound = 0, bool dotStarAtStart = false, bool hideDerivatives = false)
         {
             return new SymbolicRegexGraph(builder, this, bound, dotStarAtStart, hideDerivatives);
+        }
+
+        public bool ContainsTheImmediateNestedCounter(ICounter subcounter)
+        {
+            return this.left.Equals(subcounter);
         }
 
         internal class SymbolicRegexGraph : IAutomaton<S>

@@ -605,6 +605,8 @@ namespace Microsoft.Automata
                 }
         }
 
+
+
         internal IEnumerable<ConditionalDerivative<S>> EnumerateConditionalDerivatives(S elem, SymbolicRegexNode<S> node)
         {
             if (node == this.dotStar)
@@ -653,6 +655,20 @@ namespace Microsoft.Automata
                                     yield return deriv1;
                             }
 
+                            var reset = GetNullabilityCondition(node.left);
+                            if (reset != null)
+                            {
+                                foreach (var deriv in this.EnumerateConditionalDerivatives(elem, node.right))
+                                {
+                                    var deriv1 = new ConditionalDerivative<S>(
+                                                            reset.Append(deriv.Condition),
+                                                            deriv.PartialDerivative);
+                                    if (derivs.Add(deriv1))
+                                        yield return deriv1;
+                                }
+                            }
+
+                            /*
                             //if first element is a loop with a lower bound
                             if (node.left.kind == SymbolicRegexKind.Loop && node.left.lower > 0 && !node.left.IsPlus && !node.left.IsMaybe)
                             {
@@ -677,6 +693,7 @@ namespace Microsoft.Automata
                                     }
                                 }
                             }
+                            */
                             yield break;
                             #endregion
                         }
@@ -747,6 +764,84 @@ namespace Microsoft.Automata
             var reset = bodyreset.Append(new CounterUpdate(loop, CounterOp.RESET));
             return reset;
         }
+
+        bool IsCountingLoop(SymbolicRegexNode<S> node)
+        {
+            return !node.IsMaybe && !node.IsStar && !node.IsPlus;
+        }
+
+        internal Sequence<CounterUpdate> GetNullabilityCondition(SymbolicRegexNode<S> node)
+        {
+            switch (node.kind)
+            {
+                case SymbolicRegexKind.Epsilon:
+                    {
+                        return Sequence<CounterUpdate>.Empty;
+                    }
+                case SymbolicRegexKind.Singleton:
+                    {
+                        return null;
+                    }
+                case SymbolicRegexKind.Or:
+                    {
+                        if (node.isNullable)
+                            return Sequence<CounterUpdate>.Empty;
+                        else
+                            return null;
+                    }
+                case SymbolicRegexKind.Loop:
+                    {
+                        if (IsCountingLoop(node))
+                            return new Sequence<CounterUpdate>(new CounterUpdate(node, CounterOp.RESET));
+                        else if (node.isNullable)
+                            return Sequence<CounterUpdate>.Empty;
+                        else
+                            return null;
+                    }
+                case SymbolicRegexKind.Concat:
+                    {
+                        var reset1 = GetNullabilityCondition(node.left);
+                        if (reset1 == null)
+                            return null;
+                        else
+                        {
+                            var reset2 = GetNullabilityCondition(node.right);
+                            if (reset2 == null)
+                                return null;
+                            else
+                            {
+                                //TBD: this optimization needs to be verified
+                                if (reset1.IsEmpty || reset2.IsEmpty || 
+                                    reset2[0].Counter.ContainsTheImmediateNestedCounter(reset1[0].Counter))
+                                    return reset1.Append(reset2);
+                                else if (reset2[0].Counter.LowerBound == 0)
+                                {
+                                    return reset1;
+                                }
+                                else
+                                {
+                                    return null;
+                                }
+                            }
+                        }
+                    }
+                default:
+                    {
+                        throw new NotSupportedException("GetNullabilityCondition not supported for " + node.kind);
+                    }
+            }
+        }
+
+        //internal Sequence<CounterUpdate> GetCounterInitConditions(SymbolicRegexNode<S> loop)
+        //{
+        //    Sequence<CounterUpdate> bodyinit = Sequence<CounterUpdate>.Empty;
+        //    if (loop.left.kind == SymbolicRegexKind.Loop && loop.left.lower > 0 && !loop.left.IsPlus && !loop.left.IsMaybe)
+        //    {
+        //        bodyinit = GetCounterInitConditions(loop.left);
+        //    }
+        //    var init = bodyinit.Append(new CounterUpdate(loop, CounterOp.INIT));
+        //    return init;
+        //}
 
         //internal IEnumerable<Sequence<CounterUpdate>> EnumerateNullabilityConditions(SymbolicRegexNode<S> node)
         //{

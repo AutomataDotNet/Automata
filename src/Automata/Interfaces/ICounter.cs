@@ -11,5 +11,6 @@ namespace Microsoft.Automata
         int LowerBound { get; }
         int UpperBound { get; }
         string CounterName { get; }
+        bool ContainsTheImmediateNestedCounter(ICounter counter);
     }
 }

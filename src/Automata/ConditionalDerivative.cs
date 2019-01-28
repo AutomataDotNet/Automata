@@ -8,6 +8,10 @@ namespace Microsoft.Automata
     public enum CounterOp
     {
         /// <summary>
+        /// Counter is initialized to 0
+        /// </summary>
+        INIT,
+        /// <summary>
         /// Counter is reset to 0
         /// </summary>
         RESET,
@@ -86,7 +90,11 @@ namespace Microsoft.Automata
 
         public override string ToString()
         {
-            if (elems.Item2 == CounterOp.RESET)
+            if (elems.Item2 == CounterOp.INIT)
+            {
+                return string.Format("{0}:=0", Counter.CounterName);
+            }
+            else if (elems.Item2 == CounterOp.RESET)
             {
                 return LowerBoundCheck + string.Format("{0}:=0", Counter.CounterName);
             }
