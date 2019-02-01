@@ -40,8 +40,8 @@ namespace Microsoft.Automata
         internal static DecisionTree Create(CharSetSolver solver, BDD[] partition, ushort precomputeLimit = 0xFF)
         {
             if (partition.Length == 1)
-                //there is no partition, everything maps to one symbol e.g. in .*
-                return new DecisionTree(new int[] { }, new BST(0, null, null));
+                //there is no actual partition, everything maps to one id 0, e.g. as in .*
+                return new DecisionTree(new int[(int)precomputeLimit], new BST(0, null, null));
 
             if (precomputeLimit == 0)
                 return new DecisionTree(new int[] { }, MkBST(new PartitionCut(solver, partition), 0, 0xFFFF));
@@ -369,7 +369,7 @@ namespace Microsoft.Automata
         }
 
         /// <summary>
-        /// Crteate a decision tree that maps a character into a partion block id.
+        /// Crteate a Boolean decision tree.
         /// References to solver and domain are not saved in the resulting decision tree.
         /// </summary>
         /// <param name="solver">character alberbra</param>
@@ -379,9 +379,11 @@ namespace Microsoft.Automata
         internal static BooleanDecisionTree Create(CharSetSolver solver, BDD domain, ushort precomputeLimit = 0xFF)
         {
             BDD domain_compl = solver.MkNot(domain);
-            var partition = (domain_compl.IsEmpty ? new BDD[] { domain } : new BDD[] { domain_compl, domain });
+            var partition = new BDD[] { domain_compl, domain };
             if (precomputeLimit == 0)
+            {
                 return new BooleanDecisionTree(new bool[] { }, MkBST(new DecisionTree.PartitionCut(solver, partition), 0, 0xFFFF));
+            }
 
             bool[] precomp = Precompute(solver, domain, precomputeLimit);
             DecisionTree.BST bst = null;

@@ -186,7 +186,7 @@ namespace Automata.Tests
             //creates a conjunction-pattern of the three regexes, 
             //order is not important, r2.Compile(r3, r1) is the same
             var m1 = r1.Compile(r2, r3);
-            var s1 = new FileStream("test.soap", FileMode.OpenOrCreate);
+            var s1 = new FileStream("test.soap", FileMode.Create);
             new SoapFormatter().Serialize(s1, m1);
             s1.Close();
             var s2 = new FileStream("test.soap", FileMode.Open);
@@ -227,7 +227,7 @@ namespace Automata.Tests
         public void TestSerialization_Roundtrip_SingleRegex_OneMatchAtATime_Soap()
         {
             var m1 = new Regex(@"[0-9]+").Compile();
-            var s1 = new FileStream("test.soap", FileMode.OpenOrCreate);
+            var s1 = new FileStream("test.soap", FileMode.Create);
             new SoapFormatter().Serialize(s1, m1);
             s1.Close();
             var s2 = new FileStream("test.soap", FileMode.Open);
@@ -245,6 +245,114 @@ namespace Automata.Tests
             var start3 = second[0].Item1 + second[0].Item2 + 1;
             var third = m2.Matches(input, 1, start3);
             Assert.AreEqual<string>("3", input.Substring(third[0].Item1, third[0].Item2));
+        }
+
+        [TestMethod]
+        public void TestSerializeSimplified()
+        {
+            var regex = new Regex(@"\w\d+");
+            var regex_simpl = new Regex(@"[BA]A+");
+            var m1 = regex.Compile() as SymbolicRegexUInt64;
+            var s1 = new FileStream("test.soap", FileMode.Create);
+            m1.SerializeSimplified(s1, new SoapFormatter());
+            s1.Close();
+            var s2 = new FileStream("test.soap", FileMode.Open);
+            var m2 = (IMatcher)new SoapFormatter().Deserialize(s2);
+            s2.Close();
+            var input = "zzzBBBBAAAAzzzz";
+            //first match
+            var matches = m2.Matches(input);
+            Assert.IsTrue(matches.Length == 1);
+            var expected = regex_simpl.Matches(input);
+            Assert.IsTrue(expected.Count == 1);
+            Assert.IsTrue(expected[0].Value == input.Substring(matches[0].Item1, matches[0].Item2));
+        }
+
+        [TestMethod]
+        public void TestSerializeDotPlus()
+        {
+            var regex = new Regex(@".+", RegexOptions.Singleline);
+            var m1 = regex.Compile(true,false) as SymbolicRegexUInt64;
+            var s1 = new FileStream("dotplus.soap", FileMode.Create);
+            m1.Serialize(s1, new SoapFormatter());
+            s1.Close();
+            var s2 = new FileStream("dotplus.soap", FileMode.Open);
+            var m2 = (SymbolicRegexUInt64)new SoapFormatter().Deserialize(s2);
+            s2.Close();
+            Assert.IsTrue(m2.Pattern.IsPlus);
+        }
+
+        [TestMethod]
+        public void GenerateExamplesWithLoops()
+        {
+            GenerateExamplesWithLoops("../../../../Automata.Tests/Samples_/regexesWithoutAnchors.txt", "Set1", true);
+            //GenerateExamplesWithLoops("../../../../Automata.Tests/Samples/regexes.txt", "Set2", true);
+        }
+
+        void GenerateExamplesWithLoops(string file, string batch_name, bool simplify)
+        {
+            Regex[] regexes = Array.ConvertAll(File.ReadAllLines(file), x => new Regex(x, RegexOptions.Singleline));
+            List<string> regexes2 = new List<string>();
+            HashSet<string> regexes2_ = new HashSet<string>();
+            string dir = "../../../../Automata.Tests/RegexesWithLoops/";
+            string dir_batch = dir + batch_name;
+            if (!Directory.Exists(dir_batch))
+                Directory.CreateDirectory(dir_batch);
+
+            Predicate<SymbolicRegexNode<ulong>> isNonMonadic = node =>
+            {
+                return (
+                  node.kind == SymbolicRegexKind.Loop &&
+                  node.left.kind != SymbolicRegexKind.Singleton &&
+                  !node.IsStar &&
+                  !node.IsMaybe &&
+                  !node.IsPlus);
+            };
+
+            Predicate<SymbolicRegexNode<ulong>> isCountingLoop = node =>
+            {
+                return (node.kind == SymbolicRegexKind.Loop &&
+                !node.IsStar &&
+                  !node.IsMaybe &&
+                  !node.IsPlus);
+            };
+
+            int nrOfCountingLoops = 0;
+
+            for (int i = 0; i < regexes.Length; i++)
+            {
+                var regex = regexes[i];
+                SymbolicRegexUInt64 m = null;
+                string reasonwhynot;
+                if (regex.IsCompileSupported(out reasonwhynot))
+                {
+                    m = regex.Compile(false,false) as SymbolicRegexUInt64;
+                    if (m.Pattern.ExistsNode(isCountingLoop))
+                    {
+                        nrOfCountingLoops += 1;
+                        bool monadic = !m.Pattern.ExistsNode(isNonMonadic);
+                        if (monadic)
+                        {
+                            var s = new FileStream(dir_batch + "/r" + (regexes2.Count).ToString() + ".soap", FileMode.Create);
+                            if (simplify)
+                                m.SerializeSimplified(s, new SoapFormatter());
+                            else
+                                m.Serialize(s, new SoapFormatter());
+                            s.Close();
+                            var s2 = new FileStream(dir_batch + "/r" + (regexes2.Count).ToString() + ".soap", FileMode.Open);
+                            var m2 = (SymbolicRegexUInt64)new SoapFormatter().Deserialize(s2);
+                            s2.Close();
+                            //var aut = m2.Pattern.Explore();
+                            var r2 = m2.Pattern.ToString();
+                            if (regexes2_.Add(r2))
+                            {
+                                regexes2.Add(r2);
+                            }
+                        }
+                    }
+                }
+            }
+            File.WriteAllLines(dir + batch_name + ".txt", regexes2.ToArray());
         }
 
         public static void SerializeObjectToFile_bin(string file, object obj)

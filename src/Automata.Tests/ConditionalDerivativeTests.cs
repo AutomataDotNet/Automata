@@ -22,9 +22,8 @@ namespace Automata.Tests
         [TestMethod]
         public void TestConditionalDerivativeEnumeration()
         {
-            RegexExtensionMethods.UnwindLowerBounds = false;
             var regex = new Regex("((ab){3,9}){7}");
-            var q1 = ((SymbolicRegex<ulong>)regex.Compile()).Pattern;
+            var q1 = ((SymbolicRegex<ulong>)regex.Compile(true,false)).Pattern;
             var a = q1.builder.solver.MkCharConstraint('a');
             var b = q1.builder.solver.MkCharConstraint('b');
             //---
@@ -51,9 +50,8 @@ namespace Automata.Tests
         [TestMethod]
         public void TestConditionalDerivativeEnumeration2()
         {
-            RegexExtensionMethods.UnwindLowerBounds = false;
             var regex = new Regex("ab{3,10}a");
-            var q1 = ((SymbolicRegex<ulong>)regex.Compile()).Pattern;
+            var q1 = ((SymbolicRegex<ulong>)regex.Compile(true, false)).Pattern;
             var a = q1.builder.solver.MkCharConstraint('a');
             var b = q1.builder.solver.MkCharConstraint('b');
             //---
@@ -82,9 +80,8 @@ namespace Automata.Tests
         [TestMethod]
         public void TestConditionalDerivativeEnumeration3()
         {
-            RegexExtensionMethods.UnwindLowerBounds = false;
             var regex = new Regex("((ac){10}|(ab){20}){50}");
-            var q1 = ((SymbolicRegex<ulong>)regex.Compile()).Pattern;
+            var q1 = ((SymbolicRegex<ulong>)regex.Compile(true, false)).Pattern;
             var a = q1.builder.solver.MkCharConstraint('a');
             var b = q1.builder.solver.MkCharConstraint('b');
             //---
@@ -106,9 +103,8 @@ namespace Automata.Tests
         [TestMethod]
         public void TestConditionalDerivativeExploration()
         {
-            RegexExtensionMethods.UnwindLowerBounds = false;
             var regex = new Regex(".*a.{10}", RegexOptions.Singleline);
-            var q1 = ((SymbolicRegex<ulong>)regex.Compile()).Pattern;
+            var q1 = ((SymbolicRegex<ulong>)regex.Compile(true, false)).Pattern;
             var aut = q1.Explore();
             aut.ShowGraph("CA");
         }
@@ -116,9 +112,8 @@ namespace Automata.Tests
         [TestMethod]
         public void TestConditionalDerivativeExploration2()
         {
-            RegexExtensionMethods.UnwindLowerBounds = false;
             var regex = new Regex(".*a(.|..){10}", RegexOptions.Singleline);
-            var q1 = ((SymbolicRegex<ulong>)regex.Compile()).Pattern;
+            var q1 = ((SymbolicRegex<ulong>)regex.Compile(true, false)).Pattern;
             var aut = q1.Explore();
             aut.ShowGraph("CA2");
         }
@@ -126,11 +121,19 @@ namespace Automata.Tests
         [TestMethod]
         public void TestConditionalDerivativeExploration3()
         {
-            RegexExtensionMethods.UnwindLowerBounds = false;
             var regex = new Regex(".*a(.|..){10,20}", RegexOptions.Singleline);
-            var q1 = ((SymbolicRegex<ulong>)regex.Compile()).Pattern;
+            var q1 = ((SymbolicRegex<ulong>)regex.Compile(true, false)).Pattern;
             var aut = q1.Explore();
             aut.ShowGraph("CA3");
+        }
+
+        [TestMethod]
+        public void TestNestedLoopExploration()
+        {
+            var regex = new Regex("((ab){5}){7}", RegexOptions.Singleline);
+            var q1 = ((SymbolicRegex<ulong>)regex.Compile(true, false)).Pattern;
+            var aut = q1.Explore();
+            aut.ShowGraph("nestedloop");
         }
     }
 }

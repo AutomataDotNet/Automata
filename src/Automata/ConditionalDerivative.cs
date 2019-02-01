@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace Microsoft.Automata
 {
@@ -123,6 +124,52 @@ namespace Microsoft.Automata
         public ConditionalDerivative(Sequence<CounterUpdate> condition, SymbolicRegexNode<S> derivative)
             : base(condition, derivative)
         {
+        }
+
+        public ConditionalDerivative<S> Compose(ConditionalDerivative<S> that)
+        {
+            var f = this.Condition;
+            var g = that.Condition;
+            var builder = this.PartialDerivative.builder;
+            var f_o_g = ComposeCounterUpdates(f, g);
+            if (f_o_g == null)
+                return null;
+            else
+            {
+                var pd = builder.MkConcat(this.PartialDerivative, that.PartialDerivative);
+                var cd = new ConditionalDerivative<S>(f_o_g, pd);
+                return cd;
+            }
+        }
+
+        private Sequence<CounterUpdate> ComposeCounterUpdates(Sequence<CounterUpdate> f, Sequence<CounterUpdate> g)
+        {
+            var f_o_g_list = new List<CounterUpdate>();
+            for (int i = 0; i < f.Length; i++)
+            {
+                var f_update = f[i];
+                var c = f_update.Counter;
+                CounterUpdate g_update;
+                if (g.TryGetElement(x => x.Counter.Equals(c), out g_update))
+                {
+                    //the only valid combination for same counter is first reset then increment
+                    if (f_update.UpdateKind == CounterOp.RESET && g_update.UpdateKind == CounterOp.INCREMENT)
+                        f_o_g_list.Add(new CounterUpdate(c, CounterOp.ASSIGN1));
+                    else
+                        //TBD: the counter updates cannot be combined unless the second counters lower bound is 0
+                        return null;
+                }
+                else
+                {
+                    f_o_g_list.Add(f_update);
+                }
+            }
+            for (int i = 0; i < g.Length; i++)
+            {
+                if (!f.Exists(x => x.Counter.Equals(g[i].Counter)))
+                    f_o_g_list.Add(g[i]);
+            }
+            return new Sequence<CounterUpdate>(f_o_g_list.ToArray());
         }
 
         public Sequence<CounterUpdate> Condition

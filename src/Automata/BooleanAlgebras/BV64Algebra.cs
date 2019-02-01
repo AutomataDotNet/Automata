@@ -69,6 +69,57 @@ namespace Microsoft.Automata
             }
         }
 
+        /// <summary>
+        /// Create a variant of the algebra where each minterms is replaced with a singleton set starting from '0'
+        /// Used for testing purposes.
+        /// </summary>
+        internal BV64Algebra ReplaceMintermsWithVisibleCharacters()
+        {
+            Func<int, int> f = x =>
+            {
+                int k;
+                if (x <= 26)
+                    k = ('A' + (x - 1));
+                else if (x <= 52)
+                    k = ('a' + (x - 27));
+                else if (x <= 62)
+                    k = ('0' + (x - 53));
+                else
+                    k = '=';
+                return k;
+            };
+            var simplified_partition = new IntervalSet[this.partition.Length];
+            int[] precomp = new int[256];
+            for (int i=1; i < simplified_partition.Length; i++)
+            {
+                int k = f(i);
+                simplified_partition[i] = new IntervalSet(new Tuple<uint, uint>((uint)k,(uint)k));
+                precomp[k] = i;
+            }
+            var zeroIntervals = new List<Tuple<uint, uint>>();
+            int lower = 0;
+            int upper = 0;
+            for (int i = 1; i <= 'z' + 1; i++)
+            {
+                if (precomp[i] == 0)
+                {
+                    if (upper == i - 1)
+                        upper += 1;
+                    else
+                    {
+                        zeroIntervals.Add(new Tuple<uint, uint>((uint)lower, (uint)upper));
+                        lower = i;
+                        upper = i;
+                    }             
+                }
+            }
+            zeroIntervals.Add(new Tuple<uint, uint>((uint)lower, 0xFFFF));
+            simplified_partition[0] = new IntervalSet(zeroIntervals.ToArray());
+
+            var simplified_dtree = new DecisionTree(precomp, new DecisionTree.BST(0, null, null));
+            return new BV64Algebra(simplified_dtree, simplified_partition);
+        }
+
         public ulong False
         {
             get

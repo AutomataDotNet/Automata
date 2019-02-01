@@ -262,5 +262,37 @@ namespace Microsoft.Automata
                 }
             }
         }
+
+        /// <summary>
+        /// Try to find an element in the sequence for which pred is true.
+        /// If such an element exists then true is returned and elem is the first such element 
+        /// else false is retured and elem is assigned default(T).
+        /// </summary>
+        /// <param name="pred">given predicate</param>
+        /// <param name="elem">the found element if true is returned</param>
+        /// <returns></returns>
+        public bool TryGetElement(Predicate<T> pred, out T elem)
+        {
+            for (int i=0; i < elems.Length; i++)
+            {
+                if (pred(elems[i]))
+                {
+                    elem = elems[i];
+                    return true;
+                }
+            }
+            elem = default(T);
+            return false;
+        }
+
+        /// <summary>
+        /// Returns true if there exists an element in the sequence for which pred is true.
+        /// Returns false otherwise.
+        /// </summary>
+        /// <param name="pred">given predicate</param>
+        public bool Exists(Predicate<T> pred)
+        {
+            return Array.Exists(elems, pred);
+        }
     }
 }

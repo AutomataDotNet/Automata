@@ -287,5 +287,6 @@ namespace Microsoft.Automata
         NrOfMintermsCanBeAtMost64,
         CounterIndexOutOfRange,
         ExpectingConjunction,
+        InternalError_ComposeCounterUpdates,
     }
 }

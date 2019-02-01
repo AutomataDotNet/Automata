@@ -616,6 +616,8 @@ namespace Microsoft.Automata
             else
                 switch (node.kind)
                 {
+                    case SymbolicRegexKind.StartAnchor:
+                    case SymbolicRegexKind.EndAnchor:
                     case SymbolicRegexKind.Epsilon:
                         {
                             yield break;
@@ -658,13 +660,13 @@ namespace Microsoft.Automata
                             var reset = GetNullabilityCondition(node.left);
                             if (reset != null)
                             {
+                                var cd_reset = new ConditionalDerivative<S>(reset, this.epsilon);
                                 foreach (var deriv in this.EnumerateConditionalDerivatives(elem, node.right))
                                 {
-                                    var deriv1 = new ConditionalDerivative<S>(
-                                                            reset.Append(deriv.Condition),
-                                                            deriv.PartialDerivative);
-                                    if (derivs.Add(deriv1))
-                                        yield return deriv1;
+                                    var deriv1 = cd_reset.Compose(deriv);
+                                    if (deriv1 != null)
+                                        if (derivs.Add(deriv1))
+                                            yield return deriv1;
                                 }
                             }
 
@@ -774,6 +776,8 @@ namespace Microsoft.Automata
         {
             switch (node.kind)
             {
+                case SymbolicRegexKind.StartAnchor:
+                case SymbolicRegexKind.EndAnchor:
                 case SymbolicRegexKind.Epsilon:
                     {
                         return Sequence<CounterUpdate>.Empty;
@@ -831,89 +835,6 @@ namespace Microsoft.Automata
                     }
             }
         }
-
-        //internal Sequence<CounterUpdate> GetCounterInitConditions(SymbolicRegexNode<S> loop)
-        //{
-        //    Sequence<CounterUpdate> bodyinit = Sequence<CounterUpdate>.Empty;
-        //    if (loop.left.kind == SymbolicRegexKind.Loop && loop.left.lower > 0 && !loop.left.IsPlus && !loop.left.IsMaybe)
-        //    {
-        //        bodyinit = GetCounterInitConditions(loop.left);
-        //    }
-        //    var init = bodyinit.Append(new CounterUpdate(loop, CounterOp.INIT));
-        //    return init;
-        //}
-
-        //internal IEnumerable<Sequence<CounterUpdate>> EnumerateNullabilityConditions(SymbolicRegexNode<S> node)
-        //{
-        //    if (node == this.dotStar)
-        //        yield return Sequence<CounterUpdate>.Empty;
-        //    else if (node == this.nothing)
-        //        yield break;
-        //    else
-        //    {
-        //        var cache = new HashSet<Sequence<CounterUpdate>>();
-        //        switch (node.kind)
-        //        {
-        //            case SymbolicRegexKind.Epsilon:
-        //            case SymbolicRegexKind.Singleton:
-        //                {
-        //                    yield break;
-        //                }
-        //            case SymbolicRegexKind.Or:
-        //                {
-        //                    foreach (var member in node.alts)
-        //                        foreach (var cond in this.EnumerateNullabilityConditions(member))
-        //                            if (cache.Add(cond))
-        //                                yield return cond;
-        //                    yield break;
-        //                }
-        //            case SymbolicRegexKind.Concat:
-        //                {
-        //                    foreach (var cond1 in this.EnumerateNullabilityConditions(node.left))
-        //                        foreach (var cond2 in this.EnumerateNullabilityConditions(node.right))
-        //                            if (cache.Add(cond2))
-        //                                yield return cond1.Append(cond2);
-        //                    yield break;
-        //                }
-        //            case SymbolicRegexKind.Loop:
-        //                {
-        //                    if (node.IsStar)
-        //                        yield return Sequence<CounterUpdate>.Empty;
-        //                    else if (node.IsPlus)
-        //                        foreach (var cond in this.EnumerateNullabilityConditions(node.left))
-        //                            yield return cond;
-        //                    else if (node.IsMaybe)
-        //                    {
-        //                        foreach (var cond in this.EnumerateNullabilityConditions(node.left))
-        //                            if (cache.Add(cond))
-        //                                yield return cond;
-        //                        if (cache.Add(Sequence<CounterUpdate>.Empty))
-        //                            yield return Sequence<CounterUpdate>.Empty;
-        //                    }
-        //                    else
-        //                    {
-        //                        CounterUpdate ca = new CounterUpdate(node, CounterOp.RESET);
-        //                        foreach (var cond in this.EnumerateNullabilityConditions(node.left))
-        //                        {
-        //                            var seq = cond.Append(ca);
-        //                            if (cache.Add(seq))
-        //                                yield return cond.Append(ca);
-        //                        }
-        //                        //if the loop body is not nullable
-        //                        //then the loop itself is nullable if the counter is resettable
-        //                        if (cache.Count == 0)
-        //                            yield return Sequence<CounterUpdate>.Empty.Append(ca);
-        //                    }
-        //                    yield break;
-        //                }
-        //            default:
-        //                {
-        //                    throw new NotSupportedException("Conditional derivatives not supported for " + node.kind);
-        //                }
-        //        }
-        //    }
-        //}
-
         internal SymbolicRegexNode<T> Transform<T>(SymbolicRegexNode<S> sr, SymbolicRegexBuilder<T> builderT, Func<S, T> predicateTransformer)
         {
             switch (sr.kind)

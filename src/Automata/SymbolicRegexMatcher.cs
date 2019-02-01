@@ -316,27 +316,91 @@ namespace Microsoft.Automata
         int[] delta;
 
         #region custom serialization
+
+        [NonSerialized]
+        internal bool serializeInSimplifiedForm = false;
         /// <summary>
         /// This serialization method is invoked by BinaryFormatter.Serialize via Serialize method.
         /// </summary>
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            info.AddValue("solver", this.builder.solver);
+            if (serializeInSimplifiedForm)
+            {
+                #region special case for replacing all character classes with a single character
+                BV64Algebra bvalg = this.builder.solver as BV64Algebra;
+                if (bvalg == null)
+                    throw new NotSupportedException("Simplified serialization is only supported for BV64Algebra");
+                var simpl_bvalg = bvalg.ReplaceMintermsWithVisibleCharacters();
 
-            info.AddValue("A", A.Serialize());
+                info.AddValue("solver", simpl_bvalg);
+                info.AddValue("A", A.Serialize());
 
-            info.AddValue("StateLimit", StateLimit);
-            info.AddValue("StartSetSizeLimit", StartSetSizeLimit);
+                info.AddValue("StateLimit", StateLimit);
+                info.AddValue("StartSetSizeLimit", StartSetSizeLimit);
 
-            info.AddValue("A_StartSet", A_StartSet);
-            info.AddValue("A_startset", A_startset);
-            info.AddValue("A_StartSet_Size", A_StartSet_Size);
+                ulong A_startset_ulong = (ulong)(object)A_startset;
 
-            info.AddValue("A_prefix", A_prefix);
-            info.AddValue("A_prefix_array", A_prefix_array);
+                var simpl_precomputed = Array.ConvertAll(simpl_bvalg.dtree.precomputed, atomId => simpl_bvalg.IsSatisfiable(simpl_bvalg.MkAnd(simpl_bvalg.atoms[atomId],A_startset_ulong)));
+                BooleanDecisionTree simpl_A_StartSet;
+                if (simpl_bvalg.IsSatisfiable(simpl_bvalg.MkAnd(simpl_bvalg.atoms[0], A_startset_ulong)))
+                    simpl_A_StartSet = new BooleanDecisionTree(simpl_precomputed, new DecisionTree.BST(1, null, null));
+                else
+                    simpl_A_StartSet = new BooleanDecisionTree(simpl_precomputed, new DecisionTree.BST(0, null, null));
+                var simpl_A_StartSet_Size = simpl_bvalg.ComputeDomainSize(A_startset_ulong);
 
-            info.AddValue("Ar_prefix_array", Ar_prefix_array);
-            info.AddValue("Ar_prefix", Ar_prefix);
+                info.AddValue("A_StartSet", simpl_A_StartSet);
+                info.AddValue("A_startset", A_startset_ulong);
+                info.AddValue("A_StartSet_Size", simpl_A_StartSet_Size);
+
+                var simpl_A_prefix = "";
+
+                for (int i = 0; i < A_prefix_array.Length; i++)
+                {
+                    ulong set = (ulong)(object)A_prefix_array[i];
+                    ulong size = simpl_bvalg.ComputeDomainSize(set);
+                    if (size > 1)
+                        break;
+                    else
+                        simpl_A_prefix += simpl_bvalg.PrettyPrint(set);
+                }
+
+                info.AddValue("A_prefix", simpl_A_prefix);
+                info.AddValue("A_prefix_array", A_prefix_array);
+
+                var simpl_Ar_prefix = "";
+
+                for (int i = 0; i < Ar_prefix_array.Length; i++)
+                {
+                    ulong set = (ulong)(object)Ar_prefix_array[i];
+                    ulong size = simpl_bvalg.ComputeDomainSize(set);
+                    if (size > 1)
+                        break;
+                    else
+                        simpl_Ar_prefix += simpl_bvalg.PrettyPrint(set);
+                }
+
+                info.AddValue("Ar_prefix_array", Ar_prefix_array);
+                info.AddValue("Ar_prefix", simpl_Ar_prefix);
+                #endregion
+            }
+            else
+            {
+                info.AddValue("solver", this.builder.solver);
+                info.AddValue("A", A.Serialize());
+
+                info.AddValue("StateLimit", StateLimit);
+                info.AddValue("StartSetSizeLimit", StartSetSizeLimit);
+
+                info.AddValue("A_StartSet", A_StartSet);
+                info.AddValue("A_startset", A_startset);
+                info.AddValue("A_StartSet_Size", A_StartSet_Size);
+
+                info.AddValue("A_prefix", A_prefix);
+                info.AddValue("A_prefix_array", A_prefix_array);
+
+                info.AddValue("Ar_prefix_array", Ar_prefix_array);
+                info.AddValue("Ar_prefix", Ar_prefix);
+            }
         }
 
         /// <summary>
@@ -395,7 +459,23 @@ namespace Microsoft.Automata
         }
 
         /// <summary>
-        /// Serialize this symbolic regex matcher to the given stream.
+        /// Simplified serialization, character classes are replaced by some singletons.
+        /// Used for testing purposes.
+        /// </summary>
+        /// <param name="stream">stream where the serialization is stored</param>
+        /// <param name="formatter">given formatter</param>
+        public void SerializeSimplified(Stream stream, IFormatter formatter = null)
+        {
+            if (formatter == null)
+                formatter = new BinaryFormatter();
+            this.serializeInSimplifiedForm = true;
+            formatter.Serialize(stream, this);
+            this.serializeInSimplifiedForm = false;
+        }
+
+
+        /// <summary>
+        /// Serialize this symbolic regex matcher to the given file.
         /// If formatter is null then an instance of 
         /// System.Runtime.Serialization.Formatters.Binary.BinaryFormatter is used.
         /// </summary>

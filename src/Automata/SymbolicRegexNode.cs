@@ -1663,6 +1663,66 @@ namespace Microsoft.Automata
                 return states[state].isNullable;
             }
         }
+
+        //public bool ContainsLoopsWithCounters()
+        //{
+        //    switch (kind)
+        //    {
+        //        case SymbolicRegexKind.EndAnchor:
+        //        case SymbolicRegexKind.StartAnchor:
+        //        case SymbolicRegexKind.Singleton:
+        //        case SymbolicRegexKind.Epsilon:
+        //            {
+        //                return false;
+        //            }
+        //        case SymbolicRegexKind.Loop:
+        //            {
+        //                if (!IsStar && !IsPlus && !IsMaybe)
+        //                    return true;
+        //                else
+        //                    return this.left.ContainsLoopsWithCounters();
+        //            }
+        //        case SymbolicRegexKind.Concat:
+        //            {
+        //                return this.left.ContainsLoopsWithCounters() ||
+        //                    this.right.ContainsLoopsWithCounters();
+        //            }
+        //        case SymbolicRegexKind.Or:
+        //            {
+        //                foreach (var member in this.alts)
+        //                    if (member.ContainsLoopsWithCounters())
+        //                        return true;
+        //                return false;
+        //            }
+        //        default:
+        //            throw new NotImplementedException(kind.ToString());
+        //    }
+        //}
+
+        /// <summary>
+        /// Returns true iff there exists a node that satisfies the predicate
+        /// </summary>
+        public bool ExistsNode(Predicate<SymbolicRegexNode<S>> pred)
+        {
+            if (pred(this))
+                return true;
+            else
+                switch (kind)
+                {
+                    case SymbolicRegexKind.Concat:
+                        return left.ExistsNode(pred) || right.ExistsNode(pred);
+                    case SymbolicRegexKind.Or:
+                    case SymbolicRegexKind.And:
+                        foreach (var node in this.alts)
+                            if (node.ExistsNode(pred))
+                                return true;
+                        return false;
+                    case SymbolicRegexKind.Loop:
+                        return left.ExistsNode(pred);
+                    default:
+                        return false;
+                }
+        }
     }
 
     /// <summary>
