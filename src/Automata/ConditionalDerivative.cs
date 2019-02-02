@@ -132,14 +132,9 @@ namespace Microsoft.Automata
             var g = that.Condition;
             var builder = this.PartialDerivative.builder;
             var f_o_g = ComposeCounterUpdates(f, g);
-            if (f_o_g == null)
-                return null;
-            else
-            {
-                var pd = builder.MkConcat(this.PartialDerivative, that.PartialDerivative);
-                var cd = new ConditionalDerivative<S>(f_o_g, pd);
-                return cd;
-            }
+            var pd = builder.MkConcat(this.PartialDerivative, that.PartialDerivative);
+            var cd = new ConditionalDerivative<S>(f_o_g, pd);
+            return cd;
         }
 
         private Sequence<CounterUpdate> ComposeCounterUpdates(Sequence<CounterUpdate> f, Sequence<CounterUpdate> g)
@@ -156,8 +151,8 @@ namespace Microsoft.Automata
                     if (f_update.UpdateKind == CounterOp.RESET && g_update.UpdateKind == CounterOp.INCREMENT)
                         f_o_g_list.Add(new CounterUpdate(c, CounterOp.ASSIGN1));
                     else
-                        //TBD: the counter updates cannot be combined unless the second counters lower bound is 0
-                        return null;
+                        //no other case may arise due to left-associative form of processing sequences
+                        throw new AutomataException(AutomataExceptionKind.InternalError_ComposeCounterUpdates);
                 }
                 else
                 {
@@ -166,6 +161,7 @@ namespace Microsoft.Automata
             }
             for (int i = 0; i < g.Length; i++)
             {
+                //ignore the counters already processed 
                 if (!f.Exists(x => x.Counter.Equals(g[i].Counter)))
                     f_o_g_list.Add(g[i]);
             }

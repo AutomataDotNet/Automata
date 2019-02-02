@@ -135,5 +135,14 @@ namespace Automata.Tests
             var aut = q1.Explore();
             aut.ShowGraph("nestedloop");
         }
+
+        [TestMethod]
+        public void TestNestedNestedLoopExploration()
+        {
+            var regex = new Regex("((a{3}){4}){5}", RegexOptions.Singleline);
+            var q1 = ((SymbolicRegex<ulong>)regex.Compile(true, false)).Pattern;
+            var aut = q1.Explore();
+            aut.ShowGraph("nestednestedloop");
+        }
     }
 }

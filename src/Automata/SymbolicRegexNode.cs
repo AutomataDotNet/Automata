@@ -337,6 +337,12 @@ namespace Microsoft.Automata
             this.alts = alts;
         }
 
+        internal SymbolicRegexNode<S> ConcatWithoutNormalizing(SymbolicRegexNode<S> next)
+        {
+            var concat = new SymbolicRegexNode<S>(builder, SymbolicRegexKind.Concat, this, next, -1, -1, default(S), null, null);
+            return concat;
+        }
+
         #region called only once, in the constructor of SymbolicRegexBuilder
 
         internal static SymbolicRegexNode<S> MkFalse(SymbolicRegexBuilder<S> builder, S f)
@@ -700,6 +706,15 @@ namespace Microsoft.Automata
             var moves = new List<Move<Tuple<Maybe<S>, Sequence<CounterUpdate>>>>();
             var finalStates = new HashSet<int>();
             frontier.Push(0);
+            var reset0 = builder.GetNullabilityCondition(this);
+            if (reset0 != null)
+            {
+                if (reset0.TrueForAll(x => x.Counter.LowerBound == 0))
+                    reset0 = Sequence<CounterUpdate>.Empty;
+                moves.Add(Move<Tuple<Maybe<S>, Sequence<CounterUpdate>>>.Create(0, 1,
+                    new Tuple<Maybe<S>, Sequence<CounterUpdate>>(Maybe<S>.Nothing, reset0)));
+                finalStates.Add(1);
+            }
             while (frontier.IsNonempty)
             {
                 var q = frontier.Pop();
@@ -715,14 +730,14 @@ namespace Microsoft.Automata
                             p = stateid++;
                             stateLookup[cd.PartialDerivative] = p;
                             regexLookup[p] = cd.PartialDerivative;
-                            if (cd.PartialDerivative.isNullable)
-                                finalStates.Add(p);
-                            else if (cd.PartialDerivative.kind == SymbolicRegexKind.Loop)
+
+                            var reset = builder.GetNullabilityCondition(cd.PartialDerivative);
+                            if (reset != null)
                             {
-                                var reset = builder.GetCounterResetConditions(cd.PartialDerivative);
+                                if (reset.TrueForAll(x => x.Counter.LowerBound == 0))
+                                    reset = Sequence<CounterUpdate>.Empty;
                                 moves.Add(Move<Tuple<Maybe<S>, Sequence<CounterUpdate>>>.Create(p, 1,
                                     new Tuple<Maybe<S>, Sequence<CounterUpdate>>(Maybe<S>.Nothing, reset)));
-                                finalStates.Add(1);
                             }
                             frontier.Push(p);
                         }
@@ -1552,9 +1567,9 @@ namespace Microsoft.Automata
             return new SymbolicRegexGraph(builder, this, bound, dotStarAtStart, hideDerivatives);
         }
 
-        public bool ContainsTheImmediateNestedCounter(ICounter subcounter)
+        public bool ContainsSubCounter(ICounter subcounter)
         {
-            return this.left.Equals(subcounter);
+            return this.ExistsNode(x => x.kind == SymbolicRegexKind.Loop && x.Equals(subcounter));
         }
 
         internal class SymbolicRegexGraph : IAutomaton<S>

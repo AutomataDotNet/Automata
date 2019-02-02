@@ -294,5 +294,15 @@ namespace Microsoft.Automata
         {
             return Array.Exists(elems, pred);
         }
+
+        /// <summary>
+        /// Returns true if the predicate holds for all elements in the sequence.
+        /// Returns false otherwise.
+        /// </summary>
+        /// <param name="pred">given predicate</param>
+        public bool TrueForAll(Predicate<T> pred)
+        {
+            return Array.TrueForAll(elems, pred);
+        }
     }
 }
