@@ -106,7 +106,7 @@ namespace Automata.Tests
             var regex = new Regex(".*a.{10}", RegexOptions.Singleline);
             var q1 = ((SymbolicRegex<ulong>)regex.Compile(true, false)).Pattern;
             var aut = q1.Explore();
-            aut.ShowGraph("CA");
+            //aut.ShowGraph("CA");
         }
 
         [TestMethod]
@@ -115,7 +115,7 @@ namespace Automata.Tests
             var regex = new Regex(".*a(.|..){10}", RegexOptions.Singleline);
             var q1 = ((SymbolicRegex<ulong>)regex.Compile(true, false)).Pattern;
             var aut = q1.Explore();
-            aut.ShowGraph("CA2");
+            //aut.ShowGraph("CA2");
         }
 
         [TestMethod]
@@ -124,7 +124,7 @@ namespace Automata.Tests
             var regex = new Regex(".*a(.|..){10,20}", RegexOptions.Singleline);
             var q1 = ((SymbolicRegex<ulong>)regex.Compile(true, false)).Pattern;
             var aut = q1.Explore();
-            aut.ShowGraph("CA3");
+            //aut.ShowGraph("CA3");
         }
 
         [TestMethod]
@@ -133,7 +133,7 @@ namespace Automata.Tests
             var regex = new Regex("((ab){5}){7}", RegexOptions.Singleline);
             var q1 = ((SymbolicRegex<ulong>)regex.Compile(true, false)).Pattern;
             var aut = q1.Explore();
-            aut.ShowGraph("nestedloop");
+            //aut.ShowGraph("nestedloop");
         }
 
         [TestMethod]
@@ -142,7 +142,47 @@ namespace Automata.Tests
             var regex = new Regex("((a{3}){4}){5}", RegexOptions.Singleline);
             var q1 = ((SymbolicRegex<ulong>)regex.Compile(true, false)).Pattern;
             var aut = q1.Explore();
-            aut.ShowGraph("nestednestedloop");
+            Assert.IsTrue(aut.MoveCount == 6);
+            //aut.ShowGraph("nestednestedloop");
+        }
+
+        [TestMethod]
+        public void TestConditionalDerivativeExploration4()
+        {
+            var regex = new Regex("(a{3})*", RegexOptions.Singleline);
+            var q1 = ((SymbolicRegex<ulong>)regex.Compile(true, false)).Pattern;
+            var aut = q1.Explore();
+            //aut.ShowGraph("test");
+        }
+
+        [TestMethod]
+        public void TestConditionalDerivativeExploration5()
+        {
+            var regex = new Regex("a.{4}b", RegexOptions.Singleline);
+            var q1 = ((SymbolicRegex<ulong>)regex.Compile(true, false)).Pattern;
+            var aut = q1.Explore();
+            Assert.IsTrue(aut.MoveCount == 6);
+            //aut.ShowGraph("test");
+        }
+
+        [TestMethod]
+        public void TestConditionalDerivativeExploration_LoopTwice()
+        {
+            var regex = new Regex("a{9}a{9}", RegexOptions.Singleline);
+            var q1 = ((SymbolicRegex<ulong>)regex.Compile(true, false)).Pattern;
+            var aut = q1.Explore();
+            Assert.IsTrue(aut.MoveCount == 4);
+            //aut.ShowGraph("a9a9");
+        }
+
+        [TestMethod]
+        public void TestConditionalDerivativeExploration_TwoLoops()
+        {
+            var regex = new Regex("a{9}a{0,9}", RegexOptions.Singleline);
+            var q1 = ((SymbolicRegex<ulong>)regex.Compile(true, false)).Pattern;
+            var aut = q1.Explore();
+            Assert.IsTrue(aut.MoveCount == 5);
+            //aut.ShowGraph("a9a09");
         }
     }
 }

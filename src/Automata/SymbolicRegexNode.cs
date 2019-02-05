@@ -738,6 +738,7 @@ namespace Microsoft.Automata
                                     reset = Sequence<CounterUpdate>.Empty;
                                 moves.Add(Move<Tuple<Maybe<S>, Sequence<CounterUpdate>>>.Create(p, 1,
                                     new Tuple<Maybe<S>, Sequence<CounterUpdate>>(Maybe<S>.Nothing, reset)));
+                                finalStates.Add(1);
                             }
                             frontier.Push(p);
                         }
@@ -1569,7 +1570,8 @@ namespace Microsoft.Automata
 
         public bool ContainsSubCounter(ICounter subcounter)
         {
-            return this.ExistsNode(x => x.kind == SymbolicRegexKind.Loop && x.Equals(subcounter));
+            return !subcounter.Equals(this) &&
+                this.ExistsNode(x => x.kind == SymbolicRegexKind.Loop && x.Equals(subcounter));
         }
 
         internal class SymbolicRegexGraph : IAutomaton<S>
