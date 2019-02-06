@@ -184,5 +184,15 @@ namespace Automata.Tests
             Assert.IsTrue(aut.MoveCount == 5);
             //aut.ShowGraph("a9a09");
         }
+
+        [TestMethod]
+        public void TestConditionalDerivativeExploration_LoopWithNoUpperBound()
+        {
+            var regex = new Regex("ab{10,}", RegexOptions.Singleline);
+            var q1 = ((SymbolicRegex<ulong>)regex.Compile(true, false)).Pattern;
+            var aut = q1.Explore();
+            Assert.IsTrue(aut.MoveCount == 6);
+            aut.ShowGraph("ab10bstar");
+        }
     }
 }

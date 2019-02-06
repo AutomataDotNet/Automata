@@ -605,7 +605,58 @@ namespace Microsoft.Automata
                 }
         }
 
-
+        internal SymbolicRegexNode<S> Normalize(SymbolicRegexNode<S> sr)
+        {
+            switch (sr.kind)
+            {
+                case SymbolicRegexKind.StartAnchor:
+                case SymbolicRegexKind.EndAnchor:
+                case SymbolicRegexKind.Epsilon:
+                case SymbolicRegexKind.Singleton:
+                    return sr;
+                case SymbolicRegexKind.Loop:
+                    {
+                        if (sr.IsStar)
+                            return sr;
+                        else if (sr.IsMaybe)
+                            return MkOr2(sr.left, this.epsilon);
+                        else if (sr.IsPlus)
+                        {
+                            var star = this.MkLoop(sr.left);
+                            var plus = this.MkConcat(sr.left, star);
+                            return plus;
+                        }
+                        else if (sr.upper == int.MaxValue)
+                        {
+                            var fixed_loop = this.MkLoop(sr.left, sr.lower, sr.lower);
+                            var star = this.MkLoop(sr.left);
+                            var concat = this.MkConcat(fixed_loop, star);
+                            return concat;
+                        }
+                        else
+                        {
+                            return sr;
+                        }
+                    }
+                case SymbolicRegexKind.Concat:
+                    {
+                        var left = Normalize(sr.left);
+                        var right = Normalize(sr.right);
+                        var concat = this.MkConcat(left, right);
+                        return concat;
+                    }
+                case SymbolicRegexKind.Or:
+                    {
+                        var alts = new List<SymbolicRegexNode<S>>();
+                        foreach (var elem in sr.alts)
+                            alts.Add(Normalize(elem));
+                        var or = this.MkOr(alts.ToArray());
+                        return or;
+                    }
+                default: //ITE 
+                    throw new NotSupportedException("Normalize not supported for " + sr.kind);
+            }
+        }
 
         internal IEnumerable<ConditionalDerivative<S>> EnumerateConditionalDerivatives(S elem, SymbolicRegexNode<S> node)
         {
@@ -697,18 +748,28 @@ namespace Microsoft.Automata
                                     yield return cd;
                                 }
                             }
-                            else if (node.IsPlus)
-                            {
-                                var star = this.MkLoop(node.left);
-                                var expandedloop = this.MkConcat(node.left, star);
-                                foreach (var deriv in this.EnumerateConditionalDerivatives(elem, expandedloop))
-                                    yield return deriv;
-                            }
-                            else if (node.IsMaybe)
-                            {
-                                foreach (var step in this.EnumerateConditionalDerivatives(elem, node.left))
-                                    yield return step;
-                            }
+                            //--- already normalized, this should be dead code
+                            //else if (node.IsPlus)
+                            //{
+                            //    var star = this.MkLoop(node.left);
+                            //    var expandedloop = this.MkConcat(node.left, star);
+                            //    foreach (var deriv in this.EnumerateConditionalDerivatives(elem, expandedloop))
+                            //        yield return deriv;
+                            //}
+                            //else if (node.IsMaybe)
+                            //{
+                            //    foreach (var step in this.EnumerateConditionalDerivatives(elem, node.left))
+                            //        yield return step;
+                            //}
+                            //else if (node.UpperBound == int.MaxValue)
+                            //{
+                            //    //normalize A{k,*} loop into A{k}A*
+                            //    var Ak = this.MkLoop(node.left, node.lower, node.lower);
+                            //    var Astar = this.MkLoop(node.left, 0, int.MaxValue);
+                            //    var expandedloop = this.MkConcat(Ak, Astar);
+                            //    foreach (var step in this.EnumerateConditionalDerivatives(elem, expandedloop))
+                            //        yield return step;
+                            //}
                             else
                             {
                                 CounterUpdate ca = new CounterUpdate(node, CounterOp.INCREMENT);

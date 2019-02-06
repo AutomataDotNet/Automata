@@ -697,16 +697,17 @@ namespace Microsoft.Automata
         /// <returns></returns>
         internal Automaton<Tuple<Maybe<S>,Sequence<CounterUpdate>>> Explore()
         {
+            var this_normalized = this.builder.Normalize(this);
             var stateLookup = new Dictionary<SymbolicRegexNode<S>, int>();
             var regexLookup = new Dictionary<int,SymbolicRegexNode<S>>();
-            stateLookup[this] = 0;
+            stateLookup[this_normalized] = 0;
             int stateid = 2;
-            regexLookup[0] = this;
+            regexLookup[0] = this_normalized;
             SimpleStack<int> frontier = new SimpleStack<int>();
             var moves = new List<Move<Tuple<Maybe<S>, Sequence<CounterUpdate>>>>();
             var finalStates = new HashSet<int>();
             frontier.Push(0);
-            var reset0 = builder.GetNullabilityCondition(this);
+            var reset0 = builder.GetNullabilityCondition(this_normalized);
             if (reset0 != null)
             {
                 if (reset0.TrueForAll(x => x.Counter.LowerBound == 0))
