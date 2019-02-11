@@ -40,14 +40,6 @@ namespace Microsoft.Automata
         internal bool isNullable = false;
         public bool containsAnchors = false;
 
-        /// <summary>
-        /// fixed string prefix that must be matched by this regex, 
-        /// null means that the value has not been computed yet
-        /// </summary>
-        string fixedPrefix = null;
-
-        bool ignoreCaseOfFixedPrefix = false;
-
         int hashcode = -1;
 
         #region serialization
@@ -753,7 +745,6 @@ namespace Microsoft.Automata
             return aut;
         }
 
-
         internal Sequence<CounterUpdate> GetCounterInitConditions()
         {
             if (kind == SymbolicRegexKind.Loop && lower > 0 && !IsPlus && !IsMaybe)
@@ -766,6 +757,49 @@ namespace Microsoft.Automata
             {
                 return Sequence<CounterUpdate>.Empty;
             }
+        }
+
+        internal class CountingAutomaton
+        {
+            Automaton<Tuple<Maybe<S>, Sequence<CounterUpdate>>> aut;
+            Dictionary<int, SymbolicRegexNode<S>> stateMap;
+            HashSet<ICounter> counters;
+            Dictionary<int, HashSet<ICounter>> finalStates;
+
+            CountingAutomaton(Automaton<Tuple<Maybe<S>, Sequence<CounterUpdate>>> aut,
+                Dictionary<int, SymbolicRegexNode<S>> stateMap)
+            {
+                this.aut = aut;
+                this.stateMap = stateMap;
+                this.counters = new HashSet<ICounter>();
+                foreach (var move in aut.GetMoves())
+                {
+                    foreach (var update in move.Label.Item2)
+                        counters.Add(update.Counter);
+                }
+                finalStates = new Dictionary<int, HashSet<ICounter>>();
+                foreach (var move in aut.GetMovesTo(1))
+                {
+                    var conds = new HashSet<ICounter>();
+                    foreach (var update in move.Label.Item2)
+                    {
+                        conds.Add(update.Counter);
+                    }
+                    finalStates[move.SourceState] = conds;
+                }
+            }
+
+            internal static CountingAutomaton Create(
+                SymbolicRegexBuilder<S> builder,
+                IEnumerable<Move<Tuple<Maybe<S>, Sequence<CounterUpdate>>>> moves, 
+                Dictionary<int, SymbolicRegexNode<S>> stateMap)
+            {
+                var aut = Automaton<Tuple<Maybe<S>, Sequence<CounterUpdate>>>.Create(new CABA(builder),
+                    0, new int[] { 1 }, moves);
+                var ca = new CountingAutomaton(aut, stateMap);
+                return ca;
+            }
+
         }
 
         internal class CABA : IBooleanAlgebra<Tuple<Maybe<S>, Sequence<CounterUpdate>>>, IPrettyPrinter<Tuple<Maybe<S>, Sequence<CounterUpdate>>>
@@ -903,7 +937,6 @@ namespace Microsoft.Automata
             }
             #endregion
         }
-
 
         /// <summary>
         /// true iff epsilon is accepted
@@ -1349,94 +1382,118 @@ namespace Microsoft.Automata
         /// <summary>
         /// Gets the string prefix that the regex must match or the empty string if such a prefix does not exist.
         /// </summary>
-        internal string GetFixedPrefix(CharSetSolver css)
+        internal string GetFixedPrefix(CharSetSolver css, out bool ignoreCase)
         {
-            if (fixedPrefix == null)
+            var pref = GetFixedPrefix_(css, out ignoreCase);
+            int i = pref.IndexOf('I');
+            int k = pref.IndexOf('K');
+            if (ignoreCase && (i != -1 || k != -1))
             {
-                #region compute fixedPrefix
-                S[] prefix = GetPrefix();
-                if (prefix.Length == 0)
+                //eliminate I and K to avoid possible semantic discrepancy with later search
+                //due to \u0130 (in regex same as i and ignore case)
+                //duw to \u212A (in regex same as k and ignore case)
+                //but these do not match with string.IndexOf under ignoreCase
+                if (k == -1)
+                    return pref.Substring(0, i);
+                else if (i == -1)
+                    return pref.Substring(0, k);
+                else
+                    return pref.Substring(0, (i < k ? i : k));
+            }
+            else
+            {
+                return pref;
+            }
+        }
+
+        string GetFixedPrefix_(CharSetSolver css, out bool ignoreCase)
+        {
+            #region compute fixedPrefix
+            S[] prefix = GetPrefix();
+            if (prefix.Length == 0)
+            {
+                ignoreCase = false;
+                return string.Empty;
+            }
+            else
+            {
+                BDD[] bdds = Array.ConvertAll(prefix, p => builder.solver.ConvertToCharSet(css, p));
+                if (Array.TrueForAll(bdds, x => css.IsSingleton(x)))
                 {
-                    fixedPrefix = string.Empty;
+                    //all elements are singletons
+                    char[] chars = Array.ConvertAll(bdds, x => (char)x.GetMin());
+                    ignoreCase = false;
+                    return new string(chars);
                 }
                 else
                 {
-                    BDD[] bdds = Array.ConvertAll(prefix, p => builder.solver.ConvertToCharSet(css, p));
-                    if (Array.TrueForAll(bdds, x => css.IsSingleton(x)))
+                    //maps x to itself if x is invariant under ignoring case
+                    //maps x to False otherwise
+                    Func<BDD, BDD> F = x =>
                     {
-                        //all elements are singletons
+                        char c = (char)x.GetMin();
+                        var y = css.MkCharConstraint(c, true);
+                        if (x == y)
+                            return x;
+                        else
+                            return css.False;
+                    };
+                    BDD[] bdds1 = Array.ConvertAll(bdds, x => F(x));
+                    if (Array.TrueForAll(bdds1, x => !x.IsEmpty))
+                    {
+                        //all elements are singletons up-to-ignoring-case
+                        //choose representatives
                         char[] chars = Array.ConvertAll(bdds, x => (char)x.GetMin());
-                        fixedPrefix = new string(chars);
+                        ignoreCase = true;
+                        return new string(chars);
                     }
                     else
                     {
-                        //maps x to itself if x is invariant under ignoring case
-                        //maps x to False otherwise
-                        Func<BDD, BDD> F = x =>
+                        List<char> elems = new List<char>();
+                        //extract prefix of singletons
+                        for (int i = 0; i < bdds.Length; i++)
                         {
-                            char c = (char)x.GetMin();
-                            var y = css.MkCharConstraint(c, true);
-                            if (x == y)
-                                return x;
+                            if (css.IsSingleton(bdds[i]))
+                                elems.Add((char)bdds[i].GetMin());
                             else
-                                return css.False;
-                        };
-                        BDD[] bdds1 = Array.ConvertAll(bdds, x => F(x));
-                        if (Array.TrueForAll(bdds1, x => !x.IsEmpty))
+                                break;
+                        }
+                        List<char> elemsI = new List<char>();
+                        //extract prefix up-to-ignoring-case 
+                        for (int i = 0; i < bdds1.Length; i++)
                         {
-                            //all elements are singletons up-to-ignoring-case
-                            //choose representatives
-                            char[] chars = Array.ConvertAll(bdds, x => (char)x.GetMin());
-                            fixedPrefix = new string(chars);
-                            //set the ignore case flag to true
-                            ignoreCaseOfFixedPrefix = true;
+                            if (bdds1[i].IsEmpty)
+                                break;
+                            else
+                                elemsI.Add((char)bdds1[i].GetMin());
+                        }
+                        //TBD: these heuristics should be evaluated more
+                        #region different cases of fixed prefix
+                        if (elemsI.Count > elems.Count)
+                        {
+                            ignoreCase = true;
+                            return new string(elemsI.ToArray());
+                        }
+                        else if (elems.Count > 0)
+                        {
+                            ignoreCase = false;
+                            return new string(elems.ToArray());
+                        }
+                        else if (elemsI.Count > 0)
+                        {
+                            ignoreCase = true;
+                            return new string(elemsI.ToArray());
                         }
                         else
                         {
-                            List<char> elems = new List<char>();
-                            //extract prefix of singletons
-                            for (int i = 0; i < bdds.Length; i++)
-                            {
-                                if (css.IsSingleton(bdds[i]))
-                                    elems.Add((char)bdds[i].GetMin());
-                                else
-                                    break;
-                            }
-                            List<char> elemsI = new List<char>();
-                            //extract prefix up-to-ignoring-case 
-                            for (int i = 0; i < bdds1.Length; i++)
-                            {
-                                if (bdds1[i].IsEmpty)
-                                    break;
-                                else
-                                    elemsI.Add((char)bdds1[i].GetMin());
-                            }
-                            //TBD: these heuristics should be evaluated more
-                            //but ignoreCaseOfFixedPrefix == false is cheaper in IndexOf
-                            if (elemsI.Count > elems.Count)
-                            {
-                                fixedPrefix = new string(elemsI.ToArray());
-                                ignoreCaseOfFixedPrefix = true;
-                            }
-                            else if (elems.Count > 0)
-                            {
-                                fixedPrefix = new string(elems.ToArray());
-                            }
-                            else if (elemsI.Count > 0)
-                            {
-                                fixedPrefix = new string(elemsI.ToArray());
-                                ignoreCaseOfFixedPrefix = true;
-                            }
-                            else
-                            {
-                                fixedPrefix = string.Empty;
-                            }
+                            ignoreCase = false;
+                            return string.Empty;
                         }
+                        #endregion
                     }
                 }
-                #endregion
             }
-            return fixedPrefix;
+            #endregion
         }
 
         internal S[] GetPrefix()
@@ -1480,14 +1537,6 @@ namespace Microsoft.Automata
         }
 
         /// <summary>
-        /// If true then, when FixedPrefix is matched then case is ignored.
-        /// </summary>
-        public bool IgnoreCaseOfFixedPrefix
-        {
-            get { return ignoreCaseOfFixedPrefix; }
-        }
-
-        /// <summary>
         /// If this is a loop then a name of the associated counter
         /// </summary>
         public string CounterName
@@ -1519,7 +1568,7 @@ namespace Microsoft.Automata
                 case SymbolicRegexKind.Concat:
                     {
                         var startSet = this.left.GetStartSet(algebra);
-                        if (left.isNullable)
+                        if (left.isNullable || left.kind == SymbolicRegexKind.StartAnchor)
                         {
                             var set2 = this.right.GetStartSet(algebra);
                             startSet = algebra.MkOr(startSet, set2);

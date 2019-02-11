@@ -192,7 +192,7 @@ namespace Automata.Tests
             var q1 = ((SymbolicRegex<ulong>)regex.Compile(true, false)).Pattern;
             var aut = q1.Explore();
             Assert.IsTrue(aut.MoveCount == 6);
-            aut.ShowGraph("ab10bstar");
+            //aut.ShowGraph("ab10bstar");
         }
     }
 }

@@ -779,7 +779,7 @@ namespace Automata.Tests
             var aut = ((SymbolicRegex<ulong>)sr).A.Unwind();
             //regex.Display("minDFA",true);
             Assert.IsTrue(aut.DescribeState(aut.InitialState) == sr.A.ToString());
-            sr.Pattern.ShowGraph();
+            //sr.Pattern.ShowGraph();
         }
 
         [TestMethod]
@@ -794,7 +794,7 @@ namespace Automata.Tests
             var aut = ((SymbolicRegex<ulong>)sr).A.Unwind();
             //regex.Display("minDFA",true);
             Assert.IsTrue(aut.DescribeState(aut.InitialState) == sr.A.ToString());
-            sr.Pattern.ShowGraph();
+            //sr.Pattern.ShowGraph();
         }
 
         [TestMethod]

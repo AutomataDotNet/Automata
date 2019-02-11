@@ -5455,6 +5455,16 @@ namespace Microsoft.Automata
         {
             throw new NotImplementedException();
         }
+
+        public void Serialize(Stream stream, IFormatter formatter = null)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Serialize(string file, IFormatter formatter = null)
+        {
+            throw new NotImplementedException();
+        }
     }
 
     internal class Block : IEnumerable<int>

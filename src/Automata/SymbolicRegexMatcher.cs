@@ -76,7 +76,7 @@ namespace Microsoft.Automata
     /// </summary>
     /// <typeparam name="S">character set type</typeparam>
     [Serializable]
-    public class SymbolicRegex<S> : IMatcher
+    public class SymbolicRegex<S> : RegexMatcher
     {
         [NonSerialized]
         internal SymbolicRegexBuilder<S> builder;
@@ -178,7 +178,7 @@ namespace Microsoft.Automata
         /// <summary>
         /// Set of elements that matter as first element of A. 
         /// </summary>
-        BooleanDecisionTree A_StartSet;
+        internal BooleanDecisionTree A_StartSet;
 
         /// <summary>
         /// predicate over characters that make some progress
@@ -322,7 +322,7 @@ namespace Microsoft.Automata
         /// <summary>
         /// This serialization method is invoked by BinaryFormatter.Serialize via Serialize method.
         /// </summary>
-        public void GetObjectData(SerializationInfo info, StreamingContext context)
+        override public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             if (serializeInSimplifiedForm)
             {
@@ -364,7 +364,8 @@ namespace Microsoft.Automata
                         simpl_A_prefix += simpl_bvalg.PrettyPrint(set);
                 }
 
-                info.AddValue("A_prefix", simpl_A_prefix);
+                info.AddValue("A_prefix", StringUtility.SerializeStringToCharCodeSequence(simpl_A_prefix));
+                info.AddValue("A_fixedPrefix_ignoreCase", false);
                 info.AddValue("A_prefix_array", A_prefix_array);
 
                 var simpl_Ar_prefix = "";
@@ -380,7 +381,7 @@ namespace Microsoft.Automata
                 }
 
                 info.AddValue("Ar_prefix_array", Ar_prefix_array);
-                info.AddValue("Ar_prefix", simpl_Ar_prefix);
+                info.AddValue("Ar_prefix", StringUtility.SerializeStringToCharCodeSequence(simpl_Ar_prefix));
                 #endregion
             }
             else
@@ -395,11 +396,12 @@ namespace Microsoft.Automata
                 info.AddValue("A_startset", A_startset);
                 info.AddValue("A_StartSet_Size", A_StartSet_Size);
 
-                info.AddValue("A_prefix", A_prefix);
+                info.AddValue("A_prefix", StringUtility.SerializeStringToCharCodeSequence(A_prefix));
+                info.AddValue("A_fixedPrefix_ignoreCase", A_fixedPrefix_ignoreCase);
                 info.AddValue("A_prefix_array", A_prefix_array);
 
                 info.AddValue("Ar_prefix_array", Ar_prefix_array);
-                info.AddValue("Ar_prefix", Ar_prefix);
+                info.AddValue("Ar_prefix", StringUtility.SerializeStringToCharCodeSequence(Ar_prefix));
             }
         }
 
@@ -429,15 +431,15 @@ namespace Microsoft.Automata
 
             SymbolicRegexNode<S> tmp = A;
             this.A_prefix_array = info.GetValue("A_prefix_array", typeof(S[])) as S[];
-            this.A_prefix = info.GetString("A_prefix");
+            this.A_prefix = StringUtility.DeserializeStringFromCharCodeSequence(info.GetString("A_prefix"));
             this.A_prefixUTF8 = System.Text.UnicodeEncoding.UTF8.GetBytes(this.A_prefix);
 
-            this.A_fixedPrefix_ignoreCase = A.IgnoreCaseOfFixedPrefix;
+            this.A_fixedPrefix_ignoreCase = info.GetBoolean("A_fixedPrefix_ignoreCase");
             this.A1_skipState = DeltaPlus(A_prefix, q0_A1, out tmp);
             this.A1_skipStateRegex = tmp;
 
             this.Ar_prefix_array = (S[])info.GetValue("Ar_prefix_array", typeof(S[]));
-            this.Ar_prefix = info.GetString("Ar_prefix");
+            this.Ar_prefix = StringUtility.DeserializeStringFromCharCodeSequence(info.GetString("Ar_prefix"));
             this.Ar_skipState = DeltaPlus(Ar_prefix, q0_Ar, out tmp);
             this.Ar_skipStateRegex = tmp;
 
@@ -451,16 +453,16 @@ namespace Microsoft.Automata
         /// </summary>
         /// <param name="file">file where the serialization is stored</param>
         /// <param name="formatter">given formatter</param>
-        public void Serialize(string file, IFormatter formatter = null)
+        override public void Serialize(string file, IFormatter formatter = null)
         {
-            var stream = new FileStream(file, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None);
+            var stream = new FileStream(file, FileMode.Create, FileAccess.Write, FileShare.None);
             Serialize(stream, formatter);
             stream.Close();
         }
 
         /// <summary>
         /// Simplified serialization, character classes are replaced by some singletons.
-        /// Used for testing purposes.
+        /// Used for testing purposes only.
         /// </summary>
         /// <param name="stream">stream where the serialization is stored</param>
         /// <param name="formatter">given formatter</param>
@@ -473,7 +475,6 @@ namespace Microsoft.Automata
             this.serializeInSimplifiedForm = false;
         }
 
-
         /// <summary>
         /// Serialize this symbolic regex matcher to the given file.
         /// If formatter is null then an instance of 
@@ -481,45 +482,11 @@ namespace Microsoft.Automata
         /// </summary>
         /// <param name="stream">stream where the serialization is stored</param>
         /// <param name="formatter">given formatter</param>
-        public void Serialize(Stream stream, IFormatter formatter = null)
+        override public void Serialize(Stream stream, IFormatter formatter = null)
         {
             if (formatter == null)
                 formatter = new BinaryFormatter();
             formatter.Serialize(stream, this);
-        }
-
-        /// <summary>
-        /// Deserialize the matcher of a symblic regex from the given file using the given formatter. 
-        /// If formatter is null then an instance of 
-        /// System.Runtime.Serialization.Formatters.Binary.BinaryFormatter is used.
-        /// </summary>
-        /// <param name="file">source file of the serialized matcher</param>
-        /// <param name="formatter">given formatter</param>
-        /// <returns></returns>
-        public static SymbolicRegex<S> Deserialize(string file, IFormatter formatter = null)
-        {
-            if (formatter == null)
-                formatter = new BinaryFormatter();
-            Stream stream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.None);
-            SymbolicRegex<S> matcher = (SymbolicRegex<S>)formatter.Deserialize(stream);
-            stream.Close();
-            return matcher;
-        }
-
-        /// <summary>
-        /// Deserialize the matcher of a symblic regex from the given stream using the given formatter. 
-        /// If formatter is null then an instance of 
-        /// System.Runtime.Serialization.Formatters.Binary.BinaryFormatter is used.
-        /// </summary>
-        /// <param name="stream">source file of the serialized matcher</param>
-        /// <param name="formatter">given formatter</param>
-        /// <returns></returns>
-        public static SymbolicRegex<S> Deserialize(Stream stream, IFormatter formatter = null)
-        {
-            if (formatter == null)
-                formatter = new BinaryFormatter();
-            SymbolicRegex<S> matcher = (SymbolicRegex<S>)formatter.Deserialize(stream);
-            return matcher;
         }
 
         /// <summary>
@@ -573,10 +540,9 @@ namespace Microsoft.Automata
 
             SymbolicRegexNode<S> tmp = A;
             this.A_prefix_array = A.GetPrefix();
-            this.A_prefix = A.GetFixedPrefix(css);
+            this.A_prefix = A.GetFixedPrefix(css, out this.A_fixedPrefix_ignoreCase);
             this.A_prefixUTF8 = System.Text.UnicodeEncoding.UTF8.GetBytes(this.A_prefix);
 
-            this.A_fixedPrefix_ignoreCase = A.IgnoreCaseOfFixedPrefix;
             this.A1_skipState = DeltaPlus(A_prefix, q0_A1, out tmp);
             this.A1_skipStateRegex = tmp;
 
@@ -848,7 +814,7 @@ namespace Microsoft.Automata
         /// <param name="limit">upper bound on the number of found matches, nonpositive value (default is 0) means no bound</param>
         /// <param name="startat">the position to start search in the input string</param>
         /// </summary>
-        public Tuple<int, int>[] Matches(string input, int limit = 0, int startat = 0)
+        override public Tuple<int, int>[] Matches(string input, int limit = 0, int startat = 0)
         {
             if (A.isNullable)
                 throw new AutomataException(AutomataExceptionKind.MustNotAcceptEmptyString);
@@ -870,7 +836,7 @@ namespace Microsoft.Automata
             int match_start_boundary = i;
 
             //TBD: dont enforce match_start_boundary when match overlaps are allowed
-            bool A_has_nonempty_prefix = (this.A_prefix != string.Empty);
+            bool A_has_nonempty_prefix = (!this.A_prefix.Equals(string.Empty));
             while (true)
             {
                 int i_q0_A1;
@@ -907,7 +873,7 @@ namespace Microsoft.Automata
         /// <param name="input">input string</param>
         /// <param name="startat">the position to start search in the input string</param>
         /// </summary>
-        public bool IsMatch(string input, int startat = 0)
+        override public bool IsMatch(string input, int startat = 0)
         {
             if (input == null || startat >= input.Length || startat < 0)
                 throw new AutomataException(AutomataExceptionKind.InvalidArgument);
@@ -2606,10 +2572,91 @@ namespace Microsoft.Automata
             return i;
         }
 
-        public string GenerateRandomMatch(int maxLoopUnrol = 10, int cornerCaseProb = 5, int maxSamplingIter = 3)
+        override public string GenerateRandomMatch(int maxLoopUnrol = 10, int cornerCaseProb = 5, int maxSamplingIter = 3)
         {
             return A.GenerateRandomMember(maxLoopUnrol, cornerCaseProb, maxSamplingIter);
         }
         #endregion
+    }
+
+    /// <summary>
+    /// Base class for regex matchers
+    /// </summary>
+    public abstract class RegexMatcher : IMatcher
+    {
+        /// <summary>
+        /// Generate a random string that is a complete match.
+        /// </summary>
+        public abstract string GenerateRandomMatch(int maxLoopUnrol = 10, int cornerCaseProb = 5, int maxSamplingIter = 3);
+
+        /// <summary>
+        /// Extends System.Runtime.Serialization.ISerializable
+        /// </summary>
+        public abstract void GetObjectData(SerializationInfo info, StreamingContext context);
+
+        /// <summary>
+        /// Returns true iff the input string matches. 
+        /// <param name="input">given iput string</param>
+        /// <param name="startat">start position in the input</param>
+        /// </summary>
+        public abstract bool IsMatch(string input, int startat = 0);
+
+        /// <summary>
+        /// Returns all matches as pairs (startindex, length) in the input string.
+        /// </summary>
+        /// <param name="input">given iput string</param>
+        /// <param name="limit">as soon as this many matches have been found the search terminates, 0 or negative value means that there is no bound, default is 0</param>
+        /// <param name="startat">start position in the input, default is 0</param>
+        public abstract Tuple<int, int>[] Matches(string input, int limit = 0, int startat = 0);
+
+        /// <summary>
+        /// Serialize this symbolic regex matcher to the given stream.
+        /// If formatter is null then an instance of 
+        /// System.Runtime.Serialization.Formatters.Binary.BinaryFormatter is used.
+        /// </summary>
+        /// <param name="stream">stream where the serialization is stored</param>
+        /// <param name="formatter">given formatter</param>
+        public abstract void Serialize(Stream stream, IFormatter formatter = null);
+
+        /// <summary>
+        /// Serialize this symbolic regex matcher to the given file.
+        /// If formatter is null then an instance of 
+        /// System.Runtime.Serialization.Formatters.Binary.BinaryFormatter is used.
+        /// </summary>
+        /// <param name="file">file where the serialization is stored</param>
+        /// <param name="formatter">given formatter</param>
+        public abstract void Serialize(string file, IFormatter formatter = null);
+
+        /// <summary>
+        /// Deserialize the matcher of a symblic regex from the given file using the given formatter. 
+        /// If formatter is null then an instance of 
+        /// System.Runtime.Serialization.Formatters.Binary.BinaryFormatter is used.
+        /// </summary>
+        /// <param name="file">source file of the serialized matcher</param>
+        /// <param name="formatter">given formatter</param>
+        /// <returns></returns>
+        public static RegexMatcher Deserialize(string file, IFormatter formatter = null)
+        {
+            Stream stream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.None);
+            RegexMatcher matcher = Deserialize(stream, formatter);
+            stream.Close();
+            return matcher;
+        }
+
+        /// <summary>
+        /// Deserialize the matcher of a symblic regex from the given stream using the given formatter. 
+        /// If formatter is null then an instance of 
+        /// System.Runtime.Serialization.Formatters.Binary.BinaryFormatter is used.
+        /// </summary>
+        /// <param name="stream">source stream of the serialized matcher</param>
+        /// <param name="formatter">given formatter</param>
+        /// <returns></returns>
+        public static RegexMatcher Deserialize(Stream stream, IFormatter formatter = null)
+        {
+            if (formatter == null)
+                formatter = new BinaryFormatter();
+            RegexMatcher matcher = (RegexMatcher)formatter.Deserialize(stream);
+            return matcher;
+        }
     }
 }

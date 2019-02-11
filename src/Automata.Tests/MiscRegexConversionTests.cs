@@ -200,5 +200,32 @@ namespace Microsoft.Automata.Tests
             }
         }
 
+        [TestMethod]
+        public void TestMinimalDFA_Size()
+        {
+            for (int k = 1; k < 6; k++)
+            {
+                TestMinimalDFA_Size_helper(k);
+            }
+        }
+        [TestMethod]
+        public void TestMinimalDFA_Size_2()
+        {
+            var regex = @".{0}\x05.{1}\x0b.{21}\x00";
+            var css = new CharSetSolver();
+            var aut = css.Convert(regex, RegexOptions.Singleline).Determinize().Minimize();
+            //aut.ShowGraph("DFA" + k);
+            Assert.AreEqual<int>(142130, aut.StateCount);
+        }
+
+        void TestMinimalDFA_Size_helper(int k)
+        {
+            var regex = "^.*a.{" + k + "}$";
+            var css = new CharSetSolver();
+            var aut = css.Convert(regex, RegexOptions.Singleline).Determinize().Minimize();
+            //aut.ShowGraph("DFA" + k);
+            Assert.AreEqual<int>((1 << (k + 1)), aut.StateCount);
+        }
+
     }
 }

@@ -18,6 +18,8 @@ using System.Runtime.Serialization.Formatters.Soap;
 using System.IO;
 using System.Web;
 
+using System.Linq;
+
 namespace Automata.Tests
 {
     [TestClass]
@@ -256,9 +258,7 @@ namespace Automata.Tests
             var s1 = new FileStream("test.soap", FileMode.Create);
             m1.SerializeSimplified(s1, new SoapFormatter());
             s1.Close();
-            var s2 = new FileStream("test.soap", FileMode.Open);
-            var m2 = (IMatcher)new SoapFormatter().Deserialize(s2);
-            s2.Close();
+            var m2 = RegexMatcher.Deserialize("test.soap", new SoapFormatter());
             var input = "zzzBBBBAAAAzzzz";
             //first match
             var matches = m2.Matches(input);
@@ -282,11 +282,11 @@ namespace Automata.Tests
             Assert.IsTrue(m2.Pattern.IsPlus);
         }
 
-        [TestMethod]
+        //[TestMethod]
         public void GenerateExamplesWithLoops()
         {
-            GenerateExamplesWithLoops("../../../../Automata.Tests/Samples_/regexesWithoutAnchors.txt", "Set1", true);
-            //GenerateExamplesWithLoops("../../../../Automata.Tests/Samples/regexes.txt", "Set2", true);
+            //GenerateExamplesWithLoops("../../../../Automata.Tests/Samples_/regexesWithoutAnchors.txt", "Set1", true);
+            GenerateExamplesWithLoops("../../../../Automata.Tests/Samples/regexes.txt", "Set2", true);
         }
 
         void GenerateExamplesWithLoops(string file, string batch_name, bool simplify)
@@ -406,5 +406,122 @@ namespace Automata.Tests
             return obj;
         }
 
+        [TestMethod]
+        public void TestSerialization_IgnoreCase_BugFix()
+        {
+            var regex1 = new System.Text.RegularExpressions.Regex(@"[aA][bB][cC]?[dD]"
+                , System.Text.RegularExpressions.RegexOptions.IgnoreCase
+                );
+            var matcher1 = regex1.Compile();
+            matcher1.Serialize("test.bin");
+            var matcher2 = RegexMatcher.Deserialize("test.bin");
+
+            string input = @"xabdx";
+
+            var res1 = matcher1.Matches(input);
+            var res2 = matcher2.Matches(input);
+
+            Assert.IsTrue(res1[0].Item1 == 1 && res1[0].Item2 == 3);
+            Assert.AreEqual(res1.Length, res2.Length);
+            Assert.IsTrue(res1[0].Equals(res2[0]));
+        }
+
+        [TestMethod]
+        public void TestSerialization_MatchCorrectSurrogatePair()
+        {
+            var regex1 = new System.Text.RegularExpressions.Regex(@"[\uD800-\uDBFF][\uDC00-\uDFFF]"
+                , System.Text.RegularExpressions.RegexOptions.IgnoreCase
+                );
+            var matcher1 = regex1.Compile(); 
+            matcher1.Serialize("surrogatepair.soap", new System.Runtime.Serialization.Formatters.Soap.SoapFormatter());
+            var matcher2 = RegexMatcher.Deserialize("surrogatepair.soap", new System.Runtime.Serialization.Formatters.Soap.SoapFormatter());
+
+            string input = "_\uD809\uDD03_";
+
+            var res1 = matcher1.Matches(input);
+            var res2 = matcher2.Matches(input);
+
+            Assert.IsTrue(res1[0].Item1 == 1 && res1[0].Item2 == 2);
+            Assert.AreEqual(res1.Length, res2.Length);
+            Assert.IsTrue(res1[0].Equals(res2[0]));
+        }
+
+        [TestMethod]
+        public void TestSerialization_MatchIncorrectSurrogatePair()
+        {
+            var regex1 = new System.Text.RegularExpressions.Regex(@"[\uDC00-\uDFFF][\uD800-\uDBFF]"
+                , System.Text.RegularExpressions.RegexOptions.IgnoreCase
+                );
+            var matcher1 = regex1.Compile();
+            matcher1.Serialize("badsurrogatepair.bin");
+            var matcher2 = RegexMatcher.Deserialize("badsurrogatepair.bin");
+
+            string input = "_\uDD03\uD809_";
+
+            var res1 = matcher1.Matches(input);
+            var res2 = matcher2.Matches(input);
+
+            Assert.IsTrue(res1[0].Item1 == 1 && res1[0].Item2 == 2);
+            Assert.AreEqual(res1.Length, res2.Length);
+            Assert.IsTrue(res1[0].Equals(res2[0]));
+        }
+
+        [TestMethod]
+        public void TestSerialization_comprehensive_IgnoreCase()
+        {
+            TestSerialization_comprehensive_(RegexOptions.Singleline | RegexOptions.IgnoreCase);
+        }
+
+        [TestMethod]
+        public void TestSerialization_comprehensive()
+        {
+            TestSerialization_comprehensive_(RegexOptions.Singleline);
+        }
+
+        void TestSerialization_comprehensive_(RegexOptions options)
+        {
+            var regexesFile = "../../../../Automata.Tests/Samples/matcher_test_set.txt";
+            var regexes = Array.ConvertAll(File.ReadAllLines(regexesFile), x => new Regex(x, options));
+            int k = regexes.Length;
+            for (int i = 0; i < k; i++)
+            {
+                var regex = regexes[i];
+                RegexMatcher matcher;
+                string reasonwhyfailed;
+                if (regex.TryCompile(out matcher, out reasonwhyfailed))
+                {
+                    matcher.Serialize("tmp.bin");
+                    var matcher_ = RegexMatcher.Deserialize("tmp.bin");
+                    var input = matcher.GenerateRandomMatch();
+                    var matches = matcher.Matches(input);
+                    var matches_ = matcher_.Matches(input);
+                    Assert.IsTrue(matches_.Length == matches.Length);
+                    Assert.AreEqual(matches[0], matches_[0]);
+                }
+                else
+                {
+                    Assert.Fail("Regex compilation failed: " + reasonwhyfailed);
+                }
+            }
+        }
+
+        [TestMethod]
+        public void TestCustomStringSerialization()
+        {
+            CustomSerializeDeserialize("A\uD809\uDD03B");
+            CustomSerializeDeserialize("A\uDD03\uD809B");
+            CustomSerializeDeserialize("A\uDD03B\uD809");
+            CustomSerializeDeserialize("");
+            CustomSerializeDeserialize("1");
+            CustomSerializeDeserialize("1,2");
+            CustomSerializeDeserialize("\n\r");
+        }
+
+        public void CustomSerializeDeserialize(string input)
+        {
+            var s = StringUtility.SerializeStringToCharCodeSequence(input);
+            var d = StringUtility.DeserializeStringFromCharCodeSequence(s);
+            Assert.AreEqual<string>(input, d);
+        }
     }
 }

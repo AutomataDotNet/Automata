@@ -41,11 +41,10 @@ namespace Microsoft.Automata
         /// <param name="regex">this regex</param>
         /// <param name="regexes">more regexes to intersect with</param>
         /// <returns></returns>
-        public static IMatcher Compile(this Regex regex, params Regex[] regexes)
+        public static RegexMatcher Compile(this Regex regex, params Regex[] regexes)
         {
             return Compile(regex, true, true, regexes);
         }
-
 
         /// <summary>
         /// Compiles this regex and possibly other regexes into a common symbolic regex representing their intersection
@@ -55,7 +54,7 @@ namespace Microsoft.Automata
         /// <param name="keepAnchors">if false missing anchors are replaced by .* else just omitted</param>
         /// <param name="unwindLowerBounds">if true then lower bounds of loops are unwound</param>
         /// <returns></returns>
-        public static IMatcher Compile(this Regex regex, bool keepAnchors, bool unwindLowerBounds, params Regex[] regexes)
+        public static RegexMatcher Compile(this Regex regex, bool keepAnchors, bool unwindLowerBounds, params Regex[] regexes)
         {
             if (context == null)
                 context = new CharSetSolver();
@@ -69,7 +68,7 @@ namespace Microsoft.Automata
             var srBuilder = context.RegexConverter.srBuilder;
             var conj = srBuilder.MkAnd(all);
             var partition = conj.ComputeMinterms();
-            IMatcher matcher;
+            RegexMatcher matcher;
             if (partition.Length > 64)
             {
                 //more than 64 bits needed to represent a set
@@ -90,7 +89,7 @@ namespace Microsoft.Automata
         /// <param name="result">if the return value is true then this is the result of compilation</param>
         /// <param name="whyfailed">if the return value is false then this is the reason why compilation failed</param>
         /// <param name="regexes">other regexes to be intersected with given regex</param>
-        public static bool TryCompile(this Regex regex,  out IMatcher result, out string whyfailed, params Regex[] regexes)
+        public static bool TryCompile(this Regex regex,  out RegexMatcher result, out string whyfailed, params Regex[] regexes)
         {
             try
             {

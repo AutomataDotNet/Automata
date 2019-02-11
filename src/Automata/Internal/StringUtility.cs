@@ -146,5 +146,23 @@ namespace Microsoft.Automata
             return System.Text.RegularExpressions.Regex.Unescape(s);
         }
         #endregion
+
+        internal static string SerializeStringToCharCodeSequence(string s)
+        {
+            if (string.IsNullOrEmpty(s))
+                return s;
+            var encodedChars = Array.ConvertAll(s.ToCharArray(), c => ((int)c).ToString());
+            var serialized = string.Join(",", encodedChars);
+            return serialized;
+        }
+
+        internal static string DeserializeStringFromCharCodeSequence(string s)
+        {
+            if (string.IsNullOrEmpty(s))
+                return s;
+            var encodedChars = s.Split(',');
+            var deserialized = new String(Array.ConvertAll(encodedChars, x => (char)(int.Parse(x))));
+            return deserialized;
+        }
     }
 }

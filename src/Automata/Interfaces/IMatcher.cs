@@ -33,6 +33,24 @@ namespace Microsoft.Automata
         /// Generate a random string that is a complete match.
         /// </summary>
         string GenerateRandomMatch(int maxLoopUnrol = 10, int cornerCaseProb = 5, int maxSamplingIter = 3);
+
+        /// <summary>
+        /// Serialize this symbolic regex matcher to the given stream.
+        /// If formatter is null then an instance of 
+        /// System.Runtime.Serialization.Formatters.Binary.BinaryFormatter is used.
+        /// </summary>
+        /// <param name="stream">stream where the serialization is stored</param>
+        /// <param name="formatter">given formatter</param>
+        void Serialize(Stream stream, IFormatter formatter = null);
+
+        /// <summary>
+        /// Serialize this symbolic regex matcher to the given file.
+        /// If formatter is null then an instance of 
+        /// System.Runtime.Serialization.Formatters.Binary.BinaryFormatter is used.
+        /// </summary>
+        /// <param name="file">file where the serialization is stored</param>
+        /// <param name="formatter">given formatter</param>
+        void Serialize(string file, IFormatter formatter = null);
     }
 
     /// <summary>

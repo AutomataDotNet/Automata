@@ -143,7 +143,7 @@ namespace Automata.Tests
             return str;
         }
 
-        [TestMethod]
+        //[TestMethod]
         public void TestRegex_CompileToSymbolicRegex_Matches_IgnoreCaseTrue()
         {
             ClearLog();
@@ -152,7 +152,7 @@ namespace Automata.Tests
             TestRegex_CompileToSymbolicRegex_Matches_Helper(options);
         }
 
-        [TestMethod]
+        //[TestMethod]
         public void TestRegex_CompileToSymbolicRegex_Matches_IgnoreCaseFalse()
         {
             ClearLog();
@@ -447,7 +447,7 @@ namespace Automata.Tests
             }
             return res;
         }
-        [TestMethod]
+        //[TestMethod]
         public void Test_FindRegexesWithLazyLoops()
         {
             var res = FindRegexesWithLazyLoops();
@@ -469,7 +469,7 @@ namespace Automata.Tests
             var strArray = str.ToCharArray();
             int k = str.Length;
             //CharSetSolver css = new CharSetSolver();
-            for (int i = 2; i < k; i++)
+            for (int i = 2; i < 10; i++)
             {
                 var re = regexes[i];
                 var sr = re.Compile();
@@ -678,7 +678,7 @@ namespace Automata.Tests
             var regex = new Regex(r);
             string failure;
             string whynot;
-            IMatcher sr;
+            RegexMatcher sr;
             bool ok = regex.TryCompile(out sr, out failure);
             bool ok2 = regex.IsCompileSupported(out whynot);
             Assert.IsFalse(ok);
@@ -692,7 +692,7 @@ namespace Automata.Tests
         {
             var regex = new Regex(r);
             string failure;
-            IMatcher sr;
+            RegexMatcher sr;
             bool ok = regex.TryCompile(out sr, out failure);
             Assert.IsTrue(ok);
             Assert.IsTrue(failure == "");
@@ -706,7 +706,7 @@ namespace Automata.Tests
             Regex[] regexes = Array.ConvertAll(File.ReadAllLines(regexesWithoutAnchorsFile), x => new Regex(x, options, new TimeSpan(0, 0, 1)));
             //var css = new CharSetSolver();
             int t = System.Environment.TickCount;
-            var srs = new IMatcher[regexes.Length];
+            var srs = new RegexMatcher[regexes.Length];
             int k = (regexes.Length < 100 ? regexes.Length : 100);
             for (int i=0; i < regexes.Length; i++)
             {
