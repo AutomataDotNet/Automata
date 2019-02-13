@@ -283,55 +283,55 @@ namespace Automata.Tests
         }
 
         //[TestMethod]
-        public void GenerateExamplesWithLoops()
+        public void GenerateSimplifiedRegexes()
         {
-            //GenerateExamplesWithLoops("../../../../Automata.Tests/Samples_/regexesWithoutAnchors.txt", "Set1", true);
-            GenerateExamplesWithLoops("../../../../Automata.Tests/Samples/regexes.txt", "Set2", true);
+            GenerateBatch("../../../../Automata.Tests/Samples_/regexesWithoutAnchors.txt", "Simpl", true);
+            //GenerateBatch("../../../../Automata.Tests/Samples/regexes.txt", "Set2", true);
         }
 
-        void GenerateExamplesWithLoops(string file, string batch_name, bool simplify)
+        void GenerateBatch(string file, string batch_name, bool simplify)
         {
             Regex[] regexes = Array.ConvertAll(File.ReadAllLines(file), x => new Regex(x, RegexOptions.Singleline));
             List<string> regexes2 = new List<string>();
             HashSet<string> regexes2_ = new HashSet<string>();
-            string dir = "../../../../Automata.Tests/RegexesWithLoops/";
+            string dir = "../../../../Automata.Tests/Samples/";
             string dir_batch = dir + batch_name;
             if (!Directory.Exists(dir_batch))
                 Directory.CreateDirectory(dir_batch);
 
-            Predicate<SymbolicRegexNode<ulong>> isNonMonadic = node =>
-            {
-                return (
-                  node.kind == SymbolicRegexKind.Loop &&
-                  node.left.kind != SymbolicRegexKind.Singleton &&
-                  !node.IsStar &&
-                  !node.IsMaybe &&
-                  !node.IsPlus);
-            };
+            //Predicate<SymbolicRegexNode<ulong>> isNonMonadic = node =>
+            //{
+            //    return (
+            //      node.kind == SymbolicRegexKind.Loop &&
+            //      node.left.kind != SymbolicRegexKind.Singleton &&
+            //      !node.IsStar &&
+            //      !node.IsMaybe &&
+            //      !node.IsPlus);
+            //};
 
-            Predicate<SymbolicRegexNode<ulong>> isCountingLoop = node =>
-            {
-                return (node.kind == SymbolicRegexKind.Loop &&
-                !node.IsStar &&
-                  !node.IsMaybe &&
-                  !node.IsPlus);
-            };
+            //Predicate<SymbolicRegexNode<ulong>> isCountingLoop = node =>
+            //{
+            //    return (node.kind == SymbolicRegexKind.Loop &&
+            //    !node.IsStar &&
+            //      !node.IsMaybe &&
+            //      !node.IsPlus);
+            //};
 
-            int nrOfCountingLoops = 0;
+            //int nrOfCountingLoops = 0;
 
             for (int i = 0; i < regexes.Length; i++)
             {
                 var regex = regexes[i];
-                SymbolicRegexUInt64 m = null;
+                RegexMatcher m = null;
                 string reasonwhynot;
                 if (regex.IsCompileSupported(out reasonwhynot))
                 {
-                    m = regex.Compile(false,false) as SymbolicRegexUInt64;
-                    if (m.Pattern.ExistsNode(isCountingLoop))
+                    m = regex.Compile(true, false);
+                    //if (m.Pattern.ExistsNode(isCountingLoop))
                     {
-                        nrOfCountingLoops += 1;
-                        bool monadic = !m.Pattern.ExistsNode(isNonMonadic);
-                        if (monadic)
+                        //nrOfCountingLoops += 1;
+                        //bool monadic = !m.Pattern.ExistsNode(isNonMonadic);
+                        //if (monadic)
                         {
                             var s = new FileStream(dir_batch + "/r" + (regexes2.Count).ToString() + ".soap", FileMode.Create);
                             if (simplify)

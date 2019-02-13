@@ -870,5 +870,81 @@ namespace Automata.Tests
 
             Console.WriteLine(string.Format("total: AUT:{0}ms osr deser{3}, .NET:{1}ms, matchcount={2}", sr_tot_ms, re_tot_ms, re_tot_matches, sr_tot_ms_d));
         }
+
+        [TestMethod]
+        public void TestMatcher_InternalConsistency()
+        {
+            TestMatcher_InternalConsistency_(RegexOptions.Singleline);
+        }
+
+        void TestMatcher_InternalConsistency_(RegexOptions options)
+        {
+            var regexesFile = "../../../../Automata.Tests/Samples/simpl.txt";
+            var regexes = Array.ConvertAll(File.ReadAllLines(regexesFile), x => new Regex(x, options));
+            int k = regexes.Length;
+            string badone = null;
+            for (int i = 0; i < k; i++)
+            {
+                var regex = regexes[i];
+                RegexMatcher matcher;
+                string reasonwhyfailed;
+                if (regex.TryCompile(out matcher, out reasonwhyfailed))
+                {
+                    //TBD:remove the condition once anchors are supported
+                    if (!((SymbolicRegexUInt64)matcher).Pattern.containsAnchors)
+                    {
+                        for (int m = 0; m < 100; m++)
+                        {
+                            var input = matcher.GenerateRandomMatch();
+                            var matches = matcher.Matches(input);
+                            Assert.IsTrue(matches.Length == 1);
+                            Assert.AreEqual(0, matches[0].Item1);
+                            Assert.AreEqual(input.Length, matches[0].Item2);
+                        }
+                    }
+                }
+                else
+                {
+                    Assert.Fail("Regex compilation failed: " + reasonwhyfailed);
+                }
+            }
+        }
+
+        [TestMethod]
+        public void TestMatcher_SemanticDifference_EarliestVsLeftmost()
+        {
+            var regex = new Regex(@"x+ax+|\(x+[^\)]*\)", RegexOptions.Singleline);
+            RegexMatcher matcher;
+            string reasonwhyfailed;
+            if (regex.TryCompile(out matcher, out reasonwhyfailed))
+            {
+                //earliest eager is not the same as leftmost eager
+                var input = "___(xxaxx this is some more stuff)";
+                //leftmost eager finds the match "(xxaxx this is some more stuff)"
+                var matches_net = regex.Matches(input);
+                Assert.IsTrue(matches_net.Count == 1);
+                Assert.AreEqual(3, matches_net[0].Index);
+                Assert.AreEqual(input.Length - 3, matches_net[0].Length);
+                //earliest eager finds the match "xxaxx"
+                var matches = matcher.Matches(input);
+                Assert.IsTrue(matches.Length == 1);
+                Assert.AreEqual(4, matches[0].Item1);
+                Assert.AreEqual(5, matches[0].Item2);
+                //
+                var input2 = "___(xxxxx this is some more stuff)";
+                var matches_net2 = regex.Matches(input2);
+                var matches2 = matcher.Matches(input2);
+                Assert.IsTrue(matches_net2.Count == 1);
+                Assert.AreEqual(3, matches_net2[0].Index);
+                Assert.AreEqual(input2.Length - 3, matches_net2[0].Length);
+                Assert.IsTrue(matches2.Length == 1);
+                Assert.AreEqual(3, matches2[0].Item1);
+                Assert.AreEqual(input2.Length - 3, matches2[0].Item2);
+            }
+            else
+            {
+                Assert.Fail("Regex compilation failed: " + reasonwhyfailed);
+            }
+        }
     }
 }

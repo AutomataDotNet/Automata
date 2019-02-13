@@ -466,7 +466,7 @@ namespace Microsoft.Automata
         /// </summary>
         /// <param name="stream">stream where the serialization is stored</param>
         /// <param name="formatter">given formatter</param>
-        public void SerializeSimplified(Stream stream, IFormatter formatter = null)
+        override internal void SerializeSimplified(Stream stream, IFormatter formatter = null)
         {
             if (formatter == null)
                 formatter = new BinaryFormatter();
@@ -2617,6 +2617,8 @@ namespace Microsoft.Automata
         /// <param name="stream">stream where the serialization is stored</param>
         /// <param name="formatter">given formatter</param>
         public abstract void Serialize(Stream stream, IFormatter formatter = null);
+
+        internal abstract void SerializeSimplified(Stream stream, IFormatter formatter = null);
 
         /// <summary>
         /// Serialize this symbolic regex matcher to the given file.

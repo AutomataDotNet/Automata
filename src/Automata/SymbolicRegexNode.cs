@@ -563,10 +563,16 @@ namespace Microsoft.Automata
                     else if (IsPlus)
                         return s + "+";
                     else if (IsMaybe)
-                        return s + "?";
+                        return (left.kind == SymbolicRegexKind.Loop ? "(" + s + ")?" : s + "?");
                     else
-                        return string.Format("{0}{{{1},{2}}}", s, this.lower.ToString(),
-                            (this.upper == int.MaxValue ? "" : this.upper.ToString()));
+                    {
+                        if (left.kind == SymbolicRegexKind.Loop)
+                            return string.Format("({0}){{{1},{2}}}", s, this.lower.ToString(),
+                                (this.upper == int.MaxValue ? "" : this.upper.ToString()));
+                        else
+                            return string.Format("{0}{{{1},{2}}}", s, this.lower.ToString(),
+                                (this.upper == int.MaxValue ? "" : this.upper.ToString()));
+                    }
                 case SymbolicRegexKind.Concat:
                     string a = left.ToString();
                     string b = right.ToString();
