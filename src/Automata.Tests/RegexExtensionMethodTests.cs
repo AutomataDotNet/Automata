@@ -644,14 +644,90 @@ namespace Automata.Tests
             Assert.IsTrue(regex_matches.SetEquals(sr_matches));
         }
 
-        //[TestMethod]
-        public void TestRegex_Bug_IsMatch()
+        [TestMethod]
+        public void TestRegex_Kelvin_Sign_Bug()
         {
-            //Regex r = new Regex("[\u0081-\uFFFF]{1,}", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-            Regex r = new Regex("[\u212A-\u212B]{1,}", RegexOptions.IgnoreCase);
-            Regex r2 = new Regex("[\u212A\u212B]{1,}", RegexOptions.IgnoreCase);
-            Assert.IsFalse(r.IsMatch("k")); //<--- BUG 
-            Assert.IsTrue(r2.IsMatch("k")); //<--- correct
+            // '\u212A' is Kelvin sign
+            // '\u212B' is Angstrom sign
+            Regex r = new Regex("^[\u212A-\u212B]$", RegexOptions.IgnoreCase);
+            Regex r2 = new Regex("^[\u212A\u212B]$", RegexOptions.IgnoreCase);
+            Assert.IsTrue(r2.IsMatch("k"));
+            Assert.IsTrue(r2.IsMatch("K"));
+            Assert.IsTrue(r2.IsMatch("\u212A")); //Kelvin sign
+            Assert.IsTrue(r2.IsMatch("\u212B")); //Angstrom sign
+            Assert.IsTrue(r2.IsMatch("å")); //same as '\xE5' 
+            Assert.IsTrue(r2.IsMatch("Å")); //same as '\xC5'
+            //regexmatcher gives the correct semantics to both regexs
+            var m = r.Compile();
+            Assert.IsTrue(m.IsMatch("k"));
+            Assert.IsTrue(m.IsMatch("K"));
+            Assert.IsTrue(m.IsMatch("\u212A"));
+            Assert.IsTrue(m.IsMatch("\u212B"));
+            Assert.IsTrue(m.IsMatch("å"));
+            Assert.IsTrue(m.IsMatch("Å")); 
+            //---
+            var m2 = r2.Compile();
+            Assert.IsTrue(m2.IsMatch("k"));
+            Assert.IsTrue(m2.IsMatch("K"));
+            Assert.IsTrue(m2.IsMatch("\u212A"));
+            Assert.IsTrue(m2.IsMatch("\u212B"));
+            Assert.IsTrue(m2.IsMatch("å"));
+            Assert.IsTrue(m2.IsMatch("Å"));
+            //----------------- BUG in .NET regex matcher ------
+            //culprit: interval notation together with ignore-case 
+            //particular instance here:
+            //for the character '\u212A' (Kelvin sign)
+            //Kelvin sign is considered equivalent to K and k when case is ignored
+            //but this is not true if the interval [\u212A-\u212B] is used
+            //rather than the equivalent [\u212A\u212B] is used
+            Assert.IsFalse(r.IsMatch("k")); //<--- BUG ---
+            Assert.IsFalse(r.IsMatch("K")); //<--- BUG ---
+            Assert.IsFalse(r.IsMatch("\u212A")); //<--- BUG ---
+            Assert.IsFalse(r.IsMatch("\u212B")); //<--- BUG ---
+            Assert.IsFalse(r.IsMatch("å")); //<--- BUG ---
+            Assert.IsFalse(r.IsMatch("Å")); //<--- BUG ---
+            //--------------------------------------------
+            //works correctly without ignore case
+            Regex r3 = new Regex("^[\u212A-\u212B]$");
+            Assert.IsTrue(r3.IsMatch("\u212A"));
+            Assert.IsTrue(r3.IsMatch("\u212B"));
+            //-----------------------------------------
+            //also, this problem does not occur always with interval + ignore case:
+            Regex r4 = new Regex("^[k-l]$", RegexOptions.IgnoreCase);
+            Assert.IsTrue(r4.IsMatch("\u212A"));
+            Assert.IsTrue(r4.IsMatch("k"));
+            Assert.IsTrue(r4.IsMatch("K"));
+            Regex r5 = new Regex("^[kl]$", RegexOptions.IgnoreCase);
+            Assert.IsTrue(r5.IsMatch("\u212A"));
+            Assert.IsTrue(r5.IsMatch("k"));
+            Assert.IsTrue(r5.IsMatch("K"));
+            //related error for a different range 
+            //clearly \u212B is in the interval [\u00FF-\u21FF] and adding ignore-case cannot remove it from the interval
+            Regex r6 = new Regex("^[\u2129-\u212F]$", RegexOptions.IgnoreCase);
+            Assert.IsTrue(r6.IsMatch("\u2129")); //<--- correct ---- turned greek small letter iota
+            Assert.IsFalse(r6.IsMatch("\u212A")); //<--- BUG --- Kelvin sign
+            Assert.IsFalse(r6.IsMatch("\u212B")); //<--- BUG --- Angstrom sign
+            Assert.IsTrue(r6.IsMatch("\u212C")); //<--- correct --- script capital B
+            Assert.IsTrue(r6.IsMatch("\u212D")); //<--- correct --- black-letter capital C
+            Assert.IsTrue(r6.IsMatch("\u212E")); //<--- correct --- 'estimated' symbol
+            Assert.IsTrue(r6.IsMatch("\u212F")); //<--- correct --- script small e
+            Regex r7 = new Regex("^[\u2129-\u212F]$");
+            Assert.IsTrue(r7.IsMatch("\u2129"));
+            Assert.IsTrue(r7.IsMatch("\u212A")); 
+            Assert.IsTrue(r7.IsMatch("\u212B")); 
+            Assert.IsTrue(r7.IsMatch("\u212C"));
+            Assert.IsTrue(r7.IsMatch("\u212D"));
+            Assert.IsTrue(r7.IsMatch("\u212E"));
+            Assert.IsTrue(r7.IsMatch("\u212F"));
+            //---- separately it works as expected -----
+            Regex r8 = new Regex("^å$", RegexOptions.IgnoreCase);
+            Assert.IsTrue(r8.IsMatch("\u212B")); //Angstrom sign
+            Assert.IsTrue(r8.IsMatch("å"));
+            Assert.IsTrue(r8.IsMatch("Å"));
+            Regex r9 = new Regex("^k$", RegexOptions.IgnoreCase);
+            Assert.IsTrue(r9.IsMatch("\u212A")); //Kelvin sign
+            Assert.IsTrue(r9.IsMatch("k"));
+            Assert.IsTrue(r9.IsMatch("K"));
         }
 
         [TestMethod]

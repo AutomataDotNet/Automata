@@ -1396,9 +1396,9 @@ namespace Microsoft.Automata
             if (ignoreCase && (i != -1 || k != -1))
             {
                 //eliminate I and K to avoid possible semantic discrepancy with later search
-                //due to \u0130 (in regex same as i and ignore case)
-                //duw to \u212A (in regex same as k and ignore case)
-                //but these do not match with string.IndexOf under ignoreCase
+                //due to \u0130 (capital I with dot above, İ,  in regex same as i modulo ignore case)
+                //due to \u212A (Kelvin sign, in regex same as k under ignore case)
+                //but these do not match with string.IndexOf modulo ignore case
                 if (k == -1)
                     return pref.Substring(0, i);
                 else if (i == -1)
