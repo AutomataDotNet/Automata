@@ -813,15 +813,16 @@ namespace Microsoft.Automata
         /// <param name="input">input string</param>
         /// <param name="limit">upper bound on the number of found matches, nonpositive value (default is 0) means no bound</param>
         /// <param name="startat">the position to start search in the input string</param>
+        /// <param name="endat">end position in the input, negative value means unspecified and taken to be input.Length-1</param>
         /// </summary>
-        override public Tuple<int, int>[] Matches(string input, int limit = 0, int startat = 0)
+        override public Tuple<int, int>[] Matches(string input, int limit = 0, int startat = 0, int endat = -1)
         {
             if (A.isNullable)
                 throw new AutomataException(AutomataExceptionKind.MustNotAcceptEmptyString);
             else if (string.IsNullOrEmpty(input) || startat >= input.Length || startat < 0)
                 throw new AutomataException(AutomataExceptionKind.InvalidArgument);
 
-            int k = input.Length;
+            int k = ((endat < 0 | endat >= input.Length) ? input.Length : endat + 1);
 
             //stores the accumulated matches
             List<Tuple<int, int>> matches = new List<Tuple<int, int>>();
@@ -842,8 +843,8 @@ namespace Microsoft.Automata
                 int i_q0_A1;
                 //optimize for the case when A starts with a fixed prefix
                 i = (A_has_nonempty_prefix ?
-                        FindFinalStatePositionOpt(input, i, out i_q0_A1) :
-                        FindFinalStatePosition(input, i, out i_q0_A1));
+                        FindFinalStatePositionOpt(input, k, i, out i_q0_A1) :
+                        FindFinalStatePosition(input, k, i, out i_q0_A1));
 
                 if (i == k)
                 {
@@ -872,13 +873,15 @@ namespace Microsoft.Automata
         /// Returns true iff the input string matches A.
         /// <param name="input">input string</param>
         /// <param name="startat">the position to start search in the input string</param>
+        /// <param name="endat">end position in the input, negative value means 
+        /// unspecified and taken to be input.Length-1</param>
         /// </summary>
-        override public bool IsMatch(string input, int startat = 0)
+        override public bool IsMatch(string input, int startat = 0, int endat = -1)
         {
             if (input == null || startat >= input.Length || startat < 0)
                 throw new AutomataException(AutomataExceptionKind.InvalidArgument);
 
-            int k = input.Length;
+            int k = ((endat < 0 | endat >= input.Length) ? input.Length : endat + 1);
 
             if (this.A.containsAnchors)
             {
@@ -985,11 +988,11 @@ namespace Microsoft.Automata
                 int i_q0;
                 if (this.A_prefix != string.Empty)
                 {
-                    i = FindFinalStatePositionOpt(input, 0, out i_q0);
+                    i = FindFinalStatePositionOpt(input, k, startat, out i_q0);
                 }
                 else
                 {
-                    i = FindFinalStatePosition(input, 0, out i_q0);
+                    i = FindFinalStatePosition(input, k, startat, out i_q0);
                 }
                 if (i == k)
                 {
@@ -1197,10 +1200,9 @@ namespace Microsoft.Automata
         /// <param name="input">given input string</param>
         /// <param name="i">start position</param>
         /// <param name="i_q0">last position the initial state of A1 was visited</param>
-        /// <returns></returns>
-        private int FindFinalStatePosition(string input, int i, out int i_q0)
+        /// <param name="k">input length or bounded input length</param>
+        private int FindFinalStatePosition(string input, int k, int i, out int i_q0)
         {
-            int k = input.Length;
             int q = q0_A1;
             int i_q0_A1 = i;
 
@@ -1285,9 +1287,12 @@ namespace Microsoft.Automata
         /// <summary>
         /// FindFinalState optimized for the case when A starts with a fixed prefix
         /// </summary>
-        private int FindFinalStatePositionOpt(string input, int i, out int i_q0)
+        /// <param name="input">given input string</param>
+        /// <param name="i">start position</param>
+        /// <param name="i_q0">last position the initial state of A1 was visited</param>
+        /// <param name="k">input length or bounded input length</param>
+        private int FindFinalStatePositionOpt(string input, int k, int i, out int i_q0)
         {
-            int k = input.Length;
             int q = q0_A1;
             int i_q0_A1 = i;
             var prefix = this.A_prefix;
@@ -1420,9 +1425,9 @@ namespace Microsoft.Automata
         /// <param name="input">pointer to input string</param>
         /// <param name="limit">upper bound on the number of found matches, nonpositive value (default is 0) means no bound</param>
         /// </summary>
-        unsafe public Tuple<int, int>[] Matches_(string input, int limit = 0, int startat = 0)
+        unsafe public Tuple<int, int>[] Matches_(string input, int limit = 0, int startat = 0, int endat = -1)
         {
-            int k = input.Length;
+            int k = ((endat < 0 | endat >= input.Length) ? input.Length : endat + 1);
             //stores the accumulated matches
             List<Tuple<int, int>> matches = new List<Tuple<int, int>>();
 
@@ -2598,8 +2603,9 @@ namespace Microsoft.Automata
         /// Returns true iff the input string matches. 
         /// <param name="input">given iput string</param>
         /// <param name="startat">start position in the input</param>
+        /// <param name="endat">end position in the input, -1 means that the value is unspecified and taken to be input.Length-1</param>
         /// </summary>
-        public abstract bool IsMatch(string input, int startat = 0);
+        public abstract bool IsMatch(string input, int startat = 0, int endat = -1);
 
         /// <summary>
         /// Returns all matches as pairs (startindex, length) in the input string.
@@ -2607,7 +2613,8 @@ namespace Microsoft.Automata
         /// <param name="input">given iput string</param>
         /// <param name="limit">as soon as this many matches have been found the search terminates, 0 or negative value means that there is no bound, default is 0</param>
         /// <param name="startat">start position in the input, default is 0</param>
-        public abstract Tuple<int, int>[] Matches(string input, int limit = 0, int startat = 0);
+        /// <param name="endat">end position in the input, -1 means that the value is unspecified and taken to be input.Length-1</param>
+        public abstract Tuple<int, int>[] Matches(string input, int limit = 0, int startat = 0, int endat = -1);
 
         /// <summary>
         /// Serialize this symbolic regex matcher to the given stream.

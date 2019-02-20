@@ -5436,12 +5436,12 @@ namespace Microsoft.Automata
             this.Automaton = automaton;
         }
 
-        public bool IsMatch(string input, int start = 0)
+        public bool IsMatch(string input, int start = 0, int end = -1)
         {
-            return Automaton.IsMatch(input.Substring(0));
+            return Automaton.IsMatch(input.Substring(start));
         }
 
-        public Tuple<int, int>[] Matches(string input, int start=0, int limit = 0)
+        public Tuple<int, int>[] Matches(string input, int start=0, int limit = 0, int end = -1)
         {
             throw new NotImplementedException();
         }

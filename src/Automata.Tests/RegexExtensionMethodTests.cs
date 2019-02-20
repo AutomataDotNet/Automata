@@ -1022,5 +1022,52 @@ namespace Automata.Tests
                 Assert.Fail("Regex compilation failed: " + reasonwhyfailed);
             }
         }
+
+        [TestMethod]
+        public void TestMatcher_StartAt_EndAt()
+        {
+            var A = new Regex("pw+d",RegexOptions.IgnoreCase);
+            var B = new Regex(@"<ignore>[^><]*</ignore>");
+            var input = "xxxxxxxxxxxxxaaPwwWDxx<ignore>PWWWWWWWD</ignore> <IGNORE>PWWD</IGNORE> xxpwwwwwwdxxx";
+            var mA = A.Compile();
+            var mB = B.Compile();
+            bool done = false;
+            int start = 0;
+            var matches = new List<Tuple<int, int>>();
+            while (!done)
+            {
+                //find at most one match from start
+                var matches1 = mA.Matches(input, 1, start);
+                if (matches1.Length == 0)
+                {
+                    //there are no more matches of A
+                    done = true;
+                }
+                else
+                {
+                    //extract the match start and end 
+                    var match_start = matches1[0].Item1;
+                    var match_end = matches1[0].Item1 + matches1[0].Item2 - 1;
+                    //decide if this match may be ignored by 
+                    //checking if B applies to the immediate surrounding containg the match
+                    //immediate surrounding here means 10 chars from start and end
+                    var ignore = mB.IsMatch(input, match_start - 10, match_end + 10);
+                    if (!ignore)
+                    {
+                        matches.Add(matches1[0]);
+                    }
+                    //continue from the next position after the found match
+                    start = match_end + 1;
+                }
+            }
+            Assert.IsTrue(matches.Count == 3);
+            var PwwWD = input.Substring(matches[0].Item1, matches[0].Item2);
+            var PWWD = input.Substring(matches[1].Item1, matches[1].Item2);
+            var pwwwwwwd = input.Substring(matches[2].Item1, matches[2].Item2);
+            Assert.AreEqual<string>("PwwWD", PwwWD);
+            Assert.AreEqual<string>("PWWD", PWWD);
+            Assert.AreEqual<string>("pwwwwwwd", pwwwwwwd);
+            //observe that the second match PWWWWWWWD must be ignored
+        }
     }
 }
