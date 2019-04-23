@@ -54,7 +54,7 @@ namespace Automata.Tests
         [TestMethod]
         public void TestSerialization_BV()
         {
-            var bv = new BV(100, 1, 1);
+            var bv = new BV(1, 1);
             SerializeObjectToFile_bin("bbv.bin", bv);
             var bv_ = (BV)DeserializeObjectFromFile_bin("bbv.bin");
             Assert.AreEqual<string>(bv.ToString(), bv_.ToString());
@@ -508,20 +508,176 @@ namespace Automata.Tests
         [TestMethod]
         public void TestCustomStringSerialization()
         {
-            CustomSerializeDeserialize("A\uD809\uDD03B");
-            CustomSerializeDeserialize("A\uDD03\uD809B");
-            CustomSerializeDeserialize("A\uDD03B\uD809");
-            CustomSerializeDeserialize("");
-            CustomSerializeDeserialize("1");
-            CustomSerializeDeserialize("1,2");
-            CustomSerializeDeserialize("\n\r");
+            CustomSerializeDeserializeString("A\uD809\uDD03B");
+            CustomSerializeDeserializeString("A\uDD03\uD809B");
+            CustomSerializeDeserializeString("A\uDD03B\uD809");
+            CustomSerializeDeserializeString("");
+            CustomSerializeDeserializeString("1");
+            CustomSerializeDeserializeString("1,2");
+            CustomSerializeDeserializeString("\n\r");
         }
 
-        public void CustomSerializeDeserialize(string input)
+        public void CustomSerializeDeserializeString(string input)
         {
             var s = StringUtility.SerializeStringToCharCodeSequence(input);
             var d = StringUtility.DeserializeStringFromCharCodeSequence(s);
             Assert.AreEqual<string>(input, d);
+        }
+
+        const string customBase32alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+        static string MkBase32String(int length)
+        {
+            var rnd = new Random(length);
+            var s = new string(Array.ConvertAll(new char[length], c => customBase32alphabet[rnd.Next(0, 32)]));
+            return s;
+        }
+
+        const string customalphabet65 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_/=";
+        static string MkString65(int length)
+        {
+            var rnd = new Random(length);
+            var s = new string(Array.ConvertAll(new char[length], c => customalphabet65[rnd.Next(0, 65)]));
+            return s;
+        }
+
+        [TestMethod]
+        public void TestSerialization_ShortStringAsRegex()
+        {
+            TestSerialization_StringAsRegex_soap("short", "short seq");
+        }
+
+        [TestMethod]
+        public void TestSerialization_ShortStringAsRegex2()
+        {
+            TestSerialization_StringAsRegex_soap("shorta{0,3}", "short nonseq");
+        }
+
+        [TestMethod]
+        public void TestSerialization_MediumStringAsRegex()
+        {
+            TestSerialization_StringAsRegex_soap(MkBase32String(100), "medium case32 seq");
+        }
+
+        [TestMethod]
+        public void TestSerialization_MediumStringAsRegexWithBValphabet()
+        {
+            TestSerialization_StringAsRegex_soap(customalphabet65, "medium case65 seq");
+        }
+
+        [TestMethod]
+        public void TestSerialization_LongStringAsRegex32()
+        {
+            TestSerialization_StringAsRegex_soap(MkBase32String(2018), "long case32 seq");
+        }
+
+        [TestMethod]
+        public void TestSerialization_LongStringAsRegex65_sequence()
+        {
+            TestSerialization_StringAsRegex_soap(MkString65(2018), "long case65 seq");
+        }
+
+        [TestMethod]
+        public void TestSerialization_LongStringAsRegex65_nonsequence()
+        {
+            //for (int i = 0; i < 5; i++)
+            TestSerialization_StringAsRegex_soap(MkString65(2018) + "@{0,4}", "long case65 nonseq");
+        }
+
+        public void TestSerialization_StringAsRegex_soap(string regex, string info)
+        {
+            Console.WriteLine("-----------------------" + info + "-----------------------");
+            var r = new Regex(regex, RegexOptions.IgnoreCase);
+            var sr = CompileAndPrintStats(r, info);
+            //    var str = sr.GenerateRandomMatch();
+            //    var k = str.Length;
+            //    var input = "---" + str + "---" + str + "---";
+            //    var m1 = MatchAndPrintStats(sr, input, info + "BDD");
+            //    Assert.IsTrue(m1.Length == 2);
+            //    Assert.IsTrue(m1[0].Item1 == 3);
+            //    Assert.IsTrue(m1[0].Item2 == k);
+            //    Assert.IsTrue(m1[1].Item1 == 6 + k);
+            //    Assert.IsTrue(m1[1].Item2 == k);
+            //    //---
+            //    SerializeAndPrintStats(sr, "");
+            //    var t = System.Environment.TickCount;
+            //    var sr2 = DeserializeAndPrintStats(info);
+            //    var m2 = MatchAndPrintStats(sr2, input, info + "BV");
+            //    AssertEquivalence(sr, sr2);
+            //    Assert.IsTrue(m2.Length == 2);
+            //    Assert.IsTrue(m2[0].Item1 == 3);
+            //    Assert.IsTrue(m2[0].Item2 == k);
+            //    Assert.IsTrue(m2[1].Item1 == 6 + k);
+            //    Assert.IsTrue(m2[1].Item2 == k);
+        }
+
+        Tuple<int,int>[] MatchAndPrintStats(RegexMatcher matcher, string input, string info)
+        {
+            var t = System.Environment.TickCount;
+            var m = matcher.Matches(input);
+            t = System.Environment.TickCount - t;
+            Console.WriteLine("{2}) Match count={0}, time={1}ms", m.Length, t, info);
+            return m;
+        }
+
+        void SerializeAndPrintStats(RegexMatcher matcher, string info)
+        {
+            var t = System.Environment.TickCount;
+            matcher.Serialize("test.soap", new SoapFormatter());
+            t = System.Environment.TickCount - t;
+            Console.WriteLine("{1} serializaton time={0}ms", t, info);
+        }
+
+        RegexMatcher DeserializeAndPrintStats(string info)
+        {
+            var t = System.Environment.TickCount;
+            var rm = RegexMatcher.Deserialize("test.soap", new SoapFormatter());
+            t = System.Environment.TickCount - t;
+            Console.WriteLine("{1} deserializaton time={0}ms", t, info);
+            return rm;
+        }
+
+        RegexMatcher CompileAndPrintStats(Regex regex, string info)
+        {
+            var t = System.Environment.TickCount;
+            var rm = regex.Compile();
+            t = System.Environment.TickCount - t;
+            Console.WriteLine("{1} compilation time={0}ms", t, info);
+            return rm;
+        }
+
+        static void AssertEquivalence(RegexMatcher sr1, RegexMatcher sr2)
+        {
+            if (sr1 is SymbolicRegexBV)
+            {
+                var sr1_ = sr1 as SymbolicRegexBV;
+                var sr2_ = sr2 as SymbolicRegexBV;
+                Assert.IsTrue(sr1_.Pattern.Equals(sr2_.Pattern));
+                Assert.IsTrue(sr1_.ReversePattern.Equals(sr2_.ReversePattern));
+                Assert.IsTrue(sr1_.DotStarPattern.Equals(sr2_.DotStarPattern));
+            }
+            else if (sr1 is SymbolicRegexUInt64)
+            {
+                var sr1_ = sr1 as SymbolicRegexUInt64;
+                var sr2_ = sr2 as SymbolicRegexUInt64;
+                Assert.IsTrue(sr1_.Pattern.Equals(sr2_.Pattern));
+                Assert.IsTrue(sr1_.ReversePattern.Equals(sr2_.ReversePattern));
+                Assert.IsTrue(sr1_.DotStarPattern.Equals(sr2_.DotStarPattern));
+            }
+        }
+
+        [TestMethod]
+        public void TestSerialization_BV2()
+        {
+            var sr = (SymbolicRegexBV)new Regex(customalphabet65 + ".*").Compile();
+            var solver = sr.builder.solver;
+            var atoms = solver.GetPartition();
+            for (int i = 0; i < atoms.Length; i++)
+            {
+                var A = atoms[i];
+                var A_str = solver.SerializePredicate(A);
+                var A2 = solver.DeserializePredicate(A_str);
+                Assert.AreEqual<BV>(A, A2);
+            }
         }
     }
 }

@@ -10,6 +10,7 @@ namespace Microsoft.Automata
     /// </summary>
     public class Sequence<T> : IEnumerable<T>
     {
+        int offset;
         T[] elems;
 
         /// <summary>
@@ -17,18 +18,18 @@ namespace Microsoft.Automata
         /// </summary>
         public T this[int i]
         {
-            get { return elems[i]; }
+            get { return elems[i + offset]; }
         }
 
         /// <summary>
         /// The number of elements in the sequence
         /// </summary>
-        public int Length { get { return elems.Length; } }
+        public int Length { get { return elems.Length - offset; } }
 
         /// <summary>
         /// Returns true iff the sequence is empty.
         /// </summary>
-        public bool IsEmpty { get { return elems.Length == 0; } }
+        public bool IsEmpty { get { return elems.Length == offset; } }
 
         /// <summary>
         /// The empty sequence.
@@ -41,6 +42,7 @@ namespace Microsoft.Automata
         /// <param name="elems">given elements of the sequence</param>
         public Sequence(params T[] elems)
         {
+            this.offset = 0;
             this.elems = elems;
         }
 
@@ -50,47 +52,21 @@ namespace Microsoft.Automata
         /// <param name="elems">given elements of the sequence</param>
         public Sequence(IEnumerable<T> elems)
         {
+            this.offset = 0;
             this.elems = new List<T>(elems).ToArray();
         }
 
         /// <summary>
-        /// Creates a new sequence by appending seq at the end of this sequence.
+        /// Append seq at the end of this sequence
         /// </summary>
-        /// <param name="seq">sequence to be appended at the end of this</param>
         public Sequence<T> Append(Sequence<T> seq)
         {
-            if (seq.Length == 0)
-                return this;
-            else
-            {
-                T[] elems1 = new T[elems.Length + seq.Length];
-                Array.Copy(elems, elems1, elems.Length);
-                Array.Copy(seq.elems, 0, elems1, elems.Length, seq.Length);
-                return new Sequence<T>(elems1);
-            }
-        }
-
-        /// <summary>
-        /// Creates a new sequence by appending seq at the end of this sequence.
-        /// </summary>
-        /// <param name="seq">elements to be appended</param>
-        public Sequence<T> Append(IEnumerable<T> seq)
-        {
-            var new_elems = new List<T>(elems);
-            new_elems.AddRange(seq);
-            return new Sequence<T>(new_elems.ToArray());
-        }
-
-        /// <summary>
-        /// Returns the sequence where the i'th element, starting with 0, has been replaced by e. 
-        /// </summary>
-        public Sequence<T> Replace(int i, T e)
-        {
-            var new_elems = new T[this.Length];
-            Array.Copy(this.elems, new_elems, this.Length);
-            new_elems[i] = e;
-            var res = new Sequence<T>(new_elems);
-            return res;
+            var k = this.Length;
+            var m = seq.Length;
+            var newelems = new T[k + m];
+            Array.Copy(this.elems, this.offset, newelems, 0, k);
+            Array.Copy(seq.elems, seq.offset, newelems, k, m);
+            return new Sequence<T>(newelems);
         }
 
         /// <summary>
@@ -99,15 +75,28 @@ namespace Microsoft.Automata
         /// <param name="seq">elements to be appended at the end of this sequence</param>
         public Sequence<T> Append(params T[] seq)
         {
-            if (seq.Length == 0)
-                return this;
-            else
-            {
-                T[] elems1 = new T[elems.Length + seq.Length];
-                Array.Copy(elems, elems1, elems.Length);
-                Array.Copy(seq, 0, elems1, elems.Length, seq.Length);
-                return new Sequence<T>(elems1);
-            }
+            return this.Append(new Sequence<T>(seq));
+        }
+
+        /// <summary>
+        /// Creates a new sequence by appending seq at the end of this sequence.
+        /// </summary>
+        /// <param name="seq">elements to be appended</param>
+        public Sequence<T> Append(IEnumerable<T> seq)
+        {
+            return this.Append(new Sequence<T>(seq));
+        }
+
+        /// <summary>
+        /// Returns the sequence where the i'th element, starting with 0, has been replaced by e. 
+        /// </summary>
+        public Sequence<T> Replace(int i, T e)
+        {
+            var new_elems = new T[this.Length];
+            Array.Copy(this.elems, this.offset, new_elems, 0, this.Length);
+            new_elems[i] = e;
+            var res = new Sequence<T>(new_elems);
+            return res;
         }
 
         /// <summary>
@@ -120,79 +109,96 @@ namespace Microsoft.Automata
         /// <param name="i">index of the start position</param>
         public Sequence<T> Suffix(int i)
         {
-            if (i >= this.elems.Length)
+            if (i >= this.Length)
                 return Sequence<T>.Empty;
             else if (0 >= i)
                 return this;
             else
             {
-                var res = new T[elems.Length - i];
-                Array.Copy(elems, i, res, 0, res.Length);
-                return new Sequence<T>(res);
+                var seq = new Sequence<T>(elems);
+                seq.offset = this.offset + i;
+                return seq;
             }
         }
 
-
         public Sequence<T> ConvertAll(Func<T, T> f)
         {
-            var a = Array.ConvertAll(elems, x => f(x));
-            return new Sequence<T>(a);
+            if (offset == 0)
+                return new Sequence<T>(Array.ConvertAll(elems, x => f(x)));
+            else
+                return new Sequence<T>(Array.ConvertAll(this.ToArray(), x => f(x)));
         }
 
         public T[] ToArray()
         {
-            return elems;
+            if (offset == 0)
+                return elems;
+            else
+            {
+                var elems1 = new T[Length];
+                Array.Copy(elems, offset, elems1, 0, Length);
+                return elems1;
+            }
         }
 
         /// <summary>
         /// Two sequences are equal iff they have the same length and their i'th elements are equal for all i.
         /// </summary>
+        /// <summary>
+        /// Two sequences are equal iff they have the same length and their i'th elements are equal for all i.
+        /// </summary>
         public override bool Equals(object obj)
         {
-            var s = obj as Sequence<T>;
-            if (s == null || s.elems.Length != elems.Length)
+            var that = obj as Sequence<T>;
+            int k = Length;
+            if (that == null || k != that.Length)
                 return false;
-            for (int i = 0; i < elems.Length; i++)
-                if (!object.Equals(elems[i], s.elems[i]))
+            for (int i = 0; i < k; i++)
+                if (!object.Equals(this.elems[i + this.offset], that.elems[i + that.offset]))
                     return false;
             return true;
         }
 
+        int hashcode = 0;
         public override int GetHashCode()
         {
-            int res = elems.Length;
-            for (int i = 0; i < elems.Length; i++)
-                res += (object.Equals(elems[i], default(T)) ? 0 : (elems[i].GetHashCode() << i));
-            return res;
+            if (hashcode == 0)
+            {
+                int k = elems.Length - offset;
+                int res = k;
+                for (int i = 0; i < k; i++)
+                    res += (object.Equals(this[i], default(T)) ? 0 : (this[i].GetHashCode() << i));
+                hashcode = res;
+            }
+            return hashcode;
         }
 
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
             sb.Append("[");
-            for (int i = 0; i < elems.Length; i++)
+            for (int i = 0; i < this.Length; i++)
             {
                 if (i > 0)
                     sb.Append(",");
-                if (elems[i] == null)
+                if (this[i] == null)
                     sb.Append("(null)");
                 else
-                    sb.Append(elems[i]);
+                    sb.Append(this[i]);
             }
             sb.Append("]");
             return sb.ToString();
         }
 
-
         public string ToString(Func<T,string> prettyprint)
         {
             StringBuilder sb = new StringBuilder();
             sb.Append("[");
-            for (int i = 0; i < elems.Length; i++)
+            for (int i = 0; i < this.Length; i++)
             {
                 if (i > 0)
                     sb.Append(",");
-                sb.Append(prettyprint(elems[i]));
+                sb.Append(prettyprint(this[i]));
             }
             sb.Append("]");
             return sb.ToString();
@@ -200,13 +206,22 @@ namespace Microsoft.Automata
 
         public IEnumerator<T> GetEnumerator()
         {
-            IEnumerable<T> ie = (IEnumerable<T>)elems;
+            IEnumerable<T> ie;
+            if (offset == 0)
+                ie = (IEnumerable<T>)elems;
+            else
+                ie = (IEnumerable<T>)ToArray();
             return ie.GetEnumerator();
         }
 
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
         {
-            return elems.GetEnumerator();
+            IEnumerable<T> ie;
+            if (offset == 0)
+                ie = (IEnumerable<T>)elems;
+            else
+                ie = (IEnumerable<T>)ToArray();
+            return ie.GetEnumerator();
         }
 
         /// <summary>
@@ -220,8 +235,8 @@ namespace Microsoft.Automata
 
             int res = -1;
 
-            for (int i = 0; i < s.Length; i++)
-                if (!object.Equals(this.elems[i], s.elems[i]))
+            for (int i = 0; i < Length; i++)
+                if (!object.Equals(this[i], s[i]))
                     if (res == -1)
                         res = i;
                     else
@@ -242,11 +257,11 @@ namespace Microsoft.Automata
                 return Sequence<T>.Empty;
             else
             {
-                int k = (this.elems.Length <= that.elems.Length ? this.elems.Length : that.elems.Length);
+                int k = (this.Length <= that.Length ? this.Length : that.Length);
                 int i = 0;
                 while (i < k)
                 {
-                    if (object.Equals(this.elems[i], that.elems[i]))
+                    if (object.Equals(this[i], that[i]))
                         i += 1;
                     else
                         break;
@@ -256,7 +271,7 @@ namespace Microsoft.Automata
                 else
                 {
                     T[] common_prefix = new T[i];
-                    Array.Copy(this.elems, common_prefix, i);
+                    Array.Copy(this.elems, this.offset, common_prefix, 0, i);
                     var pref = new Sequence<T>(common_prefix);
                     return pref;
                 }
@@ -273,7 +288,7 @@ namespace Microsoft.Automata
         /// <returns></returns>
         public bool TryGetElement(Predicate<T> pred, out T elem)
         {
-            for (int i=0; i < elems.Length; i++)
+            for (int i=offset; i < elems.Length; i++)
             {
                 if (pred(elems[i]))
                 {
@@ -292,7 +307,7 @@ namespace Microsoft.Automata
         /// <param name="pred">given predicate</param>
         public bool Exists(Predicate<T> pred)
         {
-            return Array.Exists(elems, pred);
+            return Array.Exists(ToArray(), pred);
         }
 
         /// <summary>
@@ -302,7 +317,43 @@ namespace Microsoft.Automata
         /// <param name="pred">given predicate</param>
         public bool TrueForAll(Predicate<T> pred)
         {
-            return Array.TrueForAll(elems, pred);
+            return Array.TrueForAll(ToArray(), pred);
+        }
+
+        /// <summary>
+        /// The first element of the sequence
+        /// </summary>
+        public T First
+        {
+            get { return elems[offset]; }
+        }
+
+        /// <summary>
+        /// The rest of the sequence
+        /// </summary>
+        public Sequence<T> Rest()
+        {
+            return Suffix(1);
+        }
+
+        /// <summary>
+        /// Reverse the sequence
+        /// </summary>
+        public Sequence<T> Reverse()
+        {
+            if (this.Length <= 1)
+                return this;
+            else
+            {
+                int last = elems.Length - 1;
+                int k = last - offset + 1;
+                var elems_rev = new T[k];
+                for (int i = 0; i < k; i++)
+                {
+                    elems_rev[i] = this.elems[last - i];
+                }
+                return new Sequence<T>(elems_rev);
+            }
         }
     }
 }

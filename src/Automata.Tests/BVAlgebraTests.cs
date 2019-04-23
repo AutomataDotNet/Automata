@@ -99,11 +99,11 @@ namespace Microsoft.Automata.Tests
             BVAlgebra bva = BVAlgebra.Create(css, minterms);
             var phi = bva.atoms[0] & bva.atoms[1];
             Assert.IsFalse(bva.IsSatisfiable(phi));
-            var psi = bva.atoms[0] & ~bva.atoms[1];
+            var psi = bva.atoms[0] & bva.MkNot(bva.atoms[1]);
             Assert.IsTrue(bva.IsSatisfiable(psi));
             Assert.IsTrue(bva.AreEquivalent(bva.atoms[0], psi));
             var psi2 = bva.atoms[0] | bva.atoms[1];
-            Assert.IsTrue(bva.AreEquivalent(bva.atoms[0] | bva.atoms[1], ~bva.atoms[2]));
+            Assert.IsTrue(bva.AreEquivalent(bva.atoms[0] | bva.atoms[1],bva.MkNot(bva.atoms[2])));
         }
     }
 }

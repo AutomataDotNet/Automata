@@ -170,12 +170,12 @@ namespace Microsoft.Automata
 
         public bool AreEquivalent(ulong predicate1, ulong predicate2)
         {
-            return predicate1.Equals(predicate2);
+            return predicate1 == predicate2;
         }
 
         public bool CheckImplication(ulong lhs, ulong rhs)
         {
-            return ((~lhs) | rhs).Equals(this.all);
+            return (lhs | rhs) == rhs;
         }
 
         public bool EvaluateAtom(ulong atom, ulong psi)
@@ -561,7 +561,7 @@ namespace Microsoft.Automata
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsSatisfiable(ulong predicate)
         {
-            return !predicate.Equals(zero);
+            return predicate != zero;
         }
 
         public ulong MkAnd(params ulong[] predicates)
@@ -570,7 +570,7 @@ namespace Microsoft.Automata
             for (int i = 0; i < predicates.Length; i++)
             {
                 and = and & predicates[i];
-                if (and.Equals(zero))
+                if (and == zero)
                     return zero;
             }
             return and;
@@ -620,7 +620,7 @@ namespace Microsoft.Automata
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ulong MkSymmetricDifference(ulong p1, ulong p2)
         {
-            return all & (p1 ^ p2);
+            return (p1 ^ p2);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -815,6 +815,24 @@ namespace Microsoft.Automata
             : this((DecisionTree)info.GetValue("d", typeof(DecisionTree)), 
                   DeserializePartition(info.GetString("p")))
         {
+        }
+
+        /// <summary>
+        /// Serialize s as a hexadecimal numeral using lowercase letters
+        /// </summary>
+        /// <param name="s">given predicate</param>
+        public string SerializePredicate(ulong s)
+        {
+            return s.ToString("x");
+        }
+
+        /// <summary>
+        /// Deserialize s from a string created by SerializePredicate
+        /// </summary>
+        /// <param name="s">given hexadecimal numeral representation</param>
+        public ulong DeserializePredicate(string s)
+        {
+            return ulong.Parse(s, System.Globalization.NumberStyles.HexNumber);
         }
         #endregion
 

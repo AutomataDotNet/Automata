@@ -86,6 +86,18 @@ namespace Microsoft.Automata
         /// Returns a partition of the full domain.
         /// </summary>
         PRED[] GetPartition();
+
+        /// <summary>
+        /// Serialize the predicate using characters in [0-9a-f\-\.]
+        /// </summary>
+        /// <param name="s">given predicate</param>
+        string SerializePredicate(PRED s);
+
+        /// <summary>
+        /// Deserialize the predicate from a string constructed with Serialize
+        /// </summary>
+        /// <param name="s">given serialized predicate</param>
+        PRED DeserializePredicate(string s);
     }
 }
 

@@ -17,6 +17,8 @@ namespace Automata.Tests
             Assert.IsFalse("æ".EndsWith("ae", false, CultureInfo.CreateSpecificCulture("se")));
             Assert.IsTrue("æ".EndsWith("ae", false, CultureInfo.InvariantCulture));
 
+            var ci = Thread.CurrentThread.CurrentCulture;
+
             Thread.CurrentThread.CurrentCulture = CultureInfo.CreateSpecificCulture("se");
             Assert.IsFalse("æ".EndsWith("ae"));
             Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
@@ -51,6 +53,8 @@ namespace Automata.Tests
             Assert.IsTrue(A.ToLower().StartsWith(ae));
             Assert.IsTrue(a.ToUpper().StartsWith(AE));
             Assert.IsFalse(a.ToUpper().StartsWith(AE, StringComparison.Ordinal));
+
+            Thread.CurrentThread.CurrentCulture = ci;
         }
     }
 }

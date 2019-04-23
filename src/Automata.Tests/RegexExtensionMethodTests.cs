@@ -551,7 +551,7 @@ namespace Automata.Tests
                 var re = regexes[i];
                 var sr = re.Compile();
 
-                var str = ((SymbolicRegexUInt64)sr).A.GenerateRandomMember();
+                var str = sr.GenerateRandomMatch();
                 str = CreateRandomString(randomBlockLimit) + str + CreateRandomString(randomBlockLimit);
 
                 //--------------------------------
@@ -651,10 +651,10 @@ namespace Automata.Tests
             // '\u212B' is Angstrom sign
             Regex r = new Regex("^[\u212A-\u212B]$", RegexOptions.IgnoreCase);
             Regex r2 = new Regex("^[\u212A\u212B]$", RegexOptions.IgnoreCase);
-            Assert.IsTrue(r2.IsMatch("k"));
-            Assert.IsTrue(r2.IsMatch("K"));
-            Assert.IsTrue(r2.IsMatch("\u212A")); //Kelvin sign
-            Assert.IsTrue(r2.IsMatch("\u212B")); //Angstrom sign
+            Assert.IsTrue(r2.IsMatch("k"), "k must match");
+            Assert.IsTrue(r2.IsMatch("K"), "K must match");
+            Assert.IsTrue(r2.IsMatch("\u212A"), "Kelvin sign must match"); //Kelvin sign
+            Assert.IsTrue(r2.IsMatch("\u212B"), "Angstrom sign must match"); //Angstrom sign
             Assert.IsTrue(r2.IsMatch("å")); //same as '\xE5' 
             Assert.IsTrue(r2.IsMatch("Å")); //same as '\xC5'
             //regexmatcher gives the correct semantics to both regexs
@@ -680,12 +680,12 @@ namespace Automata.Tests
             //Kelvin sign is considered equivalent to K and k when case is ignored
             //but this is not true if the interval [\u212A-\u212B] is used
             //rather than the equivalent [\u212A\u212B] is used
-            Assert.IsFalse(r.IsMatch("k")); //<--- BUG ---
-            Assert.IsFalse(r.IsMatch("K")); //<--- BUG ---
-            Assert.IsFalse(r.IsMatch("\u212A")); //<--- BUG ---
-            Assert.IsFalse(r.IsMatch("\u212B")); //<--- BUG ---
-            Assert.IsFalse(r.IsMatch("å")); //<--- BUG ---
-            Assert.IsFalse(r.IsMatch("Å")); //<--- BUG ---
+            Assert.IsFalse(r.IsMatch("k"), "k"); //<--- BUG ---
+            Assert.IsFalse(r.IsMatch("K"), "K"); //<--- BUG ---
+            Assert.IsFalse(r.IsMatch("\u212A"), "\u212A"); //<--- BUG ---
+            Assert.IsFalse(r.IsMatch("\u212B"), "\u212B"); //<--- BUG ---
+            Assert.IsFalse(r.IsMatch("å"), "å"); //<--- BUG ---
+            Assert.IsFalse(r.IsMatch("Å"), "Å"); //<--- BUG ---
             //--------------------------------------------
             //works correctly without ignore case
             Regex r3 = new Regex("^[\u212A-\u212B]$");
@@ -705,8 +705,8 @@ namespace Automata.Tests
             //clearly \u212B is in the interval [\u00FF-\u21FF] and adding ignore-case cannot remove it from the interval
             Regex r6 = new Regex("^[\u2129-\u212F]$", RegexOptions.IgnoreCase);
             Assert.IsTrue(r6.IsMatch("\u2129")); //<--- correct ---- turned greek small letter iota
-            Assert.IsFalse(r6.IsMatch("\u212A")); //<--- BUG --- Kelvin sign
-            Assert.IsFalse(r6.IsMatch("\u212B")); //<--- BUG --- Angstrom sign
+            Assert.IsFalse(r6.IsMatch("\u212A"), "Kelvin sign"); //<--- BUG --- Kelvin sign
+            Assert.IsFalse(r6.IsMatch("\u212B"), "Angstrom sign"); //<--- BUG --- Angstrom sign
             Assert.IsTrue(r6.IsMatch("\u212C")); //<--- correct --- script capital B
             Assert.IsTrue(r6.IsMatch("\u212D")); //<--- correct --- black-letter capital C
             Assert.IsTrue(r6.IsMatch("\u212E")); //<--- correct --- 'estimated' symbol
@@ -917,6 +917,8 @@ namespace Automata.Tests
             sr_tot_ms_d = System.Environment.TickCount - sr_tot_ms_d;
             //--------------
 
+            Assert.AreEqual<int>(sr_tot_matches, sr_tot_matches_d);
+
             Log("AUT_d: " + sr_tot_ms_d);
 
             //--- .net matching on regexes that did not timeout---
@@ -936,8 +938,6 @@ namespace Automata.Tests
 
 
             Log(".NET: " + re_tot_ms);
-
-            Assert.AreEqual<int>(sr_tot_matches, sr_tot_matches_d);
 
             //allow some variation (+- 5 in either direction)
             Assert.IsTrue(sr_tot_matches <= re_tot_matches + 5);
@@ -966,8 +966,11 @@ namespace Automata.Tests
                 string reasonwhyfailed;
                 if (regex.TryCompile(out matcher, out reasonwhyfailed))
                 {
+
                     //TBD:remove the condition once anchors are supported
-                    if (!((SymbolicRegexUInt64)matcher).Pattern.containsAnchors)
+                    if (matcher is SymbolicRegexUInt64 && ((SymbolicRegexUInt64)matcher).Pattern.containsAnchors)
+                        continue;
+                    else
                     {
                         for (int m = 0; m < 100; m++)
                         {
@@ -1068,6 +1071,18 @@ namespace Automata.Tests
             Assert.AreEqual<string>("PWWD", PWWD);
             Assert.AreEqual<string>("pwwwwwwd", pwwwwwwd);
             //observe that the second match PWWWWWWWD must be ignored
+        }
+
+        [TestMethod]
+        public void TestIntersection()
+        {
+            var r1 = "^([abc][xyz])*#([mn][ij])*#([rst][uvw])*$";
+            var r2 = "^([ax]{1000})*##$";
+            CharSetSolver css = new CharSetSolver();
+            var a1 = css.Convert(r1).Determinize().Minimize();
+            var a2 = css.Convert(r2).Determinize().Minimize();
+            var a = a1.Intersect(a2);
+            a.ShowGraph();
         }
     }
 }

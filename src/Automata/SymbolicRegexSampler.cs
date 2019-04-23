@@ -139,6 +139,17 @@ namespace Microsoft.Automata
                         sample += builder.solver.ChooseUniformly(curNode.Set);
                         curNode = null;
                         break;
+                    //case SymbolicRegexKind.Sequence:
+                    //    for (int j = 0; j < curNode.sequence.Length; j++)
+                    //    {
+                    //        var pred = curNode.sequence[j];
+                    //        if (!builder.solver.IsSatisfiable(pred))
+                    //            throw new AutomataException(AutomataExceptionKind.SetIsEmpty);
+
+                    //        sample += builder.solver.ChooseUniformly(pred);
+                    //    }
+                    //    curNode = null;
+                    //    break;
                     case SymbolicRegexKind.Loop:
                         curNode = curNode.Left;
                         break;

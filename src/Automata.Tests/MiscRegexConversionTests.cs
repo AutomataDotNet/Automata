@@ -226,6 +226,5 @@ namespace Microsoft.Automata.Tests
             //aut.ShowGraph("DFA" + k);
             Assert.AreEqual<int>((1 << (k + 1)), aut.StateCount);
         }
-
     }
 }

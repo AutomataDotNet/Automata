@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Text;
 
 namespace Microsoft.Automata
 {
@@ -17,7 +18,8 @@ namespace Microsoft.Automata
         Concat = 5,
         Loop = 6,
         IfThenElse = 7,
-        And = 8
+        And = 8,
+        //Sequence = 9
     }
 
     /// <summary>
@@ -30,6 +32,7 @@ namespace Microsoft.Automata
         internal int lower = -1;
         internal int upper = -1;
         internal S set = default(S);
+        internal Sequence<S> sequence = null;
 
         internal SymbolicRegexNode<S> left = null;
         internal SymbolicRegexNode<S> right = null;
@@ -49,38 +52,130 @@ namespace Microsoft.Automata
         /// </summary>
         public string Serialize()
         {
-            switch (kind)
+            var sb = new System.Text.StringBuilder();
+            Serialize(this, sb);
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Append the serialized form of this symbolic regex node to the stringbuilder
+        /// </summary>
+        public static void Serialize(SymbolicRegexNode<S> node, System.Text.StringBuilder sb)
+        {
+            var solver = node.builder.solver;
+            SymbolicRegexNode<S> next = node;
+            while (next != null)
             {
-                case SymbolicRegexKind.Singleton:
-                    if (this.Equals(builder.dot))
-                        return ".";
-                    else
-                    {
-                        var atoms = this.builder.solver.GetPartition();
-                        List<int> atomIds = new List<int>();
-                        for (int i = 0; i < atoms.Length; i++)
-                            if (this.builder.solver.IsSatisfiable(this.builder.solver.MkAnd(atoms[i], set)))
-                                atomIds.Add(i);
-                        return "[" + string.Join(",", atomIds.ToArray()) + "]";
-                    }
-                case SymbolicRegexKind.Loop:
-                    return string.Format("L({0},{1},{2})", lower, (this.upper == int.MaxValue ? "*" : upper.ToString()), left.Serialize());
-                case SymbolicRegexKind.Concat:
-                    return string.Format("S({0},{1})", left.Serialize(), right.Serialize());
-                case SymbolicRegexKind.Epsilon:
-                    return "E";
-                case SymbolicRegexKind.Or:
-                    return string.Format("D({0})", alts.Serialize());
-                case SymbolicRegexKind.And:
-                    return string.Format("C({0})", alts.Serialize());
-                case SymbolicRegexKind.EndAnchor:
-                    return "$";
-                case SymbolicRegexKind.StartAnchor:
-                    return "^";
-                default: // SymbolicRegexKind.IfThenElse:
-                    return string.Format("I({0},{1},{2})", iteCond.Serialize(), left.Serialize(), right.Serialize());
+                node = next;
+                next = null;
+                switch (node.kind)
+                {
+                    case SymbolicRegexKind.Singleton:
+                        {
+                            if (node.set.Equals(solver.True))
+                                sb.Append(".");
+                            else
+                            {
+                                sb.Append("[");
+                                sb.Append(solver.SerializePredicate(node.set));
+                                sb.Append("]");
+                            }
+                            return;
+                        }
+                    case SymbolicRegexKind.Loop:
+                        {
+                            sb.Append("L(");
+                            sb.Append(node.lower.ToString());
+                            sb.Append(",");
+                            sb.Append(node.upper == int.MaxValue ? "*" : node.upper.ToString());
+                            sb.Append(",");
+                            Serialize(node.left, sb);
+                            sb.Append(")");
+                            return;
+                        }
+                    case SymbolicRegexKind.Concat:
+                        {
+                            var elems = node.ToArray();
+                            var elems_str = Array.ConvertAll(elems, x => x.Serialize());
+                            var str = string.Join(",", elems_str);
+                            sb.Append("S(");
+                            sb.Append(str);
+                            sb.Append(")");
+                            return;
+                        }
+                    case SymbolicRegexKind.Epsilon:
+                        {
+                            sb.Append("E");
+                            return;
+                        }
+                    case SymbolicRegexKind.Or:
+                        {
+                            sb.Append("D(");
+                            node.alts.Serialize(sb);
+                            sb.Append(")");
+                            return;
+                        }
+                    case SymbolicRegexKind.And:
+                        {
+                            sb.Append("C(");
+                            node.alts.Serialize(sb);
+                            sb.Append(")");
+                            return;
+                        }
+                    case SymbolicRegexKind.EndAnchor:
+                        {
+                            sb.Append("$");
+                            return;
+                        }
+                    case SymbolicRegexKind.StartAnchor:
+                        {
+                            sb.Append("^");
+                            return;
+                        }
+                    default: // SymbolicRegexKind.IfThenElse:
+                        {
+                            sb.Append("I(");
+                            Serialize(node.iteCond, sb);
+                            sb.Append(",");
+                            Serialize(node.left, sb);
+                            sb.Append(",");
+                            Serialize(node.right, sb);
+                            sb.Append(")");
+                            return;
+                        }
+                }
             }
         }
+
+        /// <summary>
+        /// Converts a concatenation into an array, 
+        /// returns a non-concatenation in a singleton array.
+        /// </summary>
+        public SymbolicRegexNode<S>[] ToArray()
+        {
+            var list = new List<SymbolicRegexNode<S>>();
+            AppendToList(this, list);
+            return list.ToArray();
+        }
+
+        /// <summary>
+        /// should only be used only if this is a concatenation node
+        /// </summary>
+        /// <returns></returns>
+        static void AppendToList(SymbolicRegexNode<S> concat, List<SymbolicRegexNode<S>> list)
+        {
+            var node = concat;
+            while (node.kind == SymbolicRegexKind.Concat)
+            {
+                if (node.left.kind == SymbolicRegexKind.Concat)
+                    AppendToList(node.left, list);
+                else
+                    list.Add(node.left);
+                node = node.right;
+            }
+            list.Add(node);
+        }
+
 
         #endregion
 
@@ -316,6 +411,7 @@ namespace Microsoft.Automata
         /// <param name="set">singelton set</param>
         /// <param name="iteCond">if-then-else condition</param>
         /// <param name="alts">alternatives set of a disjunction</param>
+        /// <param name="seq">sequence of singleton sets</param>
         private SymbolicRegexNode(SymbolicRegexBuilder<S> builder, SymbolicRegexKind kind, SymbolicRegexNode<S> left, SymbolicRegexNode<S> right, int lower, int upper, S set, SymbolicRegexNode<S> iteCond, SymbolicRegexSet<S> alts)
         {
             this.builder = builder;
@@ -351,6 +447,11 @@ namespace Microsoft.Automata
         {
             return new SymbolicRegexNode<S>(builder, SymbolicRegexKind.Singleton, null, null, -1, -1, nl, null, null);
         }
+
+        //internal static SymbolicRegexNode<S> MkSequence(SymbolicRegexBuilder<S> builder, Sequence<S> seq)
+        //{
+        //    return new SymbolicRegexNode<S>(builder, SymbolicRegexKind.Sequence, null, null, -1, -1, default(S), null, null, seq);
+        //}
 
         internal static SymbolicRegexNode<S> MkEpsilon(SymbolicRegexBuilder<S> builder)
         {
@@ -485,16 +586,71 @@ namespace Microsoft.Automata
             else
             {
                 concat = right;
-                foreach (SymbolicRegexNode<S> elem in left.EnumerateConcatElementsBackwards())
+                var left_elems = left.ToArray();
+                for (int i = left_elems.Length - 1; i >= 0; i = i - 1)
                 {
-                    var tmp = new SymbolicRegexNode<S>(builder, SymbolicRegexKind.Concat, elem, concat, -1, -1, default(S), null, null);
-                    tmp.isNullable = elem.isNullable && concat.isNullable;
-                    tmp.containsAnchors = elem.containsAnchors || concat.containsAnchors;
+                    var tmp = new SymbolicRegexNode<S>(builder, SymbolicRegexKind.Concat, left_elems[i], concat, -1, -1, default(S), null, null);
+                    tmp.isNullable = left_elems[i].isNullable && concat.isNullable;
+                    tmp.containsAnchors = left_elems[i].containsAnchors || concat.containsAnchors;
                     concat = tmp;
                 }
             }
             return concat;
         }
+
+
+        //internal SymbolicRegexNode<S> MkConcatWith(SymbolicRegexNode<S> that)
+        //{
+        //    switch (this.kind)
+        //    {
+        //        case SymbolicRegexKind.Concat:
+        //            {
+        //                var concat = that;
+        //                foreach (var node in this.EnumerateConcatElementsBackwards())
+        //                {
+        //                    var tmp = new SymbolicRegexNode<S>(builder, SymbolicRegexKind.Concat, node, concat, -1, -1, default(S), null, null);
+        //                    tmp.isNullable = node.isNullable && concat.isNullable;
+        //                    tmp.containsAnchors = node.containsAnchors || concat.containsAnchors;
+        //                    concat = tmp;
+        //                }
+        //                return concat;
+        //            }
+        //        case SymbolicRegexKind.Singleton:
+        //            {
+        //                if (that.kind == SymbolicRegexKind.Singleton)
+        //                {
+        //                    var seq = new SymbolicRegexNode<S>(builder, SymbolicRegexKind.Sequence, null, null, -1, -1, default(S), null, null, new Sequence<S>(this.set, that.set));
+        //                    seq.isNullable = false;
+        //                    seq.containsAnchors = false;
+        //                    return seq;
+        //                }
+        //                else if (that.kind == SymbolicRegexKind.Sequence)
+        //                {
+        //                    var seq = new SymbolicRegexNode<S>(builder, SymbolicRegexKind.Sequence, null, null, -1, -1, default(S), null, null, new Sequence<S>(this.set).Append(that.sequence));
+        //                    seq.isNullable = false;
+        //                    seq.containsAnchors = false;
+        //                    return seq;
+        //                }
+        //                else if (that.kind == SymbolicRegexKind.Concat)
+        //                {
+        //                    if (that.left.kind == SymbolicRegexKind.Singleton)
+        //                    {
+        //                        var seq = new SymbolicRegexNode<S>(builder, SymbolicRegexKind.Sequence, null, null, -1, -1, default(S), null, null, new Sequence<S>(this.set, that.left.set));
+        //                        seq.isNullable = false;
+        //                        seq.containsAnchors = false;
+        //                        var concat = new SymbolicRegexNode<S>(builder, SymbolicRegexKind.Concat, seq, that.right, -1, -1, default(S), null, null);
+        //                    }
+        //                }
+        //            }
+        //        default:
+        //            {
+        //                var concat = new SymbolicRegexNode<S>(builder, SymbolicRegexKind.Concat, this, that, -1, -1, default(S), null, null);
+        //                concat.isNullable = this.isNullable && that.isNullable;
+        //                concat.containsAnchors = this.containsAnchors || that.containsAnchors;
+        //                return concat;
+        //            }
+        //    }
+        //}
 
         private IEnumerable<SymbolicRegexNode<S>> EnumerateConcatElementsBackwards()
         {
@@ -535,57 +691,235 @@ namespace Microsoft.Automata
         {
             if (toString == null)
             {
-                toString = ComputeToString();
+                var sb = new StringBuilder();
+                ComputeToString(this, sb);
+                toString = sb.ToString();
             }
             return toString;
         }
 
-        private string ComputeToString()
+        private static void ComputeToString(SymbolicRegexNode<S> top, StringBuilder sb)
         {
+            var solver = top.builder.solver;
+            SymbolicRegexNode<S> next = top;
+            while (next != null)
+            {
+                var node = next;
+                next = null;
+                switch (node.kind)
+                {
+                    case SymbolicRegexKind.StartAnchor:
+                        {
+                            sb.Append("^");
+                            continue;
+                        }
+                    case SymbolicRegexKind.EndAnchor:
+                        {
+                            sb.Append("$");
+                            continue;
+                        }
+                    case SymbolicRegexKind.Epsilon:
+                        {
+                            sb.Append("()");
+                            continue;
+                        }
+                    case SymbolicRegexKind.Singleton:
+                        {
+                            sb.Append(solver.PrettyPrint(node.set));
+                            continue;
+                        }
+                    case SymbolicRegexKind.Loop:
+                        {
+                            node.left.ComputeToString_LoopBody_AddExtraParentesis(sb);
+                            if (node.IsMaybe)
+                                sb.Append("?");
+                            else if (node.IsStar)
+                                sb.Append("*");
+                            else if (node.IsPlus)
+                                sb.Append("+");
+                            else
+                            {
+                                sb.Append("{");
+                                sb.Append(node.lower.ToString());
+                                sb.Append(",");
+                                if (node.upper < int.MaxValue)
+                                    sb.Append(node.upper.ToString());
+                                sb.Append("}");
+                            }
+                            continue;
+                        }
+                    case SymbolicRegexKind.Concat:
+                        {
+                            node.left.ComputeToString_LoopBody_AddExtraParentesis(sb);
+                            next = node.right;
+                            continue;
+                        }
+                    case SymbolicRegexKind.Or:
+                    case SymbolicRegexKind.And:
+                        {
+                            sb.Append(node.alts.ToString());
+                            continue;
+                        }
+                    default: //if-then-else
+                        {
+                            sb.Append("(?(");
+                            ComputeToString(node.iteCond, sb);
+                            sb.Append(")");
+                            ComputeToString(node.left, sb);
+                            sb.Append("|");
+                            ComputeToString(node.right, sb);
+                            sb.Append(")");
+                            continue;
+                        }
+                }
+            }
+        }
+
+        private void ComputeToString_LoopBody_AddExtraParentesis(StringBuilder sb)
+        {
+            if ((this.kind == SymbolicRegexKind.Loop && this.left.kind != SymbolicRegexKind.Singleton) || 
+                this.OrCount > 1 ||
+                this.kind == SymbolicRegexKind.Concat)
+            {
+                sb.Append("(");
+                ComputeToString(this, sb);
+                sb.Append(")");
+            }
+            else
+            {
+                ComputeToString(this, sb);
+            }
+        }
+
+
+        private void ComputeToString_(StringBuilder sb)
+        {
+            var stack = new SimpleStack<SymbolicRegexNode<S>>();
+            stack.Push(this);
+            while (stack.IsNonempty)
+            {
+            }
             switch (kind)
             {
                 case SymbolicRegexKind.StartAnchor:
-                    return "^";
+                    {
+                        sb.Append("^");
+                        return;
+                    }
                 case SymbolicRegexKind.EndAnchor:
-                    return "$";
+                    {
+                        sb.Append("$");
+                        return;
+                    }
                 case SymbolicRegexKind.Epsilon:
-                    return "()";
+                    {
+                        sb.Append("()");
+                        return;
+                    }
                 case SymbolicRegexKind.Singleton:
                     {
-                        return this.builder.solver.PrettyPrint(set);
+                        sb.Append(this.builder.solver.PrettyPrint(set));
+                        return;
                     }
                 case SymbolicRegexKind.Loop:
-                    string s = left.ToString();
-                    if (left.OrCount > 1 || left.kind == SymbolicRegexKind.Concat)
-                        s = "(" + s + ")";
-                    if (IsStar)
-                        return s + "*";
-                    else if (IsPlus)
-                        return s + "+";
-                    else if (IsMaybe)
-                        return (left.kind == SymbolicRegexKind.Loop ? "(" + s + ")?" : s + "?");
-                    else
                     {
-                        if (left.kind == SymbolicRegexKind.Loop)
-                            return string.Format("({0}){{{1},{2}}}", s, this.lower.ToString(),
-                                (this.upper == int.MaxValue ? "" : this.upper.ToString()));
+                        if (left.OrCount > 1 || left.kind == SymbolicRegexKind.Concat)
+                        {
+                            sb.Append("(");
+                            left.ComputeToString_(sb);
+                            sb.Append(")");
+                        }
+                        else if (IsStar)
+                        {
+                            left.ComputeToString_(sb);
+                            sb.Append("*");
+                        }
+                        else if (IsPlus)
+                        {
+                            left.ComputeToString_(sb);
+                            sb.Append("+");
+                        }
+                        else if (IsMaybe)
+                        {
+                            if (left.kind == SymbolicRegexKind.Loop)
+                            {
+                                sb.Append("(");
+                                left.ComputeToString_(sb);
+                                sb.Append(")?");
+                            }
+                            else
+                            {
+                                left.ComputeToString_(sb);
+                                sb.Append("?");
+                            }
+                        }
                         else
-                            return string.Format("{0}{{{1},{2}}}", s, this.lower.ToString(),
-                                (this.upper == int.MaxValue ? "" : this.upper.ToString()));
+                        {
+                            if (left.kind == SymbolicRegexKind.Loop)
+                            {
+                                sb.Append("(");
+                                left.ComputeToString_(sb);
+                                sb.Append("){");
+                                sb.Append(this.lower.ToString());
+                                sb.Append(",");
+                                if (this.upper < int.MaxValue)
+                                    sb.Append(this.upper.ToString());
+                                sb.Append("}");
+                            }
+                            else
+                            {
+                                left.ComputeToString_(sb);
+                                sb.Append("{");
+                                sb.Append(this.lower.ToString());
+                                sb.Append(",");
+                                if (this.upper < int.MaxValue)
+                                    sb.Append(this.upper.ToString());
+                                sb.Append("}");
+                            }
+                        }
+                        return;
                     }
                 case SymbolicRegexKind.Concat:
-                    string a = left.ToString();
-                    string b = right.ToString();
-                    if (left.OrCount > 1)
-                        a = "(" + a + ")";
-                    if (right.OrCount > 1)
-                        b = "(" + b + ")";
-                    return a + b;
+                    {
+                        if (left.OrCount > 1)
+                        {
+                            sb.Append("(");
+                            left.ComputeToString_(sb);
+                            sb.Append(")");
+                        }
+                        else
+                        {
+                            left.ComputeToString_(sb);
+                        }
+                        if (right.OrCount > 1)
+                        {
+                            sb.Append("(");
+                            right.ComputeToString_(sb);
+                            sb.Append(")");
+                        }
+                        else
+                        {
+                            right.ComputeToString_(sb);
+                        }
+                        return;
+                    }
                 case SymbolicRegexKind.Or:
                 case SymbolicRegexKind.And:
-                    return alts.ToString();
-                default: //ITE 
-                    return string.Format("(?({0}){1}|{2})", iteCond, left, right);
+                    {
+                        sb.Append(alts.ToString());
+                        return;
+                    }
+                default:
+                    {
+                        sb.Append("(?(");
+                        iteCond.ComputeToString_(sb);
+                        sb.Append(")");
+                        left.ComputeToString_(sb);
+                        sb.Append("|");
+                        right.ComputeToString_(sb);
+                        sb.Append(")");
+                        return;
+                    }
             }
         }
 
@@ -616,6 +950,14 @@ namespace Microsoft.Automata
                         else
                             return builder.MkSingleton(newset);
                     }
+                //case SymbolicRegexKind.Sequence:
+                //    {
+                //        var newseq = new Sequence<S>(Array.ConvertAll(this.sequence.ToArray(), x => builder.solver.MkAnd(x, pred)));
+                //        if (this.sequence.Equals(newseq))
+                //            return this;
+                //        else
+                //            return builder.MkSequence(newseq);
+                //    }
                 case SymbolicRegexKind.Loop:
                     {
                         var body = this.left.Restrict(pred);
@@ -975,6 +1317,7 @@ namespace Microsoft.Automata
                     case SymbolicRegexKind.Epsilon:
                         return true;
                     case SymbolicRegexKind.Singleton:
+                    //case SymbolicRegexKind.Sequence:
                         return false;
                     case SymbolicRegexKind.Loop:
                         return this.left.IsNullableAtBorder(isStart, isEnd);
@@ -1014,6 +1357,9 @@ namespace Microsoft.Automata
                     case SymbolicRegexKind.Singleton:
                         hashcode = kind.GetHashCode() ^ set.GetHashCode();
                         break;
+                    //case SymbolicRegexKind.Sequence:
+                    //    hashcode = kind.GetHashCode() ^ sequence.GetHashCode();
+                    //    break;
                     default: //if-then-else
                         hashcode = kind.GetHashCode() ^ iteCond.GetHashCode() ^ (left.GetHashCode() << 1) ^ (right.GetHashCode() << 2);
                         break;
@@ -1043,6 +1389,8 @@ namespace Microsoft.Automata
                         return this.left.Equals(that.left) && this.right.Equals(that.right);
                     case SymbolicRegexKind.Singleton:
                         return object.Equals(this.set, that.set);
+                    //case SymbolicRegexKind.Sequence:
+                    //    return object.Equals(this.sequence, that.sequence);
                     case SymbolicRegexKind.Or:
                     case SymbolicRegexKind.And:
                         return this.alts.Equals(that.alts);
@@ -1057,52 +1405,55 @@ namespace Microsoft.Automata
         }
 
         /// <summary>
-        /// Enumerates all predicates that occur in the regex
+        /// Returns the set of all predicates that occur in the regex
         /// </summary>
-        public IEnumerable<S> EnumeratePredicates()
+        public HashSet<S> GetPredicates()
+        {
+            var predicates = new HashSet<S>();
+            CollectPredicates_helper(predicates);
+            return predicates;
+        }
+
+        /// <summary>
+        /// Collects all predicates that occur in the regex into the given set predicates
+        /// </summary>
+        void CollectPredicates_helper(HashSet<S> predicates)
         {
             switch (kind)
             {
                 case SymbolicRegexKind.StartAnchor:
                 case SymbolicRegexKind.EndAnchor:
                 case SymbolicRegexKind.Epsilon:
-                    yield break;
+                    return;
                 case SymbolicRegexKind.Singleton:
                     {
-                        yield return this.set;
-                        yield break;
+                        predicates.Add(this.set);
+                        return;
                     }
                 case SymbolicRegexKind.Loop:
                     {
-                        foreach (S s in this.left.EnumeratePredicates())
-                            yield return s;
-                        yield break;
+                        this.left.CollectPredicates_helper(predicates);
+                        return;
                     }
                 case SymbolicRegexKind.Or:
                 case SymbolicRegexKind.And:
                     {
                         foreach (SymbolicRegexNode<S> sr in this.alts)
-                            foreach (S s in sr.EnumeratePredicates())
-                                yield return s;
-                        yield break;
+                            sr.CollectPredicates_helper(predicates);
+                        return;
                     }
                 case SymbolicRegexKind.Concat:
                     {
-                        foreach (S s in this.left.EnumeratePredicates())
-                            yield return s;
-                        foreach (S s in this.right.EnumeratePredicates())
-                            yield return s;
-                        yield break;
+                        left.CollectPredicates_helper(predicates);
+                        right.CollectPredicates_helper(predicates);
+                        return;
                     }
                 default: //ITE
                     {
-                        foreach (S s in this.iteCond.EnumeratePredicates())
-                            yield return s;
-                        foreach (S s in this.left.EnumeratePredicates())
-                            yield return s;
-                        foreach (S s in this.right.EnumeratePredicates())
-                            yield return s;
-                        yield break;
+                        this.iteCond.CollectPredicates_helper(predicates);
+                        this.left.CollectPredicates_helper(predicates);
+                        this.right.CollectPredicates_helper(predicates);
+                        return;
                     }
             }
         }
@@ -1113,7 +1464,7 @@ namespace Microsoft.Automata
         /// </summary>
         public S[] ComputeMinterms()
         {
-            var predicates = new List<S>(new HashSet<S>(EnumeratePredicates()));
+            var predicates = new List<S>(GetPredicates());
             var mt = new List<S>(EnumerateMinterms(predicates.ToArray()));
             //there must be at least one minterm
             if (mt.Count == 0)
@@ -1140,6 +1491,8 @@ namespace Microsoft.Automata
                 case SymbolicRegexKind.Epsilon:
                 case SymbolicRegexKind.Singleton:
                     return this;
+                //case SymbolicRegexKind.Sequence:
+                //    return builder.MkSequence(this.sequence.Reverse());
                 case SymbolicRegexKind.StartAnchor:
                     return builder.endAnchor;
                 case SymbolicRegexKind.EndAnchor:
@@ -1200,7 +1553,8 @@ namespace Microsoft.Automata
             {
                 case SymbolicRegexKind.EndAnchor:
                 case SymbolicRegexKind.StartAnchor:
-                case SymbolicRegexKind.Singleton:
+                case SymbolicRegexKind.Singleton: 
+                //case SymbolicRegexKind.Sequence:
                 case SymbolicRegexKind.Epsilon:
                     return false;
                 case SymbolicRegexKind.Loop:
@@ -1228,6 +1582,7 @@ namespace Microsoft.Automata
                         case SymbolicRegexKind.EndAnchor:
                         case SymbolicRegexKind.StartAnchor:
                         case SymbolicRegexKind.Singleton:
+                        //case SymbolicRegexKind.Sequence:
                         case SymbolicRegexKind.Epsilon:
                             {
                                 enabledBoundedLoopCount = 0;
@@ -1266,39 +1621,40 @@ namespace Microsoft.Automata
         internal int EnabledBoundedLoopValue()
         {
 
-                switch (kind)
-                {
-                    case SymbolicRegexKind.EndAnchor:
-                    case SymbolicRegexKind.StartAnchor:
-                    case SymbolicRegexKind.Singleton:
-                    case SymbolicRegexKind.Epsilon:
-                        {
+            switch (kind)
+            {
+                case SymbolicRegexKind.EndAnchor:
+                case SymbolicRegexKind.StartAnchor:
+                case SymbolicRegexKind.Singleton:
+                //case SymbolicRegexKind.Sequence:
+                case SymbolicRegexKind.Epsilon:
+                    {
+                        return 0;
+                    }
+                case SymbolicRegexKind.Loop:
+                    {
+                        if (this.upper < int.MaxValue)
+                            return this.upper;
+                        else
                             return 0;
-                        }
-                    case SymbolicRegexKind.Loop:
+                    }
+                case SymbolicRegexKind.Concat:
+                    {
+                        return this.left.EnabledBoundedLoopValue();
+                    }
+                case SymbolicRegexKind.Or:
+                    {
+                        foreach (var alt in this.alts)
                         {
-                            if (this.upper < int.MaxValue)
-                                return this.upper;
-                            else
-                                return 0;
+                            var k = alt.EnabledBoundedLoopValue();
+                            if (k > 0)
+                                return k;
                         }
-                    case SymbolicRegexKind.Concat:
-                        {
-                            return this.left.EnabledBoundedLoopValue();
-                        }
-                    case SymbolicRegexKind.Or:
-                        {
-                            foreach (var alt in this.alts)
-                            {
-                                var k = alt.EnabledBoundedLoopValue();
-                                if (k > 0)
-                                    return k;
-                            }
-                            return 0;
-                        }
-                    default:
-                        throw new NotImplementedException(kind.ToString());
-                }
+                        return 0;
+                    }
+                default:
+                    throw new NotImplementedException(kind.ToString());
+            }
         }
 
         /// <summary>
@@ -1312,6 +1668,7 @@ namespace Microsoft.Automata
                 case SymbolicRegexKind.StartAnchor:
                 case SymbolicRegexKind.Epsilon:
                 case SymbolicRegexKind.Singleton:
+                //case SymbolicRegexKind.Sequence:
                     return this;
                 case SymbolicRegexKind.Concat:
                     return builder.MkConcat(left.Simplify(), right.Simplify());
@@ -1349,6 +1706,7 @@ namespace Microsoft.Automata
                     case SymbolicRegexKind.EndAnchor:
                     case SymbolicRegexKind.StartAnchor:
                     case SymbolicRegexKind.Singleton:
+                    //case SymbolicRegexKind.Sequence:
                     case SymbolicRegexKind.Epsilon:
                         {
                             return this;
@@ -1502,43 +1860,51 @@ namespace Microsoft.Automata
             #endregion
         }
 
+        internal const int maxPrefixLength = 5;
         internal S[] GetPrefix()
         {
-            return GetPrefixSequence(Sequence<S>.Empty).ToArray();
+            return GetPrefixSequence(Sequence<S>.Empty, maxPrefixLength).ToArray();
         }
 
-        Sequence<S> GetPrefixSequence(Sequence<S> pref)
+        Sequence<S> GetPrefixSequence(Sequence<S> pref, int lengthBound)
         {
-            switch (this.kind)
+            if (lengthBound == 0)
             {
-                case SymbolicRegexKind.Singleton:
-                    {
-                        return pref.Append(this.set);
-                    }
-                case SymbolicRegexKind.Concat:
-                    {
-                        if (this.left.kind == SymbolicRegexKind.Singleton)
-                            return this.right.GetPrefixSequence(pref.Append(this.left.set));
-                        else
-                            return pref;
-                    }
-                case SymbolicRegexKind.Or:
-                case SymbolicRegexKind.And:
-                    {
-                        var enumerator = alts.GetEnumerator();
-                        enumerator.MoveNext();
-                        var alts_prefix = enumerator.Current.GetPrefixSequence(Sequence<S>.Empty);
-                        while (!alts_prefix.IsEmpty && enumerator.MoveNext())
+                return pref;
+            }
+            else
+            {
+                switch (this.kind)
+                {
+                    case SymbolicRegexKind.Singleton:
                         {
-                            var p = enumerator.Current.GetPrefixSequence(Sequence<S>.Empty);
-                            alts_prefix = alts_prefix.MaximalCommonPrefix(p);
+                            return pref.Append(this.set);
                         }
-                        return alts_prefix;
-                    }
-                default:
-                    {
-                        return pref;
-                    }
+                    case SymbolicRegexKind.Concat:
+                        {
+                            if (this.left.kind == SymbolicRegexKind.Singleton)
+                                return this.right.GetPrefixSequence(pref.Append(this.left.set), lengthBound - 1);
+                            else
+                                return pref;
+                        }
+                    case SymbolicRegexKind.Or:
+                    case SymbolicRegexKind.And:
+                        {
+                            var enumerator = alts.GetEnumerator();
+                            enumerator.MoveNext();
+                            var alts_prefix = enumerator.Current.GetPrefixSequence(Sequence<S>.Empty, lengthBound);
+                            while (!alts_prefix.IsEmpty && enumerator.MoveNext())
+                            {
+                                var p = enumerator.Current.GetPrefixSequence(Sequence<S>.Empty, lengthBound);
+                                alts_prefix = alts_prefix.MaximalCommonPrefix(p);
+                            }
+                            return alts_prefix;
+                        }
+                    default:
+                        {
+                            return pref;
+                        }
+                }
             }
         }
 
@@ -1556,6 +1922,46 @@ namespace Microsoft.Automata
             }
         }
 
+        //0 means value is not computed, 
+        //-1 means this is not a sequence of singletons
+        //1 means it is a sequence of singletons
+        int sequenceOfSingletons_count = 10;
+        bool IsSequenceOfSingletons()
+        {
+            if (sequenceOfSingletons_count == 0)
+            {
+                var node = this;
+                int k = 1;
+                while (node.kind == SymbolicRegexKind.Concat && node.left.kind == SymbolicRegexKind.Singleton)
+                {
+                    node = node.right;
+                    k += 1;
+                }
+                if (node.kind == SymbolicRegexKind.Singleton)
+                {
+                    node.sequenceOfSingletons_count = 1;
+                    node = this;
+                    while (node.kind == SymbolicRegexKind.Concat)
+                    {
+                        node.sequenceOfSingletons_count = k;
+                        node = node.right;
+                        k = k - 1;
+                    }
+                }
+                else
+                {
+                    node.sequenceOfSingletons_count = -1;
+                    node = this;
+                    while (node.kind == SymbolicRegexKind.Concat && node.left.kind == SymbolicRegexKind.Singleton)
+                    {
+                        node.sequenceOfSingletons_count = -1;
+                        node = node.right;
+                    }
+                }
+            }
+            return sequenceOfSingletons_count > 0;
+        }
+
         /// <summary>
         /// Gets the predicate that covers all elements that make some progress. 
         /// </summary>
@@ -1569,6 +1975,8 @@ namespace Microsoft.Automata
                     return algebra.False;
                 case SymbolicRegexKind.Singleton:
                     return this.set;
+                //case SymbolicRegexKind.Sequence:
+                //    return this.sequence.First;
                 case SymbolicRegexKind.Loop:
                     return this.left.GetStartSet(algebra);
                 case SymbolicRegexKind.Concat:
@@ -2374,6 +2782,11 @@ namespace Microsoft.Automata
             var str = new List<string>(ser);
             str.Sort();
             return string.Join(",", str);
+        }
+
+        internal void Serialize(StringBuilder sb)
+        {
+            sb.Append(Serialize());
         }
 
         /// <summary>

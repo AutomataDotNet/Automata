@@ -101,7 +101,7 @@ program dummy(t) {
             //stb.ToST().Explore().ShowGraph();
         }
 
-        [TestMethod]
+        //[TestMethod]
         public void TestCssEncode6()
         {
             var solver = new Z3Provider();

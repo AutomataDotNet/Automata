@@ -106,6 +106,7 @@
     <Compile Include="RexTests.cs" />
     <Compile Include="SampleRegexes.cs" />
     <Compile Include="SCCTest.cs" />
+    <Compile Include="SequenceTests.cs" />
     <Compile Include="SerializationTests.cs" />
     <Compile Include="SpecialRegexTests.cs" />
     <Compile Include="SymbolicRegexTests.cs" />

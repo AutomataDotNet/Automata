@@ -94,7 +94,6 @@ namespace Microsoft.Automata
 
         private BVAlgebra(DecisionTree dtree, IntervalSet[] partition) : base(dtree, partition, partition.Length)
         {
-            int m = partition.Length;
             var K = (nrOfBits - 1) / 64;
             int last = nrOfBits % 64;
             ulong lastMask = (last == 0 ? ulong.MaxValue : (((ulong)1 << last) - 1));
@@ -112,11 +111,11 @@ namespace Microsoft.Automata
                     all1[i] = lastMask;
                 }
             }
-            this.zero = new BV(m, 0, all0);
-            this.ones = new BV(m, (K == 0 ? lastMask : ulong.MaxValue), all1);
+            this.zero = new BV(0, all0);
+            this.ones = new BV((K == 0 ? lastMask : ulong.MaxValue), all1);
             this.mtg = new MintermGenerator<BV>(this);
-            this.atoms = new BV[m];
-            for (int i = 0; i < m; i++)
+            this.atoms = new BV[nrOfBits];
+            for (int i = 0; i < nrOfBits; i++)
             {
                 atoms[i] = MkBV(i);
             }
@@ -177,7 +176,7 @@ namespace Microsoft.Automata
 
         public bool CheckImplication(BV lhs, BV rhs)
         {
-            return ((~lhs) | rhs).Equals(this.ones);
+            return ((MkNot(lhs)) | rhs).Equals(this.ones);
         }
 
         public bool EvaluateAtom(BV atom, BV psi)
@@ -616,7 +615,7 @@ namespace Microsoft.Automata
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public BV MkNot(BV predicate)
         {
-            return ~predicate;
+            return ones & ~predicate;
         }
 
         public BV MkOr(IEnumerable<BV> predicates)
@@ -664,7 +663,7 @@ namespace Microsoft.Automata
                 else
                     more[k-1] = more[k-1] | ((ulong)1 << j);
             }
-            var bv = new BV(this.nrOfBits, first, more);
+            var bv = new BV(first, more);
             return bv;
         }
 
@@ -740,7 +739,7 @@ namespace Microsoft.Automata
         public string PrettyPrint(BV bv)
         {
             var lab1 = PrettyPrintHelper(bv, false);
-            var lab2 = PrettyPrintHelper(~bv, true);
+            var lab2 = PrettyPrintHelper(MkNot(bv), true);
             if (lab1.Length <= lab2.Length)
                 return lab1;
             else
@@ -866,5 +865,20 @@ namespace Microsoft.Automata
         }
         #endregion
 
+        /// <summary>
+        /// calls bv.Serialize()
+        /// </summary>
+        public string SerializePredicate(BV bv)
+        {
+            return bv.Serialize();
+        }
+
+        /// <summary>
+        /// calls BV.Deserialize(s)
+        /// </summary>
+        public BV DeserializePredicate(string s)
+        {
+            return BV.Deserialize(s);
+        }
     }
 }

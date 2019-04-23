@@ -2668,4 +2668,119 @@ namespace Microsoft.Automata
             return matcher;
         }
     }
+
+    /// <summary>
+    /// Represents a precompiled match generator for a fixed Unicode string
+    /// </summary>
+    [Serializable]
+    public class FixedStringMatcher : RegexMatcher
+    {
+        [NonSerialized]
+        string pattern;
+        [NonSerialized]
+        bool caseInsensitive = false;
+        public override string GenerateRandomMatch(int maxLoopUnrol = 10, int cornerCaseProb = 5, int maxSamplingIter = 3)
+        {
+            if (caseInsensitive)
+            {
+                //replace characters by upperv or lower
+                var chars = pattern.ToCharArray();
+                var chooser = new Chooser();
+                for (int i=0; i < chars.Length; i++)
+                {
+                    if (char.IsLetter(chars[i]))
+                    {
+                        var flip = chooser.ChooseTrueOrFalse();
+                        if (flip)
+                        {
+                            if (char.IsUpper(chars[i]))
+                                chars[i] = char.ToLower(chars[i]);
+                            else
+                                chars[i] = char.ToUpper(chars[i]);
+                        }
+                    }
+                }
+                return new string(chars);
+            }
+            else
+            {
+                return pattern;
+            }
+        }
+
+        public FixedStringMatcher(string pattern, bool caseInsensitive = false)
+        {
+            this.caseInsensitive = caseInsensitive;
+            this.pattern = pattern;
+        }
+
+
+        #region serialization
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            info.AddValue("caseInsensitive", caseInsensitive);
+            info.AddValue("pattern", StringUtility.SerializeStringToCharCodeSequence(pattern));
+        }
+
+        public FixedStringMatcher(SerializationInfo info, StreamingContext context)
+        {
+            this.caseInsensitive = info.GetBoolean("caseInsensitive");
+            var charCodeSequence = info.GetString("pattern");
+            this.pattern = StringUtility.DeserializeStringFromCharCodeSequence(charCodeSequence);
+        }
+
+        public override bool IsMatch(string input, int startat = 0, int endat = -1)
+        {
+            StringComparison comp = (caseInsensitive ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+            int res = input.IndexOf(pattern, startat, comp);
+            if (res >= 0 && (endat == -1 || res + pattern.Length - 1 <= endat))
+            {
+                return true;
+            }
+            else
+                return false;
+        }
+
+        public override Tuple<int, int>[] Matches(string input, int limit = 0, int startat = 0, int endat = -1)
+        {
+            var matches = new List<Tuple<int, int>>();
+            StringComparison comp = (caseInsensitive ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+            int k = (endat == -1 ? (input.Length - 1) : (endat < input.Length ? endat : input.Length - 1));
+            int i = startat;
+            while (true)
+            {
+                int res = input.IndexOf(pattern, i, comp);
+                if (res >= 0 && (limit <= 0 || matches.Count < limit) && res + pattern.Length - 1 <= k)
+                {
+                    matches.Add(new Tuple<int, int>(res, pattern.Length));
+                    i = res + pattern.Length;
+                }
+                else
+                    break;
+            }
+            return matches.ToArray();
+        }
+
+        public override void Serialize(string file, IFormatter formatter = null)
+        {
+            var stream = new FileStream(file, FileMode.Create, FileAccess.Write, FileShare.None);
+            Serialize(stream, formatter);
+            stream.Close();
+        }
+
+        public override void Serialize(Stream stream, IFormatter formatter = null)
+        {
+            if (formatter == null)
+                formatter = new BinaryFormatter();
+            formatter.Serialize(stream, this);
+        }
+
+        internal override void SerializeSimplified(Stream stream, IFormatter formatter = null)
+        {
+            Serialize(stream, formatter);
+        }
+        #endregion
+    }
+
+
 }

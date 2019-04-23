@@ -30,6 +30,7 @@ namespace Microsoft.Automata
         internal SymbolicRegexSet<S> fullSet;
         internal SymbolicRegexSet<S> emptySet;
 
+        Dictionary<string, SymbolicRegexNode<S>> sequenceCache = new Dictionary<string, SymbolicRegexNode<S>>();
         Dictionary<S, SymbolicRegexNode<S>> singletonCache = new Dictionary<S, SymbolicRegexNode<S>>();
         Dictionary<SymbolicRegexNode<S>, SymbolicRegexNode<S>> nodeCache = new Dictionary<SymbolicRegexNode<S>, SymbolicRegexNode<S>>();
 
@@ -284,6 +285,27 @@ namespace Microsoft.Automata
         }
 
         /// <summary>
+        /// Make a sequence regex, i.e., a concatenation of singletons
+        /// </summary>
+        public SymbolicRegexNode<S> MkSequence(params S[] seq)
+        {
+            int k = seq.Length;
+            if (k == 0)
+            {
+                return this.epsilon;
+            }
+            else if (k == 1)
+            {
+                return MkSingleton(seq[0]);
+            }
+            else
+            {
+                var singletons = Array.ConvertAll(seq, MkSingleton);
+                return this.MkConcat(singletons);
+            }
+        }
+
+        /// <summary>
         /// Make an if-then-else regex (?(cond)left|right), 
         /// or create it as conjuction if right is false
         /// </summary>
@@ -463,7 +485,8 @@ namespace Microsoft.Automata
                         }
                         #endregion
                     }
-                default: // SymbolicRegexKind.Singleton:
+                case SymbolicRegexKind.Singleton:
+                //case SymbolicRegexKind.Sequence:
                     {
                         #region singleton
                         var res = sr;
@@ -479,6 +502,10 @@ namespace Microsoft.Automata
                         }
                         return res;
                         #endregion
+                    }
+                default:
+                    {
+                        throw new AutomataException(AutomataExceptionKind.UnrecognizedRegex);
                     }
             }
         }
@@ -511,6 +538,19 @@ namespace Microsoft.Automata
                             }
                             #endregion
                         }
+                    //case SymbolicRegexKind.Sequence: //guaranteed to be nonempty
+                    //    {
+                    //        #region d(a,[R|Rest]) = Rest if (a in R) else nothing
+                    //        if (this.solver.IsSatisfiable(this.solver.MkAnd(elem, sr.sequence.First)))
+                    //        {
+                    //            return this.MkSequence(sr.sequence.Rest());
+                    //        }
+                    //        else
+                    //        {
+                    //            return this.nothing;
+                    //        }
+                    //        #endregion
+                    //    }
                     case SymbolicRegexKind.Loop:
                         {
                             #region d(a, R*) = d(a,R)R*
@@ -613,6 +653,7 @@ namespace Microsoft.Automata
                 case SymbolicRegexKind.EndAnchor:
                 case SymbolicRegexKind.Epsilon:
                 case SymbolicRegexKind.Singleton:
+                //case SymbolicRegexKind.Sequence:
                     return sr;
                 case SymbolicRegexKind.Loop:
                     {
@@ -653,7 +694,7 @@ namespace Microsoft.Automata
                         var or = this.MkOr(alts.ToArray());
                         return or;
                     }
-                default: //ITE 
+                default: 
                     throw new NotSupportedException("Normalize not supported for " + sr.kind);
             }
         }
@@ -683,6 +724,16 @@ namespace Microsoft.Automata
                             yield break;
                             #endregion
                         }
+                    //case SymbolicRegexKind.Sequence:
+                    //    {
+                    //        #region d(a,[R|Rest]) = Rest if (a in R) else nothing
+                    //        if (this.solver.IsSatisfiable(this.solver.MkAnd(elem, node.sequence.First)))
+                    //        {
+                    //            yield return new ConditionalDerivative<S>(this.MkSequence(node.sequence.Rest()));
+                    //        }
+                    //        yield break;
+                    //        #endregion
+                    //    }
                     case SymbolicRegexKind.Or:
                         {
                             #region d(a,A|B) = d(a,A) U d(a,B)
@@ -846,6 +897,7 @@ namespace Microsoft.Automata
                         return Sequence<CounterUpdate>.Empty;
                     }
                 case SymbolicRegexKind.Singleton:
+                //case SymbolicRegexKind.Sequence:
                     {
                         return null;
                     }
@@ -912,6 +964,8 @@ namespace Microsoft.Automata
                     return builderT.epsilon;
                 case SymbolicRegexKind.Singleton:
                     return builderT.MkSingleton(predicateTransformer(sr.set));
+                //case SymbolicRegexKind.Sequence:
+                //    return builderT.MkSequence(new Sequence<T>(Array.ConvertAll<S,T>(sr.sequence.ToArray(), x => predicateTransformer(x))));
                 case SymbolicRegexKind.Loop:
                     return builderT.MkLoop(Transform(sr.left, builderT, predicateTransformer), sr.lower, sr.upper);
                 case SymbolicRegexKind.Or:
@@ -919,8 +973,11 @@ namespace Microsoft.Automata
                 case SymbolicRegexKind.And:
                     return builderT.MkAnd(sr.alts.Transform(builderT, predicateTransformer));
                 case SymbolicRegexKind.Concat:
-                    return builderT.MkConcat(Transform(sr.left, builderT, predicateTransformer),
-                        Transform(sr.right, builderT, predicateTransformer));
+                    {
+                        var sr_elems = sr.ToArray();
+                        var sr_elems_trasformed = Array.ConvertAll(sr_elems, x => Transform(x, builderT, predicateTransformer));
+                        return builderT.MkConcat(sr_elems_trasformed);
+                    }
                 default: //ITE
                     return
                         builderT.MkIfThenElse(Transform(sr.IteCond, builderT, predicateTransformer),
@@ -935,35 +992,24 @@ namespace Microsoft.Automata
             {
                 case '.':
                     {
-                        #region character class of all characters 
+                        #region .
                         i_next = i + 1;
                         return this.dot;
                         #endregion
                     }
                 case '[':
                     {
-                        #region parse character class
-                        if (s[i + 1] == ']')
-                        {
-                            i_next = i + 2;
-                            return this.nothing;
-                        }
-                        else
-                        {
-                            int j = s.IndexOf(']', i);
-                            int[] atomIds = Array.ConvertAll(s.Substring(i + 1, j - (i + 1)).Split(','), x => int.Parse(x));
-                            S[] bva = Array.ConvertAll(atomIds, id => this.solver.GetPartition()[id]);
-                            var bv = this.solver.MkOr(bva);
-
-                            SymbolicRegexNode<S> node;
-                            if (!this.singletonCache.TryGetValue(bv, out node))
-                            {
-                                node = SymbolicRegexNode<S>.MkSingleton(this, bv);
-                                this.singletonCache[bv] = node;
-                            }
-                            i_next = j + 1;
-                            return node;
-                        }
+                        #region parse singleton
+                        int j = s.IndexOf(']', i);
+                        var p = solver.DeserializePredicate(s.Substring(i + 1, j - (i + 1)));
+                        var node = this.MkSingleton(p);
+                        //SymbolicRegexNode<S> node;
+                        //var seq_str = s.Substring(i + 1, j - (i + 1));
+                        //var preds_str = seq_str.Split(';');
+                        //var preds = Array.ConvertAll(preds_str, solver.DeserializePredicate);
+                        //node = this.MkSequence(preds);
+                        i_next = j + 1;
+                        return node;
                         #endregion
                     }
                 case 'E':
@@ -996,16 +1042,14 @@ namespace Microsoft.Automata
                         return node;
                         #endregion
                     }
-                case 'S': //binary concat S(R1,R2)
+                case 'S': 
                     {
                         #region concatenation
                         int n;
-                        var first = Parse(s, i + 2, out n);
-                        int m;
-                        var second = Parse(s, n + 1, out m);
-                        var seq = SymbolicRegexNode<S>.MkConcat(this, first, second);
-                        i_next = m + 1;
-                        return seq;
+                        SymbolicRegexNode<S>[] nodes = ParseSequence(s, i + 2, out n);
+                        var concat = this.MkConcat(nodes);
+                        i_next = n;
+                        return concat;
                         #endregion
                     }
                 case 'C': //conjunction C(R1,R2,...,Rk)
@@ -1051,7 +1095,7 @@ namespace Microsoft.Automata
                     }
                 case '$':
                     {
-                        #region start anchor
+                        #region end anchor
                         i_next = i + 1;
                         return this.endAnchor;
                         #endregion

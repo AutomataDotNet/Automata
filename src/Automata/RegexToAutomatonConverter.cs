@@ -667,15 +667,26 @@ namespace Microsoft.Automata
             var options1 = (options & ~RegexOptions.RightToLeft);
 
             RegexTree tree = RegexParser.Parse(regex, options1);
-            var sregex = ConvertNodeToSymbolicRegex(tree._root);
+            return ConvertToSymbolicRegex(tree._root, keepAnchors);
+        }
+
+        internal SymbolicRegexNode<S> ConvertToSymbolicRegex(RegexNode root, bool keepAnchors = false, bool unwindlowerbounds = false)
+        {
+            var sregex = ConvertNodeToSymbolicRegex(root);
             if (keepAnchors)
             {
-                return sregex;
+                if (unwindlowerbounds)
+                    return sregex.Simplify();
+                else
+                    return sregex;
             }
             else
             {
-                //remove all anchors
-                return this.srBuilder.RemoveAnchors(sregex, true, true);
+                var res = this.srBuilder.RemoveAnchors(sregex, true, true);
+                if (unwindlowerbounds)
+                    return res.Simplify();
+                else
+                    return res;
             }
         }
 
@@ -774,26 +785,12 @@ namespace Microsoft.Automata
         {
             //sequence of characters
             string sequence = node._str;
-            int count = sequence.Length;
             bool ignoreCase = ((node._options & RegexOptions.IgnoreCase) != 0);
 
-            S[] conds = new S[count];
+            S[] conds = Array.ConvertAll(sequence.ToCharArray(), c => solver.MkCharConstraint(c, ignoreCase));
 
-            for (int i = 0; i < count; i++)
-            {
-                List<char[]> ranges = new List<char[]>();
-                char c = sequence[i];
-                ranges.Add(new char[] { c, c });
-                S cond = solver.MkRangesConstraint(ignoreCase, ranges);
-                //TBD: fix the following description
-                if (!description.ContainsKey(cond))
-                    description[cond] = Rex.RexEngine.Escape(c);
-                conds[i] = cond;
-            }
-
-            var regexes = Array.ConvertAll(conds, this.MkSingleton);
-
-            return this.srBuilder.MkConcat(regexes);
+            var seq = this.srBuilder.MkSequence(conds);
+            return seq;
         }
 
         /// <summary>

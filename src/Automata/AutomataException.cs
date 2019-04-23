@@ -288,5 +288,6 @@ namespace Microsoft.Automata
         CounterIndexOutOfRange,
         ExpectingConjunction,
         InternalError_ComposeCounterUpdates,
+        SequenceIsEmpty,
     }
 }

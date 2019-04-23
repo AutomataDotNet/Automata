@@ -1414,5 +1414,15 @@ namespace Microsoft.Automata
         }
 
         #endregion
+
+        public string SerializePredicate(BDD s)
+        {
+            throw new NotImplementedException();
+        }
+
+        public BDD DeserializePredicate(string s)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

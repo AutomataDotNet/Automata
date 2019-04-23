@@ -482,5 +482,15 @@ namespace Microsoft.Automata
         {
             throw new NotImplementedException();
         }
+
+        public string SerializePredicate(HashSet<Tuple<char, char>> s)
+        {
+            throw new NotImplementedException();
+        }
+
+        public HashSet<Tuple<char, char>> DeserializePredicate(string s)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

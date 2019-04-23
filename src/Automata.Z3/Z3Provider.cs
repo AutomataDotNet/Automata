@@ -3673,6 +3673,16 @@ namespace Microsoft.Automata.Z3
         {
             throw new NotImplementedException();
         }
+
+        public string SerializePredicate(Expr s)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Expr DeserializePredicate(string s)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
 
