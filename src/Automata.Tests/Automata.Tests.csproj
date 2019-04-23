@@ -87,6 +87,7 @@
     <Compile Include="AutomataCompilationTests.cs" />
     <Compile Include="BREXTests.cs" />
     <Compile Include="BVAlgebraTests.cs" />
+    <Compile Include="ContextrFreeGrammarTests.cs" />
     <Compile Include="CharSetSolverTests.cs" />
     <Compile Include="CharSetTests.cs" />
     <Compile Include="CodeGenTests.cs" />

@@ -32,9 +32,10 @@ namespace Microsoft.Automata.Grammars
 
         public IEnumerable<GrammarSymbol> GetNonVariableSymbols()
         {
+            var set = new HashSet<GrammarSymbol>();
             foreach (Production p in GetProductions())
                 foreach (GrammarSymbol s in p.Rhs)
-                    if (! (s is Nonterminal))
+                    if (! (s is Nonterminal) && set.Add(s))
                         yield return s;
         }
 
@@ -986,18 +987,17 @@ namespace Microsoft.Automata.Grammars
 
         /// <summary>
         /// Returns the productions 'E -> rhs_1 | rhs_2 | ... | rhs_n' 
-        /// for each varaible E as a single string separated by '\n'.
+        /// for each nonterminal E as a single string separated by newlines.
         /// </summary>
         public string Description
         {
             get
             {
                 StringBuilder sb = new StringBuilder();
+                sb.Append(DescribeProductions(startSymbol));
                 foreach (Nonterminal v in variables)
-                {
-                    sb.Append(DescribeProductions(v));
-                    sb.Append("\n");
-                }
+                    if (!startSymbol.Equals(v))
+                        sb.Append(DescribeProductions(v));
                 return sb.ToString();
             }
         }
@@ -1025,7 +1025,7 @@ namespace Microsoft.Automata.Grammars
                     sb.Append(prods[i].DescriptionOfRhs);
                 }
             }
-            sb.Append(", ");
+            sb.AppendLine();
             return sb.ToString();
         }
         #endregion

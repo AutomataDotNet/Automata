@@ -23,11 +23,17 @@ namespace Microsoft.Automata.Grammars
 
         public override bool Equals(object obj)
         {
-            return ((Nonterminal)obj).name.Equals(name);
+            return base.Equals(obj);
         }
+
         public override int GetHashCode()
         {
-            return name.GetHashCode();
+            return base.GetHashCode();
+        }
+
+        public override string ToString()
+        {
+            return base.ToString();
         }
     }
 }

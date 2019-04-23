@@ -51,8 +51,8 @@ namespace Microsoft.Automata.Grammars
         public Lexer(string buf)
         {
             lexbuf = buf;
-            tokendescs[TokenType.NT]  = new Regex(@"^([A-Z][A-Z0-9]*)"); // NonExprinal
-            tokendescs[TokenType.T]   = new Regex(@"^([a-z<>\[\]])");    // Exprinal
+            tokendescs[TokenType.NT]  = new Regex(@"^([A-Z][A-Z0-9]*)"); // Variable
+            tokendescs[TokenType.T]   = new Regex(@"^([^\sA-Z0-9\|<\-])");  // Terminal
             tokendescs[TokenType.ARR] = new Regex(@"^->");               // Arrow
             tokendescs[TokenType.OR]  = new Regex(@"^\|");               // Or
             tokendescs[TokenType.IG]  = new Regex(@"^\s+");              // Ignorables
@@ -121,7 +121,7 @@ namespace Microsoft.Automata.Grammars
 
     class ParseException : System.ApplicationException { }
 
-    internal class GrammarParser<T>
+    public class GrammarParser<T>
     {
         private Lexer lexer;
         private Func<char,T> mkExprinal;

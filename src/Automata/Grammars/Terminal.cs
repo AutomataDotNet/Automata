@@ -8,7 +8,7 @@ namespace Microsoft.Automata.Grammars
     public class Terminal<T> : GrammarSymbol
     {
         /// <summary>
-        /// tyhe term
+        /// the term
         /// </summary>
         public T term;
         string name;
@@ -36,6 +36,17 @@ namespace Microsoft.Automata.Grammars
         public override string ToString()
         {
             return name;
+        }
+
+        public override bool Equals(object obj)
+        {
+            var t = obj as Terminal<T>;
+            return t != null && base.Equals(obj) && object.Equals(term, t.term);
+        }
+
+        public override int GetHashCode()
+        {
+            return base.GetHashCode() ^ term.GetHashCode();
         }
     }
 }
