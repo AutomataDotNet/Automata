@@ -192,7 +192,7 @@ namespace Microsoft.Automata
         TreeTheory_UnexpectedTransductionRule,
         TreeTransducer_SortMismatch,
         TreeTransducer_SolverMismatch,
-        LanguageOfGrammarIsEmpty,
+        GrammarNotInGNF,
         RankedAlphabet_IvalidNrOfSubtrees,
         TreeTransducer_InvalidStateId,
         TreeTheory_RankMismatch,
@@ -289,5 +289,6 @@ namespace Microsoft.Automata
         ExpectingConjunction,
         InternalError_ComposeCounterUpdates,
         SequenceIsEmpty,
+        IncompatibleGrammarTerminalType,
     }
 }

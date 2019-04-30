@@ -355,5 +355,22 @@ namespace Microsoft.Automata
                 return new Sequence<T>(elems_rev);
             }
         }
+
+        /// <summary>
+        /// Append all the sequences into a single serquence
+        /// </summary>
+        /// <param name="seqs">given sequences to be appended</param>
+        public static Sequence<T> AppendAll(params Sequence<T>[] seqs)
+        {
+            List<T> elems = new List<T>();
+            for (int i = 0; i < seqs.Length; i++)
+            {
+                var subseq = seqs[i];
+                for (int j = 0; j < subseq.Length; j++)
+                    elems.Add(subseq[j]);
+            }
+            var seq = new Sequence<T>(elems.ToArray());
+            return seq;
+        }
     }
 }

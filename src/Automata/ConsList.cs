@@ -514,6 +514,16 @@ namespace Microsoft.Automata
         }
 
         /// <summary>
+        /// Pushes all elements to the top of the stack.
+        /// </summary>
+        /// <param name="newelems">elements to be pushed</param>
+        public void PushAll(IEnumerable<E> newelems)
+        {
+            foreach (E elem in newelems)
+                elems = new ConsList<E>(elem, elems);
+        }
+
+        /// <summary>
         /// Pops the top element of the stack and returns it.
         /// </summary>
         /// <returns></returns>

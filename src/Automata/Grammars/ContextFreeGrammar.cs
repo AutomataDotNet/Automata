@@ -55,7 +55,7 @@ namespace Microsoft.Automata.Grammars
                     startSymbolExisted = true;
                 if (vars.Add(p.Lhs))
                     varsList.Add(p.Lhs);
-                foreach (Nonterminal v in p.GetVariables())
+                foreach (Nonterminal v in p.GetNonterminals())
                     if (vars.Add(v))
                         varsList.Add(v);
             }
@@ -133,7 +133,7 @@ namespace Microsoft.Automata.Grammars
                 VariableNode parent = variableNodeMap[v];
                 foreach (Production p in this.productionMap[v])
                 {
-                    var children = Array.ConvertAll(new List<Nonterminal>(p.GetVariables()).ToArray(), w => variableNodeMap[w]);
+                    var children = Array.ConvertAll(new List<Nonterminal>(p.GetNonterminals()).ToArray(), w => variableNodeMap[w]);
                     ProductionNode pn = new ProductionNode(parent, children);
                     if (children.Length == 0)
                         productionLeaves.Add(pn);
@@ -152,7 +152,7 @@ namespace Microsoft.Automata.Grammars
             #endregion
 
             if (!useful_backwards.Contains(this.startSymbol))
-                throw new AutomataException(AutomataExceptionKind.LanguageOfGrammarIsEmpty);
+                throw new AutomataException(AutomataExceptionKind.GrammarNotInGNF);
 
             ContextFreeGrammar g1 = this.RestrictToVariables(useful_backwards);
 
@@ -168,7 +168,7 @@ namespace Microsoft.Automata.Grammars
             {
                 Nonterminal v = stack.Pop();
                 foreach (Production p in g1.GetProductions(v))
-                    foreach (Nonterminal u in p.GetVariables())
+                    foreach (Nonterminal u in p.GetNonterminals())
                         if (!useful_forwards.Contains(u))
                         {
                             useful_forwards.Add(u);
@@ -213,7 +213,7 @@ namespace Microsoft.Automata.Grammars
                 VariableNode parent = variableNodeMap[v];
                 foreach (Production p in this.productionMap[v])
                 {
-                    var children = Array.ConvertAll(new List<Nonterminal>(p.GetVariables()).ToArray(), w => variableNodeMap[w]);
+                    var children = Array.ConvertAll(new List<Nonterminal>(p.GetNonterminals()).ToArray(), w => variableNodeMap[w]);
                     ProductionNode pn = new ProductionNode(parent, children);
                     if (children.Length == 0)
                         productionLeaves.Add(pn);
@@ -258,7 +258,7 @@ namespace Microsoft.Automata.Grammars
             {
                 Nonterminal v = stack.Pop();
                 foreach (Production p in g1.GetProductions(v))
-                    foreach (Nonterminal u in p.GetVariables())
+                    foreach (Nonterminal u in p.GetNonterminals())
                         if (!useful_forwards.Contains(u))
                         {
                             useful_forwards.Add(u);
@@ -348,7 +348,7 @@ namespace Microsoft.Automata.Grammars
                 VariableNode parent = variableNodeMap[v];
                 foreach (Production p in this.productionMap[v])
                 {
-                    if (p.ContainsNoExprinals)
+                    if (p.ContainsOnlyNonterminals)
                     {
                         VariableNode[] children =
                             Array.ConvertAll(p.Rhs, s => variableNodeMap[(Nonterminal)s]);
@@ -433,7 +433,7 @@ namespace Microsoft.Automata.Grammars
             var freshVarMap = new Dictionary<GrammarSymbol, Nonterminal>();
             foreach (Nonterminal v in g.variables)
                 foreach (Production p in g.productionMap[v])
-                    if (p.ContainsNoExprinals || p.IsCNF)
+                    if (p.ContainsOnlyNonterminals || p.IsCNF)
                         productions[v].Add(p);
                     else
                     {
@@ -447,7 +447,7 @@ namespace Microsoft.Automata.Grammars
                                 Nonterminal u;
                                 if (!freshVarMap.TryGetValue(p.Rhs[i], out u))
                                 {
-                                    u = new Nonterminal(nonterminalID++);
+                                    u = Nonterminal.MkNonterminalForId(nonterminalID++);
                                     freshVarMap[p.Rhs[i]] = u;
                                     variables.Add(u);
                                     var prods = new List<Production>();
@@ -475,7 +475,7 @@ namespace Microsoft.Automata.Grammars
                     else
                     {
                         Nonterminal x = v;
-                        Nonterminal y = new Nonterminal(nonterminalID++);
+                        Nonterminal y = Nonterminal.MkNonterminalForId(nonterminalID++);
                         variablesCNF.Add(y);
                         productionsCNF[y] = new List<Production>();
                         for (int i = 0; i < p.Rhs.Length - 2; i++)
@@ -484,7 +484,7 @@ namespace Microsoft.Automata.Grammars
                             if (i < p.Rhs.Length - 3)
                             {
                                 x = y;
-                                y = new Nonterminal(nonterminalID++);
+                                y = Nonterminal.MkNonterminalForId(nonterminalID++);
                                 variablesCNF.Add(y);
                                 productionsCNF[y] = new List<Production>();
                             }
@@ -554,7 +554,7 @@ namespace Microsoft.Automata.Grammars
                     Nonterminal C = stack.Pop();
                     foreach (Production p in cnf.GetProductions(C))
                     {
-                        if (p.IsSingleExprinal)
+                        if (p.IsSingleTerminal)
                             movesOfM[B].Add(Move<GrammarSymbol>.Create(initState, variableToStateMap[C], p.First));
                         else
                         {
@@ -586,7 +586,7 @@ namespace Microsoft.Automata.Grammars
                 var MB = M[B];
                 bool MBfinalStateHasVariableMoves = FinalStateHasVariableMoves(MB);
                 var productions = new Dictionary<Nonterminal, List<Production>>();
-                Nonterminal startSymbol = new Nonterminal(nonterminalID++);
+                Nonterminal startSymbol = Nonterminal.MkNonterminalForId(nonterminalID++);
                 var vars = new List<Nonterminal>();
                 vars.Add(startSymbol);
                 productions[startSymbol] = new List<Production>();
@@ -597,7 +597,7 @@ namespace Microsoft.Automata.Grammars
                         productions[startSymbol].Add(new Production(startSymbol, move.Label));
                     if (move.TargetState != MB.FinalState || MBfinalStateHasVariableMoves)
                     {
-                        var C = new Nonterminal("Q" + move.TargetState);
+                        var C = Nonterminal.MkNonterminalForStateId(move.TargetState);
                         productions[startSymbol].Add(new Production(startSymbol, move.Label, C));
                         if (!productions.ContainsKey(C))
                         {
@@ -611,8 +611,8 @@ namespace Microsoft.Automata.Grammars
                     if (state != MB.InitialState)
                         foreach (Move<GrammarSymbol> move in MB.GetMovesFrom(state))
                         {
-                            Nonterminal D = new Nonterminal("Q" + state);
-                            Nonterminal C = new Nonterminal("Q" + move.TargetState);
+                            Nonterminal D = Nonterminal.MkNonterminalForStateId(state);
+                            Nonterminal C = Nonterminal.MkNonterminalForStateId(move.TargetState);
                             if (!productions.ContainsKey(D))
                             {
                                 productions[D] = new List<Production>();
@@ -679,7 +679,7 @@ namespace Microsoft.Automata.Grammars
             {
                 foreach (Production p in cnf.productionMap[A])
                 {
-                    if (p.IsSingleExprinal)
+                    if (p.IsSingleTerminal)
                         productionsGNF.Add(p);
                     else
                     {
@@ -706,18 +706,26 @@ namespace Microsoft.Automata.Grammars
             #endregion
 
             ContextFreeGrammar gnf = new ContextFreeGrammar(cnf.startSymbol, productionsGNF);
+            if (removeEpsilonsUselessSymbolsUnitsProductions)
+                gnf = gnf.RemoveEpsilonsAndUselessSymbols().RemoveUnitProductions();
             return gnf;
         }
 
-        private bool IsInGNF()
+        /// <summary>
+        /// Returns true if the grammar is in GNF (Greibach Normal Form)
+        /// </summary>
+        public bool IsInGNF()
         {
             foreach (Production p in GetProductions())
-                if (p.IsEpsilon || p.First is Nonterminal)
+                if (!p.IsGNF)
                     return false;
             return true;
         }
 
-        private bool IsInCNF()
+        /// <summary>
+        /// Returns true if the grammar is in CNF (Chomsky Normal Form)
+        /// </summary>
+        public bool IsInCNF()
         {
             foreach (Production p in GetProductions())
                 if (!p.IsCNF)
@@ -778,7 +786,7 @@ namespace Microsoft.Automata.Grammars
             foreach (Nonterminal v in g.variables)
             {
                 W[v] = g.GetUnitClosure(v);
-                startSymbol[v] = new Nonterminal(nonterminalID++);
+                startSymbol[v] = Nonterminal.MkNonterminalForId(nonterminalID++);
             }
             #endregion
 
@@ -902,7 +910,7 @@ namespace Microsoft.Automata.Grammars
                     if (!(p.First is Nonterminal) || p.IsUnit)
                     {
                         A_prods.Add(p);
-                        foreach (Nonterminal x in p.GetVariables())
+                        foreach (Nonterminal x in p.GetNonterminals())
                             if (egnfVisited.Add(x))
                             {
                                 egnfStack.Push(x);
@@ -923,7 +931,7 @@ namespace Microsoft.Automata.Grammars
                                 rhs[k + i - 1] = p.Rhs[i];
                             Production q = new Production(A, rhs);
                             A_prods.Add(q);
-                            foreach (Nonterminal x in q.GetVariables())
+                            foreach (Nonterminal x in q.GetNonterminals())
                                 if (egnfVisited.Add(x))
                                 {
                                     egnfStack.Push(x);
@@ -945,7 +953,7 @@ namespace Microsoft.Automata.Grammars
             Nonterminal v;
             if (vars.TryGetValue(key, out v))
                 return v;
-            v = new Nonterminal(nonterminalID++);
+            v = Nonterminal.MkNonterminalForId(nonterminalID++);
             vars[key] = v;
             return v;
         }
@@ -1029,7 +1037,189 @@ namespace Microsoft.Automata.Grammars
             return sb.ToString();
         }
         #endregion
+
+        /// <summary>
+        /// Returns true if the language of the grammar intersects with the 
+        /// language of the automaton, if true then a witness is produced
+        /// in terms of a sequence of predicates over input characters.
+        /// Assumes that the grammar is in GNF and terminals have type T.
+        /// </summary>
+        public bool Overlaps<T>(Automaton<T> automaton, out T[] witness)
+        {
+            var pda = this.ToPDA<T>();
+            var product = pda.Intersect(automaton);
+            return product.IsNonempty_(out witness);
+        }
+
+        /// <summary>
+        /// Convert the CFG to an equivalent PDA
+        /// </summary>
+        internal PushdownAutomaton<Nonterminal, T> ToPDA<T>()
+        {
+            var moves = new List<Move<PushdownLabel<Nonterminal, T>>>();
+            int q0 = 0;
+            int q = 1;
+            int qF = 2;
+            var newNonterminalMap = new Dictionary<string, Nonterminal>();
+            var nonterminals = new List<Nonterminal>();
+            var endStackSymbol = Nonterminal.EndStackSymbol;
+            var startStackSymbol = Nonterminal.StartStackSymbol;
+            var stackSymbols = new List<Nonterminal>();
+            stackSymbols.Add(startStackSymbol);
+            stackSymbols.Add(endStackSymbol);
+            stackSymbols.AddRange(this.variables);
+
+            #region map each terminal to corresponding new nonterminal
+            Func<GrammarSymbol, Nonterminal> GetStackSymbol = (s) =>
+            {
+                if (s is Nonterminal)
+                    return (Nonterminal)s;
+                else
+                {
+                    Terminal<T> terminal = s as Terminal<T>;
+                    if (terminal == null)
+                        throw new AutomataException(AutomataExceptionKind.IncompatibleGrammarTerminalType);
+
+                    Nonterminal newStackSymbol;
+                    if (!newNonterminalMap.TryGetValue(s.Name, out newStackSymbol))
+                    {
+                        newStackSymbol = Nonterminal.MkNonterminalForTerminal(s.Name);
+                        newNonterminalMap[s.Name] = newStackSymbol;
+                        var newMove = Move<PushdownLabel<Nonterminal, T>>.Create(q, q, new PushdownLabel<Nonterminal, T>(terminal.term, newStackSymbol));
+                        moves.Add(newMove);
+                        stackSymbols.Add(newStackSymbol);
+                    }
+                    return newStackSymbol;
+                }
+            };
+            #endregion
+
+            //the first transition pushes the actual start symbol and the final symbol to kickstart the PDA
+            var startLabel = new PushdownLabel<Nonterminal, T>(startStackSymbol, this.StartSymbol, endStackSymbol);
+            moves.Add(Move<PushdownLabel<Nonterminal, T>>.Create(q0, q, startLabel));
+
+            //the only transition to final state is from endStackSymbol
+            var finalLabel = new PushdownLabel<Nonterminal, T>(endStackSymbol);
+            moves.Add(Move<PushdownLabel<Nonterminal, T>>.Create(q, qF, finalLabel));
+
+            foreach (var entry in this.productionMap)
+                foreach (var prod in entry.Value)
+                {
+                    var pop = prod.Lhs;
+                    if (prod.IsEpsilon)
+                    {
+                        moves.Add(Move<PushdownLabel<Nonterminal, T>>.Create(q, q, new PushdownLabel<Nonterminal, T>(pop)));
+                    }
+                    else if (prod.FirstIsTerminal)
+                    {
+                        Terminal<T> terminal = prod.First as Terminal<T>;
+                        if (terminal == null)
+                            throw new AutomataException(AutomataExceptionKind.IncompatibleGrammarTerminalType);
+
+                        //create nonterminals for the rest
+                        Nonterminal[] push = Array.ConvertAll(prod.Rest, x => GetStackSymbol(x));
+                        moves.Add(Move<PushdownLabel<Nonterminal, T>>.Create(q, q, new PushdownLabel<Nonterminal, T>(terminal.term, pop, push)));
+                    }
+                    else
+                    {
+                        //this is an input-epsilon transition in the PDA
+                        Nonterminal[] push = Array.ConvertAll(prod.Rhs, x => GetStackSymbol(x));
+                        moves.Add(Move<PushdownLabel<Nonterminal, T>>.Create(q, q, new PushdownLabel<Nonterminal, T>(pop, push)));
+                    }
+                }
+
+            var pda = new PushdownAutomaton<Nonterminal, T>(q0, 
+                new List<int>(new int[] { q0, q, qF }), new List<int>(new int[] { qF }), 
+                startStackSymbol, stackSymbols, moves);
+            return pda;
+        }
+
+        /// <summary>
+        /// Parse a CFG from the input string. Use the custom regex parser to parse terminals as regexes into automata.
+        /// </summary>
+        public static ContextFreeGrammar Parse<T>(Func<string, Automaton<T>> regexParser, string input)
+        {
+            return GrammarParser<T>.Parse(regexParser, input);
+        }
+
+
+        private static CharSetSolver context = null;
+        public static CharSetSolver GetContext()
+        {
+            if (context == null)
+                context = new CharSetSolver();
+            return context;
+        }
+        public static void ResetContext()
+        {
+            context = null;
+        }
+
+        /// <summary>
+        /// Parse a CFG from the input string. Use the builting regex parser to parse terminals as regexes into automata.
+        /// Stores an instance of CharSetSolver in context.
+        /// </summary>
+        /// <param name="removeEpsilonsFromAutomata">if true then remove epsilons from the automata contructed from terminals</param>
+        /// <param name="determinizeAutomata">if true then determinize the automata contructed from terminals (also removes epsilons)</param>
+        /// <param name="minimizeAutomata">if true then minimize the automata contructed from terminals (also removes epsilons, if determinize is false then uses bisimulation based minimization)</param>
+        public static ContextFreeGrammar Parse(string input, bool removeEpsilonsFromAutomata = false, bool determinizeAutomata = false, bool minimizeAutomata = false)
+        {
+            Func<string, Automaton<BDD>> regexParser = null;
+            if (!removeEpsilonsFromAutomata && !determinizeAutomata && !minimizeAutomata)
+            {
+                regexParser = x => GetContext().Convert(x, System.Text.RegularExpressions.RegexOptions.Singleline).RemoveEpsilonLoops();
+            }
+            else if (determinizeAutomata && minimizeAutomata)
+            {
+                regexParser = x => GetContext().Convert(x, System.Text.RegularExpressions.RegexOptions.Singleline).RemoveEpsilons().Determinize().Minimize();
+            }
+            else if (minimizeAutomata)
+            {
+                regexParser = x => GetContext().Convert(x, System.Text.RegularExpressions.RegexOptions.Singleline).RemoveEpsilons().Minimize();
+            }
+            else
+            {
+                regexParser = x => GetContext().Convert(x, System.Text.RegularExpressions.RegexOptions.Singleline).RemoveEpsilons();
+            }
+
+            return GrammarParser<BDD>.Parse(regexParser, input);
+        }
+
+        /// <summary>
+        /// Checks if the context free grammar intersects with the regular language defined by the regex.
+        /// If the languages overlap then outputs a witness, otherwise outputs null.
+        /// </summary>
+        /// <param name="regex">given regex</param>
+        /// <param name="determinizeAutomaton">if true then determinize the automaton constructed from the regex</param>
+        /// <param name="minimizeAutomaton">if true then minimize the automaton constructed from the regex, if determinise is false then uses bisimulation based minimization</param>
+        public string Intersect(string regex, bool determinizeAutomaton = false, bool minimizeAutomaton = false)
+        {
+            Automaton<BDD> aut = null;
+            var context = GetContext();
+            aut = context.Convert(regex, System.Text.RegularExpressions.RegexOptions.Singleline).RemoveEpsilons();
+            if (determinizeAutomaton && minimizeAutomaton)
+            {
+                aut = aut.Determinize().Minimize();
+            }
+            else if (minimizeAutomaton)
+            {
+                aut = aut.Minimize();
+            }
+            else if (determinizeAutomaton)
+            {
+                aut = aut.Determinize();
+            }
+            BDD[] witness;
+            if (Overlaps<BDD>(aut, out witness))
+            {
+                var concrete_witness = new string(Array.ConvertAll(witness, x => (char)context.GetMin(x)));
+                return concrete_witness;
+            }
+            else
+                return null;
+        }
     }
+
 
     #region Used in backward reachability algorithms
     internal class VariableNode

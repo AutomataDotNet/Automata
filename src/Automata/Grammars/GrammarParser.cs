@@ -51,11 +51,11 @@ namespace Microsoft.Automata.Grammars
         public Lexer(string buf)
         {
             lexbuf = buf;
-            tokendescs[TokenType.NT]  = new Regex(@"^([A-Z][A-Z0-9]*)"); // Variable
-            tokendescs[TokenType.T]   = new Regex(@"^([^\sA-Z0-9\|<\-])");  // Terminal
-            tokendescs[TokenType.ARR] = new Regex(@"^->");               // Arrow
-            tokendescs[TokenType.OR]  = new Regex(@"^\|");               // Or
-            tokendescs[TokenType.IG]  = new Regex(@"^\s+");              // Ignorables
+            tokendescs[TokenType.NT]  = new Regex(@"^([#A-Z]\S*)");           // Nonterminal
+            tokendescs[TokenType.T]   = new Regex(@"^([^#A-Z\-\|\s]\S*)");    // Terminal
+            tokendescs[TokenType.ARR] = new Regex(@"^->");                    // Arrow
+            tokendescs[TokenType.OR]  = new Regex(@"^\|");                    // Or
+            tokendescs[TokenType.IG]  = new Regex(@"^\s+");                   // Ignorables
         }
 
         private Token DoMatch() {
@@ -124,22 +124,54 @@ namespace Microsoft.Automata.Grammars
     public class GrammarParser<T>
     {
         private Lexer lexer;
-        private Func<char,T> mkExprinal;
+        private Func<string, Automaton<T>> parseRegex;
         private Grammars.Nonterminal startvar;
         private List<Grammars.Production> productions;
 
-        private GrammarParser(Lexer lex, Func<char, T> mkExprinal)
+        private Dictionary<string, GrammarSymbol> terminalMap;
+        private int __regexId = 0;
+
+        private Dictionary<Nonterminal, Automaton<T>> parsedRegexes;
+
+        private GrammarParser(Lexer lex, Func<string, Automaton<T>> parseRegex)
         {
             lexer = lex;
-            this.mkExprinal = mkExprinal;
+            this.parseRegex = parseRegex;
             startvar = null;
             productions = new List<Grammars.Production>();
+            terminalMap = new Dictionary<string, GrammarSymbol>();
+            this.parsedRegexes = new Dictionary<Nonterminal, Automaton<T>>();
         }
 
-        public static Grammars.ContextFreeGrammar Parse(Func<char, T> mkExprinal, string buf)
+        GrammarSymbol MkGrammarSymbolForTerminalOrRegex(string regexOrTerminal)
+        {
+            GrammarSymbol symb;
+            if (!terminalMap.TryGetValue(regexOrTerminal, out symb))
+            {
+                var aut = parseRegex("^(" + regexOrTerminal + ")$");
+                if (aut.InitialStateIsSource && aut.HasSingleFinalSink && aut.StateCount == 2)
+                {
+                    //this is indeed a terminal
+                    T cond = aut.GetCondition(aut.InitialState, aut.FinalState);
+                    symb = new Terminal<T>(cond, regexOrTerminal);
+                    terminalMap[regexOrTerminal] = symb;
+                }
+                else
+                {
+                    int id = __regexId++;
+                    var nt = Nonterminal.MkNonterminalForRegex(id);
+                    terminalMap[regexOrTerminal] = nt;
+                    parsedRegexes[nt] = aut;
+                    symb = nt;
+                }
+            }
+            return symb;
+        }
+
+        public static Grammars.ContextFreeGrammar Parse(Func<string, Automaton<T>> mkTerm, string buf)
         {
             Lexer lex = new Lexer(buf);
-            var gp = new GrammarParser<T>(lex, mkExprinal);
+            var gp = new GrammarParser<T>(lex, mkTerm);
             gp.Parse();
             Grammars.ContextFreeGrammar G = gp.GetGrammar();
             return G;
@@ -154,7 +186,7 @@ namespace Microsoft.Automata.Grammars
                 throw new ParseException();
             }
 
-            return new Grammars.Nonterminal(next.content);
+            return Grammars.Nonterminal.CreateByParser(next.content);
         }
 
         private void ExpectArrow()
@@ -186,10 +218,10 @@ namespace Microsoft.Automata.Grammars
                 switch (cur.t)
                 {
                     case TokenType.NT:
-                        currhs.Add(new Grammars.Nonterminal(cur.content));
+                        currhs.Add(Grammars.Nonterminal.CreateByParser(cur.content));
                         break;
                     case TokenType.T:
-                        currhs.Add(new Terminal<T>(mkExprinal(cur.content[0]),cur.content));
+                        currhs.Add(MkGrammarSymbolForTerminalOrRegex(cur.content));
                         break;
                     case TokenType.OR:
                         productions.Add(new Grammars.Production(curlhs, currhs.ToArray()));
@@ -223,6 +255,52 @@ namespace Microsoft.Automata.Grammars
 
         private Grammars.ContextFreeGrammar GetGrammar()
         {
+            //add new productions for all automata transitions
+            foreach (var entry in this.parsedRegexes)
+            {
+                var q0 = entry.Key;
+                var aut = entry.Value;
+                var stateLookup = new Dictionary<int, Nonterminal>();
+                var predLookup = new Dictionary<T, Terminal<T>>();
+                stateLookup[aut.InitialState] = q0;
+
+                Func<int, Nonterminal> GetState = (q) =>
+                {
+                    Nonterminal nt;
+                    if (!stateLookup.TryGetValue(q, out nt))
+                    {
+                        nt = Nonterminal.MkNonterminalForAutomatonState(q0.Name, q);
+                        stateLookup[q] = nt;
+                    }
+                    return nt;
+                };
+
+                Func<T, Terminal<T>> GetPred = (x) =>
+                {
+                    Terminal<T> t;
+                    if (!predLookup.TryGetValue(x, out t))
+                    {
+                        t = new Terminal<T>(x, x.ToString());
+                        predLookup[x] = t;
+                    }
+                    return t;
+                };
+
+
+                foreach (var move in aut.GetMoves())
+                {
+                    if (move.IsEpsilon)
+                        productions.Add(new Production(GetState(move.SourceState), GetState(move.TargetState)));
+                    else
+                        productions.Add(new Production(GetState(move.SourceState), GetPred(move.Label), GetState(move.TargetState)));
+                }
+
+                foreach (var qf in aut.GetFinalStates())
+                {
+                    productions.Add(new Production(GetState(qf)));
+                }
+            }
+
             return new Grammars.ContextFreeGrammar(startvar, productions);
         }
     }

@@ -1402,23 +1402,24 @@ namespace Microsoft.Automata.Z3
                 rhs_list.Add(new Grammars.Terminal<string>(rule.Symbol.Name.ToString(), rule.Symbol.Name.ToString()));
                 for (int i = 0; i < rule.Rank; i++)
                     foreach (var q in rule.Lookahead(i))
-                        rhs_list.Add((Grammars.GrammarSymbol)new Grammars.Nonterminal(q.ToString()));
+                        rhs_list.Add(Grammars.Nonterminal.MkNonterminalForZ3Expr(q.ToString()));
 
                 foreach (var q in rule.EnumerateStatesInOutput())
                 {
                     if (q.Item1.Equals(tt.identityState))
                         rhs_list.Add(terminal);
                     else
-                        rhs_list.Add((Grammars.GrammarSymbol)new Grammars.Nonterminal(q.Item1.ToString()));
+                        rhs_list.Add(Grammars.Nonterminal.MkNonterminalForZ3Expr(q.Item1.ToString()));
                 }
 
-                cfg_prods.Add(new Grammars.Production(new Grammars.Nonterminal(rule.State.ToString()), rhs_list.ToArray()));
+                cfg_prods.Add(new Grammars.Production(Grammars.Nonterminal.MkNonterminalForZ3Expr(rule.State.ToString()), rhs_list.ToArray()));
             }
             //Add initial production from dummy initial state to all initial states
             var maxId = GetMaxStateId() + 1;
+            var init = Grammars.Nonterminal.MkNonterminalForStateId(maxId);
             foreach (var state in roots)
-                cfg_prods.Add(new Grammars.Production(new Grammars.Nonterminal(maxId.ToString()), new Grammars.GrammarSymbol[] { new Grammars.Nonterminal(state.ToString()) }));
-            var cfg = new Grammars.ContextFreeGrammar(new Grammars.Nonterminal(maxId.ToString()), cfg_prods);
+                cfg_prods.Add(new Grammars.Production(init, new Grammars.GrammarSymbol[] { Grammars.Nonterminal.MkNonterminalForZ3Expr(state.ToString()) }));
+            var cfg = new Grammars.ContextFreeGrammar(init, cfg_prods);
             return cfg;
         }
 
