@@ -14,8 +14,25 @@ namespace Microsoft.Automata.Grammars
         List<Nonterminal> variables;
         Nonterminal startSymbol;
         Dictionary<Nonterminal, List<Production>> productionMap;
+        List<Production> allProductions;
 
-        public IList<Nonterminal> Variables
+        public int ProductionCount
+        {
+            get
+            {
+                return allProductions.Count;
+            }
+        }
+
+        public int NonterminalCount
+        {
+            get
+            {
+                return variables.Count;
+            }
+        }
+
+        public IList<Nonterminal> Nonterminals
         {
             get { return variables; }
         }
@@ -25,12 +42,12 @@ namespace Microsoft.Automata.Grammars
             get { return startSymbol; }
         }
 
-        public bool IsValidVariable(Nonterminal v)
+        public bool IsValidNonterminal(Nonterminal v)
         {
             return productionMap.ContainsKey(v);
         }
 
-        public IEnumerable<GrammarSymbol> GetNonVariableSymbols()
+        public IEnumerable<GrammarSymbol> GetTerminals()
         {
             var set = new HashSet<GrammarSymbol>();
             foreach (Production p in GetProductions())
@@ -49,7 +66,8 @@ namespace Microsoft.Automata.Grammars
             HashSet<Nonterminal> vars = new HashSet<Nonterminal>();
             List<Nonterminal> varsList = new List<Nonterminal>();
             bool startSymbolExisted = false;
-            foreach (Production p in productions)
+            allProductions = new List<Production>(productions);
+            foreach (Production p in allProductions)
             {
                 if (p.Lhs.Equals(startSymbol))
                     startSymbolExisted = true;
@@ -60,7 +78,7 @@ namespace Microsoft.Automata.Grammars
                         varsList.Add(v);
             }
             if (!startSymbolExisted)
-                throw new ArgumentException("Start symbol is not used as the LHS of any production.");
+                throw new AutomataException(AutomataExceptionKind.StartSymbolOfContextFreeGrammarIsUnreachable);
 
             this.variables = varsList;
             this.startSymbol = startSymbol;
@@ -79,11 +97,9 @@ namespace Microsoft.Automata.Grammars
             this.productionMap = productionMap;
         }
 
-        public IEnumerable<Production> GetProductions()
+        public IList<Production> GetProductions()
         {
-            foreach (Nonterminal v in variables)
-                foreach (Production p in productionMap[v])
-                    yield return p;
+            return allProductions;
         }
 
         /// <summary>
@@ -1157,6 +1173,7 @@ namespace Microsoft.Automata.Grammars
 
         /// <summary>
         /// Parse a CFG from the input string. Use the builting regex parser to parse terminals as regexes into automata.
+        /// All terminal regexes are parsed in RegexOptions.Singleline mode so '.' means any character.
         /// Stores an instance of CharSetSolver in context.
         /// </summary>
         /// <param name="removeEpsilonsFromAutomata">if true then remove epsilons from the automata contructed from terminals</param>
@@ -1165,34 +1182,40 @@ namespace Microsoft.Automata.Grammars
         public static ContextFreeGrammar Parse(string input, bool removeEpsilonsFromAutomata = false, bool determinizeAutomata = false, bool minimizeAutomata = false)
         {
             Func<string, Automaton<BDD>> regexParser = null;
+            var context = GetContext();
+            //add anchors around x when using GetContext().Convert, 
+            //because no start/end anchors mean .* at start/end
             if (!removeEpsilonsFromAutomata && !determinizeAutomata && !minimizeAutomata)
             {
-                regexParser = x => GetContext().Convert(x, System.Text.RegularExpressions.RegexOptions.Singleline).RemoveEpsilonLoops();
+                regexParser = x => context.Convert("^(" + x + ")$", System.Text.RegularExpressions.RegexOptions.Singleline).RemoveEpsilonLoops();
             }
             else if (determinizeAutomata && minimizeAutomata)
             {
-                regexParser = x => GetContext().Convert(x, System.Text.RegularExpressions.RegexOptions.Singleline).RemoveEpsilons().Determinize().Minimize();
+                regexParser = x => context.Convert("^(" + x + ")$", System.Text.RegularExpressions.RegexOptions.Singleline).RemoveEpsilons().Determinize().Minimize();
             }
             else if (minimizeAutomata)
             {
-                regexParser = x => GetContext().Convert(x, System.Text.RegularExpressions.RegexOptions.Singleline).RemoveEpsilons().Minimize();
+                regexParser = x => context.Convert("^(" + x + ")$", System.Text.RegularExpressions.RegexOptions.Singleline).RemoveEpsilons().Minimize();
             }
             else
             {
-                regexParser = x => GetContext().Convert(x, System.Text.RegularExpressions.RegexOptions.Singleline).RemoveEpsilons();
+                regexParser = x => context.Convert("^(" + x + ")$", System.Text.RegularExpressions.RegexOptions.Singleline).RemoveEpsilons();
             }
 
             return GrammarParser<BDD>.Parse(regexParser, input);
         }
 
         /// <summary>
-        /// Checks if the context free grammar intersects with the regular language defined by the regex.
-        /// If the languages overlap then outputs a witness, otherwise outputs null.
+        /// Checks if the context free language of this grammar intersects with the regular language defined by the regex.
+        /// If the languages intersect then outputs a witness and returns true, otherwise returns false and sets witness to null.
+        /// Regex is parsed in RegexOptions.Singleline mode so '.' means any character.
+        /// Anchors are not implicit, eg, regex 'ab+c' is the same as '.*ab+c.*.'
+        /// Use explicit anchors, as in ^ab+c$, if anchors are intended.
         /// </summary>
         /// <param name="regex">given regex</param>
         /// <param name="determinizeAutomaton">if true then determinize the automaton constructed from the regex</param>
-        /// <param name="minimizeAutomaton">if true then minimize the automaton constructed from the regex, if determinise is false then uses bisimulation based minimization</param>
-        public string Intersect(string regex, bool determinizeAutomaton = false, bool minimizeAutomaton = false)
+        /// <param name="minimizeAutomaton">if true then minimize the automaton constructed from the regex, if determinise is false then uses bisimulation to minimize</param>
+        public bool IntersectsWith(string regex, out string witness, bool determinizeAutomaton = false, bool minimizeAutomaton = false)
         {
             Automaton<BDD> aut = null;
             var context = GetContext();
@@ -1209,14 +1232,17 @@ namespace Microsoft.Automata.Grammars
             {
                 aut = aut.Determinize();
             }
-            BDD[] witness;
-            if (Overlaps<BDD>(aut, out witness))
+            BDD[] witness_bdd;
+            if (Overlaps<BDD>(aut, out witness_bdd))
             {
-                var concrete_witness = new string(Array.ConvertAll(witness, x => (char)context.GetMin(x)));
-                return concrete_witness;
+                witness = new string(Array.ConvertAll(witness_bdd, x => (char)context.GetMin(x)));
+                return true;
             }
             else
-                return null;
+            {
+                witness = null;
+                return false;
+            }
         }
     }
 

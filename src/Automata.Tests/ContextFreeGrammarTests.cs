@@ -26,8 +26,8 @@ BS -> b b b BS | b b b";
         {
             ContextFreeGrammar cfg = GrammarParser<string>.Parse(MapTerminalToDummyAutomaton, input);
             Assert.AreEqual("START", cfg.StartSymbol.Name);
-            Assert.AreEqual(3, cfg.Variables.Count);
-            var terminals = new List<GrammarSymbol>(cfg.GetNonVariableSymbols());
+            Assert.AreEqual(3, cfg.Nonterminals.Count);
+            var terminals = new List<GrammarSymbol>(cfg.GetTerminals());
             Assert.AreEqual(3, terminals.Count);
             var a = new Terminal<string>("a", "a");
             var b = new Terminal<string>("b", "b");
@@ -42,22 +42,21 @@ BS -> b b b BS | b b b";
         [TestMethod]
         public void TestCFG_Overlaps()
         {
-            var input = 
+            var input =
 @"S -> \( S \) | [abx] [bxd] [xde] 
 ";
-            ContextFreeGrammar cfg = GrammarParser<BDD>.Parse(ContextFreeGrammar.GetContext().CharSetProvider.Convert, input);
+            ContextFreeGrammar cfg = GrammarParser<BDD>.Parse(MkAutomaton, input);
             Assert.AreEqual("S", cfg.StartSymbol.Name);
-            Assert.AreEqual(1, cfg.Variables.Count);
-            var productions = new List<Production>(cfg.GetProductions());
-            Assert.AreEqual(2, productions.Count);
+            Assert.AreEqual(1, cfg.NonterminalCount);
+            Assert.AreEqual(2, cfg.ProductionCount);
             Assert.IsFalse(cfg.IsInGNF());
 
-            var aut = ContextFreeGrammar.GetContext().Convert(@"^\((xx)+\)$").RemoveEpsilons();
+            var aut = MkAutomaton(@"\((xx)+\)");
             BDD[] witness;
             var no = cfg.Overlaps<BDD>(aut, out witness);
             Assert.IsFalse(no);
 
-            var aut2 = ContextFreeGrammar.GetContext().Convert(@"^\(x+\)$").RemoveEpsilons();
+            var aut2 = MkAutomaton(@"\(x+\)");
             BDD[] witness2 = null;
             var yes = cfg.Overlaps<BDD>(aut2, out witness2);
             Assert.IsTrue(yes);
@@ -72,31 +71,52 @@ BS -> b b b BS | b b b";
             var input =
 @"S -> \( S \) | [abx][bxd][xde] 
 ";
-            ContextFreeGrammar cfg = GrammarParser<BDD>.Parse(ContextFreeGrammar.GetContext().CharSetProvider.Convert, input);
+            ContextFreeGrammar cfg = GrammarParser<BDD>.Parse(MkAutomaton, input);
             Assert.AreEqual("S", cfg.StartSymbol.Name);
             //automaton has 4 states, so there are 4 extra nonterminals
-            Assert.AreEqual(5, cfg.Variables.Count);
-            var productions = new List<Production>(cfg.GetProductions());
-            Assert.AreEqual(6, productions.Count);
+            Assert.AreEqual(5, cfg.NonterminalCount);
+            Assert.AreEqual(6, cfg.ProductionCount);
 
-            var w = cfg.Intersect(@"^\((xx)+\)$");
-            Assert.IsNull(w);
+            string w;
+            Assert.IsFalse(cfg.IntersectsWith(@"^\((xx)+\)$", out w));
+            Assert.IsTrue(cfg.IntersectsWith(@"^\(x+\)$", out w));
+            Assert.AreEqual<string>("(xxx)", w);
+        }
 
-            var w2 = cfg.Intersect(@"^\(x+\)$");
-            Assert.AreEqual<string>("(xxx)",w2);
+        [TestMethod]
+        public void TestCFG_EmptyRHS()
+        {
+            var input = "S -> x S y | () | a";
+            ContextFreeGrammar cfg = ContextFreeGrammar.Parse(input);
+            TestCFG_EmptyRHS_check(cfg);
+            ContextFreeGrammar cfg_ = ContextFreeGrammar.Parse(cfg.ToString());
+            TestCFG_EmptyRHS_check(cfg_);
+        }
+
+        public void TestCFG_EmptyRHS_check(ContextFreeGrammar cfg)
+        {
+            Assert.AreEqual("S", cfg.StartSymbol.Name);
+            Assert.AreEqual(1, cfg.NonterminalCount);
+            Assert.AreEqual(3, cfg.ProductionCount);
+
+            string w;
+            Assert.IsFalse(cfg.IntersectsWith(@"^x+a$", out w));
+            Assert.IsTrue(cfg.IntersectsWith(@"^x+ay+$", out w));
+            Assert.AreEqual<string>("xay", w);
         }
 
         [TestMethod]
         public void TestCFG_Intersect_Nontrivial()
         {
-            var input =@"S -> \( S \) | \w{3} | \d{2,}";
+            var input =@"S -> \( S \) | [\w-[\d]]{3} | 0{2,}";
             ContextFreeGrammar cfg = ContextFreeGrammar.Parse(input);
 
-            var w = cfg.Intersect(@"^\((xy)+\)$");
-            Assert.IsNull(w);
-
-            var w2 = cfg.Intersect(@"^\({4}[0-9]+\)+$");
-            Assert.AreEqual<string>("((((000))))", w2);
+            string w;
+            Assert.IsFalse(cfg.IntersectsWith(@"^\((xy)+\)$", out w));
+            Assert.IsTrue(cfg.IntersectsWith(@"^\({4}x+\)+$", out w));
+            Assert.AreEqual<string>("((((xxx))))", w);
+            Assert.IsTrue(cfg.IntersectsWith(@"^\(+0+\){7}$", out w));
+            Assert.AreEqual<string>("(((((((00)))))))", w);
         }
 
         BDD MkPred(string c)
@@ -106,7 +126,8 @@ BS -> b b b BS | b b b";
 
         Automaton<BDD> MkAutomaton(string regex)
         {
-            return ContextFreeGrammar.GetContext().CharSetProvider.Convert(regex);
+            var regex_with_anchors = "^(" + regex + ")$";
+            return ContextFreeGrammar.GetContext().CharSetProvider.Convert(regex_with_anchors).RemoveEpsilons();
         }
 
         char GetChar(BDD pred)
@@ -117,8 +138,7 @@ BS -> b b b BS | b b b";
         Automaton<string> MapTerminalToDummyAutomaton(string s)
         {
             //eliminate dummy anchors
-            var c = s.Substring(2, 1);
-            var aut = Automaton<string>.Create(null, 0, new int[] { 1 }, new Move<string>[] { Move<string>.Create(0, 1, c) });
+            var aut = Automaton<string>.Create(null, 0, new int[] { 1 }, new Move<string>[] { Move<string>.Create(0, 1, s) });
             return aut;
         }
     }

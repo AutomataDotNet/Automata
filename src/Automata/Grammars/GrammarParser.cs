@@ -148,22 +148,25 @@ namespace Microsoft.Automata.Grammars
             GrammarSymbol symb;
             if (!terminalMap.TryGetValue(regexOrTerminal, out symb))
             {
-                var aut = parseRegex("^(" + regexOrTerminal + ")$");
-                if (aut.InitialStateIsSource && aut.HasSingleFinalSink && aut.StateCount == 2)
+                var aut = parseRegex(regexOrTerminal);
+                if (aut.IsEpsilon)
+                {
+                    symb = null;
+                }
+                else if (aut.InitialStateIsSource && aut.HasSingleFinalSink && aut.StateCount == 2)
                 {
                     //this is indeed a terminal
                     T cond = aut.GetCondition(aut.InitialState, aut.FinalState);
                     symb = new Terminal<T>(cond, regexOrTerminal);
-                    terminalMap[regexOrTerminal] = symb;
                 }
                 else
                 {
                     int id = __regexId++;
                     var nt = Nonterminal.MkNonterminalForRegex(id);
-                    terminalMap[regexOrTerminal] = nt;
                     parsedRegexes[nt] = aut;
                     symb = nt;
                 }
+                terminalMap[regexOrTerminal] = symb;
             }
             return symb;
         }
@@ -221,8 +224,13 @@ namespace Microsoft.Automata.Grammars
                         currhs.Add(Grammars.Nonterminal.CreateByParser(cur.content));
                         break;
                     case TokenType.T:
-                        currhs.Add(MkGrammarSymbolForTerminalOrRegex(cur.content));
-                        break;
+                        {
+                            var symb = MkGrammarSymbolForTerminalOrRegex(cur.content);
+                            //symb == null means that the terminal denotes epsilon, e.g. terminal ()
+                            if (symb != null)
+                                currhs.Add(symb);
+                            break;
+                        }
                     case TokenType.OR:
                         productions.Add(new Grammars.Production(curlhs, currhs.ToArray()));
                         currhs.Clear();

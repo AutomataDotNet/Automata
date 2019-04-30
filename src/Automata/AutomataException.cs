@@ -290,5 +290,6 @@ namespace Microsoft.Automata
         InternalError_ComposeCounterUpdates,
         SequenceIsEmpty,
         IncompatibleGrammarTerminalType,
+        StartSymbolOfContextFreeGrammarIsUnreachable,
     }
 }
