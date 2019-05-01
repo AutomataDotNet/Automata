@@ -1393,13 +1393,13 @@ namespace Microsoft.Automata.Z3
         /// </summary>
         public Grammars.ContextFreeGrammar ToCFG()
         {
-            var terminal = new Grammars.Terminal<string>("_", "_");
+            var terminal = new Grammars.Terminal<string>("_");
 
             List<Grammars.Production> cfg_prods = new List<Grammars.Production>();
             foreach (var rule in rulesList)
             {
                 var rhs_list = new List<Grammars.GrammarSymbol>();
-                rhs_list.Add(new Grammars.Terminal<string>(rule.Symbol.Name.ToString(), rule.Symbol.Name.ToString()));
+                rhs_list.Add(new Grammars.Terminal<string>(rule.Symbol.Name.ToString()));
                 for (int i = 0; i < rule.Rank; i++)
                     foreach (var q in rule.Lookahead(i))
                         rhs_list.Add(Grammars.Nonterminal.MkNonterminalForZ3Expr(q.ToString()));

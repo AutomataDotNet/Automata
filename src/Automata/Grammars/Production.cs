@@ -46,8 +46,7 @@ namespace Microsoft.Automata.Grammars
         }
 
         /// <summary>
-        /// Returns the First symbol in the Rhs.
-        /// Assumes that Rhs is nonempty.
+        /// Returns true if the first symbol is a terminal
         /// </summary>
         public bool FirstIsTerminal
         {
@@ -58,7 +57,7 @@ namespace Microsoft.Automata.Grammars
         }
 
         /// <summary>
-        /// Returns the symbols in the Rhs except the first.
+        /// Returns the symbols in the Rhs except the first one.
         /// Assumes that Rhs is nonempty.
         /// </summary>
         public GrammarSymbol[] Rest
@@ -131,19 +130,6 @@ namespace Microsoft.Automata.Grammars
             Array.Copy(rhsButLast, this.Rhs, rhsButLast.Length);
             this.Rhs[rhsButLast.Length] = last;
         }
-
-        //Symbol Last
-        //{
-        //    get
-        //    {
-        //        return Rhs[Rhs.Length-1];
-        //    }
-        //}
-
-        //public static List<Production> MkList(params Production[] prods)
-        //{
-        //    return new List<Production>(prods);
-        //}
 
         public override string ToString()
         {

@@ -11,42 +11,60 @@ namespace Microsoft.Automata.Grammars
         /// the term
         /// </summary>
         public T term;
-        string name;
 
         /// <summary>
         /// constructs a terminal
         /// </summary>
         /// <param name="term">given term</param>
         /// <param name="name">given name</param>
-        public Terminal(T term, string name)
+        public Terminal(T term)
         {
             this.term = term;
-            this.name = name;
         }
 
+        string __name = null;
         /// <summary>
         /// name of the terminal
         /// </summary>
         public override string Name
         {
-            get { return name; }
+            get
+            {
+                if (__name == null)
+                {
+                    string s = term.ToString();
+                    if (s.Length > 0)
+                    {
+                        char first = s[0];
+                        if (('A' <= first && first <= 'Z') || first == Nonterminal.ReservedNonterminalStart)
+                            __name = "(" + s + ")";
+                        else
+                            __name = s;
+                    }
+                    else
+                        __name = "";
+                }
+                return __name;
+            }
         }
 
         /// <summary></summary>
         public override string ToString()
         {
-            return name;
+            return Name;
         }
 
         public override bool Equals(object obj)
         {
             var t = obj as Terminal<T>;
-            return t != null && base.Equals(obj) && object.Equals(term, t.term);
+            if (t == null)
+                return false;
+            return t.term.Equals(this.term);
         }
 
         public override int GetHashCode()
         {
-            return base.GetHashCode() ^ term.GetHashCode();
+            return term.GetHashCode();
         }
     }
 }

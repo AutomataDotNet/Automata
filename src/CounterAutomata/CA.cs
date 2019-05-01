@@ -31,14 +31,6 @@ namespace CounterAutomata
             }
         }
 
-        IBooleanAlgebra<Rule<Expr>> IAutomaton<Rule<Expr>>.Algebra
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
-
         internal CA_ST(CABuilder_ST cab, int initialState, Expr[] initalCounterValues,
             IEnumerable<Move<Rule<Expr>>> movesandfinals, string name = "CA") 
         {
@@ -70,6 +62,11 @@ namespace CounterAutomata
         public IEnumerable<Move<Rule<Expr>>> GetMoves()
         {
             return st.GetMoves();
+        }
+
+        public IEnumerable<Move<Rule<Expr>>> GetMovesFrom(int state)
+        {
+            return st.GetMovesFrom(state);
         }
 
         public IEnumerable<int> GetStates()
@@ -416,6 +413,10 @@ namespace CounterAutomata
                 name);
         }
 
+        public IEnumerable<Move<Expr>> GetMovesFrom(int state)
+        {
+            throw new NotImplementedException();
+        }
     }
 
     public class CABuilder

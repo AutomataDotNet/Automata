@@ -121,14 +121,14 @@ namespace Microsoft.Automata.Grammars
 
     class ParseException : System.ApplicationException { }
 
-    public class GrammarParser<T>
+    internal class GrammarParser<T>
     {
         private Lexer lexer;
         private Func<string, Automaton<T>> parseRegex;
         private Grammars.Nonterminal startvar;
         private List<Grammars.Production> productions;
 
-        private Dictionary<string, GrammarSymbol> terminalMap;
+        private Dictionary<string, GrammarSymbol[]> terminalMap;
         private int __regexId = 0;
 
         private Dictionary<Nonterminal, Automaton<T>> parsedRegexes;
@@ -139,36 +139,8 @@ namespace Microsoft.Automata.Grammars
             this.parseRegex = parseRegex;
             startvar = null;
             productions = new List<Grammars.Production>();
-            terminalMap = new Dictionary<string, GrammarSymbol>();
+            terminalMap = new Dictionary<string, GrammarSymbol[]>();
             this.parsedRegexes = new Dictionary<Nonterminal, Automaton<T>>();
-        }
-
-        GrammarSymbol MkGrammarSymbolForTerminalOrRegex(string regexOrTerminal)
-        {
-            GrammarSymbol symb;
-            if (!terminalMap.TryGetValue(regexOrTerminal, out symb))
-            {
-                var aut = parseRegex(regexOrTerminal);
-                if (aut.IsEpsilon)
-                {
-                    symb = null;
-                }
-                else if (aut.InitialStateIsSource && aut.HasSingleFinalSink && aut.StateCount == 2)
-                {
-                    //this is indeed a terminal
-                    T cond = aut.GetCondition(aut.InitialState, aut.FinalState);
-                    symb = new Terminal<T>(cond, regexOrTerminal);
-                }
-                else
-                {
-                    int id = __regexId++;
-                    var nt = Nonterminal.MkNonterminalForRegex(id);
-                    parsedRegexes[nt] = aut;
-                    symb = nt;
-                }
-                terminalMap[regexOrTerminal] = symb;
-            }
-            return symb;
         }
 
         public static Grammars.ContextFreeGrammar Parse(Func<string, Automaton<T>> mkTerm, string buf)
@@ -225,10 +197,50 @@ namespace Microsoft.Automata.Grammars
                         break;
                     case TokenType.T:
                         {
-                            var symb = MkGrammarSymbolForTerminalOrRegex(cur.content);
-                            //symb == null means that the terminal denotes epsilon, e.g. terminal ()
-                            if (symb != null)
-                                currhs.Add(symb);
+                            GrammarSymbol[] symbs;
+                            if (!terminalMap.TryGetValue(cur.content, out symbs))
+                            {
+                                var aut = parseRegex(cur.content);
+                                #region parse this terminal-regex as an automaton and compute symbs or set symbs to top nonterminal
+                                int seq_length = -1;
+                                if (aut.IsEpsilon)
+                                {
+                                    symbs = new GrammarSymbol[] { };
+                                }
+                                else if (aut.InitialStateIsSource && aut.HasSingleFinalSink && aut.MoveCount == 1)
+                                {
+                                    //just a single terminal
+                                    var move = aut.GetMoveFrom(aut.InitialState);
+                                    symbs = new GrammarSymbol[] { new Terminal<T>(move.Label) };
+                                }
+                                else if (aut.CheckIfSequence(out seq_length) && aut.HasSingleFinalSink && aut.IsEpsilonFree)
+                                {
+                                    //collect all the elements and map them to individual terminals 
+                                    //inline the automaton as sequence of terminals
+                                    symbs = new GrammarSymbol[seq_length];
+                                    int q = aut.InitialState;
+                                    int i = 0;
+                                    while (!aut.IsFinalState(q))
+                                    {
+                                        var move = aut.GetMoveFrom(q);
+                                        q = move.TargetState;
+                                        symbs[i] = new Terminal<T>(move.Label);
+                                        i += 1;
+                                    }
+                                }
+                                else
+                                {
+                                    //introduce new nonterminal for the automaton
+                                    int id = __regexId++;
+                                    var nt = Nonterminal.MkNonterminalForRegex(id);
+                                    parsedRegexes[nt] = aut;
+                                    symbs = new GrammarSymbol[] { nt };
+                                }
+                                terminalMap[cur.content] = symbs;
+                                #endregion
+                            }
+                            currhs.AddRange(symbs);
+                            //---
                             break;
                         }
                     case TokenType.OR:
@@ -288,7 +300,7 @@ namespace Microsoft.Automata.Grammars
                     Terminal<T> t;
                     if (!predLookup.TryGetValue(x, out t))
                     {
-                        t = new Terminal<T>(x, x.ToString());
+                        t = new Terminal<T>(x);
                         predLookup[x] = t;
                     }
                     return t;

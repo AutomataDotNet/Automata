@@ -2,8 +2,12 @@
 using System.Text;
 
 namespace Microsoft.Automata
-{
-    internal class PushdownLabel<S, T> : Tuple<T, Tuple<S, Sequence<S>>>
+{ 
+    /// <summary>
+    /// Represents the label of a pushdown automaton move
+    /// </summary>
+    /// <typeparam name="S"></typeparam>
+    public class PushdownLabel<S, T> : Tuple<T, Tuple<S, Sequence<S>>>
     {
         public S PopSymbol { get { return Item2.Item1;} }
         public Sequence<S> PushSymbols { get { return Item2.Item2; } }
@@ -33,12 +37,16 @@ namespace Microsoft.Automata
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append("(");
-            sb.Append(object.Equals(Input,default(T)) ? "" : Input.ToString() + ":");
-            sb.Append(PopSymbol);
-            sb.Append("/");
-            sb.Append(PushSymbols);
-            sb.Append(")");
+            sb.Append(object.Equals(Input,default(T)) ? "" : "(" + Input.ToString() + ")");
+            sb.Append(string.Format("-{0}", PopSymbol.ToString()));
+            if (PushSymbols.Length > 0)
+            {
+                sb.Append("/");
+                if (PushSymbols.Length == 1)
+                    sb.Append(string.Format("+{0}", PushSymbols[0].ToString()));
+                else
+                    sb.Append(string.Format("+{0}", PushSymbols.ToString()));
+            }
             return sb.ToString();
         }
     }

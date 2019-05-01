@@ -737,6 +737,11 @@ namespace Microsoft.Automata
             var res = Automaton<BDD>.Create(this.solver.CharSetProvider, this.automaton.InitialState, this.automaton.GetFinalStates(), concrete_moves);
             return res;
         }
+
+        public IEnumerable<Move<TERM>> GetMovesFrom(int state)
+        {
+            return automaton.GetMovesFrom(state);
+        }
         #endregion
 
 

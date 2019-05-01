@@ -10,9 +10,9 @@ namespace Microsoft.Automata
     /// <summary>
     /// Symbolic Push Down Automaton
     /// </summary>
-    internal class PushdownAutomaton<S,T> 
+    public class PushdownAutomaton<S,T> 
     {
-        Automaton<PushdownLabel<S, T>> automaton;
+        public Automaton<PushdownLabel<S, T>> automaton;
         public List<S> stackSymbols;
         public S initialStackSymbol;
 
@@ -38,6 +38,9 @@ namespace Microsoft.Automata
             this.initialStackSymbol = initialStackSymbol;
         }
 
+        /// <summary>
+        /// The workhorse of the emptiness algorithm.
+        /// </summary>
         internal class ReachabilityAutomaton
         {
             PushdownAutomaton<S, T> pda;
@@ -367,6 +370,9 @@ namespace Microsoft.Automata
             return IsNonempty_helper(out witness, true);
         }
 
+        /// <summary>
+        /// Returns true if the PDA is nonempty and outputs a witness if this is the case.
+        /// </summary>
         public bool IsNonempty(out T[] witness)
         {
             return IsNonempty_helper(out witness, false);
@@ -401,12 +407,8 @@ namespace Microsoft.Automata
             automaton.ShowGraph(name);
         }
 
-        /// <summary>
-        /// Intersects this PDA with the given NFA. The NFA is assumed to be epsilon-free.
-        /// The PDA may be arbitrary. The product PDA will have initial state 1 and all states 
-        /// are enumerated consequtively from 1 upwards.
-        /// </summary>
-        public PushdownAutomaton<S, T> Intersect(Automaton<T> nfa)
+
+        PushdownAutomaton<S, T> Intersect1(IMinimalAutomaton<T> nfa)
         {
             //depth first product construction, PDA may have epsilon moves
             var stateIdMap = new Dictionary<Pair, int>();
@@ -483,6 +485,110 @@ namespace Microsoft.Automata
             var productAutom = Automaton<PushdownLabel<S, T>>.Create(null, initState, finalstates, moves, true, true);
             var product = new PushdownAutomaton<S, T>(productAutom, this.stackSymbols, this.initialStackSymbol);
             return product;
-        } 
+        }
+
+        /// <summary>
+        /// Intersects this PDA with all the given NFAs simultaneously. The NFAs are assumed to be epsilon-free.
+        /// The PDA may be arbitrary. 
+        /// </summary>
+        public PushdownAutomaton<S, T> Intersect(params Automaton<T>[] nfas)
+        {
+            if (nfas.Length < 1)
+                throw new ArgumentOutOfRangeException("nfas", "Expecting at least one element");
+            else if (nfas.Length == 1)
+                return Intersect1(nfas[0]);
+            else
+                return Intersect1(new LazyProductAutomaton<T>(nfas));
+        }
+
+        internal class LazyProductAutomaton<T> : IMinimalAutomaton<T>
+        {
+            IMinimalAutomaton<T>[] nfas;
+            IBooleanAlgebra<T> solver;
+            int initialProductState;
+            Sequence<int> initialProductStateSeq;
+            List<Sequence<int>> stateSeqs = new List<Sequence<int>>();
+            Dictionary<Sequence<int>, int> stateLookup = new Dictionary<Sequence<int>, int>();
+            int K;
+
+            public int InitialState
+            {
+                get
+                {
+                    return initialProductState;
+                }
+            }
+
+            public IBooleanAlgebra<T> Algebra
+            {
+                get
+                {
+                    return solver;
+                }
+            }
+
+            internal LazyProductAutomaton(IMinimalAutomaton<T>[] nfas)
+            {
+                this.nfas = nfas;
+                this.solver = nfas[0].Algebra;
+                initialProductState = 0;
+                initialProductStateSeq = new Sequence<int>(Array.ConvertAll(nfas, nfa => nfa.InitialState));
+                stateSeqs.Add(initialProductStateSeq);
+                stateLookup[initialProductStateSeq] = initialProductState;
+                K = nfas.Length;
+            }
+
+            public bool IsFinalState(int state)
+            {
+                if (state >= stateSeqs.Count)
+                    throw new AutomataException(AutomataExceptionKind.InternalError_LazyProductAutomaton);
+
+                var stateSeq = stateSeqs[state];
+                for (int i = 0; i < K; i++)
+                    if (!nfas[i].IsFinalState(stateSeq[i]))
+                        return false;
+                return true;
+            }
+
+            public IEnumerable<Move<T>> GetMovesFrom(int state)
+            {
+                if (state >= stateSeqs.Count)
+                    throw new AutomataException(AutomataExceptionKind.InternalError_LazyProductAutomaton);
+
+                return GetMovesFrom_(state, 0, solver.True, SimpleList<int>.Empty);
+            }
+
+            private IEnumerable<Move<T>> GetMovesFrom_(int p, int i, T pred, SimpleList<int> stateList)
+            {
+                Sequence<int> stateSeq = stateSeqs[p];
+                foreach (var move in nfas[i].GetMovesFrom(stateSeq[i]))
+                {
+                    var psi = solver.MkAnd(pred, move.Label);
+                    if (solver.IsSatisfiable(psi))
+                    {
+                        var extendedStateList = stateList.Append(move.TargetState);
+                        if (i == K-1)
+                        {
+                            //this was the final element of the state sequence
+                            var qSeq = new Sequence<int>(extendedStateList);
+                            int q;
+                            if (!stateLookup.TryGetValue(qSeq, out q))
+                            {
+                                q = stateSeqs.Count;
+                                stateLookup[qSeq] = q;
+                                stateSeqs.Add(qSeq);
+                            }
+                            yield return Move<T>.Create(p, q, psi);
+                        }
+                        else
+                        {
+                            //continue in the rest of the state sequence
+                            foreach (var res in GetMovesFrom_(p, i + 1, psi, extendedStateList)) 
+                                yield return res;
+                        }
+                    }
+                }
+            }
+        }
     }
 }

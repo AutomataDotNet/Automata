@@ -291,5 +291,6 @@ namespace Microsoft.Automata
         SequenceIsEmpty,
         IncompatibleGrammarTerminalType,
         StartSymbolOfContextFreeGrammarIsUnreachable,
+        InternalError_LazyProductAutomaton,
     }
 }

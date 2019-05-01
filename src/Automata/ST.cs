@@ -646,6 +646,11 @@ namespace Microsoft.Automata
             return automaton.GetMoves();
         }
 
+        public IEnumerable<Move<Rule<TERM>>> GetMovesFrom(int state)
+        {
+            return automaton.GetMovesFrom(state);
+        }
+
         public IEnumerable<int> GetStates()
         {
             return automaton.GetStates();

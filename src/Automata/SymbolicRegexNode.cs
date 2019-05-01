@@ -2134,6 +2134,13 @@ namespace Microsoft.Automata
                     yield return Move<S>.Create(entry.Key.Item1, entry.Key.Item2, entry.Value);
             }
 
+            public IEnumerable<Move<S>> GetMovesFrom(int state)
+            {
+                foreach (var entry in normalizedmoves)
+                    if (entry.Key.Item1 == state)
+                        yield return Move<S>.Create(entry.Key.Item1, entry.Key.Item2, entry.Value);
+            }
+
             public IEnumerable<int> GetStates()
             {
                 return states.Keys;

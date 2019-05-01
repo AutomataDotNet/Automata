@@ -6,6 +6,8 @@ namespace Microsoft.Automata.Grammars
     {
         string name;
 
+        public const char ReservedNonterminalStart = '#';
+
         public override string Name
         {
             get { return name; }
@@ -17,33 +19,39 @@ namespace Microsoft.Automata.Grammars
         }
 
         #region special symbols reserved for PDA construction from CFG
+        /// <summary>
+        /// Nonterminal "^"
+        /// </summary>
         internal static Nonterminal StartStackSymbol = new Nonterminal("^");
+        /// <summary>
+        /// Nonterminal "$"
+        /// </summary>
         internal static Nonterminal EndStackSymbol = new Nonterminal("$");
         #endregion
 
         #region special nonterminal creators
         /// <summary>
-        /// Appends '#q' in front of state id represented in decimal.
+        /// Appends ReservedNonterminalStart + "q" in front of state id represented in decimal.
         /// </summary>
         internal static Nonterminal MkNonterminalForStateId(int stateId)
         {
-            return new Nonterminal("#q" + stateId);
+            return new Nonterminal(ReservedNonterminalStart.ToString() + "q" + stateId.ToString());
         }
 
         /// <summary>
-        /// Appends '#t' in front of terminal name.
+        /// Appends ReservedNonterminalStart + "r" in front of id represented in decimal.
         /// </summary>
-        internal static Nonterminal MkNonterminalForTerminal(string name)
+        internal static Nonterminal MkNonterminalForRegex(int id)
         {
-            return new Nonterminal("#t" + name);
+            return new Nonterminal(ReservedNonterminalStart.ToString() + "r" + id.ToString());
         }
 
         /// <summary>
-        /// Appends '#' in front of id represented in decimal.
+        /// Appends ReservedNonterminalStart in front of id represented in decimal.
         /// </summary>
         internal static Nonterminal MkNonterminalForId(int id)
         {
-            return new Nonterminal("#" + id);
+            return new Nonterminal(ReservedNonterminalStart.ToString() + id.ToString());
         }
 
         /// <summary>
@@ -52,14 +60,6 @@ namespace Microsoft.Automata.Grammars
         internal static Nonterminal MkNonterminalForZ3Expr(string name)
         {
             return new Nonterminal(name);
-        }
-
-        /// <summary>
-        /// Appends '#r' in front of id represented in decimal.
-        /// </summary>
-        internal static Nonterminal MkNonterminalForRegex(int id)
-        {
-            return new Nonterminal("#r" + id);
         }
 
         /// <summary>
@@ -81,17 +81,16 @@ namespace Microsoft.Automata.Grammars
 
         public override bool Equals(object obj)
         {
-            return base.Equals(obj);
+            Nonterminal nt = obj as Nonterminal;
+            if (nt == null)
+                return false;
+            else
+                return nt.name.Equals(this.name);
         }
 
         public override int GetHashCode()
         {
-            return base.GetHashCode();
-        }
-
-        public override string ToString()
-        {
-            return base.ToString();
+            return name.GetHashCode() + 1;
         }
     }
 }

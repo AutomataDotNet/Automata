@@ -12,9 +12,27 @@ namespace Microsoft.Automata.Grammars
     public class ContextFreeGrammar
     {
         List<Nonterminal> variables;
+        List<GrammarSymbol> terminals;
         Nonterminal startSymbol;
         Dictionary<Nonterminal, List<Production>> productionMap;
         List<Production> allProductions;
+
+        /// <summary>
+        /// Returns the underlying builtin character set solver if it was used for parsing terminals, returns null othewise.
+        /// </summary>
+        public CharSetSolver BuiltinTerminalAlgebra
+        {
+            get
+            {
+                if (terminals.Count == 0)
+                    return null;
+                Terminal<BDD> t = terminals[0] as Terminal<BDD>;
+                if (t == null)
+                    return null;
+                var solver = t.term.algebra as CharSetSolver;
+                return solver;
+            }
+        }
 
         public int ProductionCount
         {
@@ -32,9 +50,22 @@ namespace Microsoft.Automata.Grammars
             }
         }
 
-        public IList<Nonterminal> Nonterminals
+        public int TerminalCount
+        {
+            get
+            {
+                return terminals.Count;
+            }
+        }
+
+        public List<Nonterminal> Nonterminals
         {
             get { return variables; }
+        }
+
+        public List<GrammarSymbol> Terminals
+        {
+            get { return terminals; }
         }
 
         public Nonterminal StartSymbol
@@ -64,6 +95,8 @@ namespace Microsoft.Automata.Grammars
         public ContextFreeGrammar(Nonterminal startSymbol, IEnumerable<Production> productions)
         {
             HashSet<Nonterminal> vars = new HashSet<Nonterminal>();
+            terminals = new List<GrammarSymbol>();
+            HashSet<GrammarSymbol> terms = new HashSet<GrammarSymbol>();
             List<Nonterminal> varsList = new List<Nonterminal>();
             bool startSymbolExisted = false;
             allProductions = new List<Production>(productions);
@@ -73,9 +106,20 @@ namespace Microsoft.Automata.Grammars
                     startSymbolExisted = true;
                 if (vars.Add(p.Lhs))
                     varsList.Add(p.Lhs);
-                foreach (Nonterminal v in p.GetNonterminals())
-                    if (vars.Add(v))
-                        varsList.Add(v);
+                foreach (GrammarSymbol s in p.Rhs)
+                {
+                    Nonterminal v = s as Nonterminal;
+                    if (v != null)
+                    {
+                        if (vars.Add(v))
+                            varsList.Add(v);
+                    }
+                    else
+                    {
+                        if (terms.Add(s))
+                            terminals.Add(s);
+                    }
+                }
             }
             if (!startSymbolExisted)
                 throw new AutomataException(AutomataExceptionKind.StartSymbolOfContextFreeGrammarIsUnreachable);
@@ -1068,55 +1112,32 @@ namespace Microsoft.Automata.Grammars
         }
 
         /// <summary>
-        /// Convert the CFG to an equivalent PDA
+        /// Convert the CFG to an equivalent PDA.
+        /// The stack symbols are the grammar symbols of the grammar 
+        /// and two extra symbols are added for start and end.
+        /// It is assumed that the terminal labels of the grammar have type T.
         /// </summary>
-        internal PushdownAutomaton<Nonterminal, T> ToPDA<T>()
+        public PushdownAutomaton<GrammarSymbol, T> ToPDA<T>()
         {
-            var moves = new List<Move<PushdownLabel<Nonterminal, T>>>();
+            var moves = new List<Move<PushdownLabel<GrammarSymbol, T>>>();
             int q0 = 0;
             int q = 1;
             int qF = 2;
-            var newNonterminalMap = new Dictionary<string, Nonterminal>();
-            var nonterminals = new List<Nonterminal>();
-            var endStackSymbol = Nonterminal.EndStackSymbol;
-            var startStackSymbol = Nonterminal.StartStackSymbol;
-            var stackSymbols = new List<Nonterminal>();
-            stackSymbols.Add(startStackSymbol);
-            stackSymbols.Add(endStackSymbol);
+            var stackSymbols = new List<GrammarSymbol>();
+            stackSymbols.Add(Nonterminal.StartStackSymbol);
+            stackSymbols.Add(Nonterminal.EndStackSymbol);
             stackSymbols.AddRange(this.variables);
 
-            #region map each terminal to corresponding new nonterminal
-            Func<GrammarSymbol, Nonterminal> GetStackSymbol = (s) =>
-            {
-                if (s is Nonterminal)
-                    return (Nonterminal)s;
-                else
-                {
-                    Terminal<T> terminal = s as Terminal<T>;
-                    if (terminal == null)
-                        throw new AutomataException(AutomataExceptionKind.IncompatibleGrammarTerminalType);
-
-                    Nonterminal newStackSymbol;
-                    if (!newNonterminalMap.TryGetValue(s.Name, out newStackSymbol))
-                    {
-                        newStackSymbol = Nonterminal.MkNonterminalForTerminal(s.Name);
-                        newNonterminalMap[s.Name] = newStackSymbol;
-                        var newMove = Move<PushdownLabel<Nonterminal, T>>.Create(q, q, new PushdownLabel<Nonterminal, T>(terminal.term, newStackSymbol));
-                        moves.Add(newMove);
-                        stackSymbols.Add(newStackSymbol);
-                    }
-                    return newStackSymbol;
-                }
-            };
-            #endregion
+            //terminals that occur in Rest in some production are also going to be used as stack symbols
+            HashSet<GrammarSymbol> newStackSymbols = new HashSet<GrammarSymbol>();
 
             //the first transition pushes the actual start symbol and the final symbol to kickstart the PDA
-            var startLabel = new PushdownLabel<Nonterminal, T>(startStackSymbol, this.StartSymbol, endStackSymbol);
-            moves.Add(Move<PushdownLabel<Nonterminal, T>>.Create(q0, q, startLabel));
+            var startLabel = new PushdownLabel<GrammarSymbol, T>(Nonterminal.StartStackSymbol, this.StartSymbol, Nonterminal.EndStackSymbol);
+            moves.Add(Move<PushdownLabel<GrammarSymbol, T>>.Create(q0, q, startLabel));
 
             //the only transition to final state is from endStackSymbol
-            var finalLabel = new PushdownLabel<Nonterminal, T>(endStackSymbol);
-            moves.Add(Move<PushdownLabel<Nonterminal, T>>.Create(q, qF, finalLabel));
+            var finalLabel = new PushdownLabel<GrammarSymbol, T>(Nonterminal.EndStackSymbol);
+            moves.Add(Move<PushdownLabel<GrammarSymbol, T>>.Create(q, qF, finalLabel));
 
             foreach (var entry in this.productionMap)
                 foreach (var prod in entry.Value)
@@ -1124,29 +1145,45 @@ namespace Microsoft.Automata.Grammars
                     var pop = prod.Lhs;
                     if (prod.IsEpsilon)
                     {
-                        moves.Add(Move<PushdownLabel<Nonterminal, T>>.Create(q, q, new PushdownLabel<Nonterminal, T>(pop)));
-                    }
-                    else if (prod.FirstIsTerminal)
-                    {
-                        Terminal<T> terminal = prod.First as Terminal<T>;
-                        if (terminal == null)
-                            throw new AutomataException(AutomataExceptionKind.IncompatibleGrammarTerminalType);
-
-                        //create nonterminals for the rest
-                        Nonterminal[] push = Array.ConvertAll(prod.Rest, x => GetStackSymbol(x));
-                        moves.Add(Move<PushdownLabel<Nonterminal, T>>.Create(q, q, new PushdownLabel<Nonterminal, T>(terminal.term, pop, push)));
+                        moves.Add(Move<PushdownLabel<GrammarSymbol, T>>.Create(q, q, new PushdownLabel<GrammarSymbol, T>(pop)));
                     }
                     else
                     {
-                        //this is an input-epsilon transition in the PDA
-                        Nonterminal[] push = Array.ConvertAll(prod.Rhs, x => GetStackSymbol(x));
-                        moves.Add(Move<PushdownLabel<Nonterminal, T>>.Create(q, q, new PushdownLabel<Nonterminal, T>(pop, push)));
+                        var rest = prod.Rest;
+                        if (prod.FirstIsTerminal)
+                        {
+                            Terminal<T> terminal = prod.First as Terminal<T>;
+                            if (terminal == null)
+                                throw new AutomataException(AutomataExceptionKind.IncompatibleGrammarTerminalType);
+                            moves.Add(Move<PushdownLabel<GrammarSymbol, T>>.Create(q, q, new PushdownLabel<GrammarSymbol, T>(terminal.term, pop, rest)));
+                        }
+                        else
+                        {
+                            //this is an input-epsilon transition in the PDA
+                            moves.Add(Move<PushdownLabel<GrammarSymbol, T>>.Create(q, q, new PushdownLabel<GrammarSymbol, T>(pop, prod.Rhs)));
+                        }
+                        //also add new moves for terminals in rest
+                        foreach (var s in rest)
+                        {
+                            if (!(s is Nonterminal))
+                            {
+                                Terminal<T> terminal = s as Terminal<T>;
+                                if (terminal == null)
+                                    throw new AutomataException(AutomataExceptionKind.IncompatibleGrammarTerminalType);
+
+                                var newMove = Move<PushdownLabel<GrammarSymbol, T>>.Create(q, q, new PushdownLabel<GrammarSymbol, T>(terminal.term, s));
+                                moves.Add(newMove);
+                                //add s as a new stack symbol also
+                                if (newStackSymbols.Add(s))
+                                    stackSymbols.Add(s);
+                            }
+                        }
                     }
                 }
 
-            var pda = new PushdownAutomaton<Nonterminal, T>(q0, 
-                new List<int>(new int[] { q0, q, qF }), new List<int>(new int[] { qF }), 
-                startStackSymbol, stackSymbols, moves);
+            var pda = new PushdownAutomaton<GrammarSymbol, T>(q0, 
+                new List<int>(new int[] { q0, q, qF }), new List<int>(new int[] { qF }),
+                Nonterminal.StartStackSymbol, stackSymbols, moves);
             return pda;
         }
 
@@ -1233,9 +1270,52 @@ namespace Microsoft.Automata.Grammars
                 aut = aut.Determinize();
             }
             BDD[] witness_bdd;
-            if (Overlaps<BDD>(aut, out witness_bdd))
+            var pda = this.ToPDA<BDD>();
+            var pda2 = pda.Intersect(aut);
+            if (pda2.IsNonempty(out witness_bdd))
             {
-                witness = new string(Array.ConvertAll(witness_bdd, x => (char)context.GetMin(x)));
+                witness = this.BuiltinTerminalAlgebra.ChooseString(witness_bdd);
+                return true;
+            }
+            else
+            {
+                witness = null;
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Checks if the context free language of this grammar intersects with all the regular languages defined by the regexes.
+        /// If the languages intersect then outputs a witness and returns true, otherwise returns false and sets witness to null.
+        /// Regexes are parsed in RegexOptions.Singleline mode so '.' means any character.
+        /// Anchors are not implicit, eg, regex 'ab+c' is the same as '.*ab+c.*.'
+        /// Use explicit anchors, as in ^ab+c$, if anchors are intended.
+        /// </summary>
+        /// <param name="regexes">given regexes to intersect with</param>
+        /// <param name="determinizeAutomaton">if true then determinize the automaton constructed from the regex</param>
+        /// <param name="minimizeAutomaton">if true then minimize the automaton constructed from the regex, if determinise is false then uses bisimulation to minimize</param>
+        public bool IntersectsWith(string[] regexes, out string witness, bool determinizeAutomaton = false, bool minimizeAutomaton = false)
+        {
+            var context = GetContext();
+            var aut = Array.ConvertAll(regexes, regex => context.Convert(regex, System.Text.RegularExpressions.RegexOptions.Singleline).RemoveEpsilons());
+            if (determinizeAutomaton && minimizeAutomaton)
+            {
+                aut = Array.ConvertAll(aut, x => x.Determinize().Minimize());
+            }
+            else if (minimizeAutomaton)
+            {
+                aut = Array.ConvertAll(aut, x => x.Minimize());
+            }
+            else if (determinizeAutomaton)
+            {
+                aut = Array.ConvertAll(aut, x => x.Determinize());
+            }
+            BDD[] witness_bdd;
+            var pda = this.ToPDA<BDD>();
+            var pda2 = pda.Intersect(aut);
+            if (pda2.IsNonempty(out witness_bdd))
+            {
+                witness = this.BuiltinTerminalAlgebra.ChooseString(witness_bdd);
                 return true;
             }
             else

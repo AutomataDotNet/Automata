@@ -1099,6 +1099,11 @@ namespace Microsoft.Automata
                 return "" ;
             }
 
+            public IEnumerable<Move<BDD>> GetMovesFrom(int state)
+            {
+                return aut.GetMovesFrom(state);
+            }
+
             #endregion
 
 
