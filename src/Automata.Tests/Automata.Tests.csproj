@@ -110,6 +110,7 @@
     <Compile Include="SequenceTests.cs" />
     <Compile Include="SerializationTests.cs" />
     <Compile Include="SpecialRegexTests.cs" />
+    <Compile Include="StateDistinguisherTests.cs" />
     <Compile Include="SymbolicRegexTests.cs" />
     <Compile Include="ThreeAutomataTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

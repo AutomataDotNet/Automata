@@ -491,7 +491,7 @@ namespace Microsoft.Automata
         /// Intersects this PDA with all the given NFAs simultaneously. The NFAs are assumed to be epsilon-free.
         /// The PDA may be arbitrary. 
         /// </summary>
-        public PushdownAutomaton<S, T> Intersect(params Automaton<T>[] nfas)
+        public PushdownAutomaton<S, T> Intersect(params IMinimalAutomaton<T>[] nfas)
         {
             if (nfas.Length < 1)
                 throw new ArgumentOutOfRangeException("nfas", "Expecting at least one element");
