@@ -14,12 +14,24 @@ namespace Microsoft.Automata
 
         Automaton<T> aut;
         IBooleanAlgebra<T> solver;
-        Dictionary<Tuple<int, int>, ConsList<T>> distinguisher = new Dictionary<Tuple<int, int>, ConsList<T>>();
+        Dictionary<Tuple<int, int>, ConsList<Tuple<T, Tuple<int, int>>>> distinguisher = new Dictionary<Tuple<int, int>, ConsList<Tuple<T, Tuple<int, int>>>>();
         T[] empty = new T[] { };
 
         Func<int, int, Pair> MkPair = (x, y) => (x <= y ? new Pair(x, y) : new Pair(y, x));
 
         Func<T, char> selectCharacter;
+        Dictionary<Tuple<T, Tuple<int, int>>, char> priorChoice = new Dictionary<Tuple<T, Tuple<int, int>>, char>();
+
+        char SelectCharacter(Tuple<T, Tuple<int, int>> key)
+        {
+            char c;
+            if (!priorChoice.TryGetValue(key, out c))
+            {
+                c = selectCharacter(key.Item1);
+                priorChoice[key] = c;
+            }
+            return c;
+        }
 
         internal StateDistinguisher(Automaton<T> aut, Func<T, char> selectCharacter = null)
         {
@@ -36,10 +48,6 @@ namespace Microsoft.Automata
         {
             var fa = aut;
 
-            //fa = fa.MakeTotal();
-
-            
-           
             var thisLayer = new SimpleStack<Tuple<int, int>>();
             var nextLayer = new SimpleStack<Tuple<int, int>>();
 
@@ -80,7 +88,7 @@ namespace Microsoft.Automata
                                         //add a new distinguishing sequence for the source pair
                                         //it extends a sequence of the target pair
                                         //thus the sequences remain suffix-closed
-                                        distinguisher[sourcepair] = new ConsList<T>(overlap, distinguisher[targetpair]);
+                                        distinguisher[sourcepair] = new ConsList<Tuple<T, Tuple<int, int>>>(new Tuple<T,Tuple<int,int>>(overlap,sourcepair), distinguisher[targetpair]);
                                         nextLayer.Push(sourcepair);
                                     }
                                 }
@@ -95,13 +103,13 @@ namespace Microsoft.Automata
         public bool AreDistinguishable(int p, int q, out T[] witness)
         {
             var pq = MkPair(p, q);
-            ConsList<T> w;
+            ConsList<Tuple<T, Tuple<int, int>>> w;
             if (distinguisher.TryGetValue(pq, out w))
             {
                 if (w == null)
                     witness = empty;
                 else
-                    witness = w.ToArray();
+                    witness = Array.ConvertAll(w.ToArray(), x => x.Item1);
                 return true;
             }
             else
@@ -121,13 +129,13 @@ namespace Microsoft.Automata
                 throw new AutomataException(AutomataExceptionKind.NotSupported);
 
             var pq = MkPair(p, q);
-            ConsList<T> w;
+            ConsList<Tuple<T, Tuple<int, int>>> w;
             if (distinguisher.TryGetValue(pq, out w))
             {
                 if (w == null)
                     witness = "";
                 else
-                    witness = new string(Array.ConvertAll(w.ToArray(), x => selectCharacter(x)));
+                    witness = new string(Array.ConvertAll(w.ToArray(), SelectCharacter));
                 return true;
             }
             else
