@@ -18,11 +18,12 @@ namespace Automata.Tests
             Assert.IsTrue("æ".EndsWith("ae", false, CultureInfo.InvariantCulture));
 
             var ci = Thread.CurrentThread.CurrentCulture;
-
             Thread.CurrentThread.CurrentCulture = CultureInfo.CreateSpecificCulture("se");
             Assert.IsFalse("æ".EndsWith("ae"));
-            Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
+            Assert.AreEqual<int>(-1, "æ".IndexOf("ae"));
+            Thread.CurrentThread.CurrentCulture = ci;
             Assert.IsTrue("æ".EndsWith("ae"));
+            Assert.AreEqual<int>(0, "æ".IndexOf("ae"));
 
             Thread.CurrentThread.CurrentCulture = CultureInfo.CreateSpecificCulture("tr");
             string indigo_tr = "indigo".ToUpper();

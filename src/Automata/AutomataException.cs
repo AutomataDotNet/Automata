@@ -292,5 +292,7 @@ namespace Microsoft.Automata
         IncompatibleGrammarTerminalType,
         StartSymbolOfContextFreeGrammarIsUnreachable,
         InternalError_LazyProductAutomaton,
+        AutomatonMissingTransition,
+        InternalError_DistinguishingSequenceGeneration,
     }
 }

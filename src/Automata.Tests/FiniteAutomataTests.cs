@@ -652,6 +652,15 @@ namespace Microsoft.Automata.Tests
         }
 
         [TestMethod]
+        public void TestMinimization_ClassicalHardCase()
+        {
+            var css = new CharSetSolver();
+            var regex = "a.{13}$";
+            var aut = css.Convert(regex, RegexOptions.Singleline).RemoveEpsilons().Determinize().Minimize();
+            Assert.IsTrue(aut.StateCount == (1 << 14)); //i.e. 2^{14}
+        }
+
+        [TestMethod]
         public void TestMinimizationBugFix()
         {
             var rex = new Microsoft.Automata.Rex.RexEngine(BitWidth.BV7);

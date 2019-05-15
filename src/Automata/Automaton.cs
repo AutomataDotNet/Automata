@@ -4997,6 +4997,91 @@ namespace Microsoft.Automata
                     yield return m.TargetState;
         }
 
+        /// <summary>
+        /// Assumes that the automaton has some target state for 
+        /// some element in the given predicate and returns such a target state.
+        /// </summary>
+        int GetTargetState_(int source, T pred)
+        {
+            var moves = delta[source];
+            int target = 0;
+            int i = 0;
+            while (i < moves.Count)
+            {
+                var move = moves[i];
+                if (!move.IsEpsilon && algebra.IsSatisfiable(algebra.MkAnd(pred, move.Label)))
+                {
+                    target = move.TargetState;
+                    break;
+                }
+                i += 1;
+            }
+            if (i == moves.Count)
+                throw new AutomataException(AutomataExceptionKind.AutomatonMissingTransition);
+            return target;
+        }
+
+        /// <summary>
+        /// Returns true if the automaton has some target state for 
+        /// some element in the given predicate then such a target state is output. 
+        /// Else returns false and sets target to -1.
+        /// </summary>
+        bool TryGetTargetState_(int source, out int target, T pred)
+        {
+            var moves = delta[source];
+            int i = 0;
+            while (i < moves.Count)
+            {
+                var move = moves[i];
+                if (!move.IsEpsilon && algebra.IsSatisfiable(algebra.MkAnd(pred, move.Label)))
+                {
+                    target = move.TargetState;
+                    return true;
+                }
+                i += 1;
+            }
+            target = -1;
+            return false;
+        }
+
+        /// <summary>
+        /// Assumes that the automaton is total and deterministic and all input predicates are satisfiable. 
+        /// Returns the target state after the given sequence of inputs.
+        /// </summary>
+        public int GetTargetState(int source, params T[] pred)
+        {
+            int p = source;
+            for (int i = 0; i < pred.Length; i++)
+                p = GetTargetState_(p, pred[i]);
+            return p;
+        }
+
+
+        /// <summary>
+        /// Returns true if the automaton has some target state for 
+        /// some elements in the given predicate sequence, then such a target is output. 
+        /// Else returns false and sets target to -1.
+        /// </summary>
+        public bool TryGetTargetState(int source, out int target, params T[] pred)
+        {
+            int p = source;
+            for (int i = 0; i < pred.Length; i++)
+            {
+                int t;
+                if (TryGetTargetState_(p, out t, pred[i]))
+                {
+                    p = t;
+                }
+                else
+                {
+                    target = -1;
+                    return false;
+                }
+            }
+            target = p;
+            return true;
+        }
+
 
         /// <summary>
         /// Enumerates all moves of the automaton.
