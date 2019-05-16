@@ -287,7 +287,7 @@ namespace Microsoft.Automata
             ComputeSplitHistory();
             ComputeFinalAndNonfinalBlocks();
             if (optimize)
-                PreCompute__GetDistinguishingSeq(preferLongest);
+                PreCompute__GetDistinguishingSeq();
         }
 
         void ComputeFinalAndNonfinalBlocks()
@@ -340,8 +340,9 @@ namespace Microsoft.Automata
 
             while (!W1.IsEmpty)
             {
+                var tmp = W;
                 W = W1;
-                W1 = new BlockStack();
+                W1 = tmp;
 
                 while (!W.IsEmpty)
                 {
@@ -474,14 +475,14 @@ namespace Microsoft.Automata
         /// Get the distinguishing string between the two states.
         /// Returns null if the states are equivalent.
         /// </summary>
-        public Sequence<T> GetDistinguishingSequence(int p, int q, bool preferLongest = false)
+        public Sequence<T> GetDistinguishingSequence(int p, int q)
         {
             if ((autom.IsFinalState(p) && !autom.IsFinalState(q)) || (autom.IsFinalState(q) && !autom.IsFinalState(p)))
                 return Sequence<T>.Empty;
 
             var A = Blocks[p];
             var B = Blocks[q];
-            return __GetDistinguishingSequence(A, B, preferLongest);
+            return __GetDistinguishingSequence(A, B);
         }
 
         /// <summary>
@@ -497,7 +498,7 @@ namespace Microsoft.Automata
                     yield return d;
         }
 
-        Sequence<T> __GetDistinguishingSequence(Block A, Block B, bool preferLongest = false)
+        Sequence<T> __GetDistinguishingSequence(Block A, Block B)
         {
             if (A == B)
                 return null;
@@ -516,7 +517,7 @@ namespace Microsoft.Automata
                 var ancestor = Anode.FindCommonAncestorWith(Bnode);
 
                 var pred = ancestor.splitter;
-                d = __GetDistingusihingSequence(a, b, pred, preferLongest);
+                d = __GetDistingusihingSequence(a, b, pred);
                 if (d == null)
                     throw new AutomataException(AutomataExceptionKind.InternalError_DistinguishingSequenceGeneration);
                 __GetDistinguishingSeq[AB] = d;
@@ -558,7 +559,7 @@ namespace Microsoft.Automata
                 }
         }
 
-        Sequence<T> __GetDistingusihingSequence(int p, int q, T cond, bool preferLongest = false)
+        Sequence<T> __GetDistingusihingSequence(int p, int q, T cond)
         {
             Sequence<T> res = null;
             foreach (var pmove in autom.GetMovesFrom(p))
@@ -642,7 +643,7 @@ namespace Microsoft.Automata
             return strs;
         }
 
-        void PreCompute__GetDistinguishingSeq(bool preferLongest = false)
+        void PreCompute__GetDistinguishingSeq()
         {
             var distinguisher = new Dictionary<Tuple<Block, Block>, Sequence<T>>();
             __GetDistinguishingSeq = new Dictionary<Tuple<Block, Block>, Sequence<T>>();
@@ -657,6 +658,7 @@ namespace Microsoft.Automata
             else
             {
                 var overlaps = new Dictionary<Sequence<T>, OverlapWitness>();
+
                 int maxDistinguisherLength = 0;
                 dseqs_set.Add(Sequence<T>.Empty);
                 dseqs.Add(Sequence<T>.Empty);
@@ -668,7 +670,7 @@ namespace Microsoft.Automata
                     {
                         var q = finalBlocks[j].GetRepresentative();
                         var pq = (p < q ? new Tuple<Block, Block>(finalBlocks[i], finalBlocks[j]) : new Tuple<Block, Block>(finalBlocks[j], finalBlocks[i]));
-                        var d = GetDistinguishingSequence(p, q, preferLongest);
+                        var d = GetDistinguishingSequence(p, q);
                         distinguisher[pq] = d;
                         if (dseqs_set.Add(d))
                         {
@@ -687,7 +689,7 @@ namespace Microsoft.Automata
                     {
                         var q = nonfinalBlocks[j].GetRepresentative();
                         var pq = (p < q ? new Tuple<Block, Block>(nonfinalBlocks[i], nonfinalBlocks[j]) : new Tuple<Block, Block>(nonfinalBlocks[j], nonfinalBlocks[i]));
-                        var d = GetDistinguishingSequence(p, q, preferLongest);
+                        var d = GetDistinguishingSequence(p, q);
                         distinguisher[pq] = d;
                         if (dseqs_set.Add(d))
                         {
@@ -735,7 +737,8 @@ namespace Microsoft.Automata
                             var s_First = s.First;
                             var s_rest_overlap = overlaps[s.Rest()];
 
-                            if (s_rest_overlap == t_rest_overlap)
+                            if (s_rest_overlap == t_rest_overlap || 
+                                (s_rest_overlap != null && t_rest_overlap != null && s_rest_overlap.Deref == t_rest_overlap.Deref))
                             {
                                 //check if the overlap can be extended to the whole sequence
                                 var psi = solver.MkAnd(overlaps[s].GetFirst(), overlaps[t].GetFirst());
@@ -827,6 +830,18 @@ namespace Microsoft.Automata
             OverlapWitness replacement = null;
             T first;
             OverlapWitness rest;
+
+            internal OverlapWitness Deref
+            {
+                get
+                {
+                    OverlapWitness deref = this;
+                    while (deref.replacement != null)
+                        deref = deref.replacement;
+                    return deref;
+                }
+            }
+
             internal OverlapWitness(T first, OverlapWitness rest)
             {
                 this.first = first;

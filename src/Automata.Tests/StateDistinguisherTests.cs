@@ -39,6 +39,44 @@ namespace Automata.Tests
         }
 
         [TestMethod]
+        public void TestStateDistinguisher_BugRepo()
+        {
+            var solver = new CharSetSolver();
+            var A = solver.Convert(@"^v.g+\\.w{2,3}/v\\?d[w-]{3}").Determinize();
+            var states = new List<int>(A.GetStates());
+            var dist = new StateDistinguisher<BDD>(A);
+            var AMin = A.Minimize();
+            ValidateDistinguishers(A, AMin, dist);
+        }
+
+        private static void ValidateDistinguishers(Automaton<BDD> aut, Automaton<BDD> autMin, StateDistinguisher<BDD> dist)
+        {
+            var distseqs = dist.GetAllDistinguishingSequences();
+            Assert.IsTrue(distseqs.Length <= autMin.StateCount + 10);
+
+            foreach (var p in autMin.States)
+                foreach (var q in autMin.States)
+                    if (p != q)
+                    {
+                        var d = dist.GetDistinguishingSequence(p, q);
+                        Assert.IsTrue(d != null);
+                        //check that d distinguishes p from q
+                        int p1;
+                        int q1;
+                        //aut may be partial, if false is returned it means that the implicit sink state was reached
+                        bool pok = aut.TryGetTargetState(p, out p1, d.ToArray());
+                        bool qok = aut.TryGetTargetState(q, out q1, d.ToArray());
+                        Assert.IsTrue(pok || qok);
+                        if (!pok)
+                            Assert.IsTrue(aut.IsFinalState(q1));
+                        else if (!qok)
+                            Assert.IsTrue(aut.IsFinalState(p1));
+                        else
+                            Assert.IsTrue(aut.IsFinalState(q1) != aut.IsFinalState(p1));
+                    }
+        }
+
+        [TestMethod]
         public void TestStateDistinguisherH()
         {
             var solver = new CharSetSolver();
@@ -70,6 +108,7 @@ namespace Automata.Tests
                     }
         }
 
+
         [TestMethod]
         public void TestStateDistinguisher_RandomCharSelector()
         {
@@ -99,19 +138,22 @@ namespace Automata.Tests
         public void TestStateDistinguisher_OnSampleRegexes()
         {
             string[] regexes = File.ReadAllLines(regexesFile);
-            int K = 50; //how many regexes
+            int K = 100; //how many regexes to consider here
             var dfas = new List<Automaton<BDD>>();
             int timeoutcount = 0;
             int k = 0;
+            List<string> regexes_used = new List<string>();
             while (dfas.Count < K)
             {
                 var solver = new CharSetSolver();
                 var ascii = solver.Convert("^[\0-\x7F]*$");
-                var nfa = solver.Convert(regexes[k++]).RemoveEpsilons().Intersect(ascii);
+                var regex = regexes[k++];
+                var nfa = solver.Convert(regex).RemoveEpsilons().Intersect(ascii);
                 try
                 {
                     var dfa = nfa.Determinize(1000);
                     dfas.Add(dfa);
+                    regexes_used.Add(regex);
                 }
                 catch (TimeoutException)
                 {
@@ -123,21 +165,17 @@ namespace Automata.Tests
             int totalDistinguisherCount = 0;
             var dist = new StateDistinguisher<BDD>[K];
             var mfas = new Automaton<BDD>[K];
-            for (int i=5; i < K; i++)
+            for (int i=20; i < K; i++)
             {
                 mfas[i] = dfas[i].Minimize();
                 dist[i] = new StateDistinguisher<BDD>(dfas[i], x => (char)x.GetMin());
-                int minimalStateCount = mfas[i].StateCount;
-                var witnesses = dist[i].GetAllDistinguishingSequences();
-                AssertIsSuffixClosed(witnesses);
-                int distinguisherCount = witnesses.Length;
-                //    Assert.IsTrue(distinguisherCount <= minimalStateCount);
-                CheckAllStatePairDistinguishers(dfas[i], mfas[i], dist[i]);
-                totalMininmalStateCount += minimalStateCount;
-                totalDistinguisherCount += distinguisherCount;
+                ValidateDistinguishers(dfas[i], mfas[i], dist[i]);
+                totalMininmalStateCount += mfas[i].StateCount;
+                totalDistinguisherCount += dist[i].GetAllDistinguishingSequences().Length;
             }
             Console.WriteLine(((double)totalDistinguisherCount)/ ((double)totalMininmalStateCount));
         }
+
 
         [TestMethod]
         public void TestStateDistinguisherH2()
