@@ -2904,10 +2904,10 @@ namespace Microsoft.Automata.Z3
                 new Dictionary<string, Dictionary<Tuple<List<int>, int>, HashSet<Expr>>>();
             foreach (var move in this.rulesList)
             {
-                int to = Blocks[GetStateId(move.state)].GetRepresentative();
+                int to = Blocks[GetStateId(move.state)].Elem();
                 int[] from = new int[move.lookahead.Length];
                 for (int i = 0; i < from.Length; i++)
-                    from[i] = Blocks[GetStateId(move.lookahead[i].SomeElement)].GetRepresentative();
+                    from[i] = Blocks[GetStateId(move.lookahead[i].SomeElement)].Elem();
 
                 string constr = move.Symbol.Name.ToString();
                 Dictionary<Tuple<List<int>, int>, HashSet<Expr>> dict;
@@ -2939,7 +2939,7 @@ namespace Microsoft.Automata.Z3
                 }
 
             foreach (var f in this.roots)
-                newFinals.Add(Blocks[GetStateId(f)].GetRepresentative());
+                newFinals.Add(Blocks[GetStateId(f)].Elem());
 
             return tt.Z.TT.MkTreeAutomaton(newFinals, inputAlphabet, inputAlphabet, newMoves); ;
         }

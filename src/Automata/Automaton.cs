@@ -3342,7 +3342,7 @@ namespace Microsoft.Automata
             //Console.WriteLine("NEW Explored blocks: " + totalExploredBlocks);
             //Console.WriteLine("NEW PRE: " + totalPre);
 
-            Func<int, int> GetRepresentative = (q => Blocks[q].GetRepresentative());
+            Func<int, int> GetRepresentative = (q => Blocks[q].Elem());
             return autom.JoinStates(GetRepresentative, solver.MkOr);
         }
 
@@ -3733,7 +3733,7 @@ namespace Microsoft.Automata
 
             //Console.WriteLine("N log N Explored blocks: "+totalExploredBlocks);
             //Console.WriteLine("N log N PRES: " + totalPreCount);
-            Func<int, int> GetRepresentative = (q => Blocks[q].GetRepresentative());
+            Func<int, int> GetRepresentative = (q => Blocks[q].Elem());
             return autom.JoinStates(GetRepresentative, solver.MkOr);
         }
 
@@ -3978,7 +3978,7 @@ namespace Microsoft.Automata
             //Console.WriteLine("OLD Explored blocks: " + totalExploredBlocks);
             //Console.WriteLine("OLD PRES: " + totalPre);
 
-            Func<int, int> GetRepresentative = (q => Blocks[q].GetRepresentative());
+            Func<int, int> GetRepresentative = (q => Blocks[q].Elem());
             return autom.JoinStates(GetRepresentative, solver.MkOr);
         }
 
@@ -4159,7 +4159,7 @@ namespace Microsoft.Automata
             foreach (SimBlock sb in Partition)
                 foreach (int q in sb)
                     finalPartition[q] = sb;
-            Func<int, int> GetRepresentative = (q => finalPartition[q].GetRepresentative());
+            Func<int, int> GetRepresentative = (q => finalPartition[q].Elem());
             return automIn.JoinStates(GetRepresentative, solver.MkOr);
         }
 
@@ -5558,7 +5558,7 @@ namespace Microsoft.Automata
         bool reprChosen = false;
         internal HashSet<int> set;
 
-        public int GetRepresentative()
+        public int Elem()
         {
             if (reprChosen)
                 return representative;

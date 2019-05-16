@@ -257,7 +257,7 @@ namespace Microsoft.Automata
             var A = Blocks[p];
             var B = Blocks[q];
 
-            var AB = (A.GetRepresentative() < B.GetRepresentative() ? new Tuple<Block, Block>(A, B) : new Tuple<Block, Block>(B, A));
+            var AB = (A.Elem() < B.Elem() ? new Tuple<Block, Block>(A, B) : new Tuple<Block, Block>(B, A));
 
             string d;
             if (!__concreteDistinguishers.TryGetValue(AB, out d))
@@ -296,7 +296,7 @@ namespace Microsoft.Automata
             List<Block> nf_blocks = new List<Block>();
             foreach (var block in splithistory.Keys)
             {
-                if (autom.IsFinalState(block.GetRepresentative()))
+                if (autom.IsFinalState(block.Elem()))
                     f_blocks.Add(block);
                 else
                     nf_blocks.Add(block);
@@ -486,6 +486,35 @@ namespace Microsoft.Automata
         }
 
         /// <summary>
+        /// Enumerate all the distinguishing sequences between all pairs of nonequivalent states.
+        /// Used for testing purposes.
+        /// </summary>
+        public IEnumerable<Tuple<Tuple<int,int>,List<ConsList<T>>>> EnumerateAllDistinguishingSequences()
+        {
+            for (int i = 0; i < finalBlocks.Length - 1; i++)
+            {
+                var A = finalBlocks[i];
+                for (int j = i + 1; j < finalBlocks.Length; j++)
+                {
+                    var B = finalBlocks[j];
+                    yield return new Tuple<Tuple<int, int>, List<ConsList<T>>>(new Tuple<int, int>(A.Elem(), B.Elem()),
+                        new List<ConsList<T>>(EnumerateAllDistinguishingSequences(A.Elem(), B.Elem())));
+                }
+            }
+            for (int i = 0; i < nonfinalBlocks.Length - 1; i++)
+            {
+                var A = nonfinalBlocks[i];
+                for (int j = i + 1; j < nonfinalBlocks.Length; j++)
+                {
+                    var B = nonfinalBlocks[j];
+                    yield return new Tuple<Tuple<int, int>, List<ConsList<T>>>(new Tuple<int, int>(A.Elem(), B.Elem()),
+                        new List<ConsList<T>>(EnumerateAllDistinguishingSequences(A.Elem(), B.Elem())));
+                }
+            }
+        }
+
+
+        /// <summary>
         /// Enumerate all the distinguishing sequences between the two states.
         /// Returns null if the states are equivalent.
         /// </summary>
@@ -496,33 +525,6 @@ namespace Microsoft.Automata
             if (A != B)
                 foreach (var d in __EnumerateAllDistinguishingSequences(A, B))
                     yield return d;
-        }
-
-        Sequence<T> __GetDistinguishingSequence(Block A, Block B)
-        {
-            if (A == B)
-                return null;
-
-            var a = A.GetRepresentative();
-            var b = B.GetRepresentative();
-
-            var AB = (a < b ? new Tuple<Block, Block>(A, B) : new Tuple<Block, Block>(B, A));
-
-            Sequence<T> d;
-            if (!__GetDistinguishingSeq.TryGetValue(AB, out d))
-            {
-                var Anode = splithistory[A];
-                var Bnode = splithistory[B];
-
-                var ancestor = Anode.FindCommonAncestorWith(Bnode);
-
-                var pred = ancestor.splitter;
-                d = __GetDistingusihingSequence(a, b, pred);
-                if (d == null)
-                    throw new AutomataException(AutomataExceptionKind.InternalError_DistinguishingSequenceGeneration);
-                __GetDistinguishingSeq[AB] = d;
-            }
-            return d;
         }
 
         IEnumerable<ConsList<T>> __EnumerateAllDistinguishingSequences(Block A, Block B)
@@ -547,8 +549,8 @@ namespace Microsoft.Automata
 
         IEnumerable<ConsList<T>> __EnumAllDistingusihingSequences(Block A, Block B, T cond)
         {
-            foreach (var pmove in autom.GetMovesFrom(A.GetRepresentative()))
-                foreach (var qmove in autom.GetMovesFrom(B.GetRepresentative()))
+            foreach (var pmove in autom.GetMovesFrom(A.Elem()))
+                foreach (var qmove in autom.GetMovesFrom(B.Elem()))
                 {
                     var psi = solver.MkAnd(cond, pmove.Label, qmove.Label);
                     if (solver.IsSatisfiable(psi))
@@ -559,9 +561,36 @@ namespace Microsoft.Automata
                 }
         }
 
+        Sequence<T> __GetDistinguishingSequence(Block A, Block B)
+        {
+            if (A == B)
+                return null;
+
+            var a = A.Elem();
+            var b = B.Elem();
+
+            var AB = (a < b ? new Tuple<Block, Block>(A, B) : new Tuple<Block, Block>(B, A));
+
+            Sequence<T> d;
+            if (!__GetDistinguishingSeq.TryGetValue(AB, out d))
+            {
+                var Anode = splithistory[A];
+                var Bnode = splithistory[B];
+
+                var ancestor = Anode.FindCommonAncestorWith(Bnode);
+
+                var pred = ancestor.splitter;
+                d = __GetDistingusihingSequence(a, b, pred);
+                if (d == null)
+                    throw new AutomataException(AutomataExceptionKind.InternalError_DistinguishingSequenceGeneration);
+                __GetDistinguishingSeq[AB] = d;
+            }
+            return d;
+        }
+
         Sequence<T> __GetDistingusihingSequence(int p, int q, T cond)
         {
-            Sequence<T> res = null;
+            var candidates = new Dictionary<Sequence<T>, T>();
             foreach (var pmove in autom.GetMovesFrom(p))
                 foreach (var qmove in autom.GetMovesFrom(q))
                 {
@@ -571,19 +600,37 @@ namespace Microsoft.Automata
                         var v = GetDistinguishingSequence(pmove.TargetState, qmove.TargetState);
                         if (v == null)
                             throw new AutomataException(AutomataExceptionKind.InternalError_DistinguishingSequenceGeneration);
-
-                        if (res == null)
-                            res = new Sequence<T>(psi).Append(v);
+                        T phi;
+                        if (candidates.TryGetValue(v, out phi))
+                            candidates[v] = solver.MkOr(psi, phi);
                         else
-                        {
-                            if (preferLongest && (v.Length >= res.Length))
-                                res = new Sequence<T>(psi).Append(v);
-                            else if (v.Length < res.Length - 1)
-                                res = new Sequence<T>(psi).Append(v);
-                        }
-                    } 
+                            candidates[v] = psi;
+                    }
                 }
+            Sequence<T> rest;
+            if (preferLongest)
+                rest = ChooseLongestKey(candidates);
+            else
+                rest = ChooseShortestKey(candidates);
+            T first = candidates[rest];
+            var res = new Sequence<T>(first).Append(rest);
             return res;
+        }
+
+        private Sequence<T> ChooseLongestKey(Dictionary<Sequence<T>, T> candidates)
+        {
+            Sequence<T> key = null;
+            foreach (var k in candidates.Keys)
+                key = (key == null ? k : (k.Length > key.Length ? k : key));
+            return key;
+        }
+
+        private Sequence<T> ChooseShortestKey(Dictionary<Sequence<T>, T> candidates)
+        {
+            Sequence<T> key = null;
+            foreach (var k in candidates.Keys)
+                key = (key == null ? k : (k.Length < key.Length ? k : key));
+            return key;
         }
 
         /// <summary>
@@ -605,10 +652,10 @@ namespace Microsoft.Automata
 
                     for (int i = 0; i < finalBlocks.Length - 1; i++)
                     {
-                        var p = finalBlocks[i].GetRepresentative();
+                        var p = finalBlocks[i].Elem();
                         for (int j = i + 1; j < finalBlocks.Length; j++)
                         {
-                            var q = finalBlocks[j].GetRepresentative();
+                            var q = finalBlocks[j].Elem();
                             var d = GetDistinguishingSequence(p, q);
                             if (dseqs_set.Add(d))
                                 dseqs.Add(d);
@@ -617,10 +664,10 @@ namespace Microsoft.Automata
 
                     for (int i = 0; i < nonfinalBlocks.Length - 1; i++)
                     {
-                        var p = nonfinalBlocks[i].GetRepresentative();
+                        var p = nonfinalBlocks[i].Elem();
                         for (int j = i + 1; j < nonfinalBlocks.Length; j++)
                         {
-                            var q = nonfinalBlocks[j].GetRepresentative();
+                            var q = nonfinalBlocks[j].Elem();
                             var d = GetDistinguishingSequence(p, q);
                             if (dseqs_set.Add(d))
                                 dseqs.Add(d);
@@ -665,10 +712,10 @@ namespace Microsoft.Automata
 
                 for (int i = 0; i < finalBlocks.Length - 1; i++)
                 {
-                    var p = finalBlocks[i].GetRepresentative();
+                    var p = finalBlocks[i].Elem();
                     for (int j = i + 1; j < finalBlocks.Length; j++)
                     {
-                        var q = finalBlocks[j].GetRepresentative();
+                        var q = finalBlocks[j].Elem();
                         var pq = (p < q ? new Tuple<Block, Block>(finalBlocks[i], finalBlocks[j]) : new Tuple<Block, Block>(finalBlocks[j], finalBlocks[i]));
                         var d = GetDistinguishingSequence(p, q);
                         distinguisher[pq] = d;
@@ -684,10 +731,10 @@ namespace Microsoft.Automata
 
                 for (int i = 0; i < nonfinalBlocks.Length - 1; i++)
                 {
-                    var p = nonfinalBlocks[i].GetRepresentative();
+                    var p = nonfinalBlocks[i].Elem();
                     for (int j = i + 1; j < nonfinalBlocks.Length; j++)
                     {
-                        var q = nonfinalBlocks[j].GetRepresentative();
+                        var q = nonfinalBlocks[j].Elem();
                         var pq = (p < q ? new Tuple<Block, Block>(nonfinalBlocks[i], nonfinalBlocks[j]) : new Tuple<Block, Block>(nonfinalBlocks[j], nonfinalBlocks[i]));
                         var d = GetDistinguishingSequence(p, q);
                         distinguisher[pq] = d;

@@ -49,10 +49,22 @@ namespace Automata.Tests
             ValidateDistinguishers(A, AMin, dist);
         }
 
+        [TestMethod]
+        public void TestStateDistinguisher_BugRepo2()
+        {
+            var solver = new CharSetSolver();
+            var A = solver.Convert(@"(^(?:\w\:)?(?:/|\\\\){1}[^/|\\]*(?:/|\\){1})").Determinize();
+            var states = new List<int>(A.GetStates());
+            var dist = new StateDistinguisher<BDD>(A);
+            var distmap = new List<Tuple<Tuple<int, int>, List<ConsList<BDD>>>>(dist.EnumerateAllDistinguishingSequences());
+            var AMin = A.Minimize();
+            ValidateDistinguishers(A, AMin, dist);
+        }
+
         private static void ValidateDistinguishers(Automaton<BDD> aut, Automaton<BDD> autMin, StateDistinguisher<BDD> dist)
         {
             var distseqs = dist.GetAllDistinguishingSequences();
-            Assert.IsTrue(distseqs.Length <= autMin.StateCount + 10);
+            Assert.IsTrue(distseqs.Length <= autMin.StateCount);
 
             foreach (var p in autMin.States)
                 foreach (var q in autMin.States)
@@ -138,10 +150,10 @@ namespace Automata.Tests
         public void TestStateDistinguisher_OnSampleRegexes()
         {
             string[] regexes = File.ReadAllLines(regexesFile);
-            int K = 100; //how many regexes to consider here
             var dfas = new List<Automaton<BDD>>();
             int timeoutcount = 0;
-            int k = 0;
+            int k = 0; //where to start
+            int K = 100; //how many regexes to consider
             List<string> regexes_used = new List<string>();
             while (dfas.Count < K)
             {
@@ -165,10 +177,10 @@ namespace Automata.Tests
             int totalDistinguisherCount = 0;
             var dist = new StateDistinguisher<BDD>[K];
             var mfas = new Automaton<BDD>[K];
-            for (int i=20; i < K; i++)
+            for (int i=0; i < K; i++)
             {
                 mfas[i] = dfas[i].Minimize();
-                dist[i] = new StateDistinguisher<BDD>(dfas[i], x => (char)x.GetMin());
+                dist[i] = new StateDistinguisher<BDD>(dfas[i], x => (char)x.GetMin(), true, true);
                 ValidateDistinguishers(dfas[i], mfas[i], dist[i]);
                 totalMininmalStateCount += mfas[i].StateCount;
                 totalDistinguisherCount += dist[i].GetAllDistinguishingSequences().Length;
