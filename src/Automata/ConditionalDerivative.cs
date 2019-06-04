@@ -129,15 +129,23 @@ namespace Microsoft.Automata
         {
         }
 
+        /// <summary>
+        /// If null is returned then the composition is not enabled
+        /// </summary>
         public ConditionalDerivative<S> Compose(ConditionalDerivative<S> that)
         {
             var f = this.Condition;
             var g = that.Condition;
             var builder = this.PartialDerivative.builder;
             var f_o_g = ComposeCounterUpdates(f, g);
-            var pd = builder.MkConcat(this.PartialDerivative, that.PartialDerivative);
-            var cd = new ConditionalDerivative<S>(f_o_g, pd);
-            return cd;
+            if (f_o_g == null)
+                return null;
+            else
+            {
+                var pd = builder.MkConcat(this.PartialDerivative, that.PartialDerivative);
+                var cd = new ConditionalDerivative<S>(f_o_g, pd);
+                return cd;
+            }
         }
 
         private Sequence<CounterOperation> ComposeCounterUpdates(Sequence<CounterOperation> f, Sequence<CounterOperation> g)
@@ -154,8 +162,8 @@ namespace Microsoft.Automata
                     if (f_update.OperationKind == CounterOp.RESET && g_update.OperationKind == CounterOp.INCREMENT)
                         f_o_g_list.Add(new CounterOperation(c, CounterOp.ASSIGN1));
                     else
-                        //no other case may arise due to left-associative form of processing sequences
-                        throw new AutomataException(AutomataExceptionKind.InternalError_ComposeCounterUpdates);
+                        //composition is not enabled
+                        return null;
                 }
                 else
                 {

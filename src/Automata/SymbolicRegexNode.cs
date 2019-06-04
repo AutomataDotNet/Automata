@@ -341,6 +341,20 @@ namespace Microsoft.Automata
         }
 
         /// <summary>
+        /// Returns the number of top-level concatenation nodes.
+        /// </summary>
+        public int ConcatCount
+        {
+            get
+            {
+                if (this.kind == SymbolicRegexKind.Concat)
+                    return left.ConcatCount + right.ConcatCount + 1;
+                else
+                    return 0;
+            }
+        }
+
+        /// <summary>
         /// IfThenElse condition
         /// </summary>
         public SymbolicRegexNode<S> IteCond
@@ -780,7 +794,7 @@ namespace Microsoft.Automata
         private void ComputeToString_LoopBody_AddExtraParentesis(StringBuilder sb)
         {
             if ((this.kind == SymbolicRegexKind.Loop && this.left.kind != SymbolicRegexKind.Singleton) || 
-                this.OrCount > 1 ||
+                //this.OrCount > 1 ||
                 this.kind == SymbolicRegexKind.Concat)
             {
                 sb.Append("(");
@@ -1112,9 +1126,9 @@ namespace Microsoft.Automata
             var finalStates = new Dictionary<int, Sequence<CounterOperation>>();
             frontier.Push(0);
             var reset0 = builder.GetNullabilityCondition(this_normalized);
-            counters.UnionWith(reset0.ConvertAll<ICounter>(x => x.Counter));
             if (reset0 != null)
             {
+                counters.UnionWith(reset0.ConvertAll<ICounter>(x => x.Counter));
                 if (reset0.TrueForAll(x => x.Counter.LowerBound == 0))
                     reset0 = Sequence<CounterOperation>.Empty;
                 moves.Add(Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>.Create(0, 0,
@@ -1142,6 +1156,7 @@ namespace Microsoft.Automata
                             {
                                 if (reset.TrueForAll(x => x.Counter.LowerBound == 0))
                                     reset = Sequence<CounterOperation>.Empty;
+                                counters.UnionWith(reset.ConvertAll<ICounter>(x => x.Counter));
                                 moves.Add(Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>.Create(p, p,
                                     new Tuple<Maybe<S>, Sequence<CounterOperation>>(Maybe<S>.Nothing, reset)));
                                 finalStates[p] = reset;
@@ -2141,15 +2156,18 @@ namespace Microsoft.Automata
             }
         }
 
-        public SymbolicRegexNode<S> NormalizeToMonadicCase()
+        /// <summary>
+        /// Unwinds nonmonadic bounded quantifiers, and splits monadic bounded quantifiers without upper bounds to a fixed loop followed by Kleene star
+        /// </summary>
+        public SymbolicRegexNode<S> Normalize()
         {
             if (ExistsNode(x => x.IsNonmonadicBoundedLoop))
-                return NormalizeToMonadicCase_();
+                return UnwindNonmonadic_();
             else
                 return this;
         }
 
-        SymbolicRegexNode<S> NormalizeToMonadicCase_()
+        SymbolicRegexNode<S> UnwindNonmonadic_()
         {
             switch (kind)
             {
@@ -2165,13 +2183,13 @@ namespace Microsoft.Automata
                         if (IsNonmonadicBoundedLoop)
                         {
                             #region the actual unwinding of nonmonadic loops
-                            var body = left.NormalizeToMonadicCase_();
+                            var body = left.UnwindNonmonadic_();
                             var nodes = new List<SymbolicRegexNode<S>>();
                             for (int i = 0; i < lower; i++)
                                 nodes.Add(body);
                             if (HasUpperBound)
                                 for (int i = lower; i < upper; i++)
-                                    nodes.Add(builder.MkLoop(body, 0, 1));
+                                    nodes.Add(builder.MkOr(body, builder.epsilon));
                             else
                                 nodes.Add(builder.MkLoop(body));
                             return builder.MkConcat(nodes.ToArray());
@@ -2190,8 +2208,8 @@ namespace Microsoft.Automata
                     }
                 case SymbolicRegexKind.Concat:
                     {
-                        var l = left.NormalizeToMonadicCase_();
-                        var r = right.NormalizeToMonadicCase_();
+                        var l = left.UnwindNonmonadic_();
+                        var r = right.UnwindNonmonadic_();
                         if (l == left && r == right)
                             return this;
                         else
@@ -2203,7 +2221,7 @@ namespace Microsoft.Automata
                         bool someNodeWasUnwinded = false;
                         foreach (var member in this.alts)
                         {
-                            var member1 = member.NormalizeToMonadicCase_();
+                            var member1 = member.UnwindNonmonadic_();
                             members.Add(member1);
                             if (member1 != member)
                                 someNodeWasUnwinded = true;
@@ -2630,7 +2648,11 @@ namespace Microsoft.Automata
                 }
                 #endregion
             }
-            return res;
+            if (this.Count > 1 && kind == SymbolicRegexSetKind.Disjunction)
+                //add extra parentesis to enclose the disjunction
+                return "(" + res + ")";
+            else
+                return res;
         }
 
         internal SymbolicRegexNode<S>[] ToArray(SymbolicRegexBuilder<S> builder)

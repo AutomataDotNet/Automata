@@ -204,5 +204,41 @@ namespace Automata.Tests
             var aut = q1.CreateCountingAutomaton();
             //aut.ShowGraph("nestedloop");
         }
+
+        [TestMethod]
+        public void TestConditionalDerivativeExploration_CompositionBugFix()
+        {
+            var regex = new Regex("(a{3}a{3}(()|a{3}a{3}))", RegexOptions.Singleline);
+            var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
+            var q1 = sr.Pattern;
+            var aut = q1.CreateCountingAutomaton();
+            Assert.IsTrue(aut.StateCount == 4);
+            //aut.ShowGraph("CompositionBugFix");
+        }
+
+        [TestMethod]
+        public void TestConditionalDerivativeExploration_Normalize()
+        {
+            var regex = new Regex(".*(a{3}a{3}){1,2}", RegexOptions.Singleline);
+            var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
+            var q1 = sr.Pattern.Normalize();
+            Assert.IsTrue(q1.kind == SymbolicRegexKind.Concat);
+            Assert.IsTrue(q1.ConcatCount == 3);
+            var aut = q1.CreateCountingAutomaton();
+            Assert.IsTrue(aut.StateCount == 5);
+            aut.ShowGraph("Normalize");
+        }
+
+        [TestMethod]
+        public void TestConditionalDerivativeExploration_Normalize2()
+        {
+            var regex = new Regex("(([abc]{3,30})b{1,}c){2}", RegexOptions.Singleline);
+            var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
+            var q1 = sr.Pattern.Normalize();
+            Assert.IsTrue(q1.kind == SymbolicRegexKind.Concat);
+            Assert.IsTrue(q1.ConcatCount == 7);
+            var aut = q1.CreateCountingAutomaton();
+            aut.ShowGraph("Normalize2");
+        }
     }
 }

@@ -779,9 +779,12 @@ namespace Microsoft.Automata
                                 var cd_reset = new ConditionalDerivative<S>(reset, this.epsilon);
                                 foreach (var deriv in this.EnumerateConditionalDerivatives(elem, right))
                                 {
+                                    //it is possible that the composition is not enabled
+                                    //in which case the returned result is null
                                     var deriv1 = cd_reset.Compose(deriv);
-                                    if (derivs.Add(deriv1))
-                                        yield return deriv1;
+                                    if (deriv1 != null)
+                                        if (derivs.Add(deriv1))
+                                            yield return deriv1;
                                 }
                             }
                             yield break;
