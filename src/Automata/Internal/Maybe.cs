@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Automata
 {
-    internal class Maybe<S>
+    public class Maybe<S>
     {
         Tuple<bool, S> t;
 

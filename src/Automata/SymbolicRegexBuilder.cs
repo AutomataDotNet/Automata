@@ -823,7 +823,7 @@ namespace Microsoft.Automata
                             //}
                             else
                             {
-                                CounterUpdate ca = new CounterUpdate(node, CounterOp.INCREMENT);
+                                CounterOperation ca = new CounterOperation(node, CounterOp.INCREMENT);
                                 foreach (var step in this.EnumerateConditionalDerivatives(elem, node.left))
                                 {
                                     var deriv = this.MkConcat(step.PartialDerivative, node);
@@ -871,7 +871,7 @@ namespace Microsoft.Automata
             }
         }
 
-        internal Sequence<CounterUpdate> GetNullabilityCondition(SymbolicRegexNode<S> node)
+        internal Sequence<CounterOperation> GetNullabilityCondition(SymbolicRegexNode<S> node)
         {
             var node1 = ToLeftAssocForm(node);
             var reset = GetNullabilityCondition_of_left_assoc(node1);
@@ -886,7 +886,7 @@ namespace Microsoft.Automata
         /// <summary>
         /// node is assumed to be in left-assoc form if it is a concatenation
         /// </summary>
-        Sequence<CounterUpdate> GetNullabilityCondition_of_left_assoc(SymbolicRegexNode<S> node)
+        Sequence<CounterOperation> GetNullabilityCondition_of_left_assoc(SymbolicRegexNode<S> node)
         {
             switch (node.kind)
             {
@@ -894,7 +894,7 @@ namespace Microsoft.Automata
                 case SymbolicRegexKind.EndAnchor:
                 case SymbolicRegexKind.Epsilon:
                     {
-                        return Sequence<CounterUpdate>.Empty;
+                        return Sequence<CounterOperation>.Empty;
                     }
                 case SymbolicRegexKind.Singleton:
                 //case SymbolicRegexKind.Sequence:
@@ -904,16 +904,16 @@ namespace Microsoft.Automata
                 case SymbolicRegexKind.Or:
                     {
                         if (node.isNullable)
-                            return Sequence<CounterUpdate>.Empty;
+                            return Sequence<CounterOperation>.Empty;
                         else
                             return null;
                     }
                 case SymbolicRegexKind.Loop:
                     {
                         if (IsCountingLoop(node))
-                            return new Sequence<CounterUpdate>(new CounterUpdate(node, CounterOp.RESET));
+                            return new Sequence<CounterOperation>(new CounterOperation(node, CounterOp.RESET));
                         else if (node.isNullable)
-                            return Sequence<CounterUpdate>.Empty;
+                            return Sequence<CounterOperation>.Empty;
                         else
                             return null;
                     }

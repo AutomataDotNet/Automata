@@ -483,6 +483,29 @@ namespace Microsoft.Automata
 
         private Automaton() { }
 
+        /// <summary>
+        /// Creates a shallow copy of aut with exactly the same fields
+        /// </summary>
+        protected Automaton(Automaton<T> aut)
+        {
+            this.algebra = aut.algebra;
+            this.initialState = aut.initialState;
+            this.finalStateSet = aut.finalStateSet;
+            this.isEpsilonFree = aut.isEpsilonFree;
+            this.maxState = aut.maxState;
+            this.delta = aut.delta;
+            this.deltaInv = aut.deltaInv;
+            this.isDeterministic = aut.isDeterministic;
+
+            #region fields that are mostly unused and may be uninitialized
+            this.cardinality = aut.cardinality;
+            this.didTopSort =  aut.didTopSort;
+            this.isUnambiguous = aut.isUnambiguous;
+            this.probabilities = aut.probabilities;
+            this.topsort = aut.topsort;
+            this.wordBoundaries = aut.wordBoundaries;
+            #endregion
+        }
 
         /// <summary>
         /// Convert the automaton to an automaton where each guard p has been replaced with transform(p).

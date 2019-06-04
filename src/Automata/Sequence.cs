@@ -121,12 +121,12 @@ namespace Microsoft.Automata
             }
         }
 
-        public Sequence<T> ConvertAll(Func<T, T> f)
+        public Sequence<S> ConvertAll<S>(Func<T, S> f)
         {
             if (offset == 0)
-                return new Sequence<T>(Array.ConvertAll(elems, x => f(x)));
+                return new Sequence<S>(Array.ConvertAll(elems, x => f(x)));
             else
-                return new Sequence<T>(Array.ConvertAll(this.ToArray(), x => f(x)));
+                return new Sequence<S>(Array.ConvertAll(this.ToArray(), x => f(x)));
         }
 
         public T[] ToArray()

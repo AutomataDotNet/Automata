@@ -194,5 +194,15 @@ namespace Automata.Tests
             Assert.IsTrue(aut.MoveCount == 6);
             //aut.ShowGraph("ab10bstar");
         }
+
+        [TestMethod]
+        public void TestConditionalDerivativeExploration_NestedLoop()
+        {
+            var regex = new Regex("(a{3}){10,100}", RegexOptions.Singleline);
+            var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
+            var q1 = sr.Pattern;
+            var aut = q1.CreateCountingAutomaton();
+            //aut.ShowGraph("nestedloop");
+        }
     }
 }

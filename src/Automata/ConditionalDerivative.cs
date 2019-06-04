@@ -13,15 +13,19 @@ namespace Microsoft.Automata
         /// </summary>
         INIT,
         /// <summary>
-        /// Counter is reset to 0
+        /// Lower bound is checked
+        /// </summary>
+        EXITCONDITION,
+        /// <summary>
+        /// Lower bound is checked and the counter is reset to 0
         /// </summary>
         RESET,
         /// <summary>
-        /// Counter is incermented by 1
+        /// Upper bound is checked and the counter is incermented by 1
         /// </summary>
         INCREMENT,
         /// <summary>
-        /// Counter is first reset and then incremented
+        /// RESET followed by INCREMENT
         /// </summary>
         ASSIGN1,
     }
@@ -29,14 +33,13 @@ namespace Microsoft.Automata
     /// <summary>
     /// Update to counter with given reference
     /// </summary>
-    public class CounterUpdate
+    public class CounterOperation  
     {
         Tuple<ICounter, CounterOp> elems;
-        public CounterUpdate(ICounter counter, CounterOp update)
+        public CounterOperation(ICounter counter, CounterOp update)
         {
             elems = new Tuple<ICounter, CounterOp>(counter, update);
         }
-
 
         /// <summary>
         /// counter reference
@@ -47,16 +50,16 @@ namespace Microsoft.Automata
         }
 
         /// <summary>
-        /// update operation 
+        /// what kind of operation 
         /// </summary>
-        public CounterOp UpdateKind
+        public CounterOp OperationKind
         {
             get { return elems.Item2; }
         }
 
         public override bool Equals(object obj)
         {
-            var cu = obj as CounterUpdate;
+            var cu = obj as CounterOperation;
             if (cu == null)
                 return false;
             return elems.Equals(cu.elems);
@@ -114,14 +117,14 @@ namespace Microsoft.Automata
     /// conditional derivative
     /// </summary>
     /// <typeparam name="S">input predicate type</typeparam>
-    public class ConditionalDerivative<S> : Tuple<Sequence<CounterUpdate>, SymbolicRegexNode<S>>
+    public class ConditionalDerivative<S> : Tuple<Sequence<CounterOperation>, SymbolicRegexNode<S>>
     {
         public ConditionalDerivative(SymbolicRegexNode<S> derivative)
-            : base(Sequence<CounterUpdate>.Empty, derivative)
+            : base(Sequence<CounterOperation>.Empty, derivative)
         {
         }
 
-        public ConditionalDerivative(Sequence<CounterUpdate> condition, SymbolicRegexNode<S> derivative)
+        public ConditionalDerivative(Sequence<CounterOperation> condition, SymbolicRegexNode<S> derivative)
             : base(condition, derivative)
         {
         }
@@ -137,19 +140,19 @@ namespace Microsoft.Automata
             return cd;
         }
 
-        private Sequence<CounterUpdate> ComposeCounterUpdates(Sequence<CounterUpdate> f, Sequence<CounterUpdate> g)
+        private Sequence<CounterOperation> ComposeCounterUpdates(Sequence<CounterOperation> f, Sequence<CounterOperation> g)
         {
-            var f_o_g_list = new List<CounterUpdate>();
+            var f_o_g_list = new List<CounterOperation>();
             for (int i = 0; i < f.Length; i++)
             {
                 var f_update = f[i];
                 var c = f_update.Counter;
-                CounterUpdate g_update;
+                CounterOperation g_update;
                 if (g.TryGetElement(x => x.Counter.Equals(c), out g_update))
                 {
                     //the only valid combination for same counter is first reset then increment
-                    if (f_update.UpdateKind == CounterOp.RESET && g_update.UpdateKind == CounterOp.INCREMENT)
-                        f_o_g_list.Add(new CounterUpdate(c, CounterOp.ASSIGN1));
+                    if (f_update.OperationKind == CounterOp.RESET && g_update.OperationKind == CounterOp.INCREMENT)
+                        f_o_g_list.Add(new CounterOperation(c, CounterOp.ASSIGN1));
                     else
                         //no other case may arise due to left-associative form of processing sequences
                         throw new AutomataException(AutomataExceptionKind.InternalError_ComposeCounterUpdates);
@@ -165,10 +168,10 @@ namespace Microsoft.Automata
                 if (!f.Exists(x => x.Counter.Equals(g[i].Counter)))
                     f_o_g_list.Add(g[i]);
             }
-            return new Sequence<CounterUpdate>(f_o_g_list.ToArray());
+            return new Sequence<CounterOperation>(f_o_g_list.ToArray());
         }
 
-        public Sequence<CounterUpdate> Condition
+        public Sequence<CounterOperation> Condition
         {
             get { return Item1; }
         }

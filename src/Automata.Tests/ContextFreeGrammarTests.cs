@@ -143,7 +143,7 @@ BS -> b b b BS | b b b";
         [TestMethod]
         public void TestCFG_Intersect_Nontrivial()
         {
-            var input =@"S -> \( S \) | [\w-[\d]]{3} | 0{2,}";
+            var input = @"S -> \( S \) | [\w-[\d]]{3} | 0{2,}";
             ContextFreeGrammar cfg = ContextFreeGrammar.Parse(input);
 
             string w;
@@ -266,6 +266,37 @@ BS -> b b b BS | b b b";
             //---
             Assert.IsTrue(cfg.IntersectsWith(new string[] { @"\){3}", "A" }, out w));
             Assert.AreEqual<string>("(((A)))", w);
+        }
+
+        [TestMethod]
+        public void TestCFG_Parse_Medium()
+        {
+            var input = @"
+S -> NAME MAIN
+MAIN -> SEARCH_CONDITION 
+SEARCH_CONDITION -> (OR) PREDICATE | (AND) PREDICATE 
+PREDICATE -> COMPARISON_PREDICATE | BETWEEN_PREDICATE | LIKE_PREDICATE | TEST_FOR_NULL | IN_PREDICATE | ALL_OR_ANY_PREDICATE | EXISTENCE_TEST
+COMPARISON_PREDICATE -> SCALAR_EXP COMPARISON_OP SCALAR_EXP | SCALAR_EXP COMPARISON SUBQUERY
+BETWEEN_PREDICATE -> SCALAR_EXP BETWEEN SCALAR_EXP (AND) SCALAR_EXP
+LIKE_PREDICATE ->  SCALAR_EXP (LIKE) ATOM 
+TEST_FOR_NULL -> COLUMN_REF (IS) (NULL)
+IN_PREDICATE -> SCALAR_EXP (IN) \( SUBQUERY \) | SCALAR_EXP (IN) \( ATOM \) 
+ALL_OR_ANY_PREDICATE -> SCALAR_EXP COMPARISON_OP ALL_ANY_SOME SUBQUERY
+EXISTENCE_TEST -> (EXISTS) SUBQUERY
+SCALAR_EXP ->  SCALAR_EXP OP SCALAR_EXP | ATOM | COLUMN_REF  | \( SCALAR_EXP \) 
+ATOM -> PARAMETER | INTNUM 
+SUBQUERY -> SELECT_EXP
+SELECT_EXP -> (SELECT) NAME
+ALL_ANY_SOME -> (ANY) | (ALL) | (SOME)
+COLUMN_REF -> NAME
+PARAMETER -> NAME
+INTNUM -> (\d*)
+OP -> (\+)  | (-) | (\*) | (\/) 
+COMPARISON_OP -> (=) | (<) | (>)  
+NAME -> (\w*)
+";
+            var cfg = ContextFreeGrammar.Parse(input);
+            Assert.IsTrue(cfg.ProductionCount == 46);
         }
     }
 }

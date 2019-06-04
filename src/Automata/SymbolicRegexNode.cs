@@ -730,6 +730,7 @@ namespace Microsoft.Automata
                         }
                     case SymbolicRegexKind.Loop:
                         {
+                            sb.Append("(");
                             node.left.ComputeToString_LoopBody_AddExtraParentesis(sb);
                             if (node.IsMaybe)
                                 sb.Append("?");
@@ -746,6 +747,7 @@ namespace Microsoft.Automata
                                     sb.Append(node.upper.ToString());
                                 sb.Append("}");
                             }
+                            sb.Append(")");
                             continue;
                         }
                     case SymbolicRegexKind.Concat:
@@ -790,7 +792,6 @@ namespace Microsoft.Automata
                 ComputeToString(this, sb);
             }
         }
-
 
         private void ComputeToString_(StringBuilder sb)
         {
@@ -1035,7 +1036,7 @@ namespace Microsoft.Automata
         /// Temporary counter automaton exploration untility
         /// </summary>
         /// <returns></returns>
-        internal Automaton<Tuple<Maybe<S>,Sequence<CounterUpdate>>> Explore()
+        internal Automaton<Tuple<Maybe<S>,Sequence<CounterOperation>>> Explore()
         {
             var this_normalized = this.builder.Normalize(this);
             var stateLookup = new Dictionary<SymbolicRegexNode<S>, int>();
@@ -1044,16 +1045,16 @@ namespace Microsoft.Automata
             int stateid = 2;
             regexLookup[0] = this_normalized;
             SimpleStack<int> frontier = new SimpleStack<int>();
-            var moves = new List<Move<Tuple<Maybe<S>, Sequence<CounterUpdate>>>>();
+            var moves = new List<Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>>();
             var finalStates = new HashSet<int>();
             frontier.Push(0);
             var reset0 = builder.GetNullabilityCondition(this_normalized);
             if (reset0 != null)
             {
                 if (reset0.TrueForAll(x => x.Counter.LowerBound == 0))
-                    reset0 = Sequence<CounterUpdate>.Empty;
-                moves.Add(Move<Tuple<Maybe<S>, Sequence<CounterUpdate>>>.Create(0, 1,
-                    new Tuple<Maybe<S>, Sequence<CounterUpdate>>(Maybe<S>.Nothing, reset0)));
+                    reset0 = Sequence<CounterOperation>.Empty;
+                moves.Add(Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>.Create(0, 1,
+                    new Tuple<Maybe<S>, Sequence<CounterOperation>>(Maybe<S>.Nothing, reset0)));
                 finalStates.Add(1);
             }
             while (frontier.IsNonempty)
@@ -1076,214 +1077,116 @@ namespace Microsoft.Automata
                             if (reset != null)
                             {
                                 if (reset.TrueForAll(x => x.Counter.LowerBound == 0))
-                                    reset = Sequence<CounterUpdate>.Empty;
-                                moves.Add(Move<Tuple<Maybe<S>, Sequence<CounterUpdate>>>.Create(p, 1,
-                                    new Tuple<Maybe<S>, Sequence<CounterUpdate>>(Maybe<S>.Nothing, reset)));
+                                    reset = Sequence<CounterOperation>.Empty;
+                                moves.Add(Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>.Create(p, 1,
+                                    new Tuple<Maybe<S>, Sequence<CounterOperation>>(Maybe<S>.Nothing, reset)));
                                 finalStates.Add(1);
                             }
                             frontier.Push(p);
                         }
-                        moves.Add(Move<Tuple<Maybe<S>, Sequence<CounterUpdate>>>.Create(q, p,
-                            new Tuple<Maybe<S>, Sequence<CounterUpdate>>(Maybe<S>.Something(a), cd.Condition)));
+                        moves.Add(Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>.Create(q, p,
+                            new Tuple<Maybe<S>, Sequence<CounterOperation>>(Maybe<S>.Something(a), cd.Condition)));
                     }
                 }
             }
-            var aut = Automaton<Tuple<Maybe<S>, Sequence<CounterUpdate>>>.Create(new CABA(builder),
+            var aut = Automaton<Tuple<Maybe<S>, Sequence<CounterOperation>>>.Create(new CABA<S>(builder),
                 0, finalStates, moves);
             return aut;
         }
 
-        internal Sequence<CounterUpdate> GetCounterInitConditions()
+        /// <summary>
+        /// Counter automaton exploration utility
+        /// </summary>
+        /// <returns></returns>
+        Automaton<Tuple<Maybe<S>, Sequence<CounterOperation>>> Explore_(out Dictionary<int, SymbolicRegexNode<S>> state_info, out Dictionary<int, Sequence<CounterOperation>> finalstate_info, out HashSet<ICounter> counter_info)
+        {
+            var counters = new HashSet<ICounter>();
+            var this_normalized = this.builder.Normalize(this);
+            var stateLookup = new Dictionary<SymbolicRegexNode<S>, int>();
+            var regexLookup = new Dictionary<int, SymbolicRegexNode<S>>();
+            stateLookup[this_normalized] = 0;
+            int stateid = 1;
+            regexLookup[0] = this_normalized;
+            SimpleStack<int> frontier = new SimpleStack<int>();
+            var moves = new List<Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>>();
+            var finalStates = new Dictionary<int, Sequence<CounterOperation>>();
+            frontier.Push(0);
+            var reset0 = builder.GetNullabilityCondition(this_normalized);
+            counters.UnionWith(reset0.ConvertAll<ICounter>(x => x.Counter));
+            if (reset0 != null)
+            {
+                if (reset0.TrueForAll(x => x.Counter.LowerBound == 0))
+                    reset0 = Sequence<CounterOperation>.Empty;
+                moves.Add(Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>.Create(0, 0,
+                    new Tuple<Maybe<S>, Sequence<CounterOperation>>(Maybe<S>.Nothing, reset0)));
+                finalStates[0] = reset0;
+            }
+            while (frontier.IsNonempty)
+            {
+                var q = frontier.Pop();
+                var regex = regexLookup[q];
+                //partition corresponds to the alphabet
+                foreach (S a in builder.solver.GetPartition())
+                {
+                    foreach (var cd in builder.EnumerateConditionalDerivatives(a, regex))
+                    {
+                        int p;
+                        if (!stateLookup.TryGetValue(cd.PartialDerivative, out p))
+                        {
+                            p = stateid++;
+                            stateLookup[cd.PartialDerivative] = p;
+                            regexLookup[p] = cd.PartialDerivative;
+
+                            var reset = builder.GetNullabilityCondition(cd.PartialDerivative);
+                            if (reset != null)
+                            {
+                                if (reset.TrueForAll(x => x.Counter.LowerBound == 0))
+                                    reset = Sequence<CounterOperation>.Empty;
+                                moves.Add(Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>.Create(p, p,
+                                    new Tuple<Maybe<S>, Sequence<CounterOperation>>(Maybe<S>.Nothing, reset)));
+                                finalStates[p] = reset;
+                            }
+                            frontier.Push(p);
+                        }
+                        moves.Add(Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>.Create(q, p,
+                            new Tuple<Maybe<S>, Sequence<CounterOperation>>(Maybe<S>.Something(a), cd.Condition)));
+                        counters.UnionWith(cd.Condition.ConvertAll<ICounter>(x => x.Counter));
+                    }
+                }
+            }
+            var aut = Automaton<Tuple<Maybe<S>, Sequence<CounterOperation>>>.Create(new CABA<S>(builder),
+                0, finalStates.Keys, moves);
+            state_info = regexLookup;
+            finalstate_info = finalStates;
+            counter_info = counters;
+            return aut;
+        }
+
+        internal Sequence<CounterOperation> GetCounterInitConditions()
         {
             if (kind == SymbolicRegexKind.Loop && lower > 0 && !IsPlus && !IsMaybe)
             {
                 var bodyinit = left.GetCounterInitConditions();
-                var init = bodyinit.Append(new CounterUpdate(this, CounterOp.INIT));
+                var init = bodyinit.Append(new CounterOperation(this, CounterOp.INIT));
                 return init;
             }
             else
             {
-                return Sequence<CounterUpdate>.Empty;
+                return Sequence<CounterOperation>.Empty;
             }
         }
 
-        internal class CountingAutomaton
+        /// <summary>
+        /// Convert the regex to a counting automaton
+        /// </summary>
+        public CountingAutomaton<S> CreateCountingAutomaton()
         {
-            Automaton<Tuple<Maybe<S>, Sequence<CounterUpdate>>> aut;
             Dictionary<int, SymbolicRegexNode<S>> stateMap;
+            Dictionary<int, Sequence<CounterOperation>> finalstates;
             HashSet<ICounter> counters;
-            Dictionary<int, HashSet<ICounter>> finalStates;
-
-            CountingAutomaton(Automaton<Tuple<Maybe<S>, Sequence<CounterUpdate>>> aut,
-                Dictionary<int, SymbolicRegexNode<S>> stateMap)
-            {
-                this.aut = aut;
-                this.stateMap = stateMap;
-                this.counters = new HashSet<ICounter>();
-                foreach (var move in aut.GetMoves())
-                {
-                    foreach (var update in move.Label.Item2)
-                        counters.Add(update.Counter);
-                }
-                finalStates = new Dictionary<int, HashSet<ICounter>>();
-                foreach (var move in aut.GetMovesTo(1))
-                {
-                    var conds = new HashSet<ICounter>();
-                    foreach (var update in move.Label.Item2)
-                    {
-                        conds.Add(update.Counter);
-                    }
-                    finalStates[move.SourceState] = conds;
-                }
-            }
-
-            internal static CountingAutomaton Create(
-                SymbolicRegexBuilder<S> builder,
-                IEnumerable<Move<Tuple<Maybe<S>, Sequence<CounterUpdate>>>> moves, 
-                Dictionary<int, SymbolicRegexNode<S>> stateMap)
-            {
-                var aut = Automaton<Tuple<Maybe<S>, Sequence<CounterUpdate>>>.Create(new CABA(builder),
-                    0, new int[] { 1 }, moves);
-                var ca = new CountingAutomaton(aut, stateMap);
-                return ca;
-            }
-
-        }
-
-        internal class CABA : IBooleanAlgebra<Tuple<Maybe<S>, Sequence<CounterUpdate>>>, IPrettyPrinter<Tuple<Maybe<S>, Sequence<CounterUpdate>>>
-        {
-            SymbolicRegexBuilder<S> builder;
-            public CABA(SymbolicRegexBuilder<S> builder)
-            {
-                this.builder = builder;
-            }
-
-            public string PrettyPrint(Tuple<Maybe<S>, Sequence<CounterUpdate>> t)
-            {
-                if (t.Item1.IsSomething)
-                    return builder.solver.PrettyPrint(t.Item1.Element) + "/" + t.Item2.ToString();
-                else
-                    return t.Item2.ToString();
-            }
-
-            #region not implemented
-            public Tuple<Maybe<S>, Sequence<CounterUpdate>> False
-            {
-                get
-                {
-                    throw new NotImplementedException();
-                }
-            }
-
-            public bool IsAtomic
-            {
-                get
-                {
-                    throw new NotImplementedException();
-                }
-            }
-
-            public bool IsExtensional
-            {
-                get
-                {
-                    throw new NotImplementedException();
-                }
-            }
-
-            public Tuple<Maybe<S>, Sequence<CounterUpdate>> True
-            {
-                get
-                {
-                    throw new NotImplementedException();
-                }
-            }
-
-            public bool AreEquivalent(Tuple<Maybe<S>, Sequence<CounterUpdate>> predicate1, Tuple<Maybe<S>, Sequence<CounterUpdate>> predicate2)
-            {
-                throw new NotImplementedException();
-            }
-
-            public bool CheckImplication(Tuple<Maybe<S>, Sequence<CounterUpdate>> lhs, Tuple<Maybe<S>, Sequence<CounterUpdate>> rhs)
-            {
-                throw new NotImplementedException();
-            }
-
-            public bool EvaluateAtom(Tuple<Maybe<S>, Sequence<CounterUpdate>> atom, Tuple<Maybe<S>, Sequence<CounterUpdate>> psi)
-            {
-                throw new NotImplementedException();
-            }
-
-            public IEnumerable<Tuple<bool[], Tuple<Maybe<S>, Sequence<CounterUpdate>>>> GenerateMinterms(params Tuple<Maybe<S>, Sequence<CounterUpdate>>[] constraints)
-            {
-                throw new NotImplementedException();
-            }
-
-            public Tuple<Maybe<S>, Sequence<CounterUpdate>> GetAtom(Tuple<Maybe<S>, Sequence<CounterUpdate>> psi)
-            {
-                throw new NotImplementedException();
-            }
-
-            public bool IsSatisfiable(Tuple<Maybe<S>, Sequence<CounterUpdate>> predicate)
-            {
-                throw new NotImplementedException();
-            }
-
-            public Tuple<Maybe<S>, Sequence<CounterUpdate>> MkAnd(params Tuple<Maybe<S>, Sequence<CounterUpdate>>[] predicates)
-            {
-                throw new NotImplementedException();
-            }
-
-            public Tuple<Maybe<S>, Sequence<CounterUpdate>> MkAnd(IEnumerable<Tuple<Maybe<S>, Sequence<CounterUpdate>>> predicates)
-            {
-                throw new NotImplementedException();
-            }
-
-            public Tuple<Maybe<S>, Sequence<CounterUpdate>> MkAnd(Tuple<Maybe<S>, Sequence<CounterUpdate>> predicate1, Tuple<Maybe<S>, Sequence<CounterUpdate>> predicate2)
-            {
-                throw new NotImplementedException();
-            }
-
-            public Tuple<Maybe<S>, Sequence<CounterUpdate>> MkDiff(Tuple<Maybe<S>, Sequence<CounterUpdate>> predicate1, Tuple<Maybe<S>, Sequence<CounterUpdate>> predicate2)
-            {
-                throw new NotImplementedException();
-            }
-
-            public Tuple<Maybe<S>, Sequence<CounterUpdate>> MkNot(Tuple<Maybe<S>, Sequence<CounterUpdate>> predicate)
-            {
-                throw new NotImplementedException();
-            }
-
-            public Tuple<Maybe<S>, Sequence<CounterUpdate>> MkOr(IEnumerable<Tuple<Maybe<S>, Sequence<CounterUpdate>>> predicates)
-            {
-                throw new NotImplementedException();
-            }
-
-            public Tuple<Maybe<S>, Sequence<CounterUpdate>> MkOr(Tuple<Maybe<S>, Sequence<CounterUpdate>> predicate1, Tuple<Maybe<S>, Sequence<CounterUpdate>> predicate2)
-            {
-                throw new NotImplementedException();
-            }
-
-            public Tuple<Maybe<S>, Sequence<CounterUpdate>> MkSymmetricDifference(Tuple<Maybe<S>, Sequence<CounterUpdate>> p1, Tuple<Maybe<S>, Sequence<CounterUpdate>> p2)
-            {
-                throw new NotImplementedException();
-            }
-
-            public string PrettyPrint(Tuple<Maybe<S>, Sequence<CounterUpdate>> t, Func<Tuple<Maybe<S>, Sequence<CounterUpdate>>, string> varLookup)
-            {
-                throw new NotImplementedException();
-            }
-
-            public string PrettyPrintCS(Tuple<Maybe<S>, Sequence<CounterUpdate>> t, Func<Tuple<Maybe<S>, Sequence<CounterUpdate>>, string> varLookup)
-            {
-                throw new NotImplementedException();
-            }
-
-            public Tuple<Maybe<S>, Sequence<CounterUpdate>> Simplify(Tuple<Maybe<S>, Sequence<CounterUpdate>> predicate)
-            {
-                throw new NotImplementedException();
-            }
-            #endregion
+            var aut = Explore_(out stateMap, out finalstates, out counters);
+            var ca = new CountingAutomaton<S>(aut, stateMap, finalstates, counters);
+            return ca;
         }
 
         /// <summary>
@@ -2210,6 +2113,109 @@ namespace Microsoft.Automata
                     default:
                         return false;
                 }
+        }
+
+        /// <summary>
+        /// Returns true if this node represents a bounded loop whose body is nonmonadic.
+        /// </summary>
+        public bool IsNonmonadicBoundedLoop
+        {
+            get
+            {
+                return (this.kind == SymbolicRegexKind.Loop
+                     && !this.IsStar && !this.IsMaybe
+                     && this.left.kind != SymbolicRegexKind.Singleton);
+            }
+        }
+
+        /// <summary>
+        /// Returns true if this node is a monadic loop with lower bound but no upper bound.
+        /// </summary>
+        public bool IsMonadicLoopWithLowerButWihtoutUpperBound
+        {
+            get
+            {
+                return (this.kind == SymbolicRegexKind.Loop
+                    && this.left.kind == SymbolicRegexKind.Singleton
+                    && this.HasLowerBound && !this.HasUpperBound);
+            }
+        }
+
+        public SymbolicRegexNode<S> NormalizeToMonadicCase()
+        {
+            if (ExistsNode(x => x.IsNonmonadicBoundedLoop))
+                return NormalizeToMonadicCase_();
+            else
+                return this;
+        }
+
+        SymbolicRegexNode<S> NormalizeToMonadicCase_()
+        {
+            switch (kind)
+            {
+                case SymbolicRegexKind.EndAnchor:
+                case SymbolicRegexKind.StartAnchor:
+                case SymbolicRegexKind.Singleton:
+                case SymbolicRegexKind.Epsilon:
+                    {
+                        return this;
+                    }
+                case SymbolicRegexKind.Loop:
+                    {
+                        if (IsNonmonadicBoundedLoop)
+                        {
+                            #region the actual unwinding of nonmonadic loops
+                            var body = left.NormalizeToMonadicCase_();
+                            var nodes = new List<SymbolicRegexNode<S>>();
+                            for (int i = 0; i < lower; i++)
+                                nodes.Add(body);
+                            if (HasUpperBound)
+                                for (int i = lower; i < upper; i++)
+                                    nodes.Add(builder.MkLoop(body, 0, 1));
+                            else
+                                nodes.Add(builder.MkLoop(body));
+                            return builder.MkConcat(nodes.ToArray());
+                            #endregion
+                        }
+                        else if (IsMonadicLoopWithLowerButWihtoutUpperBound)
+                        {
+                            #region split the loop into two parts
+                            var firstLoop = builder.MkLoop(left, lower, lower);
+                            var secondLoop = builder.MkLoop(left);
+                            return builder.MkConcat(firstLoop, secondLoop);
+                            #endregion
+                        }
+                        else
+                            return this;
+                    }
+                case SymbolicRegexKind.Concat:
+                    {
+                        var l = left.NormalizeToMonadicCase_();
+                        var r = right.NormalizeToMonadicCase_();
+                        if (l == left && r == right)
+                            return this;
+                        else
+                            return builder.MkConcat(l, r);
+                    }
+                case SymbolicRegexKind.Or:
+                    {
+                        var members = new List<SymbolicRegexNode<S>>();
+                        bool someNodeWasUnwinded = false;
+                        foreach (var member in this.alts)
+                        {
+                            var member1 = member.NormalizeToMonadicCase_();
+                            members.Add(member1);
+                            if (member1 != member)
+                                someNodeWasUnwinded = true;
+                        }
+                        if (someNodeWasUnwinded)
+                            return builder.MkOr(members.ToArray());
+                        else
+                            return this;
+                    }
+                default:
+                    throw new NotImplementedException(kind.ToString());
+            }
         }
     }
 
