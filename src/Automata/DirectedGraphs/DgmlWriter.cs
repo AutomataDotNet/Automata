@@ -4,6 +4,14 @@ using System.Text;
 
 namespace Microsoft.Automata.DirectedGraphs
 {
+    public static class Options
+    {
+        /// <summary>
+        /// Maximum length of transiton labels shown in dgml view
+        /// </summary>
+        public static int MaxDgmlTransitionLabelLength = 50;
+    }
+
     internal static class DgmlWriter
     {
         #region storing SFAs as graphs in dgml format
@@ -197,7 +205,7 @@ namespace Microsoft.Automata.DirectedGraphs
             if (k >= 0 && lab.Length > k)
                 lab = lab.Substring(0, k) + "...";
             lab = EncodeChars(lab);
-            if (lab.Length > 50)
+            if (lab.Length > Options.MaxDgmlTransitionLabelLength)
             {
                 info += string.Format(" HiddenLabel = \"{0}\"", lab);
                 lab = "...";

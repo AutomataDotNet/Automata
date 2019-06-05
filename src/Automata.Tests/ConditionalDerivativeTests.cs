@@ -226,7 +226,7 @@ namespace Automata.Tests
             Assert.IsTrue(q1.ConcatCount == 3);
             var aut = q1.CreateCountingAutomaton();
             Assert.IsTrue(aut.StateCount == 5);
-            aut.ShowGraph("Normalize");
+            //aut.ShowGraph("Normalize");
         }
 
         [TestMethod]
@@ -238,7 +238,32 @@ namespace Automata.Tests
             Assert.IsTrue(q1.kind == SymbolicRegexKind.Concat);
             Assert.IsTrue(q1.ConcatCount == 7);
             var aut = q1.CreateCountingAutomaton();
-            aut.ShowGraph("Normalize2");
+            //aut.ShowGraph("Normalize2");
+        }
+
+        [TestMethod]
+        public void TestConditionalDerivativeExploration_Normalize3()
+        {
+            Microsoft.Automata.DirectedGraphs.Options.MaxDgmlTransitionLabelLength = 10;
+            var regex = new Regex("a{3,30}[ab]{4,40}", RegexOptions.Singleline);
+            var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
+            var q1 = sr.Pattern.Normalize();
+            Assert.IsTrue(q1.kind == SymbolicRegexKind.Concat);
+            var aut = q1.CreateCountingAutomaton();
+            aut.ShowGraph("Normalize3");
+        }
+
+        [TestMethod]
+        public void TestConditionalDerivativeExploration_ATVARunningExample()
+        {
+            Microsoft.Automata.DirectedGraphs.Options.MaxDgmlTransitionLabelLength = 500;
+            var regex = new Regex(".*a.{5}", RegexOptions.Singleline);
+            var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
+            var q1 = sr.Pattern.Normalize();
+            Assert.IsTrue(q1.kind == SymbolicRegexKind.Concat);
+            Assert.IsTrue(q1.ConcatCount == 2);
+            var aut = q1.CreateCountingAutomaton();
+            aut.ShowGraph("ATVARunningExample");
         }
     }
 }
