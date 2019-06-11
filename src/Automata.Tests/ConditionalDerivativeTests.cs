@@ -244,8 +244,8 @@ namespace Automata.Tests
         [TestMethod]
         public void TestConditionalDerivativeExploration_Normalize3()
         {
-            Microsoft.Automata.DirectedGraphs.Options.MaxDgmlTransitionLabelLength = 10;
-            var regex = new Regex("a{3,30}[ab]{4,40}", RegexOptions.Singleline);
+            Microsoft.Automata.DirectedGraphs.Options.MaxDgmlTransitionLabelLength = 100;
+            var regex = new Regex("(?i:a{3,30}[abc]{4,40})", RegexOptions.Singleline);
             var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
             var q1 = sr.Pattern.Normalize();
             Assert.IsTrue(q1.kind == SymbolicRegexKind.Concat);
@@ -263,7 +263,7 @@ namespace Automata.Tests
             Assert.IsTrue(q1.kind == SymbolicRegexKind.Concat);
             Assert.IsTrue(q1.ConcatCount == 2);
             var aut = q1.CreateCountingAutomaton();
-            aut.ShowGraph("ATVARunningExample");
+            //aut.ShowGraph("ATVARunningExample");
         }
     }
 }

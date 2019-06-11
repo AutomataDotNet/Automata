@@ -294,5 +294,6 @@ namespace Microsoft.Automata
         InternalError_LazyProductAutomaton,
         AutomatonMissingTransition,
         InternalError_DistinguishingSequenceGeneration,
+        InvalidCall,
     }
 }

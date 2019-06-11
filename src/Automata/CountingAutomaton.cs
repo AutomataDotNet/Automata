@@ -68,8 +68,8 @@ namespace Microsoft.Automata
                 string s = "";
                 for (int i=0; i < t.Item2.Length; i++)
                 {
-                    if (t.Item2[i].OperationKind != CounterOp.EXITCONDITION &&
-                        t.Item2[i].OperationKind != CounterOp.RESET)
+                    if (t.Item2[i].OperationKind != CounterOp.EXIT &&
+                        t.Item2[i].OperationKind != CounterOp.EXIT_SET0)
                         throw new AutomataException(AutomataExceptionKind.InternalError);
                     if (t.Item2[i].Counter.LowerBound == t.Item2[i].Counter.UpperBound)
                     {

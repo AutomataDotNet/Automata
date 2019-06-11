@@ -11,34 +11,38 @@ namespace Microsoft.Automata
         /// <summary>
         /// Counter is initialized to 0
         /// </summary>
-        INIT,
+        SET0,
+        /// <summary>
+        /// Counter is initialized to 1
+        /// </summary>
+        SET1,
         /// <summary>
         /// Lower bound is checked
         /// </summary>
-        EXITCONDITION,
+        EXIT,
         /// <summary>
-        /// Lower bound is checked and the counter is reset to 0
+        /// Lower bound is checked and the counter is set to 0
         /// </summary>
-        RESET,
+        EXIT_SET0,
         /// <summary>
         /// Upper bound is checked and the counter is incermented by 1
         /// </summary>
-        INCREMENT,
+        INCR,
         /// <summary>
-        /// RESET followed by INCREMENT
+        /// Lower bound is checked and the counter is set to 1
         /// </summary>
-        ASSIGN1,
+        EXIT_SET1,
     }
 
     /// <summary>
-    /// Update to counter with given reference
+    /// Operation over counters
     /// </summary>
     public class CounterOperation  
     {
         Tuple<ICounter, CounterOp> elems;
-        public CounterOperation(ICounter counter, CounterOp update)
+        public CounterOperation(ICounter counter, CounterOp op)
         {
-            elems = new Tuple<ICounter, CounterOp>(counter, update);
+            elems = new Tuple<ICounter, CounterOp>(counter, op);
         }
 
         /// <summary>
@@ -94,15 +98,15 @@ namespace Microsoft.Automata
 
         public override string ToString()
         {
-            if (elems.Item2 == CounterOp.INIT)
+            if (elems.Item2 == CounterOp.SET0)
             {
                 return string.Format("{0}:=0", Counter.CounterName);
             }
-            else if (elems.Item2 == CounterOp.RESET)
+            else if (elems.Item2 == CounterOp.EXIT_SET0)
             {
                 return LowerBoundCheck + string.Format("{0}:=0", Counter.CounterName);
             }
-            else if (elems.Item2 == CounterOp.INCREMENT)
+            else if (elems.Item2 == CounterOp.INCR)
             {
                 return UpperBoundCheck + string.Format("{0}++", Counter.CounterName);
             }
@@ -114,7 +118,7 @@ namespace Microsoft.Automata
     }
 
     /// <summary>
-    /// conditional derivative
+    /// Conditional derivative
     /// </summary>
     /// <typeparam name="S">input predicate type</typeparam>
     public class ConditionalDerivative<S> : Tuple<Sequence<CounterOperation>, SymbolicRegexNode<S>>
@@ -159,8 +163,8 @@ namespace Microsoft.Automata
                 if (g.TryGetElement(x => x.Counter.Equals(c), out g_update))
                 {
                     //the only valid combination for same counter is first reset then increment
-                    if (f_update.OperationKind == CounterOp.RESET && g_update.OperationKind == CounterOp.INCREMENT)
-                        f_o_g_list.Add(new CounterOperation(c, CounterOp.ASSIGN1));
+                    if (f_update.OperationKind == CounterOp.EXIT_SET0 && g_update.OperationKind == CounterOp.INCR)
+                        f_o_g_list.Add(new CounterOperation(c, CounterOp.EXIT_SET1));
                     else
                         //composition is not enabled
                         return null;

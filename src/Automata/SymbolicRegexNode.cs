@@ -1182,7 +1182,7 @@ namespace Microsoft.Automata
             if (kind == SymbolicRegexKind.Loop && lower > 0 && !IsPlus && !IsMaybe)
             {
                 var bodyinit = left.GetCounterInitConditions();
-                var init = bodyinit.Append(new CounterOperation(this, CounterOp.INIT));
+                var init = bodyinit.Append(new CounterOperation(this, CounterOp.SET0));
                 return init;
             }
             else

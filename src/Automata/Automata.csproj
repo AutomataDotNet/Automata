@@ -99,6 +99,7 @@
     <Compile Include="BV.cs" />
     <Compile Include="ConditionalDerivative.cs" />
     <Compile Include="CountingAutomaton.cs" />
+    <Compile Include="CountingSetAutomaton.cs" />
     <Compile Include="Interfaces\ICounter.cs" />
     <Compile Include="Internal\AutomataAlgebra.cs" />
     <Compile Include="AutomataException.cs" />

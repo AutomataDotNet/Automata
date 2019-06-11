@@ -826,7 +826,7 @@ namespace Microsoft.Automata
                             //}
                             else
                             {
-                                CounterOperation ca = new CounterOperation(node, CounterOp.INCREMENT);
+                                CounterOperation ca = new CounterOperation(node, CounterOp.INCR);
                                 foreach (var step in this.EnumerateConditionalDerivatives(elem, node.left))
                                 {
                                     var deriv = this.MkConcat(step.PartialDerivative, node);
@@ -914,7 +914,7 @@ namespace Microsoft.Automata
                 case SymbolicRegexKind.Loop:
                     {
                         if (IsCountingLoop(node))
-                            return new Sequence<CounterOperation>(new CounterOperation(node, CounterOp.RESET));
+                            return new Sequence<CounterOperation>(new CounterOperation(node, CounterOp.EXIT_SET0));
                         else if (node.isNullable)
                             return Sequence<CounterOperation>.Empty;
                         else
