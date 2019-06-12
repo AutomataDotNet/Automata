@@ -221,7 +221,7 @@ namespace Automata.Tests
         {
             var regex = new Regex(".*(a{3}a{3}){1,2}", RegexOptions.Singleline);
             var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
-            var q1 = sr.Pattern.Normalize();
+            var q1 = sr.Pattern.MkMonadic();
             Assert.IsTrue(q1.kind == SymbolicRegexKind.Concat);
             Assert.IsTrue(q1.ConcatCount == 3);
             var aut = q1.CreateCountingAutomaton();
@@ -234,7 +234,7 @@ namespace Automata.Tests
         {
             var regex = new Regex("(([abc]{3,30})b{1,}c){2}", RegexOptions.Singleline);
             var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
-            var q1 = sr.Pattern.Normalize();
+            var q1 = sr.Pattern.MkMonadic();
             Assert.IsTrue(q1.kind == SymbolicRegexKind.Concat);
             Assert.IsTrue(q1.ConcatCount == 7);
             var aut = q1.CreateCountingAutomaton();
@@ -247,7 +247,7 @@ namespace Automata.Tests
             Microsoft.Automata.DirectedGraphs.Options.MaxDgmlTransitionLabelLength = 100;
             var regex = new Regex("(?i:a{3,30}[abc]{4,40})", RegexOptions.Singleline);
             var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
-            var q1 = sr.Pattern.Normalize();
+            var q1 = sr.Pattern.MkMonadic();
             Assert.IsTrue(q1.kind == SymbolicRegexKind.Concat);
             var aut = q1.CreateCountingAutomaton();
             aut.ShowGraph("Normalize3");
@@ -259,11 +259,21 @@ namespace Automata.Tests
             Microsoft.Automata.DirectedGraphs.Options.MaxDgmlTransitionLabelLength = 500;
             var regex = new Regex(".*a.{5}", RegexOptions.Singleline);
             var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
-            var q1 = sr.Pattern.Normalize();
+            var q1 = sr.Pattern.MkMonadic();
             Assert.IsTrue(q1.kind == SymbolicRegexKind.Concat);
             Assert.IsTrue(q1.ConcatCount == 2);
             var aut = q1.CreateCountingAutomaton();
             //aut.ShowGraph("ATVARunningExample");
+        }
+
+        [TestMethod]
+        public void TestConditionalDerivativeExploration_MonadicLoopInStar()
+        {
+            Microsoft.Automata.DirectedGraphs.Options.MaxDgmlTransitionLabelLength = 500;
+            var regex = new Regex("a(aaa{10})*", RegexOptions.Singleline);
+            var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
+            var aut = sr.Pattern.CreateCountingAutomaton(true);
+            aut.ShowGraph("MonadicLoopInStar");
         }
     }
 }

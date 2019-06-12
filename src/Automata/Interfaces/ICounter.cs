@@ -10,7 +10,7 @@ namespace Microsoft.Automata
     {
         int LowerBound { get; }
         int UpperBound { get; }
-        string CounterName { get; }
+        int CounterId { get; }
         bool ContainsSubCounter(ICounter counter);
     }
 }

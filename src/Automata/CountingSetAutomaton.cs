@@ -174,7 +174,7 @@ namespace Microsoft.Automata
         }
     }
 
-    public enum CsUpdate { Set0, Set1, Set01, Incr, IncrAdd0, IncrAdd1, IncrAdd01}
+    public enum CsUpdate { Set0, Set1, Set01, Incr, IncrAdd0, IncrAdd1, IncrAdd01, Empty}
 
     public enum CsConditionKind { IsEmpty, IsSingleton, MaxGE, MaxLT, MaxEQ, NOT, AND, OR, TRUE, FALSE}
 

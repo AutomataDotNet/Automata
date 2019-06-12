@@ -645,7 +645,7 @@ namespace Microsoft.Automata
                 }
         }
 
-        internal SymbolicRegexNode<S> Normalize(SymbolicRegexNode<S> sr)
+        internal SymbolicRegexNode<S> NormalizeGeneralLoops(SymbolicRegexNode<S> sr)
         {
             switch (sr.kind)
             {
@@ -681,8 +681,8 @@ namespace Microsoft.Automata
                     }
                 case SymbolicRegexKind.Concat:
                     {
-                        var left = Normalize(sr.left);
-                        var right = Normalize(sr.right);
+                        var left = NormalizeGeneralLoops(sr.left);
+                        var right = NormalizeGeneralLoops(sr.right);
                         var concat = this.MkConcat(left, right);
                         return concat;
                     }
@@ -690,7 +690,7 @@ namespace Microsoft.Automata
                     {
                         var alts = new List<SymbolicRegexNode<S>>();
                         foreach (var elem in sr.alts)
-                            alts.Add(Normalize(elem));
+                            alts.Add(NormalizeGeneralLoops(elem));
                         var or = this.MkOr(alts.ToArray());
                         return or;
                     }
@@ -724,16 +724,6 @@ namespace Microsoft.Automata
                             yield break;
                             #endregion
                         }
-                    //case SymbolicRegexKind.Sequence:
-                    //    {
-                    //        #region d(a,[R|Rest]) = Rest if (a in R) else nothing
-                    //        if (this.solver.IsSatisfiable(this.solver.MkAnd(elem, node.sequence.First)))
-                    //        {
-                    //            yield return new ConditionalDerivative<S>(this.MkSequence(node.sequence.Rest()));
-                    //        }
-                    //        yield break;
-                    //        #endregion
-                    //    }
                     case SymbolicRegexKind.Or:
                         {
                             #region d(a,A|B) = d(a,A) U d(a,B)
@@ -845,16 +835,16 @@ namespace Microsoft.Automata
                 }
         }
 
-        Dictionary<object, string> counterIdMap = new Dictionary<object, string>();
-        internal string GetCounterName(object id)
+        Dictionary<object, int> counterIdMap = new Dictionary<object, int>();
+        internal int GetCounterId(object o)
         {
-            string name;
-            if (!counterIdMap.TryGetValue(id, out name))
+            int id;
+            if (!counterIdMap.TryGetValue(o, out id))
             {
-                name = "c" + counterIdMap.Count;
-                counterIdMap[id] = name;
+                id = counterIdMap.Count;
+                counterIdMap[o] = id;
             }
-            return name;
+            return id;
         }
 
         SymbolicRegexNode<S> ToLeftAssocForm(SymbolicRegexNode<S> node)
@@ -874,7 +864,7 @@ namespace Microsoft.Automata
             }
         }
 
-        internal Sequence<CounterOperation> GetNullabilityCondition(SymbolicRegexNode<S> node)
+        internal Sequence<CounterOperation> GetNullabilityCondition(SymbolicRegexNode<S> node, bool monadic)
         {
             var node1 = ToLeftAssocForm(node);
             var reset = GetNullabilityCondition_of_left_assoc(node1);
@@ -900,7 +890,6 @@ namespace Microsoft.Automata
                         return Sequence<CounterOperation>.Empty;
                     }
                 case SymbolicRegexKind.Singleton:
-                //case SymbolicRegexKind.Sequence:
                     {
                         return null;
                     }
@@ -913,10 +902,10 @@ namespace Microsoft.Automata
                     }
                 case SymbolicRegexKind.Loop:
                     {
-                        if (IsCountingLoop(node))
-                            return new Sequence<CounterOperation>(new CounterOperation(node, CounterOp.EXIT_SET0));
-                        else if (node.isNullable)
+                        if (node.isNullable)
                             return Sequence<CounterOperation>.Empty;
+                        else if (IsCountingLoop(node))
+                            return new Sequence<CounterOperation>(new CounterOperation(node, CounterOp.EXIT));
                         else
                             return null;
                     }
@@ -935,7 +924,7 @@ namespace Microsoft.Automata
                             {
                                 //TBD: this optimization needs to be verified
                                 //if reset2 is nonempty it can only be a singleton
-                                if (reset1.IsEmpty || reset2.IsEmpty || 
+                                if (reset1.IsEmpty || reset2.IsEmpty ||
                                     reset1.TrueForAll(x => reset2[0].Counter.ContainsSubCounter(x.Counter)))
                                     return reset1.Append(reset2);
                                 else if (reset2[0].Counter.LowerBound == 0)

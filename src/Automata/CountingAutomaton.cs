@@ -75,13 +75,13 @@ namespace Microsoft.Automata
                     {
                         if (s != "")
                             s += " & ";
-                        s += string.Format("{0}=={1}", t.Item2[i].Counter.CounterName, t.Item2[i].Counter.LowerBound);
+                        s += string.Format("c{0}=={1}", t.Item2[i].Counter.CounterId, t.Item2[i].Counter.LowerBound);
                     }
                     else if (t.Item2[i].Counter.LowerBound > 0)
                     {
                         if (s != "")
                             s += " & ";
-                        s += string.Format("{0}>={1}", t.Item2[i].Counter.CounterName, t.Item2[i].Counter.LowerBound);
+                        s += string.Format("c{0}>={1}", t.Item2[i].Counter.CounterId, t.Item2[i].Counter.LowerBound);
                     }
                 }
                 return "F:" + (s == "" ? "true" : s);

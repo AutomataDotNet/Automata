@@ -79,7 +79,12 @@ namespace Microsoft.Automata
             get
             {
                 if (Counter.LowerBound > 0)
-                    return string.Format("{1}<={0}:", Counter.CounterName, Counter.LowerBound);
+                {
+                    if (Counter.LowerBound == Counter.UpperBound)
+                        return string.Format("{1}==c{0}", Counter.CounterId, Counter.LowerBound);
+                    else
+                        return string.Format("{1}<=c{0}", Counter.CounterId, Counter.LowerBound);
+                }
                 else
                     return "";
             }
@@ -90,7 +95,7 @@ namespace Microsoft.Automata
             get
             {
                 if (Counter.UpperBound < int.MaxValue)
-                    return string.Format("{0}<{1}:", Counter.CounterName, Counter.UpperBound);
+                    return string.Format("c{0}<{1}", Counter.CounterId, Counter.UpperBound);
                 else
                     return "";
             }
@@ -98,21 +103,22 @@ namespace Microsoft.Automata
 
         public override string ToString()
         {
-            if (elems.Item2 == CounterOp.SET0)
+            switch (elems.Item2)
             {
-                return string.Format("{0}:=0", Counter.CounterName);
-            }
-            else if (elems.Item2 == CounterOp.EXIT_SET0)
-            {
-                return LowerBoundCheck + string.Format("{0}:=0", Counter.CounterName);
-            }
-            else if (elems.Item2 == CounterOp.INCR)
-            {
-                return UpperBoundCheck + string.Format("{0}++", Counter.CounterName);
-            }
-            else
-            {
-                return LowerBoundCheck + string.Format("{0}:=1", Counter.CounterName);
+                case CounterOp.EXIT:
+                    return LowerBoundCheck;
+                case CounterOp.SET0:
+                    return string.Format("c{0}:=0", Counter.CounterId);
+                case CounterOp.SET1:
+                    return string.Format("c{0}:=1", Counter.CounterId);
+                case CounterOp.EXIT_SET0:
+                    return LowerBoundCheck + string.Format(":c{0}:=0", Counter.CounterId);
+                case CounterOp.EXIT_SET1:
+                    return LowerBoundCheck + string.Format(":c{0}:=1", Counter.CounterId);
+                case CounterOp.INCR:
+                    return UpperBoundCheck + string.Format(":c{0}++", Counter.CounterId);
+                default:
+                    throw new NotImplementedException(elems.Item2.ToString());
             }
         }
     }
@@ -162,9 +168,11 @@ namespace Microsoft.Automata
                 CounterOperation g_update;
                 if (g.TryGetElement(x => x.Counter.Equals(c), out g_update))
                 {
-                    //the only valid combination for same counter is first reset then increment
-                    if (f_update.OperationKind == CounterOp.EXIT_SET0 && g_update.OperationKind == CounterOp.INCR)
+                    //the only valid combination is to first exit and then increment or set to 0 or one
+                    if (f_update.OperationKind == CounterOp.EXIT && (g_update.OperationKind == CounterOp.INCR || g_update.OperationKind == CounterOp.SET1))
                         f_o_g_list.Add(new CounterOperation(c, CounterOp.EXIT_SET1));
+                    else if (f_update.OperationKind == CounterOp.EXIT && g_update.OperationKind == CounterOp.SET0)
+                        f_o_g_list.Add(new CounterOperation(c, CounterOp.EXIT_SET0));
                     else
                         //composition is not enabled
                         return null;

@@ -1052,7 +1052,7 @@ namespace Microsoft.Automata
         /// <returns></returns>
         internal Automaton<Tuple<Maybe<S>,Sequence<CounterOperation>>> Explore()
         {
-            var this_normalized = this.builder.Normalize(this);
+            var this_normalized = this.builder.NormalizeGeneralLoops(this);
             var stateLookup = new Dictionary<SymbolicRegexNode<S>, int>();
             var regexLookup = new Dictionary<int,SymbolicRegexNode<S>>();
             stateLookup[this_normalized] = 0;
@@ -1062,7 +1062,7 @@ namespace Microsoft.Automata
             var moves = new List<Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>>();
             var finalStates = new HashSet<int>();
             frontier.Push(0);
-            var reset0 = builder.GetNullabilityCondition(this_normalized);
+            var reset0 = builder.GetNullabilityCondition(this_normalized, false);
             if (reset0 != null)
             {
                 if (reset0.TrueForAll(x => x.Counter.LowerBound == 0))
@@ -1087,7 +1087,7 @@ namespace Microsoft.Automata
                             stateLookup[cd.PartialDerivative] = p;
                             regexLookup[p] = cd.PartialDerivative;
 
-                            var reset = builder.GetNullabilityCondition(cd.PartialDerivative);
+                            var reset = builder.GetNullabilityCondition(cd.PartialDerivative, false);
                             if (reset != null)
                             {
                                 if (reset.TrueForAll(x => x.Counter.LowerBound == 0))
@@ -1112,20 +1112,20 @@ namespace Microsoft.Automata
         /// Counter automaton exploration utility
         /// </summary>
         /// <returns></returns>
-        Automaton<Tuple<Maybe<S>, Sequence<CounterOperation>>> Explore_(out Dictionary<int, SymbolicRegexNode<S>> state_info, out Dictionary<int, Sequence<CounterOperation>> finalstate_info, out HashSet<ICounter> counter_info)
+        Automaton<Tuple<Maybe<S>, Sequence<CounterOperation>>> Explore_(bool monadic, out Dictionary<int, SymbolicRegexNode<S>> state_info, out Dictionary<int, Sequence<CounterOperation>> finalstate_info, out HashSet<ICounter> counter_info)
         {
             var counters = new HashSet<ICounter>();
-            var this_normalized = this.builder.Normalize(this);
+            var node = (monadic ? this : this.builder.NormalizeGeneralLoops(this));
             var stateLookup = new Dictionary<SymbolicRegexNode<S>, int>();
             var regexLookup = new Dictionary<int, SymbolicRegexNode<S>>();
-            stateLookup[this_normalized] = 0;
+            stateLookup[node] = 0;
             int stateid = 1;
-            regexLookup[0] = this_normalized;
+            regexLookup[0] = node;
             SimpleStack<int> frontier = new SimpleStack<int>();
             var moves = new List<Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>>();
             var finalStates = new Dictionary<int, Sequence<CounterOperation>>();
             frontier.Push(0);
-            var reset0 = builder.GetNullabilityCondition(this_normalized);
+            var reset0 = builder.GetNullabilityCondition(node, monadic);
             if (reset0 != null)
             {
                 counters.UnionWith(reset0.ConvertAll<ICounter>(x => x.Counter));
@@ -1151,7 +1151,7 @@ namespace Microsoft.Automata
                             stateLookup[cd.PartialDerivative] = p;
                             regexLookup[p] = cd.PartialDerivative;
 
-                            var reset = builder.GetNullabilityCondition(cd.PartialDerivative);
+                            var reset = builder.GetNullabilityCondition(cd.PartialDerivative, monadic);
                             if (reset != null)
                             {
                                 if (reset.TrueForAll(x => x.Counter.LowerBound == 0))
@@ -1174,32 +1174,54 @@ namespace Microsoft.Automata
             state_info = regexLookup;
             finalstate_info = finalStates;
             counter_info = counters;
+
+            #region init counter at entrance, we know that the transitions are already in monadic form
+            if (monadic)
+            {
+                var moves1 = new List<Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>>();
+                foreach (var move in moves)
+                {
+                    if ((move.SourceState != move.TargetState) && finalStates.ContainsKey(move.TargetState))
+                    {
+                        if (move.Label.Item2.IsEmpty)
+                        {
+                            var move1 = Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>.Create(move.SourceState, move.TargetState,
+                                new Tuple<Maybe<S>, Sequence<CounterOperation>>(move.Label.Item1, new Sequence<CounterOperation>(new CounterOperation(move.Label.Item2.First.Counter, CounterOp.SET0))));
+                        }
+                    }
+                }
+            }
+            #endregion
+
             return aut;
         }
 
-        internal Sequence<CounterOperation> GetCounterInitConditions()
-        {
-            if (kind == SymbolicRegexKind.Loop && lower > 0 && !IsPlus && !IsMaybe)
-            {
-                var bodyinit = left.GetCounterInitConditions();
-                var init = bodyinit.Append(new CounterOperation(this, CounterOp.SET0));
-                return init;
-            }
-            else
-            {
-                return Sequence<CounterOperation>.Empty;
-            }
-        }
+        //internal Sequence<CounterOperation> GetCounterInitConditions()
+        //{
+        //    if (kind == SymbolicRegexKind.Loop && lower > 0 && !IsPlus && !IsMaybe)
+        //    {
+        //        var bodyinit = left.GetCounterInitConditions();
+        //        var init = bodyinit.Append(new CounterOperation(this, CounterOp.SET0));
+        //        return init;
+        //    }
+        //    else
+        //    {
+        //        return Sequence<CounterOperation>.Empty;
+        //    }
+        //}
 
         /// <summary>
         /// Convert the regex to a counting automaton
         /// </summary>
-        public CountingAutomaton<S> CreateCountingAutomaton()
+        /// <param name="makeMonadic">if true then nonmonadic loops are removed</param>
+        public CountingAutomaton<S> CreateCountingAutomaton(bool makeMonadic = false)
         {
+            SymbolicRegexNode<S> node = (makeMonadic ? this.MkMonadic() : this);
             Dictionary<int, SymbolicRegexNode<S>> stateMap;
             Dictionary<int, Sequence<CounterOperation>> finalstates;
             HashSet<ICounter> counters;
-            var aut = Explore_(out stateMap, out finalstates, out counters);
+
+            var aut = node.Explore_(makeMonadic, out stateMap, out finalstates, out counters);
             var ca = new CountingAutomaton<S>(aut, stateMap, finalstates, counters);
             return ca;
         }
@@ -1827,16 +1849,16 @@ namespace Microsoft.Automata
         }
 
         /// <summary>
-        /// If this is a loop then a name of the associated counter
+        /// If this is a loop other than star or plus then the id of the associated counter
         /// </summary>
-        public string CounterName
+        public int CounterId
         {
             get
             {
-                if (this.lower >= 0)
-                    return this.builder.GetCounterName(this);
+                if (this.kind == SymbolicRegexKind.Loop && !this.IsStar && !this.IsPlus)
+                    return this.builder.GetCounterId(this);
                 else
-                    return null;
+                    return -1;
             }
         }
 
@@ -2159,7 +2181,7 @@ namespace Microsoft.Automata
         /// <summary>
         /// Unwinds nonmonadic bounded quantifiers, and splits monadic bounded quantifiers without upper bounds to a fixed loop followed by Kleene star
         /// </summary>
-        public SymbolicRegexNode<S> Normalize()
+        public SymbolicRegexNode<S> MkMonadic()
         {
             if (ExistsNode(x => x.IsNonmonadicBoundedLoop))
                 return UnwindNonmonadic_();
