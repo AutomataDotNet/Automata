@@ -64,6 +64,17 @@ namespace Microsoft.Automata
         }
 
         /// <summary>
+        /// Returns true if the source state and the target state are identical
+        /// </summary>
+        public bool IsSelfLoop
+        {
+            get
+            {
+                return SourceState == TargetState;
+            }
+        }
+
+        /// <summary>
         /// Returns true if obj is a move with the same source state, target state, and label.
         /// </summary>
         public override bool Equals(object obj)

@@ -1169,31 +1169,72 @@ namespace Microsoft.Automata
                     }
                 }
             }
-            var aut = Automaton<Tuple<Maybe<S>, Sequence<CounterOperation>>>.Create(new CABA<S>(builder),
-                0, finalStates.Keys, moves);
             state_info = regexLookup;
             finalstate_info = finalStates;
             counter_info = counters;
 
-            #region init counter at entrance, we know that the transitions are already in monadic form
             if (monadic)
             {
+                #region move initialization to start of counting states
                 var moves1 = new List<Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>>();
                 foreach (var move in moves)
                 {
-                    if ((move.SourceState != move.TargetState) && finalStates.ContainsKey(move.TargetState))
+                    var rtarget = regexLookup[move.TargetState];
+                    var rsource = regexLookup[move.SourceState];
+                    if (!move.IsSelfLoop)
                     {
-                        if (move.Label.Item2.IsEmpty)
+                        if (rtarget.CounterId >= 0)
                         {
-                            var move1 = Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>.Create(move.SourceState, move.TargetState,
-                                new Tuple<Maybe<S>, Sequence<CounterOperation>>(move.Label.Item1, new Sequence<CounterOperation>(new CounterOperation(move.Label.Item2.First.Counter, CounterOp.SET0))));
+                            if (move.Label.Item2.IsEmpty)
+                                moves1.Add(MkMove(move, new CounterOperation(rtarget, CounterOp.SET0)));
+                            else if (move.Label.Item2.Length == 1)
+                            {
+                                if (move.Label.Item2.First.OperationKind == CounterOp.INCR)
+                                    moves1.Add(MkMove(move, new CounterOperation(rtarget, CounterOp.SET1)));
+                                else if (move.Label.Item2.First.OperationKind == CounterOp.EXIT)
+                                    moves1.Add(MkMove(move, move.Label.Item2.First, 
+                                        new CounterOperation(rtarget, CounterOp.SET0)));
+                                else
+                                    moves1.Add(move);
+                            }
+                            else if (move.Label.Item2.Length == 2)
+                            {
+                                if (move.Label.Item2.Exists(x => x.OperationKind == CounterOp.EXIT && x.Counter.Equals(rsource)) &&
+                                    move.Label.Item2.Exists(x => (x.OperationKind == CounterOp.INCR || x.OperationKind == CounterOp.SET1) && x.Counter.Equals(rtarget)))
+                                    moves1.Add(MkMove(move, new CounterOperation(rsource, CounterOp.EXIT),
+                                                            new CounterOperation(rtarget, CounterOp.SET1)));
+                                else if (move.Label.Item2.Exists(x => x.OperationKind == CounterOp.EXIT && x.Counter.Equals(rsource)) &&
+                                         move.Label.Item2.Exists(x => x.OperationKind == CounterOp.SET0 && x.Counter.Equals(rtarget)))
+                                    moves1.Add(MkMove(move, new CounterOperation(rsource, CounterOp.EXIT),
+                                                            new CounterOperation(rtarget, CounterOp.SET0)));
+                                else
+                                    throw new AutomataException(AutomataExceptionKind.InternalError);
+                            }
+                            else
+                                throw new AutomataException(AutomataExceptionKind.InternalError);
                         }
+                        else
+                            moves1.Add(move);
                     }
+                    else
+                        moves1.Add(move);
                 }
+                #endregion
+                var aut = Automaton<Tuple<Maybe<S>, Sequence<CounterOperation>>>.Create(new CABA<S>(builder), 0, finalStates.Keys, moves1);
+                return aut;
             }
-            #endregion
+            else
+            {
+                var aut = Automaton<Tuple<Maybe<S>, Sequence<CounterOperation>>>.Create(new CABA<S>(builder), 0, finalStates.Keys, moves);
+                return aut;
+            }
+        }
 
-            return aut;
+        private static Move<Tuple<Maybe<S>, Sequence<CounterOperation>>> MkMove(Move<Tuple<Maybe<S>, Sequence<CounterOperation>>> move, params CounterOperation[] ops)
+        {
+            var lab = new Tuple<Maybe<S>, Sequence<CounterOperation>>(move.Label.Item1, new Sequence<CounterOperation>(ops));
+            var move1 = Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>.Create(move.SourceState, move.TargetState, lab);
+            return move1;
         }
 
         //internal Sequence<CounterOperation> GetCounterInitConditions()
@@ -1849,7 +1890,7 @@ namespace Microsoft.Automata
         }
 
         /// <summary>
-        /// If this is a loop other than star or plus then the id of the associated counter
+        /// If this node starts with a loop other than star or plus then the nonnegative id of the associated counter else -1
         /// </summary>
         public int CounterId
         {
@@ -1857,6 +1898,8 @@ namespace Microsoft.Automata
             {
                 if (this.kind == SymbolicRegexKind.Loop && !this.IsStar && !this.IsPlus)
                     return this.builder.GetCounterId(this);
+                else if (this.kind == SymbolicRegexKind.Concat)
+                    return left.CounterId;
                 else
                     return -1;
             }

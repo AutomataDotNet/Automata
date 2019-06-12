@@ -270,10 +270,20 @@ namespace Automata.Tests
         public void TestConditionalDerivativeExploration_MonadicLoopInStar()
         {
             Microsoft.Automata.DirectedGraphs.Options.MaxDgmlTransitionLabelLength = 500;
-            var regex = new Regex("a(aaa{10})*", RegexOptions.Singleline);
+            var regex = new Regex("(aaa{10})*", RegexOptions.Singleline);
             var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
             var aut = sr.Pattern.CreateCountingAutomaton(true);
             aut.ShowGraph("MonadicLoopInStar");
+        }
+
+        [TestMethod]
+        public void TestConditionalDerivativeExploration_TwoMonadicLoops()
+        {
+            Microsoft.Automata.DirectedGraphs.Options.MaxDgmlTransitionLabelLength = 500;
+            var regex = new Regex("(a{10,100}a{5,50})*", RegexOptions.Singleline);
+            var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
+            var aut = sr.Pattern.CreateCountingAutomaton(true);
+            aut.ShowGraph("TwoMonadicLoops");
         }
     }
 }
