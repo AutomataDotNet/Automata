@@ -5127,7 +5127,7 @@ namespace Microsoft.Automata
         /// <summary>
         /// Returns lab.ToString(), or the empty string when S is not a value type and lab is null. 
         /// </summary>
-        public string DescribeLabel(T lab)
+        public virtual string DescribeLabel(T lab)
         {
             if (typeof(T).IsValueType)
                 return lab.ToString();
@@ -5142,7 +5142,7 @@ namespace Microsoft.Automata
         #region IAutomaton<S> Members
 
 
-        public string DescribeStartLabel()
+        public virtual string DescribeStartLabel()
         {
             return "";
         }

@@ -792,29 +792,7 @@ namespace Microsoft.Automata
                                     yield return cd;
                                 }
                             }
-                            //--- already normalized, this should be dead code
-                            //else if (node.IsPlus)
-                            //{
-                            //    var star = this.MkLoop(node.left);
-                            //    var expandedloop = this.MkConcat(node.left, star);
-                            //    foreach (var deriv in this.EnumerateConditionalDerivatives(elem, expandedloop))
-                            //        yield return deriv;
-                            //}
-                            //else if (node.IsMaybe)
-                            //{
-                            //    foreach (var step in this.EnumerateConditionalDerivatives(elem, node.left))
-                            //        yield return step;
-                            //}
-                            //else if (node.UpperBound == int.MaxValue)
-                            //{
-                            //    //normalize A{k,*} loop into A{k}A*
-                            //    var Ak = this.MkLoop(node.left, node.lower, node.lower);
-                            //    var Astar = this.MkLoop(node.left, 0, int.MaxValue);
-                            //    var expandedloop = this.MkConcat(Ak, Astar);
-                            //    foreach (var step in this.EnumerateConditionalDerivatives(elem, expandedloop))
-                            //        yield return step;
-                            //}
-                            else
+                            else //assumes that loops have been normalized
                             {
                                 CounterOperation ca = new CounterOperation(node, CounterOp.INCR);
                                 foreach (var step in this.EnumerateConditionalDerivatives(elem, node.left))
@@ -835,17 +813,60 @@ namespace Microsoft.Automata
                 }
         }
 
-        Dictionary<object, int> counterIdMap = new Dictionary<object, int>();
-        internal int GetCounterId(object o)
+        Dictionary<SymbolicRegexNode<S>, int> counterIdMap = new Dictionary<SymbolicRegexNode<S>, int>();
+        internal int GetCounterId(SymbolicRegexNode<S> node)
         {
-            int id;
-            if (!counterIdMap.TryGetValue(o, out id))
+            if (node.kind == SymbolicRegexKind.Loop)
             {
-                id = counterIdMap.Count;
-                counterIdMap[o] = id;
+                if (node.upper < int.MaxValue)
+                {
+                    int c;
+                    if (counterIdMap.TryGetValue(node, out c))
+                        return c;
+
+                    c = counterIdMap.Count;
+                    counterIdMap[node] = c;
+                    return c;
+                }
+                else
+                    return -1;
             }
-            return id;
+            else
+                return -1;
         }
+
+
+
+        //Dictionary<SymbolicRegexNode<S>, BoundedCounter> counterMap = new Dictionary<SymbolicRegexNode<S>, BoundedCounter>();
+        //int counterId = 0;
+        //internal ICounter GetCounter(SymbolicRegexNode<S> node)
+        //{
+        //    BoundedCounter c;
+        //    if (counterMap.TryGetValue(node, out c))
+        //        return c;
+
+        //    if (node.kind == SymbolicRegexKind.Loop || node.kind == SymbolicRegexKind.Concat)
+        //    {
+        //        //iterate to the leftmost element 
+        //        var first = node;
+        //        while (first.kind == SymbolicRegexKind.Concat)
+        //            first = first.left;
+
+        //        if (first.kind == SymbolicRegexKind.Loop && first.upper < int.MaxValue)
+        //        {
+        //            var id = counterId;
+        //            counterId += 1;
+        //            //TBD:subcounter, needed for nested bounded loops
+        //            c = new BoundedCounter(id, first.lower, first.upper);
+        //            counterMap[node] = c;
+        //            return c;
+        //        }
+        //        else
+        //            return null;
+        //    }
+        //    else
+        //        return null;
+        //}
 
         SymbolicRegexNode<S> ToLeftAssocForm(SymbolicRegexNode<S> node)
         {

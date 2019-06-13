@@ -9,16 +9,14 @@ namespace Microsoft.Automata
 
     public class CountingAutomaton<S> : Automaton<Tuple<Maybe<S>, Sequence<CounterOperation>>>
     {
+        Dictionary<int, ICounter> countingStates;
         Dictionary<int, SymbolicRegexNode<S>> stateMap;
-        HashSet<ICounter> counters;
-        Dictionary<int, Sequence<CounterOperation>> finalStates;
 
         internal CountingAutomaton(Automaton<Tuple<Maybe<S>, Sequence<CounterOperation>>> aut,
-            Dictionary<int, SymbolicRegexNode<S>> stateMap, Dictionary<int, Sequence<CounterOperation>> finalStates, HashSet<ICounter> counters) : base(aut)
+            Dictionary<int, SymbolicRegexNode<S>> stateMap, Dictionary<int, ICounter> countingStates) : base(aut)
         {
+            this.countingStates = countingStates;
             this.stateMap = stateMap;
-            this.counters = counters;
-            this.finalStates = finalStates;
         }
 
         /// <summary>
@@ -28,18 +26,45 @@ namespace Microsoft.Automata
         {
             get
             {
-                return counters.Count;
+                return countingStates.Count;
             }
         }
 
+        /// <summary>
+        /// Returns the final state condition of a final state. 
+        /// </summary>
         public Sequence<CounterOperation> GetFinalStateCondition(int state)
         {
-            return finalStates[state];
+            if (!IsFinalState(state))
+                throw new AutomataException(AutomataExceptionKind.ArgumentMustBeFinalState);
+
+            if (countingStates.ContainsKey(state))
+            {
+                return new Sequence<CounterOperation>(new CounterOperation(countingStates[state], CounterOp.EXIT));
+            }
+            else
+                return Sequence<CounterOperation>.Empty;
         }
 
         public override string DescribeState(int state)
         {
             return stateMap[state].ToString();
+        }
+
+        public override string DescribeStartLabel()
+        {
+            if (IsCountingState(InitialState))
+            {
+                var c = countingStates[InitialState];
+                return string.Format("c{0}:=0", c.CounterId);
+            }
+            else
+                return "";
+        }
+
+        public bool IsCountingState(int state)
+        {
+            return countingStates.ContainsKey(state);
         }
     }
 

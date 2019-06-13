@@ -124,6 +124,56 @@ namespace Microsoft.Automata
     }
 
     /// <summary>
+    /// Represents a counter with finite lower and upper bounds
+    /// </summary>
+    internal class BoundedCounter : ICounter
+    {
+        int id;
+        int lowerBound;
+        int upperBound;
+
+        public BoundedCounter(int id, int lowerBound, int upperBound)
+        {
+            this.id = id;
+            this.lowerBound = lowerBound;
+            this.upperBound = upperBound;
+        }
+
+        public int CounterId
+        {
+            get
+            {
+                return id;
+            }
+        }
+
+        public int LowerBound
+        {
+            get
+            {
+                return lowerBound;
+            }
+        }
+
+        public int UpperBound
+        {
+            get
+            {
+                return upperBound;
+            }
+        }
+
+        /// <summary>
+        /// The counter is intended to be used when subcounters (nested counters) do not occur.
+        /// This function returns false always.
+        /// </summary>
+        public bool ContainsSubCounter(ICounter counter)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
     /// Conditional derivative
     /// </summary>
     /// <typeparam name="S">input predicate type</typeparam>

@@ -295,5 +295,6 @@ namespace Microsoft.Automata
         AutomatonMissingTransition,
         InternalError_DistinguishingSequenceGeneration,
         InvalidCall,
+        ArgumentMustBeFinalState,
     }
 }

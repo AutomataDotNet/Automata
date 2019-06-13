@@ -198,11 +198,11 @@ namespace Automata.Tests
         [TestMethod]
         public void TestConditionalDerivativeExploration_NestedLoop()
         {
-            var regex = new Regex("(a{3}){10,100}", RegexOptions.Singleline);
+            var regex = new Regex("(a{3}){5,10}", RegexOptions.Singleline);
             var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
             var q1 = sr.Pattern;
             var aut = q1.CreateCountingAutomaton();
-            //aut.ShowGraph("nestedloop");
+            aut.ShowGraph("nestedloop");
         }
 
         [TestMethod]
@@ -223,10 +223,23 @@ namespace Automata.Tests
             var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
             var q1 = sr.Pattern.MkMonadic();
             Assert.IsTrue(q1.kind == SymbolicRegexKind.Concat);
-            Assert.IsTrue(q1.ConcatCount == 3);
+            //Assert.IsTrue(q1.ConcatCount == 3);
             var aut = q1.CreateCountingAutomaton();
-            Assert.IsTrue(aut.StateCount == 5);
-            //aut.ShowGraph("Normalize");
+            //Assert.IsTrue(aut.StateCount == 5);
+            aut.ShowGraph("Normalize");
+        }
+
+        [TestMethod]
+        public void TestConditionalDerivativeExploration_Normalize1()
+        {
+            var regex = new Regex(".*a{3}", RegexOptions.Singleline);
+            var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
+            var q1 = sr.Pattern.MkMonadic();
+            Assert.IsTrue(q1.kind == SymbolicRegexKind.Concat);
+            //Assert.IsTrue(q1.ConcatCount == 3);
+            var aut = q1.CreateCountingAutomaton();
+            //Assert.IsTrue(aut.StateCount == 5);
+            aut.ShowGraph("Normalize");
         }
 
         [TestMethod]
@@ -247,7 +260,7 @@ namespace Automata.Tests
             Microsoft.Automata.DirectedGraphs.Options.MaxDgmlTransitionLabelLength = 100;
             var regex = new Regex("(?i:a{3,30}[abc]{4,40})", RegexOptions.Singleline);
             var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
-            var q1 = sr.Pattern.MkMonadic();
+            var q1 = sr.Pattern;
             Assert.IsTrue(q1.kind == SymbolicRegexKind.Concat);
             var aut = q1.CreateCountingAutomaton();
             aut.ShowGraph("Normalize3");
@@ -259,7 +272,7 @@ namespace Automata.Tests
             Microsoft.Automata.DirectedGraphs.Options.MaxDgmlTransitionLabelLength = 500;
             var regex = new Regex(".*a.{5}", RegexOptions.Singleline);
             var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
-            var q1 = sr.Pattern.MkMonadic();
+            var q1 = sr.Pattern;
             Assert.IsTrue(q1.kind == SymbolicRegexKind.Concat);
             Assert.IsTrue(q1.ConcatCount == 2);
             var aut = q1.CreateCountingAutomaton();
@@ -272,18 +285,38 @@ namespace Automata.Tests
             Microsoft.Automata.DirectedGraphs.Options.MaxDgmlTransitionLabelLength = 500;
             var regex = new Regex("(aaa{10})*", RegexOptions.Singleline);
             var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
-            var aut = sr.Pattern.CreateCountingAutomaton(true);
+            var aut = sr.Pattern.CreateCountingAutomaton();
             aut.ShowGraph("MonadicLoopInStar");
         }
 
         [TestMethod]
-        public void TestConditionalDerivativeExploration_TwoMonadicLoops()
+        public void TestConditionalDerivativeExploration_TwoOverlappingMonadicLoops()
         {
             Microsoft.Automata.DirectedGraphs.Options.MaxDgmlTransitionLabelLength = 500;
-            var regex = new Regex("(a{10,100}a{5,50})*", RegexOptions.Singleline);
+            var regex = new Regex("a{10,100}a{5,50}", RegexOptions.Singleline);
             var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
-            var aut = sr.Pattern.CreateCountingAutomaton(true);
-            aut.ShowGraph("TwoMonadicLoops");
+            var aut = sr.Pattern.CreateCountingAutomaton();
+            aut.ShowGraph("TwoOverlappingMonadicLoops");
+        }
+
+        [TestMethod]
+        public void TestConditionalDerivativeExploration_SameMonadicLoopX3()
+        {
+            Microsoft.Automata.DirectedGraphs.Options.MaxDgmlTransitionLabelLength = 500;
+            var regex = new Regex("(a{5,50}){3}", RegexOptions.Singleline);
+            var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
+            var aut = sr.Pattern.CreateCountingAutomaton();
+            aut.ShowGraph("SameMonadicLoopX3");
+        }
+
+        [TestMethod]
+        public void TestConditionalDerivativeExploration_SameMonadicRegexX3()
+        {
+            Microsoft.Automata.DirectedGraphs.Options.MaxDgmlTransitionLabelLength = 500;
+            var regex = new Regex("(ab{5,50}){3}", RegexOptions.Singleline);
+            var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
+            var aut = sr.Pattern.CreateCountingAutomaton();
+            aut.ShowGraph("SameMonadicRegexX3");
         }
     }
 }
