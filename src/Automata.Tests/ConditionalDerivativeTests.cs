@@ -19,7 +19,7 @@ namespace Automata.Tests
     [TestClass]
     public class ConditionalDerivativeTests
     {
-        [TestMethod]
+        //[TestMethod]
         public void TestConditionalDerivativeEnumeration()
         {
             var regex = new Regex("((ab){3,9}){7}");
@@ -27,22 +27,22 @@ namespace Automata.Tests
             var a = q1.builder.solver.MkCharConstraint('a');
             var b = q1.builder.solver.MkCharConstraint('b');
             //---
-            var q1_a_derivs = q1.GetConditinalDerivatives(a);
-            var q1_b_derivs = q1.GetConditinalDerivatives(b);
+            var q1_a_derivs = q1.GetConditinalDerivatives(a, false);
+            var q1_b_derivs = q1.GetConditinalDerivatives(b, false);
             Assert.IsTrue(q1_b_derivs.Count == 0);
             Assert.IsTrue(q1_a_derivs.Count == 1);
             Assert.IsTrue(q1_a_derivs[0].Condition.Length == 2);
             //---
             var q2 = q1_a_derivs[0].PartialDerivative;
-            var q2_a_derivs = q2.GetConditinalDerivatives(a);
-            var q2_b_derivs = q2.GetConditinalDerivatives(b);
+            var q2_a_derivs = q2.GetConditinalDerivatives(a, false);
+            var q2_b_derivs = q2.GetConditinalDerivatives(b, false);
             Assert.IsTrue(q2_a_derivs.Count == 0);
             Assert.IsTrue(q2_b_derivs.Count == 1);
             Assert.IsTrue(q2_b_derivs[0].Condition.Length == 0);
             //---
             var q3 = q2_b_derivs[0].PartialDerivative;
-            var q3_a_derivs = q3.GetConditinalDerivatives(a);
-            var q3_b_derivs = q3.GetConditinalDerivatives(b);
+            var q3_a_derivs = q3.GetConditinalDerivatives(a, false);
+            var q3_b_derivs = q3.GetConditinalDerivatives(b, false);
             Assert.IsTrue(q3_b_derivs.Count == 0);
             Assert.IsTrue(q3_a_derivs.Count == 2);
         }
@@ -55,15 +55,15 @@ namespace Automata.Tests
             var a = q1.builder.solver.MkCharConstraint('a');
             var b = q1.builder.solver.MkCharConstraint('b');
             //---
-            var q1_a_derivs = q1.GetConditinalDerivatives(a);
-            var q1_b_derivs = q1.GetConditinalDerivatives(b);
+            var q1_a_derivs = q1.GetConditinalDerivatives(a, true);
+            var q1_b_derivs = q1.GetConditinalDerivatives(b, true);
             Assert.IsTrue(q1_b_derivs.Count == 0);
             Assert.IsTrue(q1_a_derivs.Count == 1);
             Assert.IsTrue(q1_a_derivs[0].Condition.Length == 0);
             //---
             var q2 = q1_a_derivs[0].PartialDerivative;
-            var q2_a_derivs = q2.GetConditinalDerivatives(a);
-            var q2_b_derivs = q2.GetConditinalDerivatives(b);
+            var q2_a_derivs = q2.GetConditinalDerivatives(a, true);
+            var q2_b_derivs = q2.GetConditinalDerivatives(b, true);
             Assert.IsTrue(q2_a_derivs.Count == 1);
             Assert.IsTrue(q2_b_derivs.Count == 1);
             Assert.IsTrue(q2_b_derivs[0].Condition.Length == 1);
@@ -77,7 +77,7 @@ namespace Automata.Tests
 
         }
 
-        [TestMethod]
+        //[TestMethod]
         public void TestConditionalDerivativeEnumeration3()
         {
             var regex = new Regex("((ac){10}|(ab){20}){50}");
@@ -85,15 +85,15 @@ namespace Automata.Tests
             var a = q1.builder.solver.MkCharConstraint('a');
             var b = q1.builder.solver.MkCharConstraint('b');
             //---
-            var q1_a_derivs = q1.GetConditinalDerivatives(a);
-            var q1_b_derivs = q1.GetConditinalDerivatives(b);
+            var q1_a_derivs = q1.GetConditinalDerivatives(a, false);
+            var q1_b_derivs = q1.GetConditinalDerivatives(b, false);
             Assert.IsTrue(q1_b_derivs.Count == 0);
             Assert.IsTrue(q1_a_derivs.Count == 2);
             Assert.IsTrue(q1_a_derivs[0].Condition.Length == 2);
             //---
             var q2 = q1_a_derivs[1].PartialDerivative;
-            var q2_a_derivs = q2.GetConditinalDerivatives(a);
-            var q2_b_derivs = q2.GetConditinalDerivatives(b);
+            var q2_a_derivs = q2.GetConditinalDerivatives(a, false);
+            var q2_b_derivs = q2.GetConditinalDerivatives(b, false);
             Assert.IsTrue(q2_a_derivs.Count == 0);
             Assert.IsTrue(q2_b_derivs.Count == 1);
             Assert.IsTrue(q2_b_derivs[0].Condition.Length == 0);
@@ -101,58 +101,14 @@ namespace Automata.Tests
         }
 
         [TestMethod]
-        public void TestConditionalDerivativeExploration()
-        {
-            var regex = new Regex(".*a.{10}", RegexOptions.Singleline);
-            var q1 = ((SymbolicRegex<ulong>)regex.Compile(true, false)).Pattern;
-            var aut = q1.Explore();
-            //aut.ShowGraph("CA");
-        }
-
-        [TestMethod]
-        public void TestConditionalDerivativeExploration2()
-        {
-            var regex = new Regex(".*a(.|..){10}", RegexOptions.Singleline);
-            var q1 = ((SymbolicRegex<ulong>)regex.Compile(true, false)).Pattern;
-            var aut = q1.Explore();
-            //aut.ShowGraph("CA2");
-        }
-
-        [TestMethod]
-        public void TestConditionalDerivativeExploration3()
-        {
-            var regex = new Regex(".*a(.|..){10,20}", RegexOptions.Singleline);
-            var q1 = ((SymbolicRegex<ulong>)regex.Compile(true, false)).Pattern;
-            var aut = q1.Explore();
-            //aut.ShowGraph("CA3");
-        }
-
-        [TestMethod]
-        public void TestNestedLoopExploration()
-        {
-            var regex = new Regex("((ab){5}){7}", RegexOptions.Singleline);
-            var q1 = ((SymbolicRegex<ulong>)regex.Compile(true, false)).Pattern;
-            var aut = q1.Explore();
-            //aut.ShowGraph("nestedloop");
-        }
-
-        [TestMethod]
-        public void TestNestedNestedLoopExploration()
-        {
-            var regex = new Regex("((a{3}){4}){5}", RegexOptions.Singleline);
-            var q1 = ((SymbolicRegex<ulong>)regex.Compile(true, false)).Pattern;
-            var aut = q1.Explore();
-            Assert.IsTrue(aut.MoveCount == 6);
-            //aut.ShowGraph("nestednestedloop");
-        }
-
-        [TestMethod]
         public void TestConditionalDerivativeExploration4()
         {
             var regex = new Regex("(a{3})*", RegexOptions.Singleline);
             var q1 = ((SymbolicRegex<ulong>)regex.Compile(true, false)).Pattern;
-            var aut = q1.Explore();
-            //aut.ShowGraph("test");
+            var aut = q1.CreateCountingAutomaton();
+            Assert.IsTrue(aut.StateCount == 2);
+            Assert.IsTrue(aut.NrOfCounters == 1);
+            //aut.ShowGraph("test4");
         }
 
         [TestMethod]
@@ -160,9 +116,9 @@ namespace Automata.Tests
         {
             var regex = new Regex("a.{4}b", RegexOptions.Singleline);
             var q1 = ((SymbolicRegex<ulong>)regex.Compile(true, false)).Pattern;
-            var aut = q1.Explore();
+            var aut = q1.CreateCountingAutomaton();
             Assert.IsTrue(aut.MoveCount == 6);
-            //aut.ShowGraph("test");
+            //aut.ShowGraph("test5");
         }
 
         [TestMethod]
@@ -170,9 +126,10 @@ namespace Automata.Tests
         {
             var regex = new Regex("a{9}a{9}", RegexOptions.Singleline);
             var q1 = ((SymbolicRegex<ulong>)regex.Compile(true, false)).Pattern;
-            var aut = q1.Explore();
+            var aut = q1.CreateCountingAutomaton();
             Assert.IsTrue(aut.MoveCount == 4);
-            //aut.ShowGraph("a9a9");
+            Assert.IsTrue(aut.NrOfCounters == 2);
+            //aut.ShowGraph("LoopTwice");
         }
 
         [TestMethod]
@@ -180,9 +137,10 @@ namespace Automata.Tests
         {
             var regex = new Regex("a{9}a{0,9}", RegexOptions.Singleline);
             var q1 = ((SymbolicRegex<ulong>)regex.Compile(true, false)).Pattern;
-            var aut = q1.Explore();
+            var aut = q1.CreateCountingAutomaton();
             Assert.IsTrue(aut.MoveCount == 5);
-            //aut.ShowGraph("a9a09");
+            Assert.IsTrue(aut.NrOfCounters == 2);
+            //aut.ShowGraph("TwoLoops");
         }
 
         [TestMethod]
@@ -190,7 +148,8 @@ namespace Automata.Tests
         {
             var regex = new Regex("ab{10,}", RegexOptions.Singleline);
             var q1 = ((SymbolicRegex<ulong>)regex.Compile(true, false)).Pattern;
-            var aut = q1.Explore();
+            var aut = q1.CreateCountingAutomaton();
+            Assert.IsTrue(aut.NrOfCounters == 1);
             Assert.IsTrue(aut.MoveCount == 6);
             //aut.ShowGraph("ab10bstar");
         }
@@ -198,21 +157,22 @@ namespace Automata.Tests
         [TestMethod]
         public void TestConditionalDerivativeExploration_NestedLoop()
         {
-            var regex = new Regex("(a{3}){5,10}", RegexOptions.Singleline);
+            var regex = new Regex("(a{3}){1,2}", RegexOptions.Singleline);
             var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
             var q1 = sr.Pattern;
             var aut = q1.CreateCountingAutomaton();
-            aut.ShowGraph("nestedloop");
+            Assert.IsTrue(aut.StateCount == 2);
+            //aut.ShowGraph("nestedloop");
         }
 
         [TestMethod]
         public void TestConditionalDerivativeExploration_CompositionBugFix()
         {
-            var regex = new Regex("(a{3}a{3}(()|a{3}a{3}))", RegexOptions.Singleline);
+            var regex = new Regex(".*(a{3}a{3}(()|a{3}a{3}))", RegexOptions.Singleline);
             var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
             var q1 = sr.Pattern;
             var aut = q1.CreateCountingAutomaton();
-            Assert.IsTrue(aut.StateCount == 4);
+            Assert.IsTrue(aut.StateCount == 5);
             //aut.ShowGraph("CompositionBugFix");
         }
 
@@ -223,10 +183,10 @@ namespace Automata.Tests
             var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
             var q1 = sr.Pattern.MkMonadic();
             Assert.IsTrue(q1.kind == SymbolicRegexKind.Concat);
-            //Assert.IsTrue(q1.ConcatCount == 3);
+            Assert.IsTrue(q1.ConcatCount == 3);
             var aut = q1.CreateCountingAutomaton();
-            //Assert.IsTrue(aut.StateCount == 5);
-            aut.ShowGraph("Normalize");
+            Assert.IsTrue(aut.StateCount == 5);
+            //aut.ShowGraph("Normalize");
         }
 
         [TestMethod]
@@ -239,7 +199,7 @@ namespace Automata.Tests
             //Assert.IsTrue(q1.ConcatCount == 3);
             var aut = q1.CreateCountingAutomaton();
             //Assert.IsTrue(aut.StateCount == 5);
-            aut.ShowGraph("Normalize");
+            //aut.ShowGraph("Normalize");
         }
 
         [TestMethod]
@@ -263,14 +223,14 @@ namespace Automata.Tests
             var q1 = sr.Pattern;
             Assert.IsTrue(q1.kind == SymbolicRegexKind.Concat);
             var aut = q1.CreateCountingAutomaton();
-            aut.ShowGraph("Normalize3");
+            //aut.ShowGraph("Normalize3");
         }
 
         [TestMethod]
         public void TestConditionalDerivativeExploration_ATVARunningExample()
         {
             Microsoft.Automata.DirectedGraphs.Options.MaxDgmlTransitionLabelLength = 500;
-            var regex = new Regex(".*a.{5}", RegexOptions.Singleline);
+            var regex = new Regex(".*a.{10}", RegexOptions.Singleline);
             var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
             var q1 = sr.Pattern;
             Assert.IsTrue(q1.kind == SymbolicRegexKind.Concat);
@@ -280,13 +240,26 @@ namespace Automata.Tests
         }
 
         [TestMethod]
+        public void TestConditionalDerivativeExploration_ATVARunningExample2()
+        {
+            Microsoft.Automata.DirectedGraphs.Options.MaxDgmlTransitionLabelLength = 500;
+            var regex = new Regex("b*a[ab]{10,100}[ab]{5,50}", RegexOptions.Singleline);
+            var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
+            var q1 = sr.Pattern;
+            Assert.IsTrue(q1.kind == SymbolicRegexKind.Concat);
+            Assert.IsTrue(q1.ConcatCount == 3);
+            var aut = q1.CreateCountingAutomaton();
+            //aut.ShowGraph("ATVARunningExample2");
+        }
+
+        [TestMethod]
         public void TestConditionalDerivativeExploration_MonadicLoopInStar()
         {
             Microsoft.Automata.DirectedGraphs.Options.MaxDgmlTransitionLabelLength = 500;
             var regex = new Regex("(aaa{10})*", RegexOptions.Singleline);
             var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
             var aut = sr.Pattern.CreateCountingAutomaton();
-            aut.ShowGraph("MonadicLoopInStar");
+            //aut.ShowGraph("MonadicLoopInStar");
         }
 
         [TestMethod]
@@ -296,7 +269,7 @@ namespace Automata.Tests
             var regex = new Regex("a{10,100}a{5,50}", RegexOptions.Singleline);
             var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
             var aut = sr.Pattern.CreateCountingAutomaton();
-            aut.ShowGraph("TwoOverlappingMonadicLoops");
+            //aut.ShowGraph("TwoOverlappingMonadicLoops");
         }
 
         [TestMethod]
@@ -306,7 +279,7 @@ namespace Automata.Tests
             var regex = new Regex("(a{5,50}){3}", RegexOptions.Singleline);
             var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
             var aut = sr.Pattern.CreateCountingAutomaton();
-            aut.ShowGraph("SameMonadicLoopX3");
+            //aut.ShowGraph("SameMonadicLoopX3");
         }
 
         [TestMethod]
@@ -316,7 +289,7 @@ namespace Automata.Tests
             var regex = new Regex("(ab{5,50}){3}", RegexOptions.Singleline);
             var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
             var aut = sr.Pattern.CreateCountingAutomaton();
-            aut.ShowGraph("SameMonadicRegexX3");
+            //aut.ShowGraph("SameMonadicRegexX3");
         }
     }
 }

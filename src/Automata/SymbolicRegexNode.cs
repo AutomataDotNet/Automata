@@ -345,14 +345,19 @@ namespace Microsoft.Automata
         /// <summary>
         /// Returns the number of top-level concatenation nodes.
         /// </summary>
+        int _ConcatCount = -1;
         public int ConcatCount
         {
             get
             {
-                if (this.kind == SymbolicRegexKind.Concat)
-                    return left.ConcatCount + right.ConcatCount + 1;
-                else
-                    return 0;
+                if (_ConcatCount == -1)
+                {
+                    if (this.kind == SymbolicRegexKind.Concat)
+                        _ConcatCount = left.ConcatCount + right.ConcatCount + 1;
+                    else
+                        _ConcatCount = 0;
+                }
+                return _ConcatCount;
             }
         }
 
@@ -698,20 +703,89 @@ namespace Microsoft.Automata
             }
         }
 
-        [NonSerialized]
-        string toString = null;
         /// <summary>
         /// Produce a string representation of the symbolic regex. 
         /// </summary>
         public override string ToString()
         {
-            if (toString == null)
+
+            switch (this.kind)
             {
-                var sb = new StringBuilder();
-                ComputeToString(this, sb);
-                toString = sb.ToString();
+                case SymbolicRegexKind.StartAnchor:
+                    {
+                        return "^";
+                    }
+                case SymbolicRegexKind.EndAnchor:
+                    {
+                        return "$";
+                    }
+                case SymbolicRegexKind.Epsilon:
+                    {
+                        return "()";
+                    }
+                case SymbolicRegexKind.Singleton:
+                    {
+                        return builder.solver.PrettyPrint(this.set);
+                    }
+                case SymbolicRegexKind.Loop:
+                    {
+                        var body = this.left.ToString();
+                        if (this.left.kind != SymbolicRegexKind.Singleton)
+                            body = "(" + body + ")";
+                        if (this.IsMaybe)
+                            return body + "?";
+                        else if (this.IsStar)
+                            return body + "*";
+                        else if (this.IsPlus)
+                            return body + "+";
+                        else
+                        {
+                            string bounds = this.lower.ToString();
+                            if (this.upper > this.lower)
+                            {
+                                bounds += ",";
+                                if (this.upper < int.MaxValue)
+                                    bounds += this.upper.ToString();
+                            }
+                            return body + "{" + bounds + "}";
+                        }
+                    }
+                case SymbolicRegexKind.Concat:
+                    {
+                        string s = "";
+                        var node = this;
+                        while (node.kind == SymbolicRegexKind.Concat)
+                        {
+                            if (node.left.kind == SymbolicRegexKind.Or)
+                            {
+                                s += "(" + node.left.ToString() + ")";
+                            }
+                            else
+                            {
+                                s += node.left.ToString();
+                            }
+                            node = node.right;
+                        }
+                        if (node.kind == SymbolicRegexKind.Or)
+                        {
+                            s += "(" + node.ToString() + ")";
+                        }
+                        else
+                        {
+                            s += node.ToString();
+                        }
+                        return s;
+                    }
+                case SymbolicRegexKind.Or:
+                case SymbolicRegexKind.And:
+                    {
+                        return this.alts.ToString();
+                    }
+                default: //if-then-else
+                    {
+                        return "(?(" + this.iteCond.ToString() + ")(" + this.left.ToString() + ")|(" + this.right.ToString() + "))";
+                    }
             }
-            return toString;
         }
 
         private static void ComputeToString(SymbolicRegexNode<S> top, StringBuilder sb)
@@ -1015,6 +1089,30 @@ namespace Microsoft.Automata
             }
         }
 
+        //bool IsNullableInitially
+        //{
+        //    get
+        //    {
+        //        if (isNullable)
+        //            return true;
+        //        else if (kind == SymbolicRegexKind.Loop)
+        //            return lower == 0;
+        //        else if (kind == SymbolicRegexKind.Concat)
+        //            return left.IsNullableInitially && right.IsNullableInitially;
+        //        else if (kind == SymbolicRegexKind.Or)
+        //        {
+        //            foreach (var choice in alts)
+        //                if (choice.IsNullableInitially)
+        //                    return true;
+        //            return false;
+        //        }
+        //        else
+        //        {
+        //            return false;
+        //        }
+        //    }
+        //}
+
         /// <summary>
         /// Replace all anchors (^ and $) in the symbolic regex with () and missing anchors with .*
         /// </summary>
@@ -1043,9 +1141,9 @@ namespace Microsoft.Automata
         /// </summary>
         /// <param name="elem">given element wrt which the derivative is taken</param>
         /// <returns></returns>
-        internal List<ConditionalDerivative<S>> GetConditinalDerivatives(S elem)
+        internal List<ConditionalDerivative<S>> GetConditinalDerivatives(S elem, bool monadic)
         {
-            return new List<ConditionalDerivative<S>>(builder.EnumerateConditionalDerivatives(elem, this));
+            return new List<ConditionalDerivative<S>>(builder.EnumerateConditionalDerivatives(elem, this, monadic));
         }
 
         /// <summary>
@@ -1064,7 +1162,7 @@ namespace Microsoft.Automata
             var moves = new List<Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>>();
             var finalStates = new HashSet<int>();
             frontier.Push(0);
-            var reset0 = builder.GetNullabilityCondition(this_normalized, false);
+            var reset0 = this_normalized.GetNullabilityCondition(false);
             if (reset0 != null)
             {
                 if (reset0.TrueForAll(x => x.Counter.LowerBound == 0))
@@ -1080,7 +1178,7 @@ namespace Microsoft.Automata
                 //partition corresponds to the alphabet
                 foreach (S a in builder.solver.GetPartition())
                 {
-                    foreach (var cd in builder.EnumerateConditionalDerivatives(a, regex))
+                    foreach (var cd in builder.EnumerateConditionalDerivatives(a, regex, false))
                     {
                         int p;
                         if (!stateLookup.TryGetValue(cd.PartialDerivative, out p))
@@ -1089,7 +1187,7 @@ namespace Microsoft.Automata
                             stateLookup[cd.PartialDerivative] = p;
                             regexLookup[p] = cd.PartialDerivative;
 
-                            var reset = builder.GetNullabilityCondition(cd.PartialDerivative, false);
+                            var reset = cd.PartialDerivative.GetNullabilityCondition(false);
                             if (reset != null)
                             {
                                 if (reset.TrueForAll(x => x.Counter.LowerBound == 0))
@@ -1110,12 +1208,38 @@ namespace Microsoft.Automata
             return aut;
         }
 
+        internal Sequence<CounterOperation> GetNullabilityCondition(bool monadic)
+        {
+            if (monadic)
+            {
+                //find the leftmost node in the concatenation such that 
+                //all the ones after it are nullable in initial mode
+                var node = this;
+                while (node.kind == SymbolicRegexKind.Concat && node.right.isNullable)
+                    node = node.left;
+                //if this node is a bounded loop return its exit condition
+                if (node.IsBoundedLoop)
+                    return new Sequence<CounterOperation>(new CounterOperation(node, CounterOp.EXIT));
+                else if (node.isNullable)
+                    return Sequence<CounterOperation>.Empty;
+                else
+                    return null;
+            }
+            else
+            {
+                throw new NotImplementedException("Nonmonadic case of nullability condition not implemented");
+            }
+        }
+
         /// <summary>
         /// Counter automaton exploration utility
         /// </summary>
         /// <returns></returns>
         Automaton<Tuple<Maybe<S>, Sequence<CounterOperation>>> Explore_(out Dictionary<int, ICounter> countingStates, out Dictionary<int, SymbolicRegexNode<S>> stateMap, bool monadic = true)
         {
+            if (!monadic)
+                throw new NotImplementedException("Nonmonadic exploration is not implemented");
+
             var counters = new HashSet<ICounter>();
             var node = (monadic ? this : this.builder.NormalizeGeneralLoops(this));
             var stateLookup = new Dictionary<SymbolicRegexNode<S>, int>();
@@ -1127,7 +1251,7 @@ namespace Microsoft.Automata
             var moves = new List<Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>>();
             var finalStates = new Dictionary<int, Sequence<CounterOperation>>();
             frontier.Push(0);
-            var reset0 = builder.GetNullabilityCondition(node, monadic);
+            var reset0 = node.GetNullabilityCondition(monadic);
             if (reset0 != null)
             {
                 counters.UnionWith(reset0.ConvertAll<ICounter>(x => x.Counter));
@@ -1144,7 +1268,7 @@ namespace Microsoft.Automata
                 //partition corresponds to the alphabet
                 foreach (S a in builder.solver.GetPartition())
                 {
-                    foreach (var cd in builder.EnumerateConditionalDerivatives(a, regex))
+                    foreach (var cd in builder.EnumerateConditionalDerivatives(a, regex, monadic))
                     {
                         int p;
                         if (!stateLookup.TryGetValue(cd.PartialDerivative, out p))
@@ -1153,7 +1277,7 @@ namespace Microsoft.Automata
                             stateLookup[cd.PartialDerivative] = p;
                             regexLookup[p] = cd.PartialDerivative;
 
-                            var reset = builder.GetNullabilityCondition(cd.PartialDerivative, monadic);
+                            var reset = cd.PartialDerivative.GetNullabilityCondition(monadic);
                             if (reset != null)
                             {
                                 if (reset.TrueForAll(x => x.Counter.LowerBound == 0))
@@ -1182,7 +1306,7 @@ namespace Microsoft.Automata
                 Dictionary<Tuple<int, int>, ICounter> freshCounterMap = new Dictionary<Tuple<int, int>, ICounter>();
                 foreach (var q_r in regexLookup)
                 {
-                    var c = q_r.Value.GetMonadicCounter();
+                    var c = q_r.Value.GetBoundedCounter();
                     if (c != null)
                     {
                         var bc = new BoundedCounter(freshCounterMap.Count, c.LowerBound, c.UpperBound);
@@ -1196,8 +1320,8 @@ namespace Microsoft.Automata
 
                 Func<int, int, Sequence<CounterOperation>, Sequence<CounterOperation>> F = (s, t, ops) =>
                 {
-                    var sc = regexLookup[s].GetMonadicCounter();
-                    var tc = regexLookup[t].GetMonadicCounter();
+                    var sc = regexLookup[s].GetBoundedCounter();
+                    var tc = regexLookup[t].GetBoundedCounter();
                     var sc1 = (newCounters1.ContainsKey(s) ? newCounters1[s] : null);
                     var tc1 = (newCounters1.ContainsKey(t) ? newCounters1[t] : null);
                     var ops1 = new List<CounterOperation>();
@@ -1212,14 +1336,29 @@ namespace Microsoft.Automata
                         foreach (var op in ops)
                         {
                             if (op.OperationKind == CounterOp.EXIT)
+                            {
+                                if (!op.Counter.Equals(sc))
+                                    throw new AutomataException(AutomataExceptionKind.InternalError);
+
                                 ops1.Add(new CounterOperation(sc1, CounterOp.EXIT));
+                            }
                             else if (op.OperationKind == CounterOp.SET0)
+                            {
+                                if (!op.Counter.Equals(tc))
+                                    throw new AutomataException(AutomataExceptionKind.InternalError);
+
                                 ops1.Add(new CounterOperation(tc1, CounterOp.SET0));
+                            }
                             else if (op.OperationKind == CounterOp.SET1)
+                            {
+                                if (!op.Counter.Equals(tc))
+                                    throw new AutomataException(AutomataExceptionKind.InternalError);
+
                                 ops1.Add(new CounterOperation(tc1, CounterOp.SET1));
+                            }
                             else if (op.OperationKind == CounterOp.INCR)
                             {
-                                if (ops.Length > 1)
+                                if (!op.Counter.Equals(tc))
                                     throw new AutomataException(AutomataExceptionKind.InternalError);
 
                                 ops1.Add(new CounterOperation(tc1, CounterOp.SET1));
@@ -1247,13 +1386,13 @@ namespace Microsoft.Automata
                         }
                     }
                     var seq = new Sequence<CounterOperation>(ops1.ToArray());
-                    if (tc1 != null)
+                    if (s != t && tc1 != null)
                     {
-                        if (seq.Exists(x => x.Counter == null))
-                            throw new Exception();
-                        //t is a counting state but its counter is not being initialized
                         if (!seq.Exists(x => x.Counter.CounterId == tc1.CounterId))
+                        {
+                            //t is a counting state but its counter is not being initialized
                             seq = seq.Append(new CounterOperation(tc1, CounterOp.SET0));
+                        }
                     }
 
                     return seq;
@@ -2277,7 +2416,7 @@ namespace Microsoft.Automata
             }
         }
 
-        ICounter GetMonadicCounter()
+        ICounter GetBoundedCounter()
         {
             var node = this;
             while (node.Kind == SymbolicRegexKind.Concat)
@@ -2288,20 +2427,20 @@ namespace Microsoft.Automata
                 return null;
         }
 
-        bool IsMonadicCountingState
-        {
-            get
-            {
-                return (GetMonadicCounter() != null);
-            }
-        }
+        //bool IsBoundedCounter
+        //{
+        //    get
+        //    {
+        //        return (GetBoundedCounter() != null);
+        //    }
+        //}
 
         /// <summary>
         /// Unwinds nonmonadic bounded quantifiers, and splits monadic bounded quantifiers without upper bounds to a fixed loop followed by Kleene star
         /// </summary>
         public SymbolicRegexNode<S> MkMonadic()
         {
-            if (ExistsNode(x => x.IsNonmonadicBoundedLoop))
+            if (ExistsNode(x => (x.IsNonmonadicBoundedLoop || x.IsMonadicLoopWithLowerButWihtoutUpperBound)))
                 return UnwindNonmonadic_();
             else
                 return this;
@@ -2376,6 +2515,9 @@ namespace Microsoft.Automata
             }
         }
 
+        /// <summary>
+        /// Returns true if this is a loop with an upper bound
+        /// </summary>
         public bool IsBoundedLoop
         {
             get
@@ -2810,11 +2952,11 @@ namespace Microsoft.Automata
                 }
                 #endregion
             }
-            if (this.Count > 1 && kind == SymbolicRegexSetKind.Disjunction)
-                //add extra parentesis to enclose the disjunction
-                return "(" + res + ")";
-            else
-                return res;
+            //if (this.Count > 1 && kind == SymbolicRegexSetKind.Disjunction)
+            //    //add extra parentesis to enclose the disjunction
+            //    return "(" + res + ")";
+            //else
+            return res;
         }
 
         internal SymbolicRegexNode<S>[] ToArray(SymbolicRegexBuilder<S> builder)

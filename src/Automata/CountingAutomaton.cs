@@ -66,6 +66,11 @@ namespace Microsoft.Automata
         {
             return countingStates.ContainsKey(state);
         }
+
+        public ICounter GetCounter(int state)
+        {
+            return countingStates[state];
+        }
     }
 
     /// <summary>
@@ -93,9 +98,9 @@ namespace Microsoft.Automata
                 string s = "";
                 for (int i=0; i < t.Item2.Length; i++)
                 {
-                    if (t.Item2[i].OperationKind != CounterOp.EXIT &&
-                        t.Item2[i].OperationKind != CounterOp.EXIT_SET0)
+                    if (t.Item2[i].OperationKind != CounterOp.EXIT)
                         throw new AutomataException(AutomataExceptionKind.InternalError);
+
                     if (t.Item2[i].Counter.LowerBound == t.Item2[i].Counter.UpperBound)
                     {
                         if (s != "")

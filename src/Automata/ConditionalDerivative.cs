@@ -42,6 +42,8 @@ namespace Microsoft.Automata
         Tuple<ICounter, CounterOp> elems;
         public CounterOperation(ICounter counter, CounterOp op)
         {
+            if (counter == null)
+                throw new ArgumentNullException("counter");
             elems = new Tuple<ICounter, CounterOp>(counter, op);
         }
 

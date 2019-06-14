@@ -699,7 +699,7 @@ namespace Microsoft.Automata
             }
         }
 
-        internal IEnumerable<ConditionalDerivative<S>> EnumerateConditionalDerivatives(S elem, SymbolicRegexNode<S> node)
+        internal IEnumerable<ConditionalDerivative<S>> EnumerateConditionalDerivatives(S elem, SymbolicRegexNode<S> node, bool monadic)
         {
             if (node == this.dotStar)
                 yield return new ConditionalDerivative<S>(this.dotStar);
@@ -731,7 +731,7 @@ namespace Microsoft.Automata
                             //for two different members the derivatives may be the same
                             var derivs = new HashSet<ConditionalDerivative<S>>();
                             foreach (var member in node.alts)
-                                foreach (var deriv in this.EnumerateConditionalDerivatives(elem, member))
+                                foreach (var deriv in this.EnumerateConditionalDerivatives(elem, member, monadic))
                                     if (derivs.Add(deriv))
                                         yield return deriv;
                             yield break;
@@ -755,7 +755,7 @@ namespace Microsoft.Automata
                             var derivs = new HashSet<ConditionalDerivative<S>>();
                             //observe that left will be already in the left-assoc form so the above loop will 
                             //not be used again to normalize left to left-assoc form in the recursive call
-                            foreach (var deriv in this.EnumerateConditionalDerivatives(elem, left))
+                            foreach (var deriv in this.EnumerateConditionalDerivatives(elem, left, monadic))
                             {
                                 var deriv1 = new ConditionalDerivative<S>(deriv.Condition, 
                                                     this.MkConcat(deriv.PartialDerivative, right));
@@ -763,11 +763,11 @@ namespace Microsoft.Automata
                                     yield return deriv1;
                             }
 
-                            var reset = GetNullabilityCondition_of_left_assoc(left);
+                            var reset = left.GetNullabilityCondition(monadic);
                             if (reset != null)
                             {
                                 var cd_reset = new ConditionalDerivative<S>(reset, this.epsilon);
-                                foreach (var deriv in this.EnumerateConditionalDerivatives(elem, right))
+                                foreach (var deriv in this.EnumerateConditionalDerivatives(elem, right, monadic))
                                 {
                                     //it is possible that the composition is not enabled
                                     //in which case the returned result is null
@@ -785,7 +785,7 @@ namespace Microsoft.Automata
                             #region d(a, R*) = d(a,R)R*
                             if (node.IsStar)
                             {
-                                foreach (var step in this.EnumerateConditionalDerivatives(elem, node.left))
+                                foreach (var step in this.EnumerateConditionalDerivatives(elem, node.left, monadic))
                                 {
                                     var deriv = this.MkConcat(step.PartialDerivative, node);
                                     var cd = new ConditionalDerivative<S>(step.Condition, deriv);
@@ -795,7 +795,7 @@ namespace Microsoft.Automata
                             else //assumes that loops have been normalized
                             {
                                 CounterOperation ca = new CounterOperation(node, CounterOp.INCR);
-                                foreach (var step in this.EnumerateConditionalDerivatives(elem, node.left))
+                                foreach (var step in this.EnumerateConditionalDerivatives(elem, node.left, monadic))
                                 {
                                     var deriv = this.MkConcat(step.PartialDerivative, node);
                                     var cond = step.Condition.Append(ca);
@@ -885,86 +885,81 @@ namespace Microsoft.Automata
             }
         }
 
-        internal Sequence<CounterOperation> GetNullabilityCondition(SymbolicRegexNode<S> node, bool monadic)
-        {
-            var node1 = ToLeftAssocForm(node);
-            var reset = GetNullabilityCondition_of_left_assoc(node1);
-            return reset;
-        }
-
-        bool IsCountingLoop(SymbolicRegexNode<S> node)
+            bool IsCountingLoop(SymbolicRegexNode<S> node)
         {
             return !node.IsMaybe && !node.IsStar && !node.IsPlus;
         }
 
-        /// <summary>
-        /// node is assumed to be in left-assoc form if it is a concatenation
-        /// </summary>
-        Sequence<CounterOperation> GetNullabilityCondition_of_left_assoc(SymbolicRegexNode<S> node)
-        {
-            switch (node.kind)
-            {
-                case SymbolicRegexKind.StartAnchor:
-                case SymbolicRegexKind.EndAnchor:
-                case SymbolicRegexKind.Epsilon:
-                    {
-                        return Sequence<CounterOperation>.Empty;
-                    }
-                case SymbolicRegexKind.Singleton:
-                    {
-                        return null;
-                    }
-                case SymbolicRegexKind.Or:
-                    {
-                        if (node.isNullable)
-                            return Sequence<CounterOperation>.Empty;
-                        else
-                            return null;
-                    }
-                case SymbolicRegexKind.Loop:
-                    {
-                        if (node.isNullable)
-                            return Sequence<CounterOperation>.Empty;
-                        else if (IsCountingLoop(node))
-                            return new Sequence<CounterOperation>(new CounterOperation(node, CounterOp.EXIT));
-                        else
-                            return null;
-                    }
-                case SymbolicRegexKind.Concat:
-                    {
-                        var reset1 = GetNullabilityCondition_of_left_assoc(node.left);
-                        if (reset1 == null)
-                            return null;
-                        else
-                        {
-                            //we know that right is not a concat
-                            var reset2 = GetNullabilityCondition_of_left_assoc(node.right);
-                            if (reset2 == null)
-                                return null;
-                            else
-                            {
-                                //TBD: this optimization needs to be verified
-                                //if reset2 is nonempty it can only be a singleton
-                                if (reset1.IsEmpty || reset2.IsEmpty ||
-                                    reset1.TrueForAll(x => reset2[0].Counter.ContainsSubCounter(x.Counter)))
-                                    return reset1.Append(reset2);
-                                else if (reset2[0].Counter.LowerBound == 0)
-                                {
-                                    return reset1;
-                                }
-                                else
-                                {
-                                    return null;
-                                }
-                            }
-                        }
-                    }
-                default:
-                    {
-                        throw new NotSupportedException("GetNullabilityCondition not supported for " + node.kind);
-                    }
-            }
-        }
+        ///// <summary>
+        ///// node is assumed to be in left-assoc form if it is a concatenation
+        ///// </summary>
+        //Sequence<CounterOperation> GetNullabilityCondition_of_left_assoc(SymbolicRegexNode<S> node)
+        //{
+        //    switch (node.kind)
+        //    {
+        //        case SymbolicRegexKind.StartAnchor:
+        //        case SymbolicRegexKind.EndAnchor:
+        //        case SymbolicRegexKind.Epsilon:
+        //            {
+        //                return Sequence<CounterOperation>.Empty;
+        //            }
+        //        case SymbolicRegexKind.Singleton:
+        //            {
+        //                return null;
+        //            }
+        //        case SymbolicRegexKind.Or:
+        //            {
+        //                if (node.isNullable)
+        //                    return Sequence<CounterOperation>.Empty;
+        //                else
+        //                    return null;
+        //            }
+        //        case SymbolicRegexKind.Loop:
+        //            {
+        //                if (node.isNullable)
+        //                    return Sequence<CounterOperation>.Empty;
+        //                else if (IsCountingLoop(node))
+        //                    return new Sequence<CounterOperation>(new CounterOperation(node, CounterOp.EXIT));
+        //                else
+        //                    return null;
+        //            }
+        //        case SymbolicRegexKind.Concat:
+        //            {
+        //                var reset1 = GetNullabilityCondition_of_left_assoc(node.left);
+        //                if (reset1 == null)
+        //                    return null;
+        //                else
+        //                {
+        //                    //we know that right is not a concat
+        //                    var reset2 = GetNullabilityCondition_of_left_assoc(node.right);
+        //                    if (reset2 == null)
+        //                        return null;
+        //                    else
+        //                    {
+        //                        //TBD: this optimization needs to be verified
+        //                        //if reset2 is nonempty it can only be a singleton
+        //                        if (reset1.IsEmpty || reset2.IsEmpty ||
+        //                            reset1.TrueForAll(x => reset2[0].Counter.ContainsSubCounter(x.Counter)))
+        //                            return reset1.Append(reset2);
+        //                        else if (reset2[0].Counter.LowerBound == 0)
+        //                        {
+        //                            return reset1;
+        //                        }
+        //                        else
+        //                        {
+        //                            return null;
+        //                        }
+        //                    }
+        //                }
+        //            }
+        //        default:
+        //            {
+        //                throw new NotSupportedException("GetNullabilityCondition not supported for " + node.kind);
+        //            }
+        //    }
+        //}
+
+
         internal SymbolicRegexNode<T> Transform<T>(SymbolicRegexNode<S> sr, SymbolicRegexBuilder<T> builderT, Func<S, T> predicateTransformer)
         {
             switch (sr.kind)
