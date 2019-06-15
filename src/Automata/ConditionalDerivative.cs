@@ -83,9 +83,9 @@ namespace Microsoft.Automata
                 if (Counter.LowerBound > 0)
                 {
                     if (Counter.LowerBound == Counter.UpperBound)
-                        return string.Format("{1}==c{0}", Counter.CounterId, Counter.LowerBound);
+                        return string.Format("c{0}=={1}", Counter.CounterId, Counter.LowerBound);
                     else
-                        return string.Format("{1}<=c{0}", Counter.CounterId, Counter.LowerBound);
+                        return string.Format("c{0}>={1}", Counter.CounterId, Counter.LowerBound);
                 }
                 else
                     return "";

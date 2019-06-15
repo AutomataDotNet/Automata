@@ -1143,7 +1143,7 @@ namespace Microsoft.Automata
         /// <returns></returns>
         internal List<ConditionalDerivative<S>> GetConditinalDerivatives(S elem, bool monadic)
         {
-            return new List<ConditionalDerivative<S>>(builder.EnumerateConditionalDerivatives(elem, this, monadic));
+            return new List<ConditionalDerivative<S>>(builder.EnumerateConditionalDerivatives(elem, this, monadic, true));
         }
 
         /// <summary>
@@ -1162,7 +1162,7 @@ namespace Microsoft.Automata
             var moves = new List<Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>>();
             var finalStates = new HashSet<int>();
             frontier.Push(0);
-            var reset0 = this_normalized.GetNullabilityCondition(false);
+            var reset0 = this_normalized.GetNullabilityCondition(false, true);
             if (reset0 != null)
             {
                 if (reset0.TrueForAll(x => x.Counter.LowerBound == 0))
@@ -1187,7 +1187,7 @@ namespace Microsoft.Automata
                             stateLookup[cd.PartialDerivative] = p;
                             regexLookup[p] = cd.PartialDerivative;
 
-                            var reset = cd.PartialDerivative.GetNullabilityCondition(false);
+                            var reset = cd.PartialDerivative.GetNullabilityCondition(false, true);
                             if (reset != null)
                             {
                                 if (reset.TrueForAll(x => x.Counter.LowerBound == 0))
@@ -1208,22 +1208,32 @@ namespace Microsoft.Automata
             return aut;
         }
 
-        internal Sequence<CounterOperation> GetNullabilityCondition(bool monadic)
+        internal Sequence<CounterOperation> GetNullabilityCondition(bool monadic, bool top)
         {
             if (monadic)
             {
-                //find the leftmost node in the concatenation such that 
-                //all the ones after it are nullable in initial mode
-                var node = this;
-                while (node.kind == SymbolicRegexKind.Concat && node.right.isNullable)
-                    node = node.left;
-                //if this node is a bounded loop return its exit condition
-                if (node.IsBoundedLoop)
-                    return new Sequence<CounterOperation>(new CounterOperation(node, CounterOp.EXIT));
-                else if (node.isNullable)
-                    return Sequence<CounterOperation>.Empty;
+                if (!top)
+                {
+                    if (this.isNullable)
+                        return Sequence<CounterOperation>.Empty;
+                    else
+                        return null;
+                }
                 else
-                    return null;
+                {
+                    var node = this;
+                    //find the leftmost node in the concatenation such that 
+                    //all the ones after it are nullable in initial mode
+                    while (node.kind == SymbolicRegexKind.Concat && node.right.isNullable)
+                        node = node.left;
+                    //if this node is a bounded loop return its exit condition
+                    if (node.IsBoundedLoop)
+                        return new Sequence<CounterOperation>(new CounterOperation(node, CounterOp.EXIT));
+                    else if (node.isNullable)
+                        return Sequence<CounterOperation>.Empty;
+                    else
+                        return null;
+                }
             }
             else
             {
@@ -1240,7 +1250,6 @@ namespace Microsoft.Automata
             if (!monadic)
                 throw new NotImplementedException("Nonmonadic exploration is not implemented");
 
-            var counters = new HashSet<ICounter>();
             var node = (monadic ? this : this.builder.NormalizeGeneralLoops(this));
             var stateLookup = new Dictionary<SymbolicRegexNode<S>, int>();
             var regexLookup = new Dictionary<int, SymbolicRegexNode<S>>();
@@ -1251,12 +1260,9 @@ namespace Microsoft.Automata
             var moves = new List<Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>>();
             var finalStates = new Dictionary<int, Sequence<CounterOperation>>();
             frontier.Push(0);
-            var reset0 = node.GetNullabilityCondition(monadic);
+            var reset0 = node.GetNullabilityCondition(monadic, true);
             if (reset0 != null)
             {
-                counters.UnionWith(reset0.ConvertAll<ICounter>(x => x.Counter));
-                if (reset0.TrueForAll(x => x.Counter.LowerBound == 0))
-                    reset0 = Sequence<CounterOperation>.Empty;
                 moves.Add(Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>.Create(0, 0,
                     new Tuple<Maybe<S>, Sequence<CounterOperation>>(Maybe<S>.Nothing, reset0)));
                 finalStates[0] = reset0;
@@ -1268,7 +1274,8 @@ namespace Microsoft.Automata
                 //partition corresponds to the alphabet
                 foreach (S a in builder.solver.GetPartition())
                 {
-                    foreach (var cd in builder.EnumerateConditionalDerivatives(a, regex, monadic))
+                    var a_derivs = regex.GetConditinalDerivatives(a, monadic);
+                    foreach (var cd in a_derivs)
                     {
                         int p;
                         if (!stateLookup.TryGetValue(cd.PartialDerivative, out p))
@@ -1277,12 +1284,9 @@ namespace Microsoft.Automata
                             stateLookup[cd.PartialDerivative] = p;
                             regexLookup[p] = cd.PartialDerivative;
 
-                            var reset = cd.PartialDerivative.GetNullabilityCondition(monadic);
+                            var reset = cd.PartialDerivative.GetNullabilityCondition(monadic, true);
                             if (reset != null)
                             {
-                                if (reset.TrueForAll(x => x.Counter.LowerBound == 0))
-                                    reset = Sequence<CounterOperation>.Empty;
-                                counters.UnionWith(reset.ConvertAll<ICounter>(x => x.Counter));
                                 moves.Add(Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>.Create(p, p,
                                     new Tuple<Maybe<S>, Sequence<CounterOperation>>(Maybe<S>.Nothing, reset)));
                                 finalStates[p] = reset;
@@ -1291,13 +1295,10 @@ namespace Microsoft.Automata
                         }
                         moves.Add(Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>.Create(q, p,
                             new Tuple<Maybe<S>, Sequence<CounterOperation>>(Maybe<S>.Something(a), cd.Condition)));
-                        counters.UnionWith(cd.Condition.ConvertAll<ICounter>(x => x.Counter));
                     }
                 }
             }
             stateMap = regexLookup;
-            //finalstate_info = finalStates;
-            //counter_info =  counters;
             if (monadic)
             {
                 #region move initialization to start of counting states
@@ -2459,31 +2460,49 @@ namespace Microsoft.Automata
                     }
                 case SymbolicRegexKind.Loop:
                     {
-                        if (IsNonmonadicBoundedLoop)
+                        if (left.kind == SymbolicRegexKind.Singleton)
                         {
-                            #region the actual unwinding of nonmonadic loops
-                            var body = left.UnwindNonmonadic_();
-                            var nodes = new List<SymbolicRegexNode<S>>();
-                            for (int i = 0; i < lower; i++)
-                                nodes.Add(body);
-                            if (HasUpperBound)
-                                for (int i = lower; i < upper; i++)
-                                    nodes.Add(builder.MkOr(body, builder.epsilon));
+                            #region monadic loop
+                            if (upper == int.MaxValue)
+                            {
+                                //unbounded: split the loop into two parts
+                                var firstLoop = builder.MkLoop(left, lower, lower);
+                                var secondLoop = builder.MkLoop(left);
+                                return builder.MkConcat(firstLoop, secondLoop);
+                            }
                             else
-                                nodes.Add(builder.MkLoop(body));
-                            return builder.MkConcat(nodes.ToArray());
-                            #endregion
-                        }
-                        else if (IsMonadicLoopWithLowerButWihtoutUpperBound)
-                        {
-                            #region split the loop into two parts
-                            var firstLoop = builder.MkLoop(left, lower, lower);
-                            var secondLoop = builder.MkLoop(left);
-                            return builder.MkConcat(firstLoop, secondLoop);
+                                return this;
                             #endregion
                         }
                         else
-                            return this;
+                        {
+                            #region nonmonadic loop
+                            var body = this.left.UnwindNonmonadic_();
+                            if (IsStar)
+                            {
+                                if (body == this.left)
+                                    return this;
+                                else
+                                    return builder.MkLoop(body);
+                            }
+                            else
+                            {
+                                //the actual unwinding of nonmonadic loops
+                                var nodes = new SymbolicRegexNode<S>[upper < int.MaxValue ? upper : lower + 1];
+                                for (int i = 0; i < lower; i++)
+                                    nodes[i] = body;
+                                if (upper < int.MaxValue)
+                                { 
+                                    var body_or_eps = builder.MkOr(body, builder.epsilon);
+                                    for (int i = lower; i < upper; i++)
+                                        nodes[i] = body_or_eps;
+                                }
+                                else
+                                    nodes[lower] = builder.MkLoop(body);
+                                return builder.MkConcat(nodes);
+                            }
+                            #endregion
+                        }
                     }
                 case SymbolicRegexKind.Concat:
                     {

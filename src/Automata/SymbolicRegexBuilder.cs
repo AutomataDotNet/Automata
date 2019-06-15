@@ -699,7 +699,7 @@ namespace Microsoft.Automata
             }
         }
 
-        internal IEnumerable<ConditionalDerivative<S>> EnumerateConditionalDerivatives(S elem, SymbolicRegexNode<S> node, bool monadic)
+        internal IEnumerable<ConditionalDerivative<S>> EnumerateConditionalDerivatives(S elem, SymbolicRegexNode<S> node, bool monadic, bool top = false)
         {
             if (node == this.dotStar)
                 yield return new ConditionalDerivative<S>(this.dotStar);
@@ -755,7 +755,7 @@ namespace Microsoft.Automata
                             var derivs = new HashSet<ConditionalDerivative<S>>();
                             //observe that left will be already in the left-assoc form so the above loop will 
                             //not be used again to normalize left to left-assoc form in the recursive call
-                            foreach (var deriv in this.EnumerateConditionalDerivatives(elem, left, monadic))
+                            foreach (var deriv in this.EnumerateConditionalDerivatives(elem, left, monadic, top))
                             {
                                 var deriv1 = new ConditionalDerivative<S>(deriv.Condition, 
                                                     this.MkConcat(deriv.PartialDerivative, right));
@@ -763,7 +763,7 @@ namespace Microsoft.Automata
                                     yield return deriv1;
                             }
 
-                            var reset = left.GetNullabilityCondition(monadic);
+                            var reset = left.GetNullabilityCondition(monadic, top);
                             if (reset != null)
                             {
                                 var cd_reset = new ConditionalDerivative<S>(reset, this.epsilon);

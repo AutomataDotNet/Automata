@@ -15,7 +15,7 @@ namespace Microsoft.Automata
     /// <typeparam name="T">type of the labels</typeparam>
     public class Automaton<T> : IAutomaton<T>
     {
-        private Dictionary<int, List<Move<T>>> delta;
+        protected Dictionary<int, List<Move<T>>> delta;
         private Dictionary<int, List<Move<T>>> deltaInv;
         private int initialState;
         private HashSet<int> finalStateSet;
@@ -588,7 +588,7 @@ namespace Microsoft.Automata
                     yield return s;
         }
 
-        public IEnumerable<Move<T>> GetMovesFrom(int sourceState)
+        public virtual IEnumerable<Move<T>> GetMovesFrom(int sourceState)
         {
             return delta[sourceState];
         }
@@ -5109,7 +5109,7 @@ namespace Microsoft.Automata
         /// <summary>
         /// Enumerates all moves of the automaton.
         /// </summary>
-        public IEnumerable<Move<T>> GetMoves()
+        public virtual IEnumerable<Move<T>> GetMoves()
         {
             foreach (int state in States)
                 foreach (Move<T> move in delta[state])

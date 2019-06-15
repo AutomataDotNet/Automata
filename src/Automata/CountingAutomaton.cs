@@ -38,7 +38,7 @@ namespace Microsoft.Automata
             if (!IsFinalState(state))
                 throw new AutomataException(AutomataExceptionKind.ArgumentMustBeFinalState);
 
-            if (countingStates.ContainsKey(state))
+            if (countingStates.ContainsKey(state) && countingStates[state].LowerBound > 0)
             {
                 return new Sequence<CounterOperation>(new CounterOperation(countingStates[state], CounterOp.EXIT));
             }
@@ -48,7 +48,20 @@ namespace Microsoft.Automata
 
         public override string DescribeState(int state)
         {
-            return stateMap[state].ToString();
+            string s;
+            if (__hideDerivativesInViewer)
+                s = state.ToString();
+            else
+                s = stateMap[state].ToString();
+            if (IsCountingState(state))
+                s += "&#13;(c" + countingStates[state].CounterId.ToString() + ")";
+            if (IsFinalState(state) && IsCountingState(state))
+            {
+                var f = GetFinalStateCondition(state);
+                if (f.Length > 0)
+                    s += f.ToString();
+            }
+            return s;
         }
 
         public override string DescribeStartLabel()
@@ -70,6 +83,27 @@ namespace Microsoft.Automata
         public ICounter GetCounter(int state)
         {
             return countingStates[state];
+        }
+
+        public override IEnumerable<Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>> GetMoves()
+        {
+            foreach (var move in base.GetMoves())
+                if (move.Label.Item1.IsSomething)
+                    yield return move;
+        }
+
+        public override IEnumerable<Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>> GetMovesFrom(int sourceState)
+        {
+            foreach (var move in base.GetMovesFrom(sourceState))
+                if (move.Label.Item1.IsSomething)
+                    yield return move;
+        }
+
+        bool __hideDerivativesInViewer = false;
+        public void ShowGraph(string name = "CountingAutomaton", bool hideDerivatives = false)
+        {
+            __hideDerivativesInViewer = hideDerivatives;
+            base.ShowGraph(name);
         }
     }
 
