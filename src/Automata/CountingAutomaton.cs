@@ -87,9 +87,25 @@ namespace Microsoft.Automata
 
         public override IEnumerable<Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>> GetMoves()
         {
+            //provide consolidated view of moves
+            var guardMap = new Dictionary<Tuple<int, int, Sequence<CounterOperation>>, S>();
             foreach (var move in base.GetMoves())
+            {
                 if (move.Label.Item1.IsSomething)
-                    yield return move;
+                {
+                    var key = new Tuple<int, int, Sequence<CounterOperation>>(move.SourceState, move.TargetState, move.Label.Item2);
+                    S guard;
+                    if (guardMap.TryGetValue(key, out guard))
+                        guardMap[key] = ((CABA<S>)(base.Algebra)).builder.solver.MkOr(move.Label.Item1.Element, guard);
+                    else
+                        guardMap[key] = move.Label.Item1.Element;
+                }
+            }
+            foreach (var entry in guardMap)
+                yield return Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>.Create(
+                    entry.Key.Item1, entry.Key.Item2,
+                    new Tuple<Maybe<S>, Sequence<CounterOperation>>(Maybe<S>.Something(entry.Value), entry.Key.Item3)
+                    );
         }
 
         public override IEnumerable<Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>> GetMovesFrom(int sourceState)
@@ -112,7 +128,7 @@ namespace Microsoft.Automata
     /// </summary>
     internal class CABA<S> : IBooleanAlgebra<Tuple<Maybe<S>, Sequence<CounterOperation>>>, IPrettyPrinter<Tuple<Maybe<S>, Sequence<CounterOperation>>>
     {
-        SymbolicRegexBuilder<S> builder;
+        internal SymbolicRegexBuilder<S> builder;
         public CABA(SymbolicRegexBuilder<S> builder)
         {
             this.builder = builder;
