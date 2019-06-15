@@ -173,7 +173,20 @@ namespace Automata.Tests
         }
 
         [TestMethod]
-        public void TestCA_ATVARunningExample_mod()
+        public void TestCA_ATVARunningExample_v2()
+        {
+            var regex = new Regex("[ab]*a[ab]{10,100}", RegexOptions.Singleline);
+            var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
+            var q1 = sr.Pattern;
+            Assert.IsTrue(q1.kind == SymbolicRegexKind.Concat);
+            Assert.IsTrue(q1.ConcatCount == 2);
+            var aut = q1.CreateCountingAutomaton();
+            Assert.IsTrue(aut.NrOfCounters == 1);
+            //aut.ShowGraph("ATVARunningExample_v2");
+        }
+
+        [TestMethod]
+        public void TestCA_ATVARunningExample_v3()
         {
             var regex = new Regex("b*a[ab]{10,100}[ab]{5,50}", RegexOptions.Singleline);
             var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
@@ -182,7 +195,7 @@ namespace Automata.Tests
             Assert.IsTrue(q1.ConcatCount == 3);
             var aut = q1.CreateCountingAutomaton();
             Assert.IsTrue(aut.NrOfCounters == 2);
-            //aut.ShowGraph("TestCA_ATVARunningExample_mod");
+            //aut.ShowGraph("ATVARunningExample_v3");
         }
 
         [TestMethod]
