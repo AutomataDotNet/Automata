@@ -1146,67 +1146,67 @@ namespace Microsoft.Automata
             return new List<ConditionalDerivative<S>>(builder.EnumerateConditionalDerivatives(elem, this, monadic, true));
         }
 
-        /// <summary>
-        /// Temporary counter automaton exploration untility
-        /// </summary>
-        /// <returns></returns>
-        internal Automaton<Tuple<Maybe<S>,Sequence<CounterOperation>>> Explore()
-        {
-            var this_normalized = this.builder.NormalizeGeneralLoops(this);
-            var stateLookup = new Dictionary<SymbolicRegexNode<S>, int>();
-            var regexLookup = new Dictionary<int,SymbolicRegexNode<S>>();
-            stateLookup[this_normalized] = 0;
-            int stateid = 2;
-            regexLookup[0] = this_normalized;
-            SimpleStack<int> frontier = new SimpleStack<int>();
-            var moves = new List<Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>>();
-            var finalStates = new HashSet<int>();
-            frontier.Push(0);
-            var reset0 = this_normalized.GetNullabilityCondition(false, true);
-            if (reset0 != null)
-            {
-                if (reset0.TrueForAll(x => x.Counter.LowerBound == 0))
-                    reset0 = Sequence<CounterOperation>.Empty;
-                moves.Add(Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>.Create(0, 1,
-                    new Tuple<Maybe<S>, Sequence<CounterOperation>>(Maybe<S>.Nothing, reset0)));
-                finalStates.Add(1);
-            }
-            while (frontier.IsNonempty)
-            {
-                var q = frontier.Pop();
-                var regex = regexLookup[q];
-                //partition corresponds to the alphabet
-                foreach (S a in builder.solver.GetPartition())
-                {
-                    foreach (var cd in builder.EnumerateConditionalDerivatives(a, regex, false))
-                    {
-                        int p;
-                        if (!stateLookup.TryGetValue(cd.PartialDerivative, out p))
-                        {
-                            p = stateid++;
-                            stateLookup[cd.PartialDerivative] = p;
-                            regexLookup[p] = cd.PartialDerivative;
+        ///// <summary>
+        ///// Temporary counter automaton exploration untility
+        ///// </summary>
+        ///// <returns></returns>
+        //internal Automaton<Tuple<Maybe<S>,Sequence<CounterOperation>>> Explore()
+        //{
+        //    var this_normalized = this.builder.NormalizeGeneralLoops(this);
+        //    var stateLookup = new Dictionary<SymbolicRegexNode<S>, int>();
+        //    var regexLookup = new Dictionary<int,SymbolicRegexNode<S>>();
+        //    stateLookup[this_normalized] = 0;
+        //    int stateid = 2;
+        //    regexLookup[0] = this_normalized;
+        //    SimpleStack<int> frontier = new SimpleStack<int>();
+        //    var moves = new List<Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>>();
+        //    var finalStates = new HashSet<int>();
+        //    frontier.Push(0);
+        //    var reset0 = this_normalized.GetNullabilityCondition(false, true);
+        //    if (reset0 != null)
+        //    {
+        //        if (reset0.TrueForAll(x => x.Counter.LowerBound == 0))
+        //            reset0 = Sequence<CounterOperation>.Empty;
+        //        moves.Add(Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>.Create(0, 1,
+        //            new Tuple<Maybe<S>, Sequence<CounterOperation>>(Maybe<S>.Nothing, reset0)));
+        //        finalStates.Add(1);
+        //    }
+        //    while (frontier.IsNonempty)
+        //    {
+        //        var q = frontier.Pop();
+        //        var regex = regexLookup[q];
+        //        //partition corresponds to the alphabet
+        //        foreach (S a in builder.solver.GetPartition())
+        //        {
+        //            foreach (var cd in builder.EnumerateConditionalDerivatives(a, regex, false))
+        //            {
+        //                int p;
+        //                if (!stateLookup.TryGetValue(cd.PartialDerivative, out p))
+        //                {
+        //                    p = stateid++;
+        //                    stateLookup[cd.PartialDerivative] = p;
+        //                    regexLookup[p] = cd.PartialDerivative;
 
-                            var reset = cd.PartialDerivative.GetNullabilityCondition(false, true);
-                            if (reset != null)
-                            {
-                                if (reset.TrueForAll(x => x.Counter.LowerBound == 0))
-                                    reset = Sequence<CounterOperation>.Empty;
-                                moves.Add(Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>.Create(p, 1,
-                                    new Tuple<Maybe<S>, Sequence<CounterOperation>>(Maybe<S>.Nothing, reset)));
-                                finalStates.Add(1);
-                            }
-                            frontier.Push(p);
-                        }
-                        moves.Add(Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>.Create(q, p,
-                            new Tuple<Maybe<S>, Sequence<CounterOperation>>(Maybe<S>.Something(a), cd.Condition)));
-                    }
-                }
-            }
-            var aut = Automaton<Tuple<Maybe<S>, Sequence<CounterOperation>>>.Create(new CABA<S>(builder),
-                0, finalStates, moves);
-            return aut;
-        }
+        //                    var reset = cd.PartialDerivative.GetNullabilityCondition(false, true);
+        //                    if (reset != null)
+        //                    {
+        //                        if (reset.TrueForAll(x => x.Counter.LowerBound == 0))
+        //                            reset = Sequence<CounterOperation>.Empty;
+        //                        moves.Add(Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>.Create(p, 1,
+        //                            new Tuple<Maybe<S>, Sequence<CounterOperation>>(Maybe<S>.Nothing, reset)));
+        //                        finalStates.Add(1);
+        //                    }
+        //                    frontier.Push(p);
+        //                }
+        //                moves.Add(Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>.Create(q, p,
+        //                    new Tuple<Maybe<S>, Sequence<CounterOperation>>(Maybe<S>.Something(a), cd.Condition)));
+        //            }
+        //        }
+        //    }
+        //    var aut = Automaton<Tuple<Maybe<S>, Sequence<CounterOperation>>>.Create(new CABA<S>(builder),
+        //        0, finalStates, moves);
+        //    return aut;
+        //}
 
         internal Sequence<CounterOperation> GetNullabilityCondition(bool monadic, bool top)
         {
@@ -1245,7 +1245,7 @@ namespace Microsoft.Automata
         /// Counter automaton exploration utility
         /// </summary>
         /// <returns></returns>
-        Automaton<Tuple<Maybe<S>, Sequence<CounterOperation>>> Explore_(out Dictionary<int, ICounter> countingStates, out Dictionary<int, SymbolicRegexNode<S>> stateMap, bool monadic = true)
+        Automaton<Tuple<Maybe<S>, Sequence<CounterOperation>>> Explore(out Dictionary<int, ICounter> countingStates, out Dictionary<int, SymbolicRegexNode<S>> stateMap, bool monadic = true)
         {
             if (!monadic)
                 throw new NotImplementedException("Nonmonadic exploration is not implemented");
@@ -1258,14 +1258,14 @@ namespace Microsoft.Automata
             regexLookup[0] = node;
             SimpleStack<int> frontier = new SimpleStack<int>();
             var moves = new List<Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>>();
-            var finalStates = new Dictionary<int, Sequence<CounterOperation>>();
+            var finalStates = new HashSet<int>();
             frontier.Push(0);
             var reset0 = node.GetNullabilityCondition(monadic, true);
             if (reset0 != null)
             {
                 moves.Add(Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>.Create(0, 0,
                     new Tuple<Maybe<S>, Sequence<CounterOperation>>(Maybe<S>.Nothing, reset0)));
-                finalStates[0] = reset0;
+                finalStates.Add(0);
             }
             while (frontier.IsNonempty)
             {
@@ -1289,7 +1289,7 @@ namespace Microsoft.Automata
                             {
                                 moves.Add(Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>.Create(p, p,
                                     new Tuple<Maybe<S>, Sequence<CounterOperation>>(Maybe<S>.Nothing, reset)));
-                                finalStates[p] = reset;
+                                finalStates.Add(p);
                             }
                             frontier.Push(p);
                         }
@@ -1299,124 +1299,128 @@ namespace Microsoft.Automata
                 }
             }
             stateMap = regexLookup;
-            if (monadic)
+
+            #region move initialization to start of counting states
+            //remap counters to fresh ones
+            Dictionary<int, ICounter> newCounters1 = new Dictionary<int, ICounter>();
+            Dictionary<Tuple<int, int>, ICounter> freshCounterMap = new Dictionary<Tuple<int, int>, ICounter>();
+            foreach (var q_r in regexLookup)
             {
-                #region move initialization to start of counting states
-                //remap counters to fresh ones
-                Dictionary<int, ICounter> newCounters1 = new Dictionary<int, ICounter>();
-                Dictionary<Tuple<int, int>, ICounter> freshCounterMap = new Dictionary<Tuple<int, int>, ICounter>();
-                foreach (var q_r in regexLookup)
+                var c = q_r.Value.GetBoundedCounter();
+                if (c != null)
                 {
-                    var c = q_r.Value.GetBoundedCounter();
-                    if (c != null)
+                    var bc = new BoundedCounter(freshCounterMap.Count, c.LowerBound, c.UpperBound);
+                    var old = new Tuple<int, int>(q_r.Key, c.CounterId);
+                    freshCounterMap[old] = bc;
+                    newCounters1[q_r.Key] = bc;
+                }
+            }
+
+            var moves1 = new List<Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>>();
+
+            Func<int, int, Sequence<CounterOperation>, Sequence<CounterOperation>> F = (s, t, ops) =>
+            {
+                var sc = regexLookup[s].GetBoundedCounter();
+                var tc = regexLookup[t].GetBoundedCounter();
+                var sc1 = (newCounters1.ContainsKey(s) ? newCounters1[s] : null);
+                var tc1 = (newCounters1.ContainsKey(t) ? newCounters1[t] : null);
+                var ops1 = new List<CounterOperation>();
+
+                if (s == t)
+                {
+                    //sc1 == null means that this is a non-counting state loop
+                    if (sc1 != null)
                     {
-                        var bc = new BoundedCounter(freshCounterMap.Count, c.LowerBound, c.UpperBound);
-                        var old = new Tuple<int, int>(q_r.Key, c.CounterId);
-                        freshCounterMap[old] = bc;
-                        newCounters1[q_r.Key] = bc;
+                        if (ops.Length == 1 && (ops[0].OperationKind == CounterOp.EXIT || ops[0].OperationKind == CounterOp.EXIT_SET0))
+                            ops1.Add(new CounterOperation(sc1, CounterOp.EXIT_SET0));
+                        else if (ops.Length == 1 && ops[0].OperationKind == CounterOp.EXIT_SET1)
+                            ops1.Add(new CounterOperation(sc1, CounterOp.EXIT_SET1));
+                        else if (ops.Length == 1 && ops[0].OperationKind == CounterOp.INCR)
+                            ops1.Add(new CounterOperation(sc1, CounterOp.INCR));
+                        else
+                            throw new AutomataException(AutomataExceptionKind.InternalError);
                     }
                 }
-
-                var moves1 = new List<Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>>();
-
-                Func<int, int, Sequence<CounterOperation>, Sequence<CounterOperation>> F = (s, t, ops) =>
+                else
                 {
-                    var sc = regexLookup[s].GetBoundedCounter();
-                    var tc = regexLookup[t].GetBoundedCounter();
-                    var sc1 = (newCounters1.ContainsKey(s) ? newCounters1[s] : null);
-                    var tc1 = (newCounters1.ContainsKey(t) ? newCounters1[t] : null);
-                    var ops1 = new List<CounterOperation>();
-
-                    if (s == t)
+                    foreach (var op in ops)
                     {
-                        foreach (var op in ops)
-                            ops1.Add(new CounterOperation(sc1, op.OperationKind));
-                    }
-                    else
-                    {
-                        foreach (var op in ops)
+                        if (op.OperationKind == CounterOp.EXIT)
                         {
-                            if (op.OperationKind == CounterOp.EXIT)
-                            {
-                                if (!op.Counter.Equals(sc))
-                                    throw new AutomataException(AutomataExceptionKind.InternalError);
-
-                                ops1.Add(new CounterOperation(sc1, CounterOp.EXIT));
-                            }
-                            else if (op.OperationKind == CounterOp.SET0)
-                            {
-                                if (!op.Counter.Equals(tc))
-                                    throw new AutomataException(AutomataExceptionKind.InternalError);
-
-                                ops1.Add(new CounterOperation(tc1, CounterOp.SET0));
-                            }
-                            else if (op.OperationKind == CounterOp.SET1)
-                            {
-                                if (!op.Counter.Equals(tc))
-                                    throw new AutomataException(AutomataExceptionKind.InternalError);
-
-                                ops1.Add(new CounterOperation(tc1, CounterOp.SET1));
-                            }
-                            else if (op.OperationKind == CounterOp.INCR)
-                            {
-                                if (!op.Counter.Equals(tc))
-                                    throw new AutomataException(AutomataExceptionKind.InternalError);
-
-                                ops1.Add(new CounterOperation(tc1, CounterOp.SET1));
-                            }
-                            else if (op.OperationKind == CounterOp.EXIT_SET0)
-                            {
-                                if (ops.Length > 1)
-                                    throw new AutomataException(AutomataExceptionKind.InternalError);
-
-                                ops1.Add(new CounterOperation(sc1, CounterOp.EXIT));
-                                ops1.Add(new CounterOperation(tc1, CounterOp.SET0));
-                            }
-                            else if (op.OperationKind == CounterOp.EXIT_SET1)
-                            {
-                                if (ops.Length > 1)
-                                    throw new AutomataException(AutomataExceptionKind.InternalError);
-
-                                ops1.Add(new CounterOperation(sc1, CounterOp.EXIT));
-                                ops1.Add(new CounterOperation(tc1, CounterOp.SET1));
-                            }
-                            else
-                            {
+                            if (!op.Counter.Equals(sc))
                                 throw new AutomataException(AutomataExceptionKind.InternalError);
-                            }
+
+                            ops1.Add(new CounterOperation(sc1, CounterOp.EXIT));
+                        }
+                        else if (op.OperationKind == CounterOp.SET0)
+                        {
+                            if (!op.Counter.Equals(tc))
+                                throw new AutomataException(AutomataExceptionKind.InternalError);
+
+                            ops1.Add(new CounterOperation(tc1, CounterOp.SET0));
+                        }
+                        else if (op.OperationKind == CounterOp.SET1)
+                        {
+                            if (!op.Counter.Equals(tc))
+                                throw new AutomataException(AutomataExceptionKind.InternalError);
+
+                            ops1.Add(new CounterOperation(tc1, CounterOp.SET1));
+                        }
+                        else if (op.OperationKind == CounterOp.INCR)
+                        {
+                            if (!op.Counter.Equals(tc))
+                                throw new AutomataException(AutomataExceptionKind.InternalError);
+
+                            ops1.Add(new CounterOperation(tc1, CounterOp.SET1));
+                        }
+                        else if (op.OperationKind == CounterOp.EXIT_SET0)
+                        {
+                            if (ops.Length > 1)
+                                throw new AutomataException(AutomataExceptionKind.InternalError);
+
+                            ops1.Add(new CounterOperation(sc1, CounterOp.EXIT));
+                            ops1.Add(new CounterOperation(tc1, CounterOp.SET0));
+                        }
+                        else if (op.OperationKind == CounterOp.EXIT_SET1)
+                        {
+                            if (ops.Length > 1)
+                                throw new AutomataException(AutomataExceptionKind.InternalError);
+
+                            ops1.Add(new CounterOperation(sc1, CounterOp.EXIT));
+                            ops1.Add(new CounterOperation(tc1, CounterOp.SET1));
+                        }
+                        else
+                        {
+                            throw new AutomataException(AutomataExceptionKind.InternalError);
                         }
                     }
-                    var seq = new Sequence<CounterOperation>(ops1.ToArray());
-                    if (s != t && tc1 != null)
+                }
+                var seq = new Sequence<CounterOperation>(ops1.ToArray());
+                if (s != t && tc1 != null)
+                {
+                    if (!seq.Exists(x => x.Counter.CounterId == tc1.CounterId))
                     {
-                        if (!seq.Exists(x => x.Counter.CounterId == tc1.CounterId))
-                        {
                             //t is a counting state but its counter is not being initialized
                             seq = seq.Append(new CounterOperation(tc1, CounterOp.SET0));
-                        }
                     }
-
-                    return seq;
-                };
-
-                foreach (var move in moves)
-                {
-                    var ops = F(move.SourceState, move.TargetState, move.Label.Item2);
-                    var lab = new Tuple<Maybe<S>, Sequence<CounterOperation>>(move.Label.Item1, ops);
-                    var move1 = Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>.Create(move.SourceState, move.TargetState, lab);
-                    moves1.Add(move1);
                 }
-                #endregion
-                countingStates = newCounters1;
-                var aut1 = Automaton<Tuple<Maybe<S>, Sequence<CounterOperation>>>.Create(new CABA<S>(builder), 0, finalStates.Keys, moves1);
-                return aut1;
-            }
-            else
+
+                return seq;
+            };
+
+            foreach (var move in moves)
             {
-                countingStates = null;
-                var aut = Automaton<Tuple<Maybe<S>, Sequence<CounterOperation>>>.Create(new CABA<S>(builder), 0, finalStates.Keys, moves);
-                return aut;
+                var ops = F(move.SourceState, move.TargetState, move.Label.Item2);
+                var lab = new Tuple<Maybe<S>, Sequence<CounterOperation>>(move.Label.Item1, ops);
+                var move1 = Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>.Create(move.SourceState, move.TargetState, lab);
+                moves1.Add(move1);
             }
+            #endregion
+
+            countingStates = newCounters1;
+            var aut = Automaton<Tuple<Maybe<S>, Sequence<CounterOperation>>>.Create(new CABA<S>(builder), 0, finalStates, moves1);
+            return aut;
+
         }
 
         private static Move<Tuple<Maybe<S>, Sequence<CounterOperation>>> MkMove(Move<Tuple<Maybe<S>, Sequence<CounterOperation>>> move, params CounterOperation[] ops)
@@ -1449,7 +1453,7 @@ namespace Microsoft.Automata
             SymbolicRegexNode<S> node = (makeMonadic ? this.MkMonadic() : this);
             Dictionary<int, ICounter> countingStates;
             Dictionary<int, SymbolicRegexNode<S>> stateMap;
-            var aut = node.Explore_(out countingStates, out stateMap);
+            var aut = node.Explore(out countingStates, out stateMap);
             var ca = new CountingAutomaton<S>(aut, stateMap, countingStates);
             return ca;
         }

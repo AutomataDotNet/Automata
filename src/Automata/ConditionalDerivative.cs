@@ -4,34 +4,35 @@ using System.Collections.Generic;
 namespace Microsoft.Automata
 {
     /// <summary>
-    /// Counter update operations
+    /// Counter update operations. 
+    /// Counter opertions other that NOOP (that = 0) can be combined with bitwise-or.
     /// </summary>
     public enum CounterOp
     {
         /// <summary>
-        /// Counter is initialized to 0
+        /// Target counter is set to 0
         /// </summary>
-        SET0,
+        SET0 = 1,
         /// <summary>
-        /// Counter is initialized to 1
+        /// Target counter is set to 1
         /// </summary>
-        SET1,
+        SET1 = 2,
         /// <summary>
-        /// Lower bound is checked
+        /// Source counter greater or equal lower bound is checked
         /// </summary>
-        EXIT,
+        EXIT = 4,
         /// <summary>
-        /// Lower bound is checked and the counter is set to 0
+        /// Source counter less than upper bound is checked and the value is incermented by 1
         /// </summary>
-        EXIT_SET0,
+        INCR = 8,
         /// <summary>
-        /// Upper bound is checked and the counter is incermented by 1
+        /// Source counter greater or equal lower bound is checked and target counter is set to 0
         /// </summary>
-        INCR,
+        EXIT_SET0 = 16,
         /// <summary>
-        /// Lower bound is checked and the counter is set to 1
+        /// Source counter greater or equal lower bound is checked and target counter is set to 1
         /// </summary>
-        EXIT_SET1,
+        EXIT_SET1 = 32,
     }
 
     /// <summary>

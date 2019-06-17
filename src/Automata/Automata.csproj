@@ -94,6 +94,7 @@
     <Reference Include="System.Web" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BasicCountingSet.cs" />
     <Compile Include="BooleanAlgebras\BV64Algebra.cs" />
     <Compile Include="BooleanAlgebras\BVAlgebra.cs" />
     <Compile Include="BV.cs" />
@@ -101,6 +102,7 @@
     <Compile Include="CountingAutomaton.cs" />
     <Compile Include="CountingSetAutomaton.cs" />
     <Compile Include="Interfaces\ICounter.cs" />
+    <Compile Include="Interfaces\ICountingSet.cs" />
     <Compile Include="Internal\AutomataAlgebra.cs" />
     <Compile Include="AutomataException.cs" />
     <Compile Include="Automaton.cs" />

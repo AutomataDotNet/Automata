@@ -267,5 +267,54 @@ namespace Automata.Tests
             Assert.IsTrue(aut.NrOfCounters == 2);
             //aut.ShowGraph("SingleMintermLoops");
         }
+
+        [TestMethod]
+        public void TestCA_IsMatch1()
+        {
+            var regex = new Regex(".*a.{5}", RegexOptions.Singleline);
+            var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
+            var aut = sr.Pattern.CreateCountingAutomaton();
+            Assert.IsTrue(aut.IsMatch("xaxxxxx"));
+            Assert.IsTrue(!aut.IsMatch("xaxxxxxxx"));
+            Assert.IsTrue(aut.IsMatch("xaaaaxxxx"));
+        }
+
+        [TestMethod]
+        public void TestCA_IsMatch2()
+        {
+            var regex = new Regex(".*a.{5,7}", RegexOptions.Singleline);
+            var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
+            var aut = sr.Pattern.CreateCountingAutomaton();
+            Assert.IsTrue(aut.IsMatch("xaxxxxx"));
+            Assert.IsTrue(aut.IsMatch("xaxxxaaa"));
+            Assert.IsTrue(aut.IsMatch("xaxxxxxxx"));
+            Assert.IsTrue(!aut.IsMatch("xaxxxxxxxx"));
+            Assert.IsTrue(aut.IsMatch("xaaaaxxxx"));
+        }
+
+        [TestMethod]
+        public void TestCA_IsMatch_SeqOf5orMoreDigits()
+        {
+            var regex = new Regex(".*[0-9]{5,};.*", RegexOptions.Singleline);
+            var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
+            var aut = sr.Pattern.CreateCountingAutomaton();
+            //aut.ShowGraph("SeqOf5orMoreDigits");
+            Assert.IsTrue(!aut.IsMatch("___1234;__123__"));
+            Assert.IsTrue(aut.IsMatch("___12345;__123__"));
+            Assert.IsTrue(!aut.IsMatch("___123456__123__"));
+            Assert.IsTrue(aut.IsMatch("___123456__12334567;__"));
+        }
+
+        [TestMethod]
+        public void TestCA_IncrPush01()
+        {
+            var regex = new Regex(".*(a{5}|[aA]a{5})*", RegexOptions.Singleline);
+            var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
+            var aut = sr.Pattern.CreateCountingAutomaton();
+            //aut.ShowGraph("IncrPush01");
+            Assert.IsTrue(aut.IsMatch("xAaaaaa"));
+            Assert.IsTrue(aut.IsMatch("xaaaaaa"));
+            Assert.IsTrue(aut.IsMatch("xaaaaabaa"));
+        }
     }
 }

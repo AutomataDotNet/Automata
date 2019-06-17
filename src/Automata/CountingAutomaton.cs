@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -12,15 +11,19 @@ namespace Microsoft.Automata
         Dictionary<int, ICounter> countingStates;
         Dictionary<int, SymbolicRegexNode<S>> stateMap;
 
+        internal ICharAlgebra<S> solver;
+
         internal CountingAutomaton(Automaton<Tuple<Maybe<S>, Sequence<CounterOperation>>> aut,
             Dictionary<int, SymbolicRegexNode<S>> stateMap, Dictionary<int, ICounter> countingStates) : base(aut)
         {
             this.countingStates = countingStates;
             this.stateMap = stateMap;
+            this.solver = ((CABA<S>)Algebra).builder.solver;
         }
 
         /// <summary>
         /// Gets the number of counters.
+        /// All counters are numbered from 0 to NrOfCounters-1.
         /// </summary>
         public int NrOfCounters
         {
@@ -75,14 +78,32 @@ namespace Microsoft.Automata
                 return "";
         }
 
-        public bool IsCountingState(int state)
+        /// <summary>
+        /// Returns true if q is a counting-state (q is associated with a counter)
+        /// </summary>
+        /// <param name="q">given state</param>
+        public bool IsCountingState(int q)
         {
-            return countingStates.ContainsKey(state);
+            return countingStates.ContainsKey(q);
         }
 
-        public ICounter GetCounter(int state)
+        /// <summary>
+        /// Returns the counter associated with the state q.
+        /// The state q must be a couting state.
+        /// </summary>
+        /// <param name="q">given counting state</param>
+        public ICounter GetCounter(int q)
         {
-            return countingStates[state];
+            return countingStates[q];
+        }
+
+        /// <summary>
+        /// Returns true if q is a counting state and outputs the counter of q.
+        /// Returns false otherwise and sets counter to null.
+        /// </summary>
+        public bool TryGetCounter(int q, out ICounter counter)
+        {
+            return countingStates.TryGetValue(q, out counter);
         }
 
         public override IEnumerable<Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>> GetMoves()
@@ -115,11 +136,243 @@ namespace Microsoft.Automata
                     yield return move;
         }
 
+        public IEnumerable<Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>> GetMovesFrom(int sourceState, S minterm)
+        {
+            foreach (var move in base.GetMovesFrom(sourceState))
+                if (move.Label.Item1.IsSomething)
+                {
+                    if (solver.IsSatisfiable(solver.MkAnd(minterm, move.Label.Item1.Element)))
+                        yield return move;
+                }
+        }
+
+
         bool __hideDerivativesInViewer = false;
         public void ShowGraph(string name = "CountingAutomaton", bool hideDerivatives = false)
         {
             __hideDerivativesInViewer = hideDerivatives;
             base.ShowGraph(name);
+        }
+
+        /// <summary>
+        /// Returns true if the input string is accepted by this counting automaton
+        /// </summary>
+        /// <param name="input">given input string</param>
+        public bool IsMatch(string input)
+        {
+            var charsolver = ((CABA<S>)Algebra).builder.solver;
+            var cs = input.ToCharArray();
+            S[] inputPreds = Array.ConvertAll(cs, c => charsolver.MkCharConstraint(c));
+
+            //current state is a pair (Q, C)
+            // Q = set of normal (noncounting) states
+            // C = a dictionary of counting states to counting sets  
+
+            var Q = new HashSet<int>();
+            var C = new HashSet<int>();
+            var counters = new BasicCountingSet[NrOfCounters];
+            //create the counting sets
+            foreach (var entry in countingStates)
+                counters[entry.Value.CounterId] = new BasicCountingSet(entry.Value.UpperBound);
+
+            //intialize the start state of the matcher
+            if (IsCountingState(InitialState))
+            {
+                C.Add(InitialState);
+                counters[countingStates[InitialState].CounterId].Set0();
+            }
+            else
+                Q.Add(InitialState);
+
+            //iterate over all elements in the input list
+            //if at any point both Q and C are empty then the input is rejected
+            int i = 0;
+            while (i < inputPreds.Length && (C.Count > 0 || Q.Count > 0))
+            {
+                var a = inputPreds[i];
+                i += 1;
+
+                //construct the set of target states from Q
+                var Q1 = new HashSet<int>();
+                var C1 = new Dictionary<int, CounterOp>();
+
+                foreach (var q in C)
+                {
+                    #region moves from counting-states q
+                    var c = counters[countingStates[q].CounterId];
+                    foreach (var move in GetMovesFrom(q, a))
+                    {
+                        if (IsCountingState(move.TargetState))
+                        {
+                            if (move.Label.Item2[0].OperationKind == CounterOp.INCR)
+                            {
+                                if (move.Label.Item2.Length > 1)
+                                    throw new AutomataException(AutomataExceptionKind.InternalError);
+
+                                CounterOp op;
+                                if (C1.TryGetValue(move.TargetState, out op))
+                                    C1[move.TargetState] = op | CounterOp.INCR;
+                                else
+                                    C1[move.TargetState] = CounterOp.INCR;
+                            }
+                            else if (move.Label.Item2[0].OperationKind == CounterOp.EXIT)
+                            {
+                                if (move.Label.Item2.Length != 2)
+                                    throw new AutomataException(AutomataExceptionKind.InternalError);
+                                if (c.Max >= countingStates[q].LowerBound)
+                                {
+                                    if (move.Label.Item2[1].OperationKind == CounterOp.SET0)
+                                    {
+                                        CounterOp op;
+                                        if (C1.TryGetValue(move.TargetState, out op))
+                                            C1[move.TargetState] = op | CounterOp.SET0;
+                                        else
+                                            C1[move.TargetState] = CounterOp.SET0;
+                                    }
+                                    else
+                                    {
+                                        if (move.Label.Item2[1].OperationKind != CounterOp.SET1)
+                                            throw new AutomataException(AutomataExceptionKind.InternalError);
+                                        CounterOp op;
+                                        if (C1.TryGetValue(move.TargetState, out op))
+                                            C1[move.TargetState] = op | CounterOp.SET1;
+                                        else
+                                            C1[move.TargetState] = CounterOp.SET1;
+                                    }
+                                }
+                            }
+                            else if (move.Label.Item2[0].OperationKind == CounterOp.EXIT_SET0)
+                            {
+                                if (move.Label.Item2.Length != 1)
+                                    throw new AutomataException(AutomataExceptionKind.InternalError);
+
+                                if (c.Max >= countingStates[q].LowerBound)
+                                {
+                                    CounterOp op;
+                                    if (C1.TryGetValue(move.TargetState, out op))
+                                        C1[move.TargetState] = op | CounterOp.SET0;
+                                    else
+                                        C1[move.TargetState] = CounterOp.SET0;
+                                }
+                            }
+                            else if (move.Label.Item2[0].OperationKind == CounterOp.EXIT_SET1)
+                            {
+                                if (move.Label.Item2.Length != 1)
+                                    throw new AutomataException(AutomataExceptionKind.InternalError);
+
+                                if (c.Max >= countingStates[q].LowerBound)
+                                {
+                                    CounterOp op;
+                                    if (C1.TryGetValue(move.TargetState, out op))
+                                        C1[move.TargetState] = op | CounterOp.SET1;
+                                    else
+                                        C1[move.TargetState] = CounterOp.SET1;
+                                }
+                            }
+                            else
+                            {
+                                throw new AutomataException(AutomataExceptionKind.InternalError);
+                            }
+                        }
+
+                        else
+                        {
+                            //if exiting the counting state q is possible then 
+                            //add the target state as a reachable state
+                            if (c.Max >= countingStates[q].LowerBound)
+                                Q1.Add(move.TargetState);
+                        }
+                    }
+                    #endregion
+                }
+
+                foreach (var q in Q)
+                {
+                    #region moves from non-counting-states q
+                    foreach (var move in GetMovesFrom(q, a))
+                    {
+                        if (IsCountingState(move.TargetState))
+                        {
+                            if (move.Label.Item2.Length != 1)
+                                throw new AutomataException(AutomataExceptionKind.InternalError);
+
+                            if (!C1.ContainsKey(move.TargetState))
+                                C1[move.TargetState] = move.Label.Item2.First.OperationKind;
+                            else
+                                C1[move.TargetState] = C1[move.TargetState] | move.Label.Item2.First.OperationKind;
+                        }
+                        else
+                        {
+                            if (move.Label.Item2.Length > 0)
+                                throw new AutomataException(AutomataExceptionKind.InternalError);
+
+                            Q1.Add(move.TargetState);
+                        }
+                    }
+                    #endregion
+                }
+
+                Q = Q1;
+                C.Clear();
+                foreach (var entry in C1)
+                {
+                    #region update target registers and construct set of valid counting sets
+                    var c = counters[GetCounter(entry.Key).CounterId];
+                    if (entry.Value == CounterOp.INCR)
+                    {
+                        c.Incr();
+                    }
+                    else if (entry.Value == (CounterOp.INCR | CounterOp.SET0))
+                    {
+                        c.IncrPush0();
+                    }
+                    else if (entry.Value == (CounterOp.INCR | CounterOp.SET1))
+                    {
+                        c.IncrPush1();
+                    }
+                    else if (entry.Value == (CounterOp.INCR | CounterOp.SET0 | CounterOp.SET1))
+                    {
+                        c.IncrPush01();
+                    }
+                    else if (entry.Value == CounterOp.SET0)
+                    {
+                        c.Set0();
+                    }
+                    else if (entry.Value == CounterOp.SET1)
+                    {
+                        c.Set1();
+                    }
+                    else if (entry.Value == (CounterOp.SET0 | CounterOp.SET1))
+                    {
+                        c.Set1();
+                        c.Push0();
+                    }
+                    else
+                    {
+                        throw new AutomataException(AutomataExceptionKind.InternalError);
+                    }
+                    if (!c.IsEmpty)
+                    {
+                        C.Add(entry.Key);
+                    }
+                    #endregion
+                }
+            }
+            if (Q.Overlaps(GetFinalStates()))
+                return true;
+            else
+            {
+                foreach (var q in C)
+                {
+                    if (IsFinalState(q))
+                    {
+                        //check that the maximum value of the counter is at least the lower bound
+                        if (counters[GetCounter(q).CounterId].Max >= GetCounter(q).LowerBound)
+                            return true;
+                    }
+                }
+                return false;
+            }
         }
     }
 
@@ -287,5 +540,4 @@ namespace Microsoft.Automata
         }
         #endregion
     }
-
 }
