@@ -269,6 +269,26 @@ BS -> b b b BS | b b b";
         }
 
         [TestMethod]
+        public void TestCFG_PDAConstruction_GenerateWitnesses()
+        {
+            var input = @"S -> \( S \) | [0-9]+ ";
+            var cfg = ContextFreeGrammar.Parse(input);
+            //---
+            var pda1 = cfg.ToPDA<BDD>();
+            var aut1 = cfg.BuiltinTerminalAlgebra.Convert(@"\({2,5}").RemoveEpsilons();
+            var pda2 = pda1.Intersect(aut1);
+
+            var witnesses = new List<string>();
+            foreach (var w in pda2.GenerateWitnesses(5))
+            {
+                witnesses.Add(cfg.BuiltinTerminalAlgebra.ChooseString(w));
+            }
+            Assert.IsTrue(witnesses.Count == 5);
+            foreach (var w in witnesses)
+                Assert.IsTrue(w.EndsWith("))") && w.StartsWith("(("));
+        }
+
+        [TestMethod]
         public void TestCFG_Parse_Medium()
         {
             var input = @"

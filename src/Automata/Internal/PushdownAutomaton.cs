@@ -235,9 +235,52 @@ namespace Microsoft.Automata
             }
 
             /// <summary>
-            /// Returns witness of words accepted or null if the accepted language is empty.
+            /// Returns a witness if the accepted language is empty.
+            /// Returns null if the language is empty.
             /// </summary>
             public Sequence<T> GetWitness()
+            {
+                Automaton<Sequence<T>> reach_aut = MkReachAut();
+
+                if (reach_aut.IsEmpty)
+                    return null;
+                else
+                {
+                    var witness = Sequence<T>.AppendAll(reach_aut.FindShortestFinalPath(this.q0).Item1);
+                    return witness;
+                }
+            }
+
+            /// <summary>
+            /// Returns an enumerator of k random witnesses, or unbounded (default) if k is not positive.
+            /// If the language is empty then the enumeration is empty.
+            /// </summary>
+            public IEnumerable<Sequence<T>> GenerateWitnesses(int k = 0)
+            {
+                Automaton<Sequence<T>> reach_aut = MkReachAut();
+
+                if (reach_aut.IsEmpty)
+                    yield break;
+                else
+                {
+                    int i = 0;
+                    while (true)
+                    {
+                        var path = new List<Sequence<T>>(reach_aut.ChoosePathToSomeFinalState(new Chooser()));
+                        var witness = Sequence<T>.AppendAll(path.ToArray());
+                        yield return witness;
+                        if (k > 0)
+                        {
+                            i += 1;
+                            if (i == k)
+                                break;
+                        }
+                    }
+                    yield break;
+                }
+            }
+
+            private Automaton<Sequence<T>> MkReachAut()
             {
                 #region compute the fixpoint of epsilon transitions together with input witnesses
                 var iterate = true;
@@ -278,13 +321,7 @@ namespace Microsoft.Automata
                 #endregion
 
                 var reach_aut = Automaton<Sequence<T>>.Create(null, this.q0, this.F, EnumerateRelevantMoves(), true, true);
-                if (reach_aut.IsEmpty)
-                    return null;
-                else
-                {
-                    var witness = Sequence<T>.AppendAll(reach_aut.FindShortestFinalPath(this.q0).Item1);
-                    return witness;
-                }
+                return reach_aut;
             }
 
             public IEnumerable<Move<Sequence<T>>> EnumerateRelevantMoves()
@@ -407,6 +444,24 @@ namespace Microsoft.Automata
             automaton.ShowGraph(name);
         }
 
+        /// <summary>
+        /// Generate up to k random witnesses accepted by the PDA. If the language is empty 
+        /// then the enumeration is empty. If k is 0 or negative then the enumeration is unbounded.
+        /// Repetitions may occur.
+        /// </summary>
+        public IEnumerable<T[]> GenerateWitnesses(int k = 0)
+        {
+            if (this.automaton.IsEmpty)
+            {
+                yield break;
+            }
+            else
+            {
+                var ra = new ReachabilityAutomaton(this, false);
+                foreach (var witness in ra.GenerateWitnesses(k))
+                    yield return witness.ToArray();
+            }
+        }
 
         PushdownAutomaton<S, T> Intersect1(IMinimalAutomaton<T> nfa)
         {
