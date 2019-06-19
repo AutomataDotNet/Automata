@@ -49,7 +49,7 @@ namespace Microsoft.Automata.Grammars
         /// <summary>
         /// Appends ReservedNonterminalStart in front of id represented in decimal.
         /// </summary>
-        internal static Nonterminal MkNonterminalForId(int id)
+        public static Nonterminal MkNonterminalForId(int id)
         {
             return new Nonterminal(ReservedNonterminalStart.ToString() + id.ToString());
         }
@@ -73,7 +73,7 @@ namespace Microsoft.Automata.Grammars
         /// <summary>
         /// Creates the nonterminal with the name as is during parsing.
         /// </summary>
-        internal static Nonterminal CreateByParser(string name)
+        public static Nonterminal CreateByParser(string name)
         {
             return new Nonterminal(name);
         }
