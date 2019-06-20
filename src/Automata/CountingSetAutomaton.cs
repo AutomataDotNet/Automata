@@ -248,6 +248,23 @@ namespace Microsoft.Automata
             return new CsUpdateSeq(((ulong)update) << (3 * i), length);
         }
 
+
+        public static CsUpdateSeq Mk(params CsUpdate[] vals)
+        {
+            if (vals.Length > 21)
+                throw new NotImplementedException();
+
+            ulong x = 0;
+            int k = 0;
+            for (int i = 0; i < vals.Length; i++)
+            {
+                x = x | (((ulong)(vals[i])) << k);
+                k += 3;
+            }
+            return new CsUpdateSeq(x, vals.Length);
+        }
+
+
         public static CsUpdateSeq operator |(CsUpdateSeq left, CsUpdateSeq right)
         {
             return new CsUpdateSeq(left.elems | right.elems);
@@ -315,6 +332,22 @@ namespace Microsoft.Automata
 
             return new CsConditionSeq(((ulong)cond) << (3 * i), length);
         }
+
+        public static CsConditionSeq Mk(params CsCondition[] vals)
+        {
+            if (vals.Length > 21)
+                throw new NotImplementedException();
+
+            ulong x = 0;
+            int k = 0;
+            for (int i = 0; i < vals.Length; i++)
+            {
+                x = x | (((ulong)(vals[i])) << k);
+                k += 3;
+            }
+            return new CsConditionSeq(x, vals.Length);
+        }
+
 
         public static CsConditionSeq operator |(CsConditionSeq left, CsConditionSeq right)
         {
