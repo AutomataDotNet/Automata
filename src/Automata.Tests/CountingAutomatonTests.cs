@@ -311,7 +311,7 @@ namespace Automata.Tests
             var regex = new Regex(".*(a{5}|[aA]a{5})*", RegexOptions.Singleline);
             var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
             var aut = sr.Pattern.CreateCountingAutomaton();
-            //aut.ShowGraph("IncrPush01");
+            aut.ShowGraph("IncrPush01");
             Assert.IsTrue(aut.IsMatch("xAaaaaa"));
             Assert.IsTrue(aut.IsMatch("xaaaaaa"));
             Assert.IsTrue(aut.IsMatch("xaaaaabaa"));

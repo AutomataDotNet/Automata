@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace Microsoft.Automata
 {
 
-    public class CountingAutomaton<S> : Automaton<Tuple<Maybe<S>, Sequence<CounterOperation>>>
+    public partial class CountingAutomaton<S> : Automaton<Tuple<Maybe<S>, Sequence<CounterOperation>>>
     {
         Dictionary<int, ICounter> countingStates;
         Dictionary<int, SymbolicRegexNode<S>> stateMap;
@@ -87,6 +87,43 @@ namespace Microsoft.Automata
             return countingStates.ContainsKey(q);
         }
 
+        Dictionary<int, bool> IsSingletonCountingState_result = new Dictionary<int, bool>();
+        /// <summary>
+        /// Returns true if q is a counting-state that only needs one copy of the counter.
+        /// A sufficient condition is when no incoming transition overlaps with any loop.
+        /// </summary>
+        /// <param name="q">given state</param>
+        public bool IsSingletonCountingState(int q)
+        {
+            bool res;
+            if (!IsSingletonCountingState_result.TryGetValue(q, out res))
+            {
+                S loopCond = solver.False;
+                foreach (var loop in GetMovesFrom(q))
+                {
+                    if (loop.IsSelfLoop && loop.Label.Item1.IsSomething)
+                    {
+                        loopCond = solver.MkOr(loopCond, loop.Label.Item1.Element);
+                    }
+                }
+                res = true;
+                foreach (var trans in GetMovesTo(q))
+                {
+                    if (!trans.IsSelfLoop)
+                    {
+                        if (solver.IsSatisfiable(solver.MkAnd(trans.Label.Item1.Element, loopCond)))
+                        {
+                            res = false;
+                            break;
+                        }
+                    }
+                }
+                IsSingletonCountingState_result[q] = res;
+                return res;
+            }
+            return res;
+        }
+
         /// <summary>
         /// Returns the counter associated with the state q.
         /// The state q must be a couting state.
@@ -144,6 +181,17 @@ namespace Microsoft.Automata
                     if (solver.IsSatisfiable(solver.MkAnd(minterm, move.Label.Item1.Element)))
                         yield return move;
                 }
+        }
+
+        public IEnumerable<Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>> GetMovesFrom(IEnumerable<int> sourceStates, S minterm)
+        {
+            foreach (var sourceState in sourceStates)
+                foreach (var move in base.GetMovesFrom(sourceState))
+                    if (move.Label.Item1.IsSomething)
+                    {
+                        if (solver.IsSatisfiable(solver.MkAnd(minterm, move.Label.Item1.Element)))
+                            yield return move;
+                    }
         }
 
 
@@ -372,6 +420,53 @@ namespace Microsoft.Automata
                     }
                 }
                 return false;
+            }
+        }
+
+        private IEnumerable<Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>> GetMovesFrom(List<int> states, S a, CsConditionSeq psi)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Creates counter minterms for the given set of counting states and input predicate.
+        /// </summary>
+        /// <param name="list">list of counting states, possibly empty i.e. null</param>
+        /// <param name="a">input predicate</param>
+        /// <returns></returns>
+        private IEnumerable<CsConditionSeq> GenerateCounterMinterms(ConsList<int> list, S a)
+        {
+            if (list == null)
+                yield return CsConditionSeq.False;
+            else
+            {
+                var a_moves = new List<Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>>(GetMovesFrom(list.First, a)).ToArray();
+                var incr_exists = Array.Exists(a_moves, m => m.Label.Item2.First.OperationKind == CounterOp.INCR);
+                var exit_exists = Array.Exists(a_moves, m => m.Label.Item2.First.OperationKind != CounterOp.INCR);
+                var i = GetCounter(list.First).CounterId;
+
+                foreach (var seq in GenerateCounterMinterms(list.Rest, a))
+                {
+                    if (incr_exists && exit_exists)
+                    {
+                        yield return seq.Or(i, CsCondition.LOW);
+                        if (!(IsSingletonCountingState(list.First) && GetCounter(list.First).LowerBound == GetCounter(list.First).UpperBound))
+                            yield return seq.Or(i, CsCondition.MIDDLE);
+                        yield return seq.Or(i, CsCondition.HIGH);
+                    }
+                    else if (incr_exists)
+                    {
+                        yield return seq.Or(i, CsCondition.CANLOOP);
+                    }
+                    else if (exit_exists)
+                    {
+                        yield return seq.Or(i, CsCondition.CANEXIT);
+                    }
+                    else
+                    {
+                        throw new AutomataException(AutomataExceptionKind.InternalError);
+                    }
+                }
             }
         }
     }

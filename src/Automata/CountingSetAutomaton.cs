@@ -9,7 +9,7 @@ namespace Microsoft.Automata
     /// <summary>
     /// Counting-set Automaton
     /// </summary>
-    public class CsA<S> : IAutomaton<CsLabel<S>>
+    public class CsAutomaton<S> : IAutomaton<CsLabel<S>>
     {
         Automaton<CsLabel<S>> aut;
         public Automaton<CsLabel<S>> Automaton
@@ -33,7 +33,7 @@ namespace Microsoft.Automata
             }
         }
 
-        public CsA(Automaton<CsLabel<S>> aut)
+        public CsAutomaton(Automaton<CsLabel<S>> aut)
         {
             this.aut = aut;
         }
@@ -80,14 +80,15 @@ namespace Microsoft.Automata
             throw new NotImplementedException();
         }
         #endregion
+
     }
 
     public class CsLabel<S>
     {
         S input;
         bool isFinalCondition;
-        CsCondition[] conditions;
-        CsUpdate[] updates;
+        public readonly CsConditionSeq conditions;
+        public readonly CsUpdateSeq updates;
 
         public bool IsFinalCondition
         {
@@ -105,28 +106,21 @@ namespace Microsoft.Automata
             }
         }
 
-        public CsCondition GetCondition(int counterid)
-        {
-            return this.conditions[counterid];
-        }
+        //public CsCondition GetCondition(int counterid)
+        //{
+        //    return CsAlgebra.GetCondition(this.condUpdates[counterid]);
+        //}
 
-        public CsUpdate GetUpdate(int counterid)
-        {
-            if (isFinalCondition)
-                throw new AutomataException(AutomataExceptionKind.InvalidCall);
+        //public CsUpdate GetUpdate(int counterid)
+        //{
+        //    if (isFinalCondition)
+        //        throw new AutomataException(AutomataExceptionKind.InvalidCall);
 
-            return this.updates[counterid];
-        }
+        //    return CsAlgebra.GetUpdate(this.condUpdates[counterid]);
+        //}
 
-        public int CsCount
-        {
-            get
-            {
-                return conditions.Length;
-            }
-        }
 
-        CsLabel(bool isFinalCondition, S input, CsCondition[] conditions, CsUpdate[] updates)
+        CsLabel(bool isFinalCondition, S input, CsConditionSeq conditions, CsUpdateSeq updates)
         {
             this.input = input;
             this.isFinalCondition = isFinalCondition;
@@ -134,153 +128,238 @@ namespace Microsoft.Automata
             this.updates = updates;
         }
 
-        public static CsLabel<S> MkFinalCondition(CsCondition[] conditions)
+        public static CsLabel<S> MkFinalCondition(CsConditionSeq conditions)
         {
-            return new CsLabel<S>(true, default(S), conditions, null);
+            return new CsLabel<S>(true, default(S), conditions, CsUpdateSeq.False);
         }
 
-        public static CsLabel<S> MkTransitionLabel(S input, CsCondition[] conditions, CsUpdate[] updates)
+        public static CsLabel<S> MkTransitionLabel(S input, CsConditionSeq conditions, CsUpdateSeq updates)
         {
-            if (conditions.Length != updates.Length)
-                throw new AutomataException(AutomataExceptionKind.InvalidArguments);
-
             return new CsLabel<S>(false, input, conditions, updates);
         }
 
-        public override string ToString()
-        {
-            if (isFinalCondition)
-            {
-                string s = "";
-                for (int i=0; i < conditions.Length; i++)
-                {
-                    if (conditions[i] == CsCondition.True)
-                        return "true";
-                    else if (conditions[i] != CsCondition.False)
-                        s += "c" + i + ":" + conditions[i].ToString();
-                }
-                return s;
-            }
-            else
-            {
-                string s = input.ToString() + "/" ;
-                for (int i = 0; i < conditions.Length; i++)
-                {
-                    if (conditions[i] != CsCondition.False)
-                        s += "c" + i + ":" + conditions[i].ToString() + "/" + updates[i].ToString();
-                }
-                return s;
-            }
-        }
+        //public override string ToString()
+        //{
+        //    if (isFinalCondition)
+        //    {
+        //        var conds = Array.ConvertAll(condUpdates, CsAlgebra.GetCondition);
+        //        string s = new Sequence<CsCondition>(conds).ToString();
+        //        return s;
+        //    }
+        //    else
+        //    {
+        //        var arr = Array.ConvertAll(condUpdates, CsAlgebra.ToString);
+        //        string s = string.Join(",", arr);
+        //        return s;
+        //    }
+        //}
     }
 
-    public enum CsUpdate { Set0, Set1, Set01, Incr, IncrAdd0, IncrAdd1, IncrAdd01, Empty}
-
-    public enum CsConditionKind { IsEmpty, IsSingleton, MaxGE, MaxLT, MaxEQ, NOT, AND, OR, TRUE, FALSE}
-
-    /// <summary>
-    /// Represents a Boolean combination of counter conditions of a single counter
-    /// </summary>
-    public class CsCondition
+    public enum CsUpdate
     {
-        CsConditionKind kind;
-        CsCondition first;
-        CsCondition second;
-        int bound;
+        /// <summary>
+        /// No update
+        /// </summary>
+        NOOP = 0,
+        /// <summary>
+        /// Insert 0
+        /// </summary>
+        SET0 = 1,
+        /// <summary>
+        /// Insert 1
+        /// </summary>
+        SET1 = 2,
+        /// <summary>
+        /// Insert 0 and 1, same as SET0|SET1
+        /// </summary>
+        SET01 = 3,
+        /// <summary>
+        /// Increment all elements
+        /// </summary>
+        INCR = 4,
+        /// <summary>
+        /// Increment all elements and then insert 0, same as INCR|SET0
+        /// </summary>
+        INCR0 = 5,
+        /// <summary>
+        /// Increment all elements and then insert 1, same as INCR|SET1
+        /// </summary>
+        INCR1 = 6,
+        /// <summary>
+        /// Increment all elements and then insert 0 and 1, same as INCR|SET0|SET1
+        /// </summary>
+        INCR01 = 7,
+    }
 
-        public static readonly CsCondition IsEmpty = new CsCondition(CsConditionKind.IsEmpty, null, null, -1);
-        public static readonly CsCondition IsSingleton = new CsCondition(CsConditionKind.IsSingleton, null, null, -1);
-        public static readonly CsCondition True = new CsCondition(CsConditionKind.TRUE, null, null, -1);
-        public static readonly CsCondition False = new CsCondition(CsConditionKind.FALSE, null, null, -1);
+    public enum CsCondition
+    {
+        /// <summary>
+        /// Set is empty
+        /// </summary>
+        EMPTY = 0,
+        /// <summary>
+        /// Nonempty and all elements are below lower bound
+        /// </summary>
+        LOW = 1,
+        /// <summary>
+        /// Some element is at least lower bound but it is not the only element if it is the upper bound
+        /// </summary>
+        MIDDLE = 2,
+        /// <summary>
+        /// The condition when loop increment is possible, same as LOW|MIDDLE
+        /// </summary>
+        CANLOOP = 3,
+        /// <summary>
+        /// Singleton set containing the upper bound
+        /// </summary>
+        HIGH = 4,
+        /// <summary>
+        /// All elements are below lower bound, or singleton set containing the upper bound, same as LOW|HIGH
+        /// </summary>
+        LOWHIGH = 5,
+        /// <summary>
+        /// The condition when loop exit is possible, same as MIDDLE|HIGH
+        /// </summary>
+        CANEXIT = 6,
+        /// <summary>
+        /// Set is nonempty, same as LOW|MIDDLE|HIGH
+        /// </summary>
+        NONEMPTY = 7, 
+    }
 
-        CsCondition(CsConditionKind kind, CsCondition first, CsCondition second, int bound)
+    public class CsUpdateSeq
+    {
+        int count;
+        ulong elems = 0;
+
+        public static readonly CsUpdateSeq False = new CsUpdateSeq(0, 0);
+
+        CsUpdateSeq(ulong elems, int count = 0)
         {
-            this.kind = kind;
-            this.first = first;
-            this.second = second;
-            this.bound = bound;
+            this.elems = elems;
+            this.count = count;
         }
 
-        public static CsCondition MkNot(CsCondition cond)
+        public static CsUpdateSeq Mk(int i, CsUpdate update, int length = 0)
         {
-            return new CsCondition(CsConditionKind.NOT, cond, null, -1);
+            if (length > 0 && length > 21)
+                throw new NotImplementedException();
+
+            return new CsUpdateSeq(((ulong)update) << (3 * i), length);
         }
 
-        public static CsCondition MkAnd(CsCondition cond1, CsCondition cond2)
+        public static CsUpdateSeq operator |(CsUpdateSeq left, CsUpdateSeq right)
         {
-            return new CsCondition(CsConditionKind.AND, cond1, cond2, -1);
+            return new CsUpdateSeq(left.elems | right.elems);
         }
 
-        public static CsCondition MkOr(CsCondition cond1, CsCondition cond2)
+        public static CsUpdateSeq operator &(CsUpdateSeq left, CsUpdateSeq right)
         {
-            return new CsCondition(CsConditionKind.OR, cond1, cond2, -1);
+            return new CsUpdateSeq(left.elems & right.elems);
         }
 
-        public static CsCondition MkMaxEQ(int bound)
+        public CsUpdate this[int i]
         {
-            return new CsCondition(CsConditionKind.MaxEQ, null, null, bound);
-        }
-
-        public static CsCondition MkMaxLT(int bound)
-        {
-            return new CsCondition(CsConditionKind.MaxLT, null, null, bound);
-        }
-
-        public static CsCondition MkMaxGE(int bound)
-        {
-            return new CsCondition(CsConditionKind.MaxGE, null, null, bound);
+            get
+            {
+                return (CsUpdate)((elems >> (3 * i)) & 7);
+            }
         }
 
         public override bool Equals(object obj)
         {
-            CsCondition that = obj as CsCondition;
-            if (obj == null)
-                return false;
-            else
-                return this.kind == that.kind &&
-                    object.Equals(this.first, that.first) &&
-                    object.Equals(this.second, that.second) &&
-                    this.bound == that.bound;
+            return elems == ((CsUpdateSeq)obj).elems;
         }
 
         public override int GetHashCode()
         {
-            if (this.kind == CsConditionKind.IsEmpty || this.kind == CsConditionKind.IsSingleton || 
-                this.kind == CsConditionKind.TRUE || this.kind == CsConditionKind.FALSE)
-                return this.kind.GetHashCode();
-            else if (this.kind == CsConditionKind.MaxEQ || this.kind == CsConditionKind.MaxLT || this.kind == CsConditionKind.MaxGE)
-                return this.kind.GetHashCode() ^ this.bound;
-            else if (this.kind == CsConditionKind.NOT)
-                return this.kind.GetHashCode() ^ this.first.GetHashCode();
-            else
-                return this.kind.GetHashCode() ^ (this.first.GetHashCode() << 1) ^ (this.second.GetHashCode() << 2);
+            return elems.GetHashCode();
         }
 
-        public override string ToString()
+        public CsUpdateSeq Update(int i, CsUpdate cond)
         {
-            switch (kind)
+            ulong mask = ~(((ulong)7) << (3 * i));
+            var conds1 = (elems & mask) | (((ulong)cond) << (3 * i));
+            return new CsUpdateSeq(conds1, count);
+        }
+
+        public CsUpdateSeq Or(int i, CsCondition cond)
+        {
+            var conds1 = elems | (((ulong)cond) << (3 * i));
+            return new CsUpdateSeq(conds1);
+        }
+
+        public bool IsEmpty(int i)
+        {
+            return ((elems >> (3 * i)) & 7) == 0;
+        }
+    }
+
+    public class CsConditionSeq
+    {
+        int count;
+        ulong conds = 0;
+
+        public static readonly CsConditionSeq False = new CsConditionSeq(0, 0);
+
+        CsConditionSeq(ulong conds, int count = 0)
+        {
+            this.conds = conds;
+            this.count = count;
+        }
+
+        public static CsConditionSeq Mk(int i, CsCondition cond, int length = 0)
+        {
+            if (length > 0 && length > 21)
+                throw new NotImplementedException();
+
+            return new CsConditionSeq(((ulong)cond) << (3 * i), length);
+        }
+
+        public static CsConditionSeq operator |(CsConditionSeq left, CsConditionSeq right)
+        {
+            return new CsConditionSeq(left.conds | right.conds);
+        }
+
+        public static CsConditionSeq operator &(CsConditionSeq left, CsConditionSeq right)
+        {
+            return new CsConditionSeq(left.conds & right.conds);
+        }
+
+        public CsCondition this[int i]
+        {
+            get
             {
-                case CsConditionKind.IsEmpty:
-                    return "IsEmpty";
-                case CsConditionKind.IsSingleton:
-                    return "IsSingleton";
-                case CsConditionKind.MaxEQ:
-                    return "MaxEQ(" + bound + ")";
-                case CsConditionKind.MaxLT:
-                    return "MaxLT(" + bound + ")";
-                case CsConditionKind.MaxGE:
-                    return "MaxGE(" + bound + ")";
-                case CsConditionKind.NOT:
-                    return "~" + first.ToString();
-                case CsConditionKind.AND:
-                    return "(" + first.ToString() + "&" + second.ToString() + ")";
-                case CsConditionKind.TRUE:
-                    return "true";
-                case CsConditionKind.FALSE:
-                    return "false";
-                default: //CsAConditionKind.OR
-                    return "(" + first.ToString() + "|" + second.ToString() + ")";
+                return (CsCondition)((conds >> (3 * i)) & 7);
             }
+        }
+
+        public override bool Equals(object obj)
+        {
+            return conds == ((CsConditionSeq)obj).conds;
+        }
+
+        public override int GetHashCode()
+        {
+            return conds.GetHashCode();
+        }
+
+        public CsConditionSeq Update(int i, CsCondition cond)
+        {
+            ulong mask = ~(((ulong)7) << (3 * i));
+            var conds1 = (conds & mask) | (((ulong)cond) << (3 * i));
+            return new CsConditionSeq(conds1);
+        }
+
+        public CsConditionSeq Or(int i, CsCondition cond)
+        {
+            var conds1 = conds | (((ulong)cond) << (3 * i));
+            return new CsConditionSeq(conds1);
+        }
+
+        public bool IsEmpty(int i)
+        {
+            return ((conds >> (3 * i)) & 7) == 0;
         }
     }
 }

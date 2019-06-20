@@ -20,11 +20,11 @@ namespace Microsoft.Automata
         /// <summary>
         /// Source counter greater or equal lower bound is checked
         /// </summary>
-        EXIT = 4,
+        EXIT = 8,
         /// <summary>
         /// Source counter less than upper bound is checked and the value is incermented by 1
         /// </summary>
-        INCR = 8,
+        INCR = 4,
         /// <summary>
         /// Source counter greater or equal lower bound is checked and target counter is set to 0
         /// </summary>
