@@ -441,33 +441,41 @@ namespace Microsoft.Automata
             else
             {
                 var a_moves = new List<Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>>(GetMovesFrom(list.First, a)).ToArray();
+
+
                 var incr_exists = Array.Exists(a_moves, m => m.Label.Item2.First.OperationKind == CounterOp.INCR);
                 var exit_exists = Array.Exists(a_moves, m => m.Label.Item2.First.OperationKind != CounterOp.INCR);
                 var i = GetCounter(list.First).CounterId;
 
                 foreach (var seq in GenerateCounterMinterms(list.Rest, a))
                 {
-                    if (incr_exists && exit_exists)
+                    if (a_moves.Length > 0)
                     {
-                        yield return seq.Or(i, CsCondition.LOW);
-                        if (!(IsSingletonCountingState(list.First) && GetCounter(list.First).LowerBound == GetCounter(list.First).UpperBound))
-                            yield return seq.Or(i, CsCondition.MIDDLE);
-                        yield return seq.Or(i, CsCondition.HIGH);
-                    }
-                    else if (incr_exists)
-                    {
-                        yield return seq.Or(i, CsCondition.CANLOOP);
-                    }
-                    else if (exit_exists)
-                    {
-                        yield return seq.Or(i, CsCondition.CANEXIT);
+                        if (incr_exists && exit_exists)
+                        {
+                            yield return seq.Or(i, CsCondition.LOW);
+                            if (!(IsSingletonCountingState(list.First) && GetCounter(list.First).LowerBound == GetCounter(list.First).UpperBound))
+                                yield return seq.Or(i, CsCondition.MIDDLE);
+                            yield return seq.Or(i, CsCondition.HIGH);
+                        }
+                        else if (incr_exists)
+                        {
+                            yield return seq.Or(i, CsCondition.CANLOOP);
+                        }
+                        else if (exit_exists)
+                        {
+                            yield return seq.Or(i, CsCondition.CANEXIT);
+                        }
+                        else
+                        {
+                            throw new AutomataException(AutomataExceptionKind.InternalError_GenerateCounterMinterms);
+                        }
                     }
                     else
-                    {
-                        throw new AutomataException(AutomataExceptionKind.InternalError);
-                    }
+                        yield return seq;
                 }
             }
+        }
         }
     }
 
