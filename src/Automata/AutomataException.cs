@@ -296,5 +296,6 @@ namespace Microsoft.Automata
         InternalError_DistinguishingSequenceGeneration,
         InvalidCall,
         ArgumentMustBeFinalState,
+        InternalError_GenerateCounterMinterms,
     }
 }

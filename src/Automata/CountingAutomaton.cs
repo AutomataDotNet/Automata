@@ -476,7 +476,6 @@ namespace Microsoft.Automata
                 }
             }
         }
-        }
     }
 
     /// <summary>
