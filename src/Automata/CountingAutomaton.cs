@@ -437,7 +437,7 @@ namespace Microsoft.Automata
         private IEnumerable<CsConditionSeq> GenerateCounterMinterms(ConsList<int> list, S a)
         {
             if (list == null)
-                yield return CsConditionSeq.False;
+                yield return CsConditionSeq.MkFalse(countingStates.Count);
             else
             {
                 var a_moves = new List<Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>>(GetMovesFrom(list.First, a)).ToArray();

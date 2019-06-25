@@ -101,6 +101,7 @@
     <Compile Include="ConditionalDerivative.cs" />
     <Compile Include="CountingAutomaton.cs" />
     <Compile Include="CountingSetAutomaton.cs" />
+    <Compile Include="CsAlgebra.cs" />
     <Compile Include="Interfaces\ICounter.cs" />
     <Compile Include="Interfaces\ICountingSet.cs" />
     <Compile Include="Internal\AutomataAlgebra.cs" />

@@ -311,10 +311,34 @@ namespace Automata.Tests
             var regex = new Regex(".*(a{5}|[aA]a{5})*", RegexOptions.Singleline);
             var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
             var aut = sr.Pattern.CreateCountingAutomaton();
-            aut.ShowGraph("IncrPush01");
+            //aut.ShowGraph("IncrPush01");
             Assert.IsTrue(aut.IsMatch("xAaaaaa"));
             Assert.IsTrue(aut.IsMatch("xaaaaaa"));
             Assert.IsTrue(aut.IsMatch("xaaaaabaa"));
+        }
+
+        [TestMethod]
+        public void TestCA_CsAutomatonConstruction1()
+        {
+            var regex = new Regex(".*(a{5}|[aA]a{5})*", RegexOptions.Singleline);
+            var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
+            var aut = sr.Pattern.CreateCountingAutomaton();
+            //aut.ShowGraph("CsAutomatonConstruction1");
+            Assert.IsTrue(aut.IsMatch("xAaaaaa"));
+            Assert.IsTrue(aut.IsMatch("xaaaaaa"));
+            Assert.IsTrue(aut.IsMatch("xaaaaabaa"));
+            var det = CsAutomaton<ulong>.CreateFrom(aut);
+        }
+
+        [TestMethod]
+        public void TestCA_CsAutomatonConstruction2()
+        {
+            Microsoft.Automata.DirectedGraphs.Options.MaxDgmlTransitionLabelLength = 500;
+            var regex = new Regex("((.{5,10}){2})*", RegexOptions.Singleline);
+            var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
+            var aut = sr.Pattern.CreateCountingAutomaton();
+            aut.ShowGraph("CsAutomatonConstruction2");
+            var det = CsAutomaton<ulong>.CreateFrom(aut);
         }
     }
 }

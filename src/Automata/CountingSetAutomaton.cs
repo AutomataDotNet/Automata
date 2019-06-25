@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Automata.BooleanAlgebras;
 
 namespace Microsoft.Automata
 {
@@ -14,10 +15,13 @@ namespace Microsoft.Automata
         PowerSetStateBuilder stateBuilder;
         Dictionary<int, ICounter> countingStates;
 
-        public CsAutomaton(Automaton<CsLabel<S>> aut, PowerSetStateBuilder stateBuilder, Dictionary<int, ICounter> countingStates) : base(aut)
+        CsAlgebra<S> productAlgebra;
+
+        public CsAutomaton(IBooleanAlgebra<S> inputAlgebra, Automaton<CsLabel<S>> aut, PowerSetStateBuilder stateBuilder, Dictionary<int, ICounter> countingStates) : base(aut)
         {
             this.stateBuilder = stateBuilder;
             this.countingStates = countingStates;
+            this.productAlgebra = new CsAlgebra<S>(inputAlgebra, countingStates.Count);
         }
 
         int GetOriginalInitialState()
@@ -71,6 +75,41 @@ namespace Microsoft.Automata
             }
             else
                 return "";
+        }
+
+        public static CsAutomaton<S> CreateFrom(CountingAutomaton<S> ca)
+        {
+            var productmoves = new List<Move<CsPred<S>>>();
+            var alg = new CsAlgebra<S>(((CABA<S>)ca.Algebra).builder.solver, ca.NrOfCounters);
+            foreach  (var move in ca.GetMoves())
+            {
+                var ccond = CsConditionSeq.MkFalse(ca.NrOfCounters);
+                if (ca.IsCountingState(move.SourceState))
+                {
+                    var cid = ca.GetCounter(move.SourceState).CounterId;
+                    if (move.Label.Item2.First.OperationKind == CounterOp.EXIT || 
+                        move.Label.Item2.First.OperationKind == CounterOp.EXIT_SET0 || 
+                        move.Label.Item2.First.OperationKind == CounterOp.EXIT_SET1)
+                    {
+                        ccond = ccond.Or(cid, CsCondition.CANEXIT);
+                    }
+                    else 
+                    {
+                        if (move.Label.Item2.First.OperationKind != CounterOp.INCR)
+                            throw new AutomataException(AutomataExceptionKind.InternalError);
+
+                        ccond = ccond.Or(cid, CsCondition.CANLOOP);
+                    }
+                }
+                productmoves.Add(Move<CsPred<S>>.Create(move.SourceState, move.TargetState, alg.MkPredicate(move.Label.Item1.Element, ccond)));
+            }
+            var prodaut = Automaton<CsPred<S>>.Create(alg, ca.InitialState, ca.GetFinalStates(), productmoves);
+
+            var det = prodaut.Determinize();
+
+            det.ShowGraph("CsAutomaton2");
+
+            return null;
         }
     }
 
@@ -141,12 +180,12 @@ namespace Microsoft.Automata
         private string DescribeCounterCondition()
         {
             string s = "";
-            for (int i = 0; i < Conditions.Length; i++)
+            for (int i = 0; i < Conditions.length; i++)
             {
                 if (Conditions[i] != CsCondition.EMPTY && Conditions[i] != CsCondition.NONEMPTY)
                 {
                     if (s != "")
-                        s += "&amp;";
+                        s += "&";
                     s += Conditions[i].ToString() + "(c" + i.ToString() + ")";
                 }
             }
@@ -161,7 +200,7 @@ namespace Microsoft.Automata
                 if (Updates[i] != CsUpdate.NOOP)
                 {
                     if (s != "")
-                        s += "&amp;";
+                        s += "&";
                     s += Conditions[i].ToString() + "(c" + i.ToString() + ")";
                 }
             }
@@ -332,26 +371,21 @@ namespace Microsoft.Automata
 
     public class CsConditionSeq
     {
-        int count;
+        internal int length;
         ulong conds = 0;
 
-        public int Length
+        public static CsConditionSeq MkFalse(int lenth)
         {
-            get
-            {
-                return count;
-            }
+            return new CsConditionSeq(0, lenth);
         }
 
-        public static readonly CsConditionSeq False = new CsConditionSeq(0, 21);
-
-        CsConditionSeq(ulong conds, int count = 0)
+        CsConditionSeq(ulong conds, int count)
         {
             this.conds = conds;
-            this.count = count;
+            this.length = count;
         }
 
-        public static CsConditionSeq Mk(int i, CsCondition cond, int length = 21)
+        public static CsConditionSeq Mk(int i, CsCondition cond, int length)
         {
             if (length > 0 && length > 21)
                 throw new NotImplementedException();
@@ -372,17 +406,6 @@ namespace Microsoft.Automata
                 k += 3;
             }
             return new CsConditionSeq(x, vals.Length);
-        }
-
-
-        public static CsConditionSeq operator |(CsConditionSeq left, CsConditionSeq right)
-        {
-            return new CsConditionSeq(left.conds | right.conds, left.count);
-        }
-
-        public static CsConditionSeq operator &(CsConditionSeq left, CsConditionSeq right)
-        {
-            return new CsConditionSeq(left.conds & right.conds, left.count);
         }
 
         public CsCondition this[int i]
@@ -407,18 +430,49 @@ namespace Microsoft.Automata
         {
             ulong mask = ~(((ulong)7) << (3 * i));
             var conds1 = (conds & mask) | (((ulong)cond) << (3 * i));
-            return new CsConditionSeq(conds1, count);
+            return new CsConditionSeq(conds1, length);
         }
 
         public CsConditionSeq Or(int i, CsCondition cond)
         {
             var conds1 = conds | (((ulong)cond) << (3 * i));
-            return new CsConditionSeq(conds1, count);
+            return new CsConditionSeq(conds1, length);
         }
 
         public bool IsEmpty(int i)
         {
             return ((conds >> (3 * i)) & 7) == 0;
+        }
+
+        public CsCondition[] ToArray()
+        {
+            var list = new List<CsCondition>();
+            var arr = new CsCondition[length];
+            for (int i = 0; i < length; i++)
+                arr[i] = this[i];
+            return arr;
+        }
+
+        public override string ToString()
+        {
+            string s = "";
+            for (int i = 0; i < length; i++)
+            {
+                if (this[i] != CsCondition.EMPTY && this[i] != CsCondition.NONEMPTY)
+                {
+                    if (s != "")
+                        s += "&";
+                    if (this[i] == CsCondition.LOW)
+                        s += string.Format("{0}(c{1})", "L", i);
+                    else if (this[i] == CsCondition.MIDDLE)
+                        s += string.Format("{0}(c{1})", "M", i);
+                    else if (this[i] == CsCondition.HIGH)
+                        s += string.Format("{0}(c{1})", "H", i);
+                    else 
+                        s += string.Format("{0}(c{1})", this[i], i);
+                }
+            }
+            return s;
         }
     }
 }
