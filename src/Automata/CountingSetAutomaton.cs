@@ -81,19 +81,19 @@ namespace Microsoft.Automata
         {
             var productmoves = new List<Move<CsPred<S>>>();
             var alg = new CsAlgebra<S>(((CABA<S>)ca.Algebra).builder.solver, ca.NrOfCounters);
-            foreach  (var move in ca.GetMoves())
+            foreach (var move in ca.GetMoves())
             {
                 var ccond = CsConditionSeq.MkFalse(ca.NrOfCounters);
                 if (ca.IsCountingState(move.SourceState))
                 {
                     var cid = ca.GetCounter(move.SourceState).CounterId;
-                    if (move.Label.Item2.First.OperationKind == CounterOp.EXIT || 
-                        move.Label.Item2.First.OperationKind == CounterOp.EXIT_SET0 || 
+                    if (move.Label.Item2.First.OperationKind == CounterOp.EXIT ||
+                        move.Label.Item2.First.OperationKind == CounterOp.EXIT_SET0 ||
                         move.Label.Item2.First.OperationKind == CounterOp.EXIT_SET1)
                     {
                         ccond = ccond.Or(cid, CsCondition.CANEXIT);
                     }
-                    else 
+                    else
                     {
                         if (move.Label.Item2.First.OperationKind != CounterOp.INCR)
                             throw new AutomataException(AutomataExceptionKind.InternalError);
@@ -105,11 +105,27 @@ namespace Microsoft.Automata
             }
             var prodaut = Automaton<CsPred<S>>.Create(alg, ca.InitialState, ca.GetFinalStates(), productmoves);
 
-            var det = prodaut.Determinize();
+            PowerSetStateBuilder sb;
+            var det = prodaut.Determinize(out sb);
 
-            det.ShowGraph("CsAutomaton2");
+            var csmoves = new List<Move<CsLabel<S>>>();
 
-            return null;
+            foreach (var dmove in det.GetMoves())
+            { 
+                foreach (var prodcond in dmove.Label.GetSumOfProducts())
+                {
+                    var upd = CsUpdateSeq.MkNOOP(ca.NrOfCounters);
+                    foreach (var q in sb.GetMembers(dmove.SourceState))
+                        upd = upd | ca.GetCounterUpdate(q, prodcond.Item2, prodcond.Item1);
+                    csmoves.Add(Move<CsLabel<S>>.Create(dmove.SourceState, dmove.TargetState, CsLabel<S>.MkTransitionLabel(prodcond.Item2, prodcond.Item1, upd, ((CABA<S>)ca.Algebra).builder.solver.PrettyPrint)));
+                }
+            }
+
+            var csa_aut = Automaton<CsLabel<S>>.Create(null, det.InitialState, det.GetFinalStates(), csmoves);
+
+            var csa = new CsAutomaton<S>(((CABA<S>)ca.Algebra).builder.solver, csa_aut, sb, ca.countingStates);
+
+            return csa;
         }
     }
 
@@ -119,6 +135,7 @@ namespace Microsoft.Automata
         bool isFinalCondition;
         public readonly CsConditionSeq Conditions;
         public readonly CsUpdateSeq Updates;
+        Func<S, string> InputToString;
 
         public bool IsFinalCondition
         {
@@ -136,22 +153,23 @@ namespace Microsoft.Automata
             }
         }
 
-        CsLabel(bool isFinalCondition, S input, CsConditionSeq conditions, CsUpdateSeq updates)
+        CsLabel(bool isFinalCondition, S input, CsConditionSeq conditions, CsUpdateSeq updates, Func<S, string> inputToString)
         {
             this.input = input;
             this.isFinalCondition = isFinalCondition;
             this.Conditions = conditions;
             this.Updates = updates;
+            this.InputToString = inputToString;
         }
 
-        public static CsLabel<S> MkFinalCondition(CsConditionSeq conditions)
+        public static CsLabel<S> MkFinalCondition(CsConditionSeq conditions, Func<S, string> inputToString = null)
         {
-            return new CsLabel<S>(true, default(S), conditions, CsUpdateSeq.False);
+            return new CsLabel<S>(true, default(S), conditions, CsUpdateSeq.MkNOOP(conditions.length), inputToString);
         }
 
-        public static CsLabel<S> MkTransitionLabel(S input, CsConditionSeq conditions, CsUpdateSeq updates)
+        public static CsLabel<S> MkTransitionLabel(S input, CsConditionSeq conditions, CsUpdateSeq updates, Func<S, string> inputToString = null)
         {
-            return new CsLabel<S>(false, input, conditions, updates);
+            return new CsLabel<S>(false, input, conditions, updates, inputToString);
         }
 
         public override string ToString()
@@ -162,12 +180,13 @@ namespace Microsoft.Automata
             }
             else
             {
-                var s = input.ToString();
+                var s = (InputToString == null ? input.ToString() : InputToString(input));
+
                 var cond = DescribeCounterCondition();
                 var upd = DescribeCounterUpdate();
                 if (cond != "")
                 {
-                    s += "&amp;" + cond;
+                    s += "/" + cond;
                 }
                 if (upd != "")
                 {
@@ -201,9 +220,38 @@ namespace Microsoft.Automata
                 {
                     if (s != "")
                         s += "&";
-                    s += Conditions[i].ToString() + "(c" + i.ToString() + ")";
+                    s += Updates[i].ToString() + "(c" + i.ToString() + ")";
                 }
             }
+            //for (int i = 0; i < Updates.Length; i++)
+            //{
+            //    switch (Updates[i])
+            //    {
+            //        case CsUpdate.NOOP:
+            //            break;
+            //        case CsUpdate.INCR:
+            //            s += string.Format("c{0}++;", i);
+            //            break;
+            //        case CsUpdate.INCR0:
+            //            s += string.Format("c{0}+U{{0}};", i);
+            //            break;
+            //        case CsUpdate.INCR1:
+            //            s += string.Format("c{0}+U{{1}};", i);
+            //            break;
+            //        case CsUpdate.INCR01:
+            //            s += string.Format("c{0}+U{{0,1}};", i);
+            //            break;
+            //        case CsUpdate.SET0:
+            //            s += string.Format("c{0}:={{0}};", i);
+            //            break;
+            //        case CsUpdate.SET1:
+            //            s += string.Format("c{0}:={{1}};", i);
+            //            break;
+            //        case CsUpdate.SET01:
+            //            s += string.Format("c{0}:={{0,1}};", i);
+            //            break;
+            //    }
+            //}
             return s;
         }
     }
@@ -282,29 +330,34 @@ namespace Microsoft.Automata
 
     public class CsUpdateSeq
     {
-        int count;
+        int length;
         ulong elems = 0;
 
         public static readonly CsUpdateSeq False = new CsUpdateSeq(0, 0);
+
+        public static CsUpdateSeq MkNOOP(int count)
+        {
+            return new CsUpdateSeq(0, count);
+        }
+
         public int Length
         {
-            get { return count; }
+            get { return length; }
         }
 
-        CsUpdateSeq(ulong elems, int count = 0)
+        CsUpdateSeq(ulong elems, int count)
         {
             this.elems = elems;
-            this.count = count;
+            this.length = count;
         }
 
-        public static CsUpdateSeq Mk(int i, CsUpdate update, int length = 0)
+        public static CsUpdateSeq Mk(int i, CsUpdate update, int length)
         {
-            if (length > 0 && length > 21)
+            if (length > 21)
                 throw new NotImplementedException();
 
             return new CsUpdateSeq(((ulong)update) << (3 * i), length);
         }
-
 
         public static CsUpdateSeq Mk(params CsUpdate[] vals)
         {
@@ -324,12 +377,12 @@ namespace Microsoft.Automata
 
         public static CsUpdateSeq operator |(CsUpdateSeq left, CsUpdateSeq right)
         {
-            return new CsUpdateSeq(left.elems | right.elems);
+            return new CsUpdateSeq(left.elems | right.elems, left.length);
         }
 
         public static CsUpdateSeq operator &(CsUpdateSeq left, CsUpdateSeq right)
         {
-            return new CsUpdateSeq(left.elems & right.elems);
+            return new CsUpdateSeq(left.elems & right.elems, left.length);
         }
 
         public CsUpdate this[int i]
@@ -350,17 +403,17 @@ namespace Microsoft.Automata
             return elems.GetHashCode();
         }
 
-        public CsUpdateSeq Update(int i, CsUpdate cond)
+        public CsUpdateSeq Update(int i, CsUpdate upd)
         {
             ulong mask = ~(((ulong)7) << (3 * i));
-            var conds1 = (elems & mask) | (((ulong)cond) << (3 * i));
-            return new CsUpdateSeq(conds1, count);
+            var conds1 = (elems & mask) | (((ulong)upd) << (3 * i));
+            return new CsUpdateSeq(conds1, length);
         }
 
-        public CsUpdateSeq Or(int i, CsCondition cond)
+        public CsUpdateSeq Or(int i, CsUpdate upd)
         {
-            var conds1 = elems | (((ulong)cond) << (3 * i));
-            return new CsUpdateSeq(conds1);
+            var conds1 = elems | (((ulong)upd) << (3 * i));
+            return new CsUpdateSeq(conds1, length);
         }
 
         public bool IsEmpty(int i)

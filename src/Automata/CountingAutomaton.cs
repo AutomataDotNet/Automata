@@ -8,7 +8,7 @@ namespace Microsoft.Automata
 
     public partial class CountingAutomaton<S> : Automaton<Tuple<Maybe<S>, Sequence<CounterOperation>>>
     {
-        Dictionary<int, ICounter> countingStates;
+        internal Dictionary<int, ICounter> countingStates;
         Dictionary<int, SymbolicRegexNode<S>> stateMap;
 
         internal ICharAlgebra<S> solver;
@@ -475,6 +475,113 @@ namespace Microsoft.Automata
                         yield return seq;
                 }
             }
+        }
+
+        internal CsUpdateSeq  GetCounterUpdate(int q, S input, CsConditionSeq guard)
+        {
+            var res = CsUpdateSeq.MkNOOP(countingStates.Count);
+            foreach (var mv in delta[q])
+            {
+                if (mv.Label.Item1.IsSomething && solver.IsSatisfiable(solver.MkAnd(mv.Label.Item1.Element, input)))
+                {
+                    var p = mv.TargetState;
+                    if (IsCountingState(p))
+                    {
+                        var p_counter = GetCounter(p);
+                        if (p == q)
+                        {
+                            #region loop
+                            if (mv.Label.Item2.Length != 1)
+                                throw new AutomataException(AutomataExceptionKind.InternalError);
+                            else
+                            {
+                                var op = mv.Label.Item2[0];
+                                if (guard[p_counter.CounterId].HasFlag(CsCondition.LOW) ||
+                                    guard[p_counter.CounterId].HasFlag(CsCondition.MIDDLE))
+                                {
+                                    if (op.OperationKind == CounterOp.INCR)
+                                    {
+                                        res = res.Or(op.Counter.CounterId, CsUpdate.INCR);
+                                    }
+                                    else if (op.OperationKind == CounterOp.EXIT_SET0)
+                                    {
+                                        res = res.Or(op.Counter.CounterId, CsUpdate.SET0);
+                                    }
+                                    else if (op.OperationKind == CounterOp.EXIT_SET1)
+                                    {
+                                        res = res.Or(op.Counter.CounterId, CsUpdate.SET1);
+                                    }
+                                    else
+                                    {
+                                        throw new AutomataException(AutomataExceptionKind.InternalError);
+                                    }
+                                }
+                            }
+                            #endregion
+                        }
+                        else if (IsCountingState(q))
+                        {
+                            #region q is counting state too
+                            var q_counter = GetCounter(q);
+                            if (mv.Label.Item2.Length != 2)
+                                throw new AutomataException(AutomataExceptionKind.InternalError);
+                            else
+                            {
+                                var q_exit = mv.Label.Item2[0];
+                                var p_set = mv.Label.Item2[1];
+                                if (q_exit.Counter.CounterId != q_counter.CounterId || p_set.Counter.CounterId != p_counter.CounterId)
+                                    throw new AutomataException(AutomataExceptionKind.InternalError);
+
+                                if (guard[q_counter.CounterId].HasFlag(CsCondition.HIGH) ||
+                                    guard[q_counter.CounterId].HasFlag(CsCondition.MIDDLE))
+                                {
+                                    if (p_set.OperationKind == CounterOp.SET0)
+                                    {
+                                        res = res.Or(p_set.Counter.CounterId, CsUpdate.SET0);
+                                    }
+                                    else if (p_set.OperationKind == CounterOp.SET1)
+                                    {
+                                        res = res.Or(p_set.Counter.CounterId, CsUpdate.SET1);
+                                    }
+                                    else 
+                                    {
+                                        throw new AutomataException(AutomataExceptionKind.InternalError);
+                                    }
+                                }
+                            }
+                            #endregion
+                        }
+                        else
+                        {
+                            #region q is non-counting state
+                            if (mv.Label.Item2.Length != 1)
+                                throw new AutomataException(AutomataExceptionKind.InternalError);
+                            else
+                            {
+                                var p_set = mv.Label.Item2[0];
+                                if (p_set.Counter.CounterId != p_counter.CounterId)
+                                    throw new AutomataException(AutomataExceptionKind.InternalError);
+
+
+                                if (p_set.OperationKind == CounterOp.SET0)
+                                {
+                                    res = res.Or(p_set.Counter.CounterId, CsUpdate.SET0);
+                                }
+                                else if (p_set.OperationKind == CounterOp.SET1)
+                                {
+                                    res = res.Or(p_set.Counter.CounterId, CsUpdate.SET1);
+                                }
+                                else
+                                {
+                                    throw new AutomataException(AutomataExceptionKind.InternalError);
+                                }
+                            }
+                            #endregion
+                        }
+                    }
+                }
+            }
+            return res;
         }
     }
 

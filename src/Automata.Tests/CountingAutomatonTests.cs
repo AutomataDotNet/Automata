@@ -337,8 +337,9 @@ namespace Automata.Tests
             var regex = new Regex("((.{5,10}){2})*", RegexOptions.Singleline);
             var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
             var aut = sr.Pattern.CreateCountingAutomaton();
-            aut.ShowGraph("CsAutomatonConstruction2");
+            aut.ShowGraph("CsAutomatonConstruction2_nondet");
             var det = CsAutomaton<ulong>.CreateFrom(aut);
+            det.ShowGraph("CsAutomatonConstruction2_det");
         }
     }
 }
