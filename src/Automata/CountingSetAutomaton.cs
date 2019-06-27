@@ -14,14 +14,41 @@ namespace Microsoft.Automata
     {
         PowerSetStateBuilder stateBuilder;
         Dictionary<int, ICounter> countingStates;
+        HashSet<int> origFinalStates;
 
         CsAlgebra<S> productAlgebra;
 
-        public CsAutomaton(IBooleanAlgebra<S> inputAlgebra, Automaton<CsLabel<S>> aut, PowerSetStateBuilder stateBuilder, Dictionary<int, ICounter> countingStates) : base(aut)
+        Dictionary<int, HashSet<int>> activeCounterMap;
+
+        HashSet<int> finalCounterSet;
+
+        ICounter[] counters;
+
+        public CsAutomaton(IBooleanAlgebra<S> inputAlgebra, Automaton<CsLabel<S>> aut, PowerSetStateBuilder stateBuilder, Dictionary<int, ICounter> countingStates, HashSet<int> origFinalStates) : base(aut)
         {
             this.stateBuilder = stateBuilder;
             this.countingStates = countingStates;
             this.productAlgebra = new CsAlgebra<S>(inputAlgebra, countingStates.Count);
+            this.origFinalStates = origFinalStates;
+            activeCounterMap = new Dictionary<int, HashSet<int>>();
+            finalCounterSet = new HashSet<int>();
+            counters = new ICounter[countingStates.Count];
+            foreach (var q in aut.States)
+            {
+                var q_set = new HashSet<int>();
+                activeCounterMap[q] = q_set;
+                foreach (var mem in stateBuilder.GetMembers(q))
+                {
+                    if (countingStates.ContainsKey(mem))
+                    {
+                        var counterId = countingStates[mem].CounterId;
+                        q_set.Add(counterId);
+                        if (origFinalStates.Contains(mem))
+                            finalCounterSet.Add(counterId);
+                        counters[counterId] = countingStates[mem];
+                    }
+                }
+            }
         }
 
         int GetOriginalInitialState()
@@ -38,6 +65,9 @@ namespace Microsoft.Automata
             base.ShowGraph(name);
         }
 
+        /// <summary>
+        /// Describe the state information, including original states if determinized, as well as counters.
+        /// </summary>
         public override string DescribeState(int state)
         {
             string s = state.ToString();
@@ -54,24 +84,30 @@ namespace Microsoft.Automata
                 }
                 s += "}";
             }
-            foreach (var q in mems)
+            var state_counters = GetCountersOfState(state);
+            var state_counters_list = new List<int>(state_counters);
+            state_counters_list.Sort();
+            foreach (var c in state_counters_list)
             {
-                if (countingStates.ContainsKey(q))
-                {
-                    var c = countingStates[q];
-                    s += "&#13;c" + c.CounterId + ":[" + c.LowerBound + "," + c.UpperBound + "]";
-                }
+                s += "&#13;";
+                if (finalCounterSet.Contains(c))
+                    s += "(F)";
+                s += "c" + c + ":[" + counters[c].LowerBound + "," + counters[c].UpperBound + "]";
             }
             return s;
         }
 
+        /// <summary>
+        /// Describe if the initial state is associuated wit a counter, if so then set it to {0}
+        /// </summary>
+        /// <returns></returns>
         public override string DescribeStartLabel()
         {
-            var q0 = GetOriginalInitialState();
-            if (countingStates.ContainsKey(q0))
+            var initcounters = activeCounterMap[InitialState].GetEnumerator();
+            if (initcounters.MoveNext())
             {
-                var c = countingStates[q0];
-                return string.Format("c{0}:=0", c.CounterId);
+                var c = initcounters.Current;
+                return string.Format("c{0}={{0}}", c);
             }
             else
                 return "";
@@ -123,9 +159,52 @@ namespace Microsoft.Automata
 
             var csa_aut = Automaton<CsLabel<S>>.Create(null, det.InitialState, det.GetFinalStates(), csmoves);
 
-            var csa = new CsAutomaton<S>(((CABA<S>)ca.Algebra).builder.solver, csa_aut, sb, ca.countingStates);
+            var fs = new HashSet<int>(ca.GetFinalStates());
+
+            var csa = new CsAutomaton<S>(((CABA<S>)ca.Algebra).builder.solver, csa_aut, sb, ca.countingStates, fs);
 
             return csa;
+        }
+
+        /// <summary>
+        /// Get the active counters associated with the given state.
+        /// The set is empty if this state is not asscociated with any counters.
+        /// </summary>
+        public HashSet<int> GetCountersOfState(int state)
+        {
+            return activeCounterMap[state];
+        }
+
+        /// <summary>
+        /// Get the total number of counters
+        /// </summary>
+        public int NrOfCounters
+        {
+            get
+            {
+                return counters.Length;
+            }
+        }
+
+        /// <summary>
+        /// Get the counter info associated with the given counter id
+        /// </summary>
+        /// <param name="counterId">must be a number between 0 and NrOfCounters-1</param>
+        /// <returns></returns>
+        public ICounter GetCounterInfo(int counterId)
+        {
+            return counters[counterId];
+        }
+
+        /// <summary>
+        /// Returns true if the given counter is a final counter, thus, in final state 
+        /// contributes to the overall final state condition.
+        /// </summary>
+        /// <param name="counterId">must be a number between 0 and NrOfCounters-1</param>
+        /// <returns></returns>
+        public bool IsFinalCounter(int counterId)
+        {
+            return finalCounterSet.Contains(counterId);
         }
     }
 
@@ -205,10 +284,25 @@ namespace Microsoft.Automata
                 {
                     if (s != "")
                         s += "&";
-                    s += Conditions[i].ToString() + "(c" + i.ToString() + ")";
+                    s += CsCondition_ToString(Conditions[i]) + "(c" + i.ToString() + ")";
                 }
             }
             return s;
+        }
+
+        static string CsCondition_ToString(CsCondition cond)
+        {
+            switch (cond)
+            {
+                case CsCondition.LOW:
+                    return "L";
+                case CsCondition.MIDDLE:
+                    return "M";
+                case CsCondition.HIGH:
+                    return "H";
+                default:
+                    return cond.ToString();
+            }
         }
 
         private string DescribeCounterUpdate()

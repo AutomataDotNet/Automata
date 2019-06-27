@@ -341,5 +341,17 @@ namespace Automata.Tests
             var det = CsAutomaton<ulong>.CreateFrom(aut);
             det.ShowGraph("CsAutomatonConstruction2_det");
         }
+
+        [TestMethod]
+        public void TestCA_CsAutomatonConstruction3()
+        {
+            Microsoft.Automata.DirectedGraphs.Options.MaxDgmlTransitionLabelLength = 500;
+            var regex = new Regex(".*ab{9}d", RegexOptions.Singleline);
+            var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
+            var aut = sr.Pattern.CreateCountingAutomaton();
+            aut.ShowGraph("CsAutomatonConstruction3_nondet");
+            var det = CsAutomaton<ulong>.CreateFrom(aut);
+            det.ShowGraph("CsAutomatonConstruction3_det");
+        }
     }
 }

@@ -195,7 +195,7 @@ namespace Microsoft.Automata.DirectedGraphs
             string info = "";
             for (int i = 0; i < rules.Count; i++)
             {
-                lab += (lab == "" ? "" : ", ") + describeS(rules[i]);
+                lab += (lab == "" ? "" : ",\n ") + describeS(rules[i]);
                 if (trans != null)
                     info += string.Format("Rule{0}.Guard = \"{1}\" Rule{0}.Update = \"{2}\" Rule{0}.Yields = \"{3}\" ", i + 1,
                         EncodeChars(trans.DescribeGuard(rules[i])), 
@@ -215,7 +215,7 @@ namespace Microsoft.Automata.DirectedGraphs
 
         private static string EncodeChars(string s)
         {
-            return s.Replace("&true", "").Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;").Replace(@"\\", @"\").Replace("\"", "&quot;").Replace("\u0001", "\\u0001");
+            return s.Replace("&true", "").Replace("&", "&amp;").Replace("\n", "&#xA;").Replace("<", "&lt;").Replace(">", "&gt;").Replace(@"\\", @"\").Replace("\"", "&quot;").Replace("\u0001", "\\u0001");
         }
 
         private static void WriteCategoriesAndStyles(System.IO.TextWriter tw)
