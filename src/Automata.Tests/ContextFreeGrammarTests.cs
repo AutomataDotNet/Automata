@@ -318,5 +318,39 @@ NAME -> (\w*)
             var cfg = ContextFreeGrammar.Parse(input);
             Assert.IsTrue(cfg.ProductionCount == 46);
         }
+
+        [TestMethod]
+        public void TestCFG_Parse_SmallNFA()
+        {
+            var input = @"
+S -> R0_q0 
+R0_q0 -> a R0_q1 
+R0_q1 -> s R0_q2 
+R0_q2 ->
+";
+            var cfg = ContextFreeGrammar.Parse(input);
+            Assert.IsTrue(cfg.ProductionCount == 4);
+            var pda = cfg.ToPDA<BDD>();
+            BDD[] witness;
+            Assert.IsTrue(pda.IsNonempty(out witness));
+            var s = ChooseString(witness);
+            Assert.IsTrue(s == "as");
+            string s2;
+            cfg.IntersectsWith("", out s2);
+            Assert.IsTrue(s2 == "as");
+        }
+
+        string ChooseString(BDD[] witness)
+        {
+            if (witness.Length == 0)
+                return "";
+            else
+            {
+                var solver = (ICharAlgebra<BDD>)witness[0].algebra;
+                var chars = Array.ConvertAll(witness, x => (char)solver.Choose(x));
+                var str = new String(chars);
+                return str;
+            }
+        }
     }
 }

@@ -353,5 +353,25 @@ namespace Automata.Tests
             var det = CsAutomaton<ulong>.CreateFrom(aut);
             det.ShowGraph("CsAutomatonConstruction3_det");
         }
+
+        [TestMethod]
+        public void TestCA_IsMatch_PosAndNeg()
+        {
+            var regex = new System.Text.RegularExpressions.Regex("^ab{4,10}c$");
+            var sr = (SymbolicRegex<ulong>)regex.Compile(false, false);
+            var pos_samples = regex.GenerateRandomDataSet(10);
+            var neg_samples = regex.Complement().GenerateRandomDataSet(10);
+            var ca = sr.Pattern.CreateCountingAutomaton();
+            foreach (var str in pos_samples)
+            {
+                Assert.IsTrue(ca.IsMatch(str));
+                Assert.IsTrue(regex.IsMatch(str));
+            }
+            foreach (var str in neg_samples)
+            {
+                Assert.IsFalse(ca.IsMatch(str));
+                Assert.IsFalse(regex.IsMatch(str));
+            }
+        }
     }
 }
