@@ -337,9 +337,10 @@ namespace Automata.Tests
             var regex = new Regex("((.{5,10}){2})*", RegexOptions.Singleline);
             var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
             var aut = sr.Pattern.CreateCountingAutomaton();
-            aut.ShowGraph("CsAutomatonConstruction2_nondet");
+            //aut.ShowGraph("CsAutomatonConstruction2_nondet");
             var det = CsAutomaton<ulong>.CreateFrom(aut);
-            det.ShowGraph("CsAutomatonConstruction2_det");
+            //det.ShowGraph("CsAutomatonConstruction2_det");
+            Assert.IsTrue(det.StateCount == 4);
         }
 
         [TestMethod]
@@ -349,9 +350,10 @@ namespace Automata.Tests
             var regex = new Regex(".*ab{9}d", RegexOptions.Singleline);
             var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
             var aut = sr.Pattern.CreateCountingAutomaton();
-            aut.ShowGraph("CsAutomatonConstruction3_nondet");
+            //aut.ShowGraph("CsAutomatonConstruction3_nondet");
             var det = CsAutomaton<ulong>.CreateFrom(aut);
-            det.ShowGraph("CsAutomatonConstruction3_det");
+            //det.ShowGraph("CsAutomatonConstruction3_det");
+            Assert.IsTrue(det.StateCount == 4);
         }
 
         [TestMethod]

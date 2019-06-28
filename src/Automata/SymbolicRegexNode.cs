@@ -2100,41 +2100,44 @@ namespace Microsoft.Automata
         //0 means value is not computed, 
         //-1 means this is not a sequence of singletons
         //1 means it is a sequence of singletons
-        int sequenceOfSingletons_count = 10;
-        bool IsSequenceOfSingletons()
+        internal int sequenceOfSingletons_count = 0;
+        internal bool IsSequenceOfSingletons
         {
-            if (sequenceOfSingletons_count == 0)
+            get
             {
-                var node = this;
-                int k = 1;
-                while (node.kind == SymbolicRegexKind.Concat && node.left.kind == SymbolicRegexKind.Singleton)
+                if (sequenceOfSingletons_count == 0)
                 {
-                    node = node.right;
-                    k += 1;
-                }
-                if (node.kind == SymbolicRegexKind.Singleton)
-                {
-                    node.sequenceOfSingletons_count = 1;
-                    node = this;
-                    while (node.kind == SymbolicRegexKind.Concat)
-                    {
-                        node.sequenceOfSingletons_count = k;
-                        node = node.right;
-                        k = k - 1;
-                    }
-                }
-                else
-                {
-                    node.sequenceOfSingletons_count = -1;
-                    node = this;
+                    var node = this;
+                    int k = 1;
                     while (node.kind == SymbolicRegexKind.Concat && node.left.kind == SymbolicRegexKind.Singleton)
                     {
-                        node.sequenceOfSingletons_count = -1;
                         node = node.right;
+                        k += 1;
+                    }
+                    if (node.kind == SymbolicRegexKind.Singleton)
+                    {
+                        node.sequenceOfSingletons_count = 1;
+                        node = this;
+                        while (node.kind == SymbolicRegexKind.Concat)
+                        {
+                            node.sequenceOfSingletons_count = k;
+                            node = node.right;
+                            k = k - 1;
+                        }
+                    }
+                    else
+                    {
+                        node.sequenceOfSingletons_count = -1;
+                        node = this;
+                        while (node.kind == SymbolicRegexKind.Concat && node.left.kind == SymbolicRegexKind.Singleton)
+                        {
+                            node.sequenceOfSingletons_count = -1;
+                            node = node.right;
+                        }
                     }
                 }
+                return sequenceOfSingletons_count > 0;
             }
-            return sequenceOfSingletons_count > 0;
         }
 
         /// <summary>
@@ -2327,41 +2330,6 @@ namespace Microsoft.Automata
             }
         }
 
-        //public bool ContainsLoopsWithCounters()
-        //{
-        //    switch (kind)
-        //    {
-        //        case SymbolicRegexKind.EndAnchor:
-        //        case SymbolicRegexKind.StartAnchor:
-        //        case SymbolicRegexKind.Singleton:
-        //        case SymbolicRegexKind.Epsilon:
-        //            {
-        //                return false;
-        //            }
-        //        case SymbolicRegexKind.Loop:
-        //            {
-        //                if (!IsStar && !IsPlus && !IsMaybe)
-        //                    return true;
-        //                else
-        //                    return this.left.ContainsLoopsWithCounters();
-        //            }
-        //        case SymbolicRegexKind.Concat:
-        //            {
-        //                return this.left.ContainsLoopsWithCounters() ||
-        //                    this.right.ContainsLoopsWithCounters();
-        //            }
-        //        case SymbolicRegexKind.Or:
-        //            {
-        //                foreach (var member in this.alts)
-        //                    if (member.ContainsLoopsWithCounters())
-        //                        return true;
-        //                return false;
-        //            }
-        //        default:
-        //            throw new NotImplementedException(kind.ToString());
-        //    }
-        //}
-
         /// <summary>
         /// Returns true iff there exists a node that satisfies the predicate
         /// </summary>
@@ -2432,13 +2400,6 @@ namespace Microsoft.Automata
                 return null;
         }
 
-        //bool IsBoundedCounter
-        //{
-        //    get
-        //    {
-        //        return (GetBoundedCounter() != null);
-        //    }
-        //}
 
         /// <summary>
         /// Unwinds nonmonadic bounded quantifiers, and splits monadic bounded quantifiers without upper bounds to a fixed loop followed by Kleene star
@@ -2561,6 +2522,38 @@ namespace Microsoft.Automata
             }
             else
                 return false;
+        }
+
+        /// <summary>
+        /// Returns true if the match-end of this regex can be determined with a 
+        /// single pass from the start. 
+        /// </summary>
+        public bool IsSinglePass
+        {
+            get
+            {
+                if (this.IsSequenceOfSingletons)
+                    return true;
+                else
+                {
+                    switch (kind)
+                    {
+                        case SymbolicRegexKind.Or:
+                            {
+                                foreach (var member in alts)
+                                    if (!member.IsSinglePass)
+                                        return false;
+                                return true;
+                            }
+                        case SymbolicRegexKind.Concat:
+                            {
+                                return left.IsSinglePass && right.IsSinglePass;
+                            }
+                        default:
+                            return false;
+                    }
+                }
+            }
         }
     }
 

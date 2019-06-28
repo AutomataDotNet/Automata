@@ -889,5 +889,44 @@ namespace Automata.Tests
             var srm2 = RegexMatcher.Deserialize("tag.bin");
             var matches2 = srm2.Matches("a<tag1>b<tag2>c");
         }
+
+        [TestMethod]
+        public void TestSRM_singlePass()
+        {
+            var regex = new Regex(@"abcbc1|cbc2");
+            var srm = (SymbolicRegexUInt64)regex.Compile();
+            var matches = srm.Matches("xxxabcbc1yyyccbc2xxx");
+            Assert.IsTrue(matches.Length == 2);
+            Assert.IsTrue(matches[0].Item1 == 3);
+            Assert.IsTrue(matches[0].Item2 == 6);
+            Assert.IsTrue(matches[1].Item1 == 13);
+            Assert.IsTrue(matches[1].Item2 == 4);
+            var s = srm.GenerateRandomMatch();
+            //srm.Pattern.ShowGraph(0,"abcbc",true);
+            srm.Serialize("tag.bin");
+            var srm2 = RegexMatcher.Deserialize("tag.bin");
+            var matches2 = srm2.Matches("xxxabcbcyyyccbcxxx");
+            Assert.AreEqual(new Sequence<Tuple<int, int>>(matches), new Sequence<Tuple<int, int>>(matches2));
+        }
+
+        [TestMethod]
+        public void TestSRM_singletonSeq()
+        {
+            var regex = new Regex(@"a[bB]c");
+            var srm_ = regex.Compile();
+            var srm = (SymbolicRegexUInt64)srm_;
+            var matches = srm.Matches("xxxabcyyyaBcxxx");
+            Assert.IsTrue(matches.Length == 2);
+            Assert.IsTrue(matches[0].Item1 == 3);
+            Assert.IsTrue(matches[0].Item2 == 3);
+            Assert.IsTrue(matches[1].Item1 == 9);
+            Assert.IsTrue(matches[1].Item2 == 3);
+            var s = srm.GenerateRandomMatch();
+            //srm.Pattern.ShowGraph(0, "abc", true);
+            srm.Serialize("tag.bin");
+            var srm2 = RegexMatcher.Deserialize("tag.bin");
+            var matches2 = srm2.Matches("xxxabcyyyaBcxxx");
+            Assert.AreEqual(new Sequence<Tuple<int, int>>(matches), new Sequence<Tuple<int, int>>(matches2));
+        }
     }
 }

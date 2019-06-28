@@ -833,11 +833,13 @@ namespace Microsoft.Automata
 
             //after a match is found the match_start_boundary becomes 
             //the first postion after the last match
-            //enforced when inlcude_overlaps == false
             int match_start_boundary = i;
 
-            //TBD: dont enforce match_start_boundary when match overlaps are allowed
             bool A_has_nonempty_prefix = (!this.A_prefix.Equals(string.Empty));
+
+            bool AisSinglePass = A.IsSinglePass;
+            bool AisSingleSeq = A.IsSequenceOfSingletons;
+
             while (true)
             {
                 int i_q0_A1;
@@ -852,9 +854,23 @@ namespace Microsoft.Automata
                     break;
                 }
 
-                int i_start = FindStartPosition(input, i, i_q0_A1);
-
-                int i_end = FindEndPosition(input, i_start);
+                int i_start;
+                int i_end;
+                if (AisSinglePass)
+                {
+                    //TBD: how to avoid computing FindStartPosition
+                    //by keeping information of start positions on the fly
+                    if (AisSingleSeq)
+                        i_start = i - A.sequenceOfSingletons_count + 1;
+                    else
+                        i_start = FindStartPosition(input, i, i_q0_A1);
+                    i_end = i;
+                }
+                else
+                {
+                    i_start = FindStartPosition(input, i, i_q0_A1);
+                    i_end = FindEndPosition(input, i_start);
+                }
 
                 var newmatch = new Tuple<int, int>(i_start, i_end + 1 - i_start);
                 matches.Add(newmatch);
