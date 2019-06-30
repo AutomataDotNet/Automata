@@ -352,5 +352,67 @@ R0_q2 ->
                 return str;
             }
         }
+
+        [TestMethod]
+        public void TestCFG_PDAConstruction_Explore_Small()
+        {
+            var input = @"S -> \( S \) | (A) ";
+            var cfg = ContextFreeGrammar.Parse(input);
+            var pda = cfg.ToPDA<BDD>();
+            var aut = cfg.BuiltinTerminalAlgebra.Convert(@"^.{0,10}$", System.Text.RegularExpressions.RegexOptions.Singleline).RemoveEpsilons();
+            var pda2 = pda.Intersect(aut);
+            //pda2.ShowGraph();
+            var aut2 = pda2.Explore(4);
+            aut2.ShowGraph("aut2");
+            var chooser = new Chooser();
+            for (int i = 0; i < 10; i++)
+            {
+                BDD[] w = new List<BDD>(aut2.ChoosePathToSomeFinalState(chooser)).ToArray();
+                string s = cfg.BuiltinTerminalAlgebra.ChooseString(w);
+                Assert.IsTrue(cfg.BuiltinTerminalAlgebra.Accepts(aut, s));
+                Assert.IsTrue(cfg.BuiltinTerminalAlgebra.Accepts(aut2, s));
+            }
+        }
+
+        [TestMethod]
+        public void TestCFG_PDAConstruction_Explore_Medium()
+        {
+            var input = @"
+S -> NAME MAIN
+MAIN -> SEARCH_CONDITION 
+SEARCH_CONDITION -> (OR) PREDICATE | (AND) PREDICATE 
+PREDICATE -> COMPARISON_PREDICATE | BETWEEN_PREDICATE | LIKE_PREDICATE | TEST_FOR_NULL | IN_PREDICATE | ALL_OR_ANY_PREDICATE | EXISTENCE_TEST
+COMPARISON_PREDICATE -> SCALAR_EXP COMPARISON_OP SCALAR_EXP | SCALAR_EXP COMPARISON SUBQUERY
+BETWEEN_PREDICATE -> SCALAR_EXP BETWEEN SCALAR_EXP (AND) SCALAR_EXP
+LIKE_PREDICATE ->  SCALAR_EXP (LIKE) ATOM 
+TEST_FOR_NULL -> COLUMN_REF (IS) (NULL)
+IN_PREDICATE -> SCALAR_EXP (IN) \( SUBQUERY \) | SCALAR_EXP (IN) \( ATOM \) 
+ALL_OR_ANY_PREDICATE -> SCALAR_EXP COMPARISON_OP ALL_ANY_SOME SUBQUERY
+EXISTENCE_TEST -> (EXISTS) SUBQUERY
+SCALAR_EXP ->  SCALAR_EXP OP SCALAR_EXP | ATOM | COLUMN_REF  | \( SCALAR_EXP \) 
+ATOM -> PARAMETER | INTNUM 
+SUBQUERY -> SELECT_EXP
+SELECT_EXP -> (SELECT) NAME
+ALL_ANY_SOME -> (ANY) | (ALL) | (SOME)
+COLUMN_REF -> NAME
+PARAMETER -> NAME
+INTNUM -> (\d*)
+OP -> (\+)  | (-) | (\*) | (\/) 
+COMPARISON_OP -> (=) | (<) | (>)  
+NAME -> (\w*)
+";
+            var cfg = ContextFreeGrammar.Parse(input);
+            var pda = cfg.ToPDA<BDD>();
+            var aut = pda.Explore(5).RemoveEpsilons();
+            aut.ShowGraph("pda_explored_stack_depth_5");
+            var chooser = new Chooser();
+            for (int i = 0; i < 10; i++)
+            {
+                BDD[] w = new List<BDD>(aut.ChoosePathToSomeFinalState(chooser)).ToArray();
+                string s = cfg.BuiltinTerminalAlgebra.ChooseString(w);
+                Assert.IsTrue(cfg.BuiltinTerminalAlgebra.Accepts(aut, s));
+                Assert.IsTrue(cfg.BuiltinTerminalAlgebra.Accepts(aut, s));
+            }
+        }
     }
 }

@@ -1181,11 +1181,12 @@ namespace Microsoft.Automata.Grammars
                     }
                 }
 
-            var pda = new PushdownAutomaton<GrammarSymbol, T>(q0, 
+            var pda = new PushdownAutomaton<GrammarSymbol, T>((IBooleanAlgebra<T>)this.BuiltinTerminalAlgebra, q0, 
                 new List<int>(new int[] { q0, q, qF }), new List<int>(new int[] { qF }),
                 Nonterminal.StartStackSymbol, stackSymbols, moves);
             return pda;
         }
+
 
         /// <summary>
         /// Parse a CFG from the input string. Use the custom regex parser to parse terminals as regexes into automata.

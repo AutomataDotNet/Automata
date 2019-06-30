@@ -15,27 +15,30 @@ namespace Microsoft.Automata
         public Automaton<PushdownLabel<S, T>> automaton;
         public List<S> stackSymbols;
         public S initialStackSymbol;
+        public IBooleanAlgebra<T> terminalAlgebra;
 
         /// <summary>
         /// All deadends and unreachable states are eliminated from the states and moves if cleanup is set to true
         /// </summary>
-        public PushdownAutomaton(int initialState, List<int> states, List<int> finalstates,
+        public PushdownAutomaton(IBooleanAlgebra<T> terminalAlgebra, int initialState, List<int> states, List<int> finalstates,
             S initialStackSymbol, List<S> stackSymbols, 
             List<Move<PushdownLabel<S, T>>> moves, bool cleanup = false) : base()
         {
             this.automaton = Automaton<PushdownLabel<S, T>>.Create(null, initialState, finalstates, moves, cleanup, cleanup);
             this.stackSymbols = new List<S>(stackSymbols);
             this.initialStackSymbol = initialStackSymbol;
+            this.terminalAlgebra = terminalAlgebra;
         }
 
         /// <summary>
         /// Assumes that the automaton is clean: has no unsatisfiable moves, no dead states, and no unreachable states
         /// </summary>
-        public PushdownAutomaton(Automaton<PushdownLabel<S, T>> automaton, List<S> stackSymbols, S initialStackSymbol)
+        public PushdownAutomaton(IBooleanAlgebra<T> terminalAlgebra, Automaton<PushdownLabel<S, T>> automaton, List<S> stackSymbols, S initialStackSymbol)
         {
             this.automaton = automaton;
             this.stackSymbols = stackSymbols;
             this.initialStackSymbol = initialStackSymbol;
+            this.terminalAlgebra = terminalAlgebra;
         }
 
         /// <summary>
@@ -538,7 +541,7 @@ namespace Microsoft.Automata
 
             //note: automaton creation eliminates unreachable states and deadend states from the product
             var productAutom = Automaton<PushdownLabel<S, T>>.Create(null, initState, finalstates, moves, true, true);
-            var product = new PushdownAutomaton<S, T>(productAutom, this.stackSymbols, this.initialStackSymbol);
+            var product = new PushdownAutomaton<S, T>(nfa.Algebra, productAutom, this.stackSymbols, this.initialStackSymbol);
             return product;
         }
 
@@ -554,6 +557,83 @@ namespace Microsoft.Automata
                 return Intersect1(nfas[0]);
             else
                 return Intersect1(new LazyProductAutomaton<T>(nfas));
+        }
+
+        /// <summary>
+        /// Explores the PDA and converts it into an automaton, 
+        /// only stacks up to bounded depth are considered.
+        /// </summary>
+        /// <param name="stackDepth">upper bound on reached stack depth, nonpositive value means unbounded and may cause nontermination</param>
+        public Automaton<T> Explore(int stackDepth = 0)
+        {
+            var moves = new List<Move<T>>();
+            var stateMap = new Dictionary<Tuple<int, Sequence<S>>, int>();
+            var configMap = new Dictionary<int, Tuple<int, Sequence<S>>>();
+            var finalStates = new HashSet<int>();
+
+            int q0 = 0;
+            var config0 = new Tuple<int, Sequence<S>>(this.automaton.InitialState, new Sequence<S>(this.initialStackSymbol));
+            int nextStateId = 1;
+            stateMap[config0] = q0;
+            configMap[q0] = config0;
+            if (automaton.IsFinalState(this.automaton.InitialState))
+                finalStates.Add(q0);
+
+            var movemap = new Dictionary<Tuple<int, int>, T>();
+            Action<int, int, T> AddMove = (source, target, pred) =>
+               {
+                   var key = new Tuple<int, int>(source, target);
+                   T psi;
+                   if (movemap.TryGetValue(key, out psi))
+                       movemap[key] = this.terminalAlgebra.MkOr(psi, pred);
+                   else
+                       movemap[key] = pred;
+               };
+
+            var frontier = new SimpleStack<int>();
+            frontier.Push(q0);
+            while (frontier.IsNonempty)
+            {
+                int q = frontier.Pop();
+                var config = configMap[q];
+                foreach (var move in automaton.GetMovesFrom(config.Item1))
+                {
+                    if (stackDepth < 1 || (config.Item2.Length - 1 + move.Label.PushSymbols.Length) <= stackDepth)
+                    {
+                        var pop = move.Label.PopSymbol;
+                        var push = move.Label.PushSymbols;
+                        if (config.Item2.First.Equals(pop))
+                        {
+                            var targetConfig = new Tuple<int, Sequence<S>>(move.TargetState, push.Append(config.Item2.Rest()));
+                            int target;
+                            if (!stateMap.TryGetValue(targetConfig, out target))
+                            {
+                                target = nextStateId++;
+                                stateMap[targetConfig] = target;
+                                configMap[target] = targetConfig;
+                                frontier.Push(target);
+                                if (automaton.IsFinalState(move.TargetState))
+                                    finalStates.Add(target);
+                            }
+                            Move<T> newmove;
+                            if (move.Label.InputIsEpsilon)
+                            {
+                                newmove = Move<T>.Epsilon(q, target);
+                                moves.Add(newmove);
+                            }
+                            else
+                                //accumulate predicates for transitions
+                                AddMove(q, target, move.Label.Input);
+                        }
+                    }
+                }
+            }
+
+            foreach (var entry in movemap)
+                moves.Add(Move<T>.Create(entry.Key.Item1, entry.Key.Item2, entry.Value));
+
+            var res = Automaton<T>.Create(this.terminalAlgebra, q0, finalStates, moves, false, true);
+            return res;
         }
 
         internal class LazyProductAutomaton<T> : IMinimalAutomaton<T>
