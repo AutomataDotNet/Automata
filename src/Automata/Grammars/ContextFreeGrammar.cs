@@ -134,11 +134,15 @@ namespace Microsoft.Automata.Grammars
             this.productionMap = prodMap;
         }
 
-        internal ContextFreeGrammar(List<Nonterminal> variables, Nonterminal startSymbol, Dictionary<Nonterminal, List<Production>> productionMap)
+        internal ContextFreeGrammar(List<Nonterminal> variables, Nonterminal startSymbol, Dictionary<Nonterminal, List<Production>> productionMap, List<GrammarSymbol> terminals)
         {
             this.variables = variables;
             this.startSymbol = startSymbol;
             this.productionMap = productionMap;
+            this.terminals = terminals;
+            this.allProductions = new List<Production>();
+            foreach (var entry in productionMap)
+                this.allProductions.AddRange(entry.Value);
         }
 
         public IList<Production> GetProductions()
@@ -167,7 +171,7 @@ namespace Microsoft.Automata.Grammars
             if (!productions.ContainsKey(startSymbol) || productions[startSymbol].Count == 0)
                 throw new ArgumentException("Start symbol is not the LHS of any production.");
 
-            ContextFreeGrammar g = new ContextFreeGrammar(varList, startSymbol, productions);
+            ContextFreeGrammar g = new ContextFreeGrammar(varList, startSymbol, productions, terminals);
             return g;
         }
 
@@ -352,7 +356,7 @@ namespace Microsoft.Automata.Grammars
                         if (!p.IsUnit)
                             newProductions[v].Add(new Production(v, p.Rhs));
 
-            ContextFreeGrammar g = new ContextFreeGrammar(variables, startSymbol, newProductions);
+            ContextFreeGrammar g = new ContextFreeGrammar(variables, startSymbol, newProductions, terminals);
             ContextFreeGrammar g1 = g.RemoveUselessSymbols();
             return g1;
         }
@@ -384,7 +388,7 @@ namespace Microsoft.Automata.Grammars
             Dictionary<Nonterminal, List<Production>> prodMap = new Dictionary<Nonterminal, List<Production>>();
             foreach (Nonterminal v in this.variables)
                 prodMap[v] = new List<Production>(EliminateNullables(v, nullables));
-            ContextFreeGrammar g1 = new ContextFreeGrammar(this.variables, this.StartSymbol, prodMap);
+            ContextFreeGrammar g1 = new ContextFreeGrammar(this.variables, this.StartSymbol, prodMap, terminals);
 
             ContextFreeGrammar g2 = g1.RemoveUselessSymbols();
 
@@ -478,7 +482,7 @@ namespace Microsoft.Automata.Grammars
         /// </summary>
         public static ContextFreeGrammar MkCNF(ContextFreeGrammar g, bool removeEpsilonsUselessSymbolsUnitsProductions)
         {
-            if (removeEpsilonsUselessSymbolsUnitsProductions)
+            //if (removeEpsilonsUselessSymbolsUnitsProductions)
                 g = g.RemoveEpsilonsAndUselessSymbols().RemoveUnitProductions();
             var productions = new Dictionary<Nonterminal, List<Production>>();
             List<Nonterminal> variables = new List<Nonterminal>(g.variables);
@@ -553,17 +557,10 @@ namespace Microsoft.Automata.Grammars
                     }
             #endregion
 
-            ContextFreeGrammar cnf = new ContextFreeGrammar(variablesCNF, g.startSymbol, productionsCNF);
+            ContextFreeGrammar cnf = new ContextFreeGrammar(variablesCNF, g.startSymbol, productionsCNF, g.terminals);
             return cnf;
         }
 
-        /// <summary>
-        /// Returns MkGNF(g, true)
-        /// </summary>
-        public static ContextFreeGrammar MkGNF(ContextFreeGrammar g)
-        {
-            return MkGNF(g, true);
-        }
         /// <summary>
         /// Produces the GNF (Greibach Normal Form) for the grammar g.
         /// If g is not already in GNF, first makes CNF.
@@ -572,7 +569,7 @@ namespace Microsoft.Automata.Grammars
         /// <param name="g"></param>
         /// <param name="removeEpsilonsUselessSymbolsUnitsProductions"></param>
         /// <returns></returns>
-        public static ContextFreeGrammar MkGNF(ContextFreeGrammar g, bool removeEpsilonsUselessSymbolsUnitsProductions)
+        public static ContextFreeGrammar MkGNF(ContextFreeGrammar g, bool removeEpsilonsUselessSymbolsUnitsProductions = true)
         {
             if (removeEpsilonsUselessSymbolsUnitsProductions)
                g = g.RemoveEpsilonsAndUselessSymbols().RemoveUnitProductions();
@@ -692,7 +689,7 @@ namespace Microsoft.Automata.Grammars
                                 }
                             }
                         }
-                G_[B] = new ContextFreeGrammar(vars, startSymbol, productions);
+                G_[B] = new ContextFreeGrammar(vars, startSymbol, productions, g.terminals);
             }
             #endregion
 
@@ -729,7 +726,7 @@ namespace Microsoft.Automata.Grammars
                         }
                     }
                 //ignore the variable list, it is not used
-                G[B] = new ContextFreeGrammar(null, startSymbol, productions);
+                G[B] = new ContextFreeGrammar(null, startSymbol, productions, g.terminals);
             }
             #endregion
 
@@ -938,7 +935,7 @@ namespace Microsoft.Automata.Grammars
                 }
             }
             #endregion
-            ContextFreeGrammar H = new ContextFreeGrammar(new List<Nonterminal>(Hprods.Keys), g.startSymbol, Hprods);
+            ContextFreeGrammar H = new ContextFreeGrammar(new List<Nonterminal>(Hprods.Keys), g.startSymbol, Hprods, g.terminals);
 
             //Console.WriteLine("--------- H:");
             //H.Display(Console.Out);
@@ -1004,7 +1001,7 @@ namespace Microsoft.Automata.Grammars
             }
             #endregion
 
-            ContextFreeGrammar egnf = new ContextFreeGrammar(egnfVars, H1.startSymbol, egnfProds);
+            ContextFreeGrammar egnf = new ContextFreeGrammar(egnfVars, H1.startSymbol, egnfProds, g.terminals);
             return egnf;
         }
 

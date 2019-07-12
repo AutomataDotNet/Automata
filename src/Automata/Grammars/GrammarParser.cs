@@ -51,8 +51,8 @@ namespace Microsoft.Automata.Grammars
         public Lexer(string buf)
         {
             lexbuf = buf;
-            tokendescs[TokenType.NT]  = new Regex(@"^([#A-Z]\S*)");           // Nonterminal
-            tokendescs[TokenType.T]   = new Regex(@"^([^#A-Z\-\|\s]\S*)");    // Terminal
+            tokendescs[TokenType.NT]  = new Regex(@"^([#A-Za-z]\S*)");        // Nonterminal
+            tokendescs[TokenType.T]   = new Regex(@"^([^#A-Za-z\|\-\s]\S*)");           // Terminal
             tokendescs[TokenType.ARR] = new Regex(@"^->");                    // Arrow
             tokendescs[TokenType.OR]  = new Regex(@"^\|");                    // Or
             tokendescs[TokenType.IG]  = new Regex(@"^\s+");                   // Ignorables

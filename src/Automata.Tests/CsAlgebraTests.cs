@@ -36,7 +36,7 @@ namespace Microsoft.Automata.Tests
             var counter_cond = res[0].Item1;
             var input_pred = res[0].Item2;
             Assert.IsTrue(input_pred.Equals(a));
-            Assert.IsTrue(counter_cond[1] == CsCondition.MIDDLE); // = CsCondition.EMPTY & CsCondition.CANEXIT 
+            Assert.IsTrue(counter_cond[1] == CsCondition.MIDDLE); 
         }
     }
 }

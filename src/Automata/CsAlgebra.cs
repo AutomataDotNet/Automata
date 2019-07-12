@@ -22,7 +22,8 @@ namespace Microsoft.Automata
         /// </summary>
         public IEnumerable<Tuple<CsConditionSeq, T>> GetSumOfProducts()
         {
-            return EnumerateCases(pred);
+            var list = new List<Tuple<CsConditionSeq, T>>(EnumerateCases(pred));
+            return list;
         }
 
         /// <summary>
@@ -61,7 +62,7 @@ namespace Microsoft.Automata
                 var val = ((BDD<T>)bdd).Leaf;
                 if (bdd.Algebra.Second.IsSatisfiable(val))
                     //note that CsConditionSeq.False means that all counters are disabled
-                    yield return new Tuple<CsConditionSeq, T>(CsConditionSeq.MkFalse(alg.K), ((BDD<T>)bdd).Leaf);
+                    yield return new Tuple<CsConditionSeq, T>(alg.__emptyCsConditionSeq, ((BDD<T>)bdd).Leaf);
             }
             else
             {
@@ -87,7 +88,7 @@ namespace Microsoft.Automata
                         else
                             v = v & CsCondition.HIGH;
                     }
-                    if (v != CsCondition.EMPTY)
+                    if (v != CsCondition.EMPTY && v != CsCondition.FALSE)
                         yield return new Tuple<CsConditionSeq, T>(path.Item1.Update(i, v), path.Item2);
                     #endregion
                 }
@@ -109,11 +110,16 @@ namespace Microsoft.Automata
                         else
                             v = v & CsCondition.CANLOOP;
                     }
-                    if (v != CsCondition.EMPTY)
+                    if (v != CsCondition.EMPTY && v != CsCondition.FALSE)
                         yield return new Tuple<CsConditionSeq, T>(path.Item1.Update(i, v), path.Item2);
                     #endregion
                 }
             }
+        }
+
+        public override string ToString()
+        {
+            return pred.ToString();
         }
     }
 
@@ -128,12 +134,15 @@ namespace Microsoft.Automata
         CsPred<T> __false;
         CsPred<T> __true;
 
+        internal CsConditionSeq __emptyCsConditionSeq;
+
         public CsAlgebra(IBooleanAlgebra<T> leafAlgebra, int nrOfCountingSets)
         {
             this.algebra = new BDDAlgebra<T>(leafAlgebra);
             __false = new CsPred<T>(this, (BDD<T>)algebra.False);
             __true = new CsPred<T>(this, (BDD<T>)algebra.True);
             this.K = nrOfCountingSets;
+            __emptyCsConditionSeq = CsConditionSeq.MkEmpty(nrOfCountingSets);
         }
 
         public CsPred<T> False

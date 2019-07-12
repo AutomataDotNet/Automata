@@ -219,6 +219,16 @@ namespace Automata.Tests
         }
 
         [TestMethod]
+        public void TestCA_TwoOverlappingMonadicLoops2()
+        {
+            var regex = new Regex("a{10,100}aa{4,49}", RegexOptions.Singleline);
+            var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
+            var aut = sr.Pattern.CreateCountingAutomaton();
+            Assert.IsTrue(aut.NrOfCounters == 2);
+            //aut.ShowGraph("TwoOverlappingMonadicLoops2");
+        }
+
+        [TestMethod]
         public void TestCA_SameMonadicLoopX3()
         {
             var regex = new Regex("(a{5,50}){3}", RegexOptions.Singleline);
@@ -353,7 +363,7 @@ namespace Automata.Tests
             //aut.ShowGraph("CsAutomatonConstruction3_nondet");
             var det = CsAutomaton<ulong>.CreateFrom(aut);
             //det.ShowGraph("CsAutomatonConstruction3_det");
-            Assert.IsTrue(det.StateCount == 4);
+            Assert.IsTrue(det.StateCount == 3);
         }
 
         [TestMethod]

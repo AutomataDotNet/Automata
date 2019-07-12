@@ -203,22 +203,21 @@ namespace Microsoft.Automata
 
                 foreach (var q in Q)
                     foreach (var p in Q)
-                        if (p != q)
+                    {
+                        var qp = MkTrans(q, p);
+                        var qp_trans = Transfer(qp);
+                        foreach (var t in Q)
                         {
-                            var qp = MkTrans(q, p);
-                            var qp_trans = Transfer(qp);
-                            foreach (var t in Q)
-                            {
-                                var pt = MkTrans(p, t);
-                                var qt = MkTrans(q, t);
-                                var pt_qt = new Tuple<Trans, Trans>(pt, qt);
-                                var tq = MkTrans(t, q);
-                                var tp = MkTrans(t, p);
-                                var tq_tp = new Tuple<Trans, Trans>(tq, tp);
-                                qp_trans.Push(pt_qt);
-                                qp_trans.Push(tq_tp);
-                            }
+                            var pt = MkTrans(p, t);
+                            var qt = MkTrans(q, t);
+                            var pt_qt = new Tuple<Trans, Trans>(pt, qt);
+                            var tq = MkTrans(t, q);
+                            var tp = MkTrans(t, p);
+                            var tq_tp = new Tuple<Trans, Trans>(tq, tp);
+                            qp_trans.Push(pt_qt);
+                            qp_trans.Push(tq_tp);
                         }
+                    }
 
                 while (stack.IsNonempty)
                 {

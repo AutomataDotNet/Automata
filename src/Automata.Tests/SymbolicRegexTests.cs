@@ -91,19 +91,19 @@ namespace Automata.Tests
             //---------
             var r8 = css.RegexConverter.ConvertToSymbolicRegex(@"(?(.*A.*).*B.*|.*C.*)", RegexOptions.Singleline);
             Assert.IsTrue(r8.Kind == SymbolicRegexKind.IfThenElse);
-            Assert.AreEqual<string>(@"(?(.*A.*).*B.*|.*C.*)", r8.ToString());
+            Assert.AreEqual<string>(@"(?(.*A.*)(.*B.*)|(.*C.*))", r8.ToString());
             //---------
             var r8b = css.RegexConverter.ConvertToSymbolicRegex(@"(?(A)B|C)", RegexOptions.Singleline);
             Assert.IsTrue(r8b.Kind == SymbolicRegexKind.IfThenElse);
-            Assert.AreEqual<string>(@"(?(.*A.*).*B.*|.*C.*)", r8b.ToString());
+            Assert.AreEqual<string>(@"(?(.*A.*)(.*B.*)|(.*C.*))", r8b.ToString());
             //---------
             var r8c = css.RegexConverter.ConvertToSymbolicRegex(@"^(?(A)B|C)", RegexOptions.Singleline);
             Assert.IsTrue(r8c.Kind == SymbolicRegexKind.IfThenElse);
-            Assert.AreEqual<string>(@"(?(A.*)B.*|C.*)", r8c.ToString());
+            Assert.AreEqual<string>(@"(?(A.*)(B.*)|(C.*))", r8c.ToString());
             //---------
             var r8d = css.RegexConverter.ConvertToSymbolicRegex(@"(?(A)B|C)$", RegexOptions.Singleline);
             Assert.IsTrue(r8d.Kind == SymbolicRegexKind.IfThenElse);
-            Assert.AreEqual<string>(@"(?(.*A).*B|.*C)", r8d.ToString());
+            Assert.AreEqual<string>(@"(?(.*A)(.*B)|(.*C))", r8d.ToString());
             //--------
             var r9 = css.RegexConverter.ConvertToSymbolicRegex(@"()()", RegexOptions.Singleline);
             Assert.IsTrue(r9.Kind == SymbolicRegexKind.Loop);
@@ -111,7 +111,7 @@ namespace Automata.Tests
             //-----
             var a_complement = css.RegexConverter.ConvertToSymbolicRegex(@"(?(a)[0-[0]]|.*)", RegexOptions.Singleline);
             Assert.IsTrue(a_complement.Kind == SymbolicRegexKind.IfThenElse);
-            Assert.AreEqual<string>(@"(?(.*a.*)[0-[0]]|.*)", a_complement.ToString());
+            Assert.AreEqual<string>(@"(?(.*a.*)([0-[0]])|(.*))", a_complement.ToString());
             //-----
             var conj = css.RegexConverter.ConvertToSymbolicRegex(@"(?(.*b.*)(.*a.*)|[a-z-[a-z]])", RegexOptions.Singleline);
             Assert.IsTrue(conj.Kind == SymbolicRegexKind.And);
@@ -189,19 +189,19 @@ namespace Automata.Tests
             //---------
             var r8 = css.RegexConverter.ConvertToSymbolicRegex(@"(?(.*A.*).*B.*|.*C.*)", RegexOptions.Singleline, true);
             Assert.IsTrue(r8.Kind == SymbolicRegexKind.IfThenElse);
-            Assert.AreEqual<string>(@"(?(.*A.*).*B.*|.*C.*)", r8.ToString());
+            Assert.AreEqual<string>(@"(?(.*A.*)(.*B.*)|(.*C.*))", r8.ToString());
             //---------
             var r8b = css.RegexConverter.ConvertToSymbolicRegex(@"(?(A)B|C)", RegexOptions.Singleline, true);
             Assert.IsTrue(r8b.Kind == SymbolicRegexKind.IfThenElse);
-            Assert.AreEqual<string>(@"(?(A)B|C)", r8b.ToString());
+            Assert.AreEqual<string>(@"(?(A)(B)|(C))", r8b.ToString());
             //---------
             var r8c = css.RegexConverter.ConvertToSymbolicRegex(@"^(?(A)B|C)", RegexOptions.Singleline, true);
             Assert.IsTrue(r8c.Right.Kind == SymbolicRegexKind.IfThenElse);
-            Assert.AreEqual<string>(@"^(?(A)B|C)", r8c.ToString());
+            Assert.AreEqual<string>(@"^(?(A)(B)|(C))", r8c.ToString());
             //---------
             var r8d = css.RegexConverter.ConvertToSymbolicRegex(@"(?(A)B|C)$", RegexOptions.Singleline, true);
             Assert.IsTrue(r8d.Left.Kind == SymbolicRegexKind.IfThenElse);
-            Assert.AreEqual<string>(@"(?(A)B|C)$", r8d.ToString());
+            Assert.AreEqual<string>(@"(?(A)(B)|(C))$", r8d.ToString());
             //--------
             var r9 = css.RegexConverter.ConvertToSymbolicRegex(@"()()", RegexOptions.Singleline, true);
             Assert.IsTrue(r9.Kind == SymbolicRegexKind.Epsilon);
@@ -209,7 +209,7 @@ namespace Automata.Tests
             //-----
             var a_complement = css.RegexConverter.ConvertToSymbolicRegex(@"(?(a)[1-[1]]|.*)", RegexOptions.Singleline, true);
             Assert.IsTrue(a_complement.Kind == SymbolicRegexKind.IfThenElse);
-            Assert.AreEqual<string>(@"(?(a)[0-[0]]|.*)", a_complement.ToString());
+            Assert.AreEqual<string>(@"(?(a)([0-[0]])|(.*))", a_complement.ToString());
             //-----
         }
 
@@ -238,7 +238,7 @@ namespace Automata.Tests
             var r1 = css.RegexConverter.ConvertToSymbolicRegex(@"^foo\Z", RegexOptions.Multiline);
             //var a1 = css.RegexConverter.Convert(@"^foo\Z", RegexOptions.Multiline);
             //a1.ShowGraph("a1");
-            Assert.IsTrue(r1.ToString().Equals(@"((.*\n)?)foo"));
+            Assert.IsTrue(r1.ToString().Equals(@"(.*\n)?foo"));
             //--------
             var r2 = css.RegexConverter.ConvertToSymbolicRegex(@"^", RegexOptions.Multiline);
             //var a2 = css.RegexConverter.Convert(@"^", RegexOptions.Multiline);
@@ -275,8 +275,8 @@ namespace Automata.Tests
             Assert.IsFalse(regex4.IsMatch("a\nbcd"));
             Assert.IsFalse(regex4.IsMatch("a\nbcd"));
 
-            Assert.IsTrue(r4b.ToString().Equals(@"((.*\n)?)(\n.*)?"));
-            Assert.IsTrue(r4.ToString().Equals(@"((.*\n)?)(\n.*)?"));
+            Assert.IsTrue(r4b.ToString().Equals(@"(.*\n)?(\n.*)?"));
+            Assert.IsTrue(r4.ToString().Equals(@"(.*\n)?(\n.*)?"));
         }
 
         [TestMethod]
@@ -316,7 +316,8 @@ namespace Automata.Tests
             var regex = new Regex("^(([5-8]|[d-g]+)+)([a-k]|()|[1-9][1-9])(?(d)[de]|f)(?([a-k])[de]|f)def[a-g]*(e|8)+$");
             var sr = solver.RegexConverter.ConvertToSymbolicRegex(regex, true);
             var sr1 = sr.Restrict(solver.MkCharSetFromRegexCharClass("[d-x0-8]"));
-            Assert.IsTrue(sr1.ToString() == "^(([5-8]|[d-g]+)+)(()|[1-8][1-8]|[d-k])(?(d)[de]|f)(?([d-k])[de]|f)def[d-g]*[8e]+$");
+            string expected = "^([5-8]|[d-g]+)+(()|[1-8][1-8]|[d-k])(?(d)([de])|(f))(?([d-k])([de])|(f))def[d-g]*[8e]+$";
+            Assert.IsTrue(sr1.ToString() == expected);
         }
 
         [TestMethod]
@@ -905,7 +906,7 @@ namespace Automata.Tests
             //srm.Pattern.ShowGraph(0,"abcbc",true);
             srm.Serialize("tag.bin");
             var srm2 = RegexMatcher.Deserialize("tag.bin");
-            var matches2 = srm2.Matches("xxxabcbcyyyccbcxxx");
+            var matches2 = srm2.Matches("xxxabcbc1yyyccbc2xxx");
             Assert.AreEqual(new Sequence<Tuple<int, int>>(matches), new Sequence<Tuple<int, int>>(matches2));
         }
 
