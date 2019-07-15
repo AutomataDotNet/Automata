@@ -119,7 +119,7 @@ namespace Microsoft.Automata
             var alg = new CsAlgebra<S>(((CABA<S>)ca.Algebra).builder.solver, ca.NrOfCounters);
             foreach (var move in ca.GetMoves())
             {
-                var ccond = CsConditionSeq.MkEmpty(ca.NrOfCounters);
+                var ccond = alg.TrueCsConditionSeq;
                 if (ca.IsCountingState(move.SourceState))
                 {
                     var cid = ca.GetCounter(move.SourceState).CounterId;
@@ -127,14 +127,14 @@ namespace Microsoft.Automata
                         move.Label.Item2.First.OperationKind == CounterOp.EXIT_SET0 ||
                         move.Label.Item2.First.OperationKind == CounterOp.EXIT_SET1)
                     {
-                        ccond = ccond.Update(cid, CsCondition.CANEXIT);
+                        ccond = ccond.And(cid, CsCondition.CANEXIT);
                     }
                     else
                     {
                         if (move.Label.Item2.First.OperationKind != CounterOp.INCR)
                             throw new AutomataException(AutomataExceptionKind.InternalError);
 
-                        ccond = ccond.Update(cid, CsCondition.CANLOOP);
+                        ccond = ccond.And(cid, CsCondition.CANLOOP);
                     }
                 }
                 var pmove = Move<CsPred<S>>.Create(move.SourceState, move.TargetState, alg.MkPredicate(move.Label.Item1.Element, ccond));
@@ -390,6 +390,10 @@ namespace Microsoft.Automata
     public enum CsCondition
     {
         /// <summary>
+        /// Unsatisfiable condition
+        /// </summary>
+        FALSE = 0,
+        /// <summary>
         /// Nonempty and all elements are below lower bound
         /// </summary>
         LOW = 1,
@@ -408,7 +412,7 @@ namespace Microsoft.Automata
         /// <summary>
         /// All elements are below lower bound, or singleton set containing the upper bound, same as LOW|HIGH
         /// </summary>
-        LOWHIGH = 5,
+        LOWorHIGH = 5,
         /// <summary>
         /// The condition when loop exit is possible, same as MIDDLE|HIGH
         /// </summary>
@@ -422,225 +426,167 @@ namespace Microsoft.Automata
         /// </summary>
         EMPTY = 8,
         /// <summary>
-        /// Any set, same as LOW|MIDDLE|HIGH|EMPTY
+        /// Same as EMPTY|LOW
+        /// </summary>
+        CANNOTEXIT = 9,
+        /// <summary>
+        /// Same as EMPTY|MIDDLE
+        /// </summary>
+        EMPTYorMIDDLE = 10,
+        /// <summary>
+        /// Same as EMPTY|MIDDLE|LOW
+        /// </summary>
+        EMPTYorCANLOOP = 11,
+        /// <summary>
+        /// Same as EMPTY|HIGH
+        /// </summary>
+        CANNOTLOOP = 12,
+        /// <summary>
+        /// Same as EMPTY|HIGH|LOW
+        /// </summary>
+        EMPTYorHIGHorLOW = 13,
+        /// <summary>
+        /// Same as EMPTY|HIGH|MIDDLE
+        /// </summary>
+        EMPTYorCANEXIT = 14,
+        /// <summary>
+        /// Condition that always holds, same as EMPTY|MIDDLE|HIGH|LOW
         /// </summary>
         TRUE = 15,
-        /// <summary>
-        /// No set
-        /// </summary>
-        FALSE = 0,
     }
 
     public class CsUpdateSeq
     {
-        int length;
-        ulong elems = 0;
+        Tuple<int, ulong, ulong, ulong> vals;
 
-        public static readonly CsUpdateSeq False = new CsUpdateSeq(0, 0);
+        CsUpdateSeq(int count, ulong set0, ulong set1, ulong incr)
+        {
+            vals = new Tuple<int, ulong, ulong, ulong>(count, set0, set1, incr);
+        }
 
         public static CsUpdateSeq MkNOOP(int count)
         {
-            return new CsUpdateSeq(0, count);
+            return new CsUpdateSeq(count, 0, 0, 0);
         }
 
         public int Length
         {
-            get { return length; }
-        }
-
-        CsUpdateSeq(ulong elems, int count)
-        {
-            this.elems = elems;
-            this.length = count;
-        }
-
-        public static CsUpdateSeq Mk(int i, CsUpdate update, int length)
-        {
-            if (length > 21)
-                throw new NotImplementedException();
-
-            return new CsUpdateSeq(((ulong)update) << (3 * i), length);
+            get { return vals.Item1; }
         }
 
         public static CsUpdateSeq Mk(params CsUpdate[] vals)
         {
-            if (vals.Length > 21)
-                throw new NotImplementedException();
-
-            ulong x = 0;
-            int k = 0;
+            ulong set0 = 0;
+            ulong set1 = 0;
+            ulong incr = 0;
+            ulong bit = 1;
             for (int i = 0; i < vals.Length; i++)
             {
-                x = x | (((ulong)(vals[i])) << k);
-                k += 3;
+                if (vals[i].HasFlag(CsUpdate.SET0))
+                    set0 = set0 | bit;
+                if (vals[i].HasFlag(CsUpdate.SET1))
+                    set1 = set1 | bit;
+                if (vals[i].HasFlag(CsUpdate.INCR))
+                    incr = incr | bit;
+                bit = bit << 1;
             }
-            return new CsUpdateSeq(x, vals.Length);
+            return new CsUpdateSeq(vals.Length, set0, set1, incr);
         }
-
 
         public static CsUpdateSeq operator |(CsUpdateSeq left, CsUpdateSeq right)
         {
-            return new CsUpdateSeq(left.elems | right.elems, left.length);
-        }
+            if (left.vals.Item1 != right.vals.Item1)
+                throw new ArgumentException("Incompatible lenghts");
 
-        public static CsUpdateSeq operator &(CsUpdateSeq left, CsUpdateSeq right)
-        {
-            return new CsUpdateSeq(left.elems & right.elems, left.length);
+            return new CsUpdateSeq(left.vals.Item1, left.vals.Item2 | right.vals.Item2, left.vals.Item3 | right.vals.Item3, left.vals.Item4 | right.vals.Item4);
         }
 
         public CsUpdate this[int i]
         {
             get
             {
-                return (CsUpdate)((elems >> (3 * i)) & 7);
+                ulong bit = ((ulong)1) << i;
+                int val = 0;
+                if ((vals.Item2 & bit) != 0)
+                    val = val | 1;
+                if ((vals.Item3 & bit) != 0)
+                    val = val | 2;
+                if ((vals.Item4 & bit) != 0)
+                    val = val | 4;
+                CsUpdate res = (CsUpdate)val;
+                return res;
             }
         }
 
         public override bool Equals(object obj)
         {
-            return elems == ((CsUpdateSeq)obj).elems;
+            return vals == ((CsUpdateSeq)obj).vals;
         }
 
         public override int GetHashCode()
         {
-            return elems.GetHashCode();
-        }
-
-        public CsUpdateSeq Update(int i, CsUpdate upd)
-        {
-            ulong mask = ~(((ulong)7) << (3 * i));
-            var conds1 = (elems & mask) | (((ulong)upd) << (3 * i));
-            return new CsUpdateSeq(conds1, length);
+            return vals.GetHashCode();
         }
 
         public CsUpdateSeq Or(int i, CsUpdate upd)
         {
-            var conds1 = elems | (((ulong)upd) << (3 * i));
-            return new CsUpdateSeq(conds1, length);
+            ulong bit = ((ulong)1) << i;
+            ulong set0 = vals.Item2;
+            ulong set1 = vals.Item3;
+            ulong incr = vals.Item4;
+            if (upd.HasFlag(CsUpdate.SET0))
+                set0 = set0 | bit;
+            if (upd.HasFlag(CsUpdate.SET1))
+                set1 = set1 | bit;
+            if (upd.HasFlag(CsUpdate.INCR))
+                incr = incr | bit;
+            CsUpdateSeq res = new CsUpdateSeq(vals.Item1, set0, set1, incr);
+            return res;
         }
 
-        public bool IsEmpty(int i)
+        /// <summary>
+        /// Returns true if all counter operations are NOOP
+        /// </summary>
+        public bool IsNOOP
         {
-            return ((elems >> (3 * i)) & 7) == 0;
+            get
+            {
+                return (vals.Item2 == 0 && vals.Item3 == 0 && vals.Item4 == 0);
+            }
+        }
+
+        public override string ToString()
+        {
+            string s = "";
+            for (int i = 0; i < Length; i++)
+            {
+                if (this[i] != CsUpdate.NOOP)
+                {
+                    if (s != "")
+                        s += ";";
+                    s += string.Format("{0}({1})", this[i], i);
+                }
+            }
+            if (s == "")
+                return "NOOP";
+            else
+                return s;
         }
     }
 
-    //public class CsConditionSeq
-    //{
-    //    internal int length;
-    //    ulong conds = 0;
-
-    //    public static CsConditionSeq MkFalse(int length)
-    //    {
-    //        return new CsConditionSeq(0, length);
-    //    }
-
-    //    CsConditionSeq(ulong conds, int count)
-    //    {
-    //        this.conds = conds;
-    //        this.length = count;
-    //    }
-
-    //    public static CsConditionSeq Mk(int i, CsCondition cond, int length)
-    //    {
-    //        if (length > 0 && length > 21)
-    //            throw new NotImplementedException();
-
-    //        return new CsConditionSeq(((ulong)cond) << (3 * i), length);
-    //    }
-
-    //    public static CsConditionSeq Mk(params CsCondition[] vals)
-    //    {
-    //        if (vals.Length > 21)
-    //            throw new NotImplementedException();
-
-    //        ulong x = 0;
-    //        int k = 0;
-    //        for (int i = 0; i < vals.Length; i++)
-    //        {
-    //            x = x | (((ulong)(vals[i])) << k);
-    //            k += 3;
-    //        }
-    //        return new CsConditionSeq(x, vals.Length);
-    //    }
-
-    //    public CsCondition this[int i]
-    //    {
-    //        get
-    //        {
-    //            return (CsCondition)((conds >> (3 * i)) & 7);
-    //        }
-    //    }
-
-    //    public override bool Equals(object obj)
-    //    {
-    //        return conds == ((CsConditionSeq)obj).conds;
-    //    }
-
-    //    public override int GetHashCode()
-    //    {
-    //        return conds.GetHashCode();
-    //    }
-
-    //    public CsConditionSeq Update(int i, CsCondition cond)
-    //    {
-    //        ulong mask = ~(((ulong)7) << (3 * i));
-    //        var conds1 = (conds & mask) | (((ulong)cond) << (3 * i));
-    //        return new CsConditionSeq(conds1, length);
-    //    }
-
-    //    public CsConditionSeq Or(int i, CsCondition cond)
-    //    {
-    //        var conds1 = conds | (((ulong)cond) << (3 * i));
-    //        return new CsConditionSeq(conds1, length);
-    //    }
-
-    //    public bool IsEmpty(int i)
-    //    {
-    //        return ((conds >> (3 * i)) & 7) == 0;
-    //    }
-
-    //    public CsCondition[] ToArray()
-    //    {
-    //        var list = new List<CsCondition>();
-    //        var arr = new CsCondition[length];
-    //        for (int i = 0; i < length; i++)
-    //            arr[i] = this[i];
-    //        return arr;
-    //    }
-
-    //    public override string ToString()
-    //    {
-    //        string s = "";
-    //        for (int i = 0; i < length; i++)
-    //        {
-    //            if (s != "")
-    //                s += "&";
-    //            if (this[i] == CsCondition.LOW)
-    //                s += string.Format("{0}(c{1})", "L", i);
-    //            else if (this[i] == CsCondition.MIDDLE)
-    //                s += string.Format("{0}(c{1})", "M", i);
-    //            else if (this[i] == CsCondition.HIGH)
-    //                s += string.Format("{0}(c{1})", "H", i);
-    //            else
-    //                s += string.Format("{0}(c{1})", this[i], i);
-    //        }
-    //        return s;
-    //    }
-
-    //    public static CsConditionSeq operator &(CsConditionSeq left, CsConditionSeq right)
-    //    {
-    //        return new CsConditionSeq(left.conds & right.conds, left.length);
-    //    }
-
-    //    public static CsConditionSeq operator |(CsConditionSeq left, CsConditionSeq right)
-    //    {
-    //        return new CsConditionSeq(left.conds | right.conds, left.length);
-    //    }
-    //}
-
     public class CsConditionSeq
     {
+        bool isAND;
+        /// <summary>
+        /// Returns true iff this sequence represents a conjunction
+        /// </summary>
+        public bool IsAND
+        {
+            get
+            {
+                return isAND;
+            }
+        }
         Tuple<int, ulong, ulong, ulong, ulong, ulong> elems;
         /// <summary>
         /// Number of conditions
@@ -652,15 +598,34 @@ namespace Microsoft.Automata
         internal ulong Middle { get { return elems.Item5; } }
         internal ulong High { get { return elems.Item6; } }
 
-        CsConditionSeq(Tuple<int, ulong, ulong, ulong, ulong, ulong> elems)
+        CsConditionSeq(bool isAND, Tuple<int, ulong, ulong, ulong, ulong, ulong> elems)
         {
+            this.isAND = isAND;
             this.elems = elems;
         }
 
-        public static CsConditionSeq Mk(params CsCondition[] vals)
+        /// <summary>
+        /// Make a sequence that corresponds to the conjunction of the individual counter conditions.
+        /// </summary>
+        /// <param name="vals">i'th element is the i'th counter condition</param>
+        public static CsConditionSeq MkAND(params CsCondition[] vals)
+        {
+            return MkSeq(true, vals);
+        }
+
+        /// <summary>
+        /// Make a sequence that corresponds to the disjunction of the individual counter conditions.
+        /// </summary>
+        /// <param name="vals">i'th element is the i'th counter condition</param>
+        public static CsConditionSeq MkOR(params CsCondition[] vals)
+        {
+            return MkSeq(false, vals);
+        }
+
+        static CsConditionSeq MkSeq(bool isOr, CsCondition[] vals)
         {
             if (vals.Length > 64)
-                throw new NotImplementedException();
+                throw new NotImplementedException("More than 64 counter support not implemented");
 
             int length = vals.Length;
             ulong mask = (length == 64 ? ulong.MaxValue : ((ulong)1 << length) - 1);
@@ -683,33 +648,77 @@ namespace Microsoft.Automata
                 bitmask = bitmask << 1;
             }
             var elems = new Tuple<int, ulong, ulong, ulong, ulong, ulong>(length, mask, empty, low, middle, high);
-            return new CsConditionSeq(elems);
+            return new CsConditionSeq(isOr, elems);
         }
 
-        public static CsConditionSeq MkEmpty(int length)
+        /// <summary>
+        /// Creates a conjunction with all individual counter conditions being TRUE
+        /// </summary>
+        public static CsConditionSeq MkTrue(int length)
         {
             CsCondition[] vals = new CsCondition[length];
             for (int i = 0; i < length; i++)
-                vals[i] = CsCondition.EMPTY;
-            return Mk(vals);
+                vals[i] = CsCondition.TRUE;
+            return MkAND(vals);
+        }
+
+        /// <summary>
+        /// Creates a disjunction with all individual counter conditions being FALSE
+        /// </summary>
+        public static CsConditionSeq MkFalse(int length)
+        {
+            CsCondition[] vals = new CsCondition[length];
+            for (int i = 0; i < length; i++)
+                vals[i] = CsCondition.FALSE;
+            return MkOR(vals);
         }
 
         public override bool Equals(object obj)
         {
-            return elems.Equals(((CsConditionSeq)obj).elems);
+            var cond = obj as CsConditionSeq;
+            if (cond == null)
+                return false;
+            else
+                return cond.isAND == isAND && elems.Equals(cond.elems);
         }
 
         public override int GetHashCode()
         {
-            return elems.GetHashCode();
+            return (isAND ? elems.GetHashCode() : elems.GetHashCode() << 1);
         }
 
         public override string ToString()
         {
-            if (IsSatisfiable)
-                return new Sequence<CsCondition>(ToArray()).ToString();
+            string s = "";
+            if (isAND)
+            {
+                for (int i=0; i < Length; i++)
+                {
+                    if (this[i] != CsCondition.TRUE)
+                    {
+                        if (s != "")
+                            s += "&";
+                        s += string.Format("{0}({1})", this[i], i);
+                    }
+                }
+                if (s == "")
+                    s = "TRUE";
+            }
             else
-                return "false";
+            {
+                for (int i = 0; i < Length; i++)
+                {
+                    if (this[i] != CsCondition.FALSE)
+                    {
+                        if (s != "")
+                            s += "|";
+                        s += string.Format("{0}({1})", this[i], i);
+                    }
+                }
+                if (s == "")
+                    s = "FALSE";
+            }
+            return s;
         }
 
         public CsCondition[] ToArray()
@@ -749,31 +758,100 @@ namespace Microsoft.Automata
         }
 
         /// <summary>
-        /// Returns true if all conditions in the sequence are different from FALSE
+        /// If conjunction, returns true if all conditions in the sequence are different from FALSE.
+        /// If disjunction, returns true if some condition in the sequence is different from FALSE
         /// </summary>
         public bool IsSatisfiable
         {
             get
             {
-                return (Empty | Low | Middle | High) == Mask;
+                if (isAND)
+                    return (Empty | Low | Middle | High) == Mask;
+                else
+                    return (Middle != 0 | Low != 0 | High != 0 | Empty != 0);
             }
         }
 
+        /// <summary>
+        /// If conjunction, returns true if all conditions in the sequence are TRUE.
+        /// If disjunction, returns true if some condition in the sequence is TRUE.
+        /// </summary>
+        public bool IsValid
+        {
+            get
+            {
+                var mask = Mask;
+                if (isAND)
+                    return (Empty == mask && Low == mask && Middle == mask && High == Mask);
+                else
+                    return (mask & (~Empty | ~Low | ~Middle | ~High)) != mask;
+            }
+        }
+
+        /// <summary>
+        /// Create a conjunction sequence of two sequences that represent conjunctions
+        /// </summary>
         public static CsConditionSeq operator &(CsConditionSeq left, CsConditionSeq right)
         {
-            int length = left.Length;
-            ulong mask = left.Mask;
-            ulong empty = left.Empty & right.Empty;
-            ulong low = left.Low & right.Low;
-            ulong middle = left.Middle & right.Middle;
-            ulong high = left.High & right.High;
+            if (left.Length == right.Length && left.isAND && right.isAND)
+            {
+                int length = left.Length;
+                ulong mask = left.Mask;
+                ulong empty = left.Empty & right.Empty;
+                ulong low = left.Low & right.Low;
+                ulong middle = left.Middle & right.Middle;
+                ulong high = left.High & right.High;
+                var elems = new Tuple<int, ulong, ulong, ulong, ulong, ulong>(length, mask, empty, low, middle, high);
+                var res = new CsConditionSeq(true, elems);
+                return res;
+            }
+            else
+                throw new InvalidOperationException("Incompatible arguments, & is only supported between conjunction sequences");
+        }
+
+        /// <summary>
+        /// Create a disjunction sequence of two sequences that represent disjunctions
+        /// </summary>
+        public static CsConditionSeq operator |(CsConditionSeq left, CsConditionSeq right)
+        {
+            if (left.Length == right.Length && !left.isAND && !right.isAND)
+            {
+                int length = left.Length;
+                ulong mask = left.Mask;
+                ulong empty = left.Empty | right.Empty;
+                ulong low = left.Low | right.Low;
+                ulong middle = left.Middle | right.Middle;
+                ulong high = left.High | right.High;
+                var elems = new Tuple<int, ulong, ulong, ulong, ulong, ulong>(length, mask, empty, low, middle, high);
+                var res = new CsConditionSeq(false, elems);
+                return res;
+            }
+            else
+                throw new InvalidOperationException("Incompatible arguments, | is only supported between disjunction sequences");
+        }
+
+        /// <summary>
+        /// Complement the sequence from OR to AND and vice versa, 
+        /// individual counter conditions are complemented.
+        /// </summary>
+        public static CsConditionSeq operator ~(CsConditionSeq arg)
+        {
+            int length = arg.Length;
+            ulong mask = arg.Mask;
+            ulong empty = mask & ~arg.Empty;
+            ulong low = mask & ~arg.Low;
+            ulong middle = mask & ~arg.Middle;
+            ulong high = mask & ~arg.High;
             var elems = new Tuple<int, ulong, ulong, ulong, ulong, ulong>(length, mask, empty, low, middle, high);
-            var res = new CsConditionSeq(elems);
+            var res = new CsConditionSeq(!arg.isAND, elems);
             return res;
         }
 
         public CsConditionSeq Update(int i, CsCondition cond)
         {
+            if (i >= Length)
+                throw new ArgumentOutOfRangeException();
+
             ulong bit = ((ulong)1) << i;
             ulong bitmask = ~bit;
             //clear the bit
@@ -792,11 +870,17 @@ namespace Microsoft.Automata
                 empty = empty | bit;
 
             var elems = new Tuple<int, ulong, ulong, ulong, ulong, ulong>(Length, Mask, empty, low, mid, high);
-            return new CsConditionSeq(elems);
+            return new CsConditionSeq(isAND, elems);
         }
 
+        /// <summary>
+        /// Update the i'th element to this[i] | cond
+        /// </summary>
         public CsConditionSeq Or(int i, CsCondition cond)
         {
+            if (i >= Length)
+                throw new ArgumentOutOfRangeException();
+
             ulong bit = ((ulong)1) << i;
             ulong empty = Empty;
             ulong low = Low;
@@ -813,7 +897,38 @@ namespace Microsoft.Automata
                 empty = empty | bit;
 
             var elems = new Tuple<int, ulong, ulong, ulong, ulong, ulong>(Length, Mask, empty, low, mid, high);
-            return new CsConditionSeq(elems);
+            var res = new CsConditionSeq(isAND, elems);
+            return res;
+        }
+
+        /// <summary>
+        /// Update the i'th element to this[i] & cond
+        /// </summary>
+        public CsConditionSeq And(int i, CsCondition cond)
+        {
+            if (i >= Length)
+                throw new ArgumentOutOfRangeException();
+
+            ulong bit = ((ulong)1) << i;
+            ulong bit_false = ~bit;
+
+            ulong empty = Empty;
+            ulong low = Low;
+            ulong mid = Middle;
+            ulong high = High;
+            //set the new value
+            if (!cond.HasFlag(CsCondition.LOW))
+                low = low & bit_false;
+            if (!cond.HasFlag(CsCondition.MIDDLE))
+                mid = mid & bit_false;
+            if (!cond.HasFlag(CsCondition.HIGH))
+                high = high & bit_false;
+            if (!cond.HasFlag(CsCondition.EMPTY))
+                empty = empty & bit_false;
+
+            var elems = new Tuple<int, ulong, ulong, ulong, ulong, ulong>(Length, Mask, empty, low, mid, high);
+            var res = new CsConditionSeq(isAND, elems);
+            return res;
         }
     }
 }

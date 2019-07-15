@@ -18,12 +18,25 @@ namespace Microsoft.Automata
         }
 
         /// <summary>
-        /// Generate the conjuncts of the predicate in DNF form
+        /// Gets the size of the underlying internal representation of the counter predicate.
         /// </summary>
-        public IEnumerable<Tuple<CsConditionSeq, T>> GetSumOfProducts()
+        public int CounterPredicateSize
         {
-            var list = new List<Tuple<CsConditionSeq, T>>(EnumerateCases(pred));
-            return list;
+            get
+            {
+                return pred.CountNodes();
+            }
+        }
+
+        /// <summary>
+        /// Gets the algebra of the predicate.
+        /// </summary>
+        public CsAlgebra<T> Algebra
+        {
+            get
+            {
+                return alg;
+            }
         }
 
         /// <summary>
@@ -55,6 +68,25 @@ namespace Microsoft.Automata
             }
         }
 
+        /// <summary>
+        /// Enumerate the individual conjuncts of the predicate in DNF form.
+        /// </summary>
+        public IEnumerable<Tuple<CsConditionSeq, T>> GetSumOfProducts()
+        {
+            return EnumerateCases(pred);
+        }
+
+        /// <summary>
+        /// Return all the conjuncts of the predicate in DNF form as an array.
+        /// The DNF may be very large even if CounterPredicateSize is relatively small.
+        /// </summary>
+        public Tuple<CsConditionSeq, T>[] ToArray()
+        {
+            var list = new List<Tuple<CsConditionSeq, T>>(EnumerateCases(pred));
+            var arr = list.ToArray();
+            return arr;
+        }
+
         IEnumerable<Tuple<CsConditionSeq, T>> EnumerateCases(BDD<T> bdd)
         {
             if (bdd.IsLeaf)
@@ -62,11 +94,11 @@ namespace Microsoft.Automata
                 var val = ((BDD<T>)bdd).Leaf;
                 if (bdd.Algebra.Second.IsSatisfiable(val))
                     //note that CsConditionSeq.False means that all counters are disabled
-                    yield return new Tuple<CsConditionSeq, T>(alg.__emptyCsConditionSeq, ((BDD<T>)bdd).Leaf);
+                    yield return new Tuple<CsConditionSeq, T>(alg.TrueCsConditionSeq, ((BDD<T>)bdd).Leaf);
             }
             else
             {
-                //even bit is about exit condition
+                //even bit is about exit condition, odd bit is about increment condition
                 bool is_canexit_bit = (bdd.Ordinal % 2 == 0);
                 //counter id
                 int i = bdd.Ordinal / 2;
@@ -75,21 +107,11 @@ namespace Microsoft.Automata
                     #region Zero branch: means that the bit is 0
                     var v = path.Item1[i];
                     if (is_canexit_bit)
-                    {
-                        if (v == CsCondition.EMPTY)
-                            v = CsCondition.LOW; //cannot exit
-                        else
-                            v = v & CsCondition.LOW;
-                    }
+                        v = v & CsCondition.CANNOTEXIT; //cannot exit
                     else
-                    {
-                        if (v == CsCondition.EMPTY)
-                            v = CsCondition.HIGH; //cannot increment
-                        else
-                            v = v & CsCondition.HIGH;
-                    }
-                    if (v != CsCondition.EMPTY && v != CsCondition.FALSE)
-                        yield return new Tuple<CsConditionSeq, T>(path.Item1.Update(i, v), path.Item2);
+                        v = v & CsCondition.CANNOTLOOP; //cannot increment
+                    if (v != CsCondition.FALSE) //FALSE means unsatisfiable
+                        yield return new Tuple<CsConditionSeq, T>(path.Item1.And(i, v), path.Item2);
                     #endregion
                 }
                 foreach (var path in EnumerateCases((BDD<T>)bdd.One))
@@ -97,21 +119,11 @@ namespace Microsoft.Automata
                     #region One branch: means that the bit is 1
                     var v = path.Item1[i];
                     if (is_canexit_bit)
-                    {
-                        if (v == CsCondition.EMPTY)
-                            v = CsCondition.CANEXIT;
-                        else
-                            v = v & CsCondition.CANEXIT;
-                    }
+                        v = v & CsCondition.CANEXIT; //can exit
                     else
-                    {
-                        if (v == CsCondition.EMPTY)
-                            v = CsCondition.CANLOOP;
-                        else
-                            v = v & CsCondition.CANLOOP;
-                    }
-                    if (v != CsCondition.EMPTY && v != CsCondition.FALSE)
-                        yield return new Tuple<CsConditionSeq, T>(path.Item1.Update(i, v), path.Item2);
+                        v = v & CsCondition.CANLOOP; //can increment
+                    if (v != CsCondition.FALSE) //FALSE means unsatisfiable
+                        yield return new Tuple<CsConditionSeq, T>(path.Item1.And(i, v), path.Item2);
                     #endregion
                 }
             }
@@ -129,20 +141,33 @@ namespace Microsoft.Automata
     /// <typeparam name="T">input predicate type</typeparam>
     public class CsAlgebra<T> : IBooleanAlgebra<CsPred<T>>, IPrettyPrinter<CsPred<T>>
     {
-        internal BDDAlgebra<T> algebra;
-        internal int K;
+        /// <summary>
+        /// Generic BDD algebra use for internal representation
+        /// </summary>
+        internal readonly BDDAlgebra<T> NodeAlgebra;
+        /// <summary>
+        /// Algebra of T-predicates used for leaves of the generic BDD algebra
+        /// </summary>
+        public readonly IBooleanAlgebra<T> LeafAlgebra;
+        /// <summary>
+        /// Number of counters.
+        /// </summary>
+        public readonly int K;
         CsPred<T> __false;
         CsPred<T> __true;
 
-        internal CsConditionSeq __emptyCsConditionSeq;
+        public readonly CsConditionSeq TrueCsConditionSeq;
+        public readonly CsConditionSeq FalseCsConditionSeq;
 
         public CsAlgebra(IBooleanAlgebra<T> leafAlgebra, int nrOfCountingSets)
         {
-            this.algebra = new BDDAlgebra<T>(leafAlgebra);
-            __false = new CsPred<T>(this, (BDD<T>)algebra.False);
-            __true = new CsPred<T>(this, (BDD<T>)algebra.True);
+            this.LeafAlgebra = leafAlgebra;
+            this.NodeAlgebra = new BDDAlgebra<T>(leafAlgebra);
+            __false = new CsPred<T>(this, (BDD<T>)NodeAlgebra.False);
+            __true = new CsPred<T>(this, (BDD<T>)NodeAlgebra.True);
             this.K = nrOfCountingSets;
-            __emptyCsConditionSeq = CsConditionSeq.MkEmpty(nrOfCountingSets);
+            TrueCsConditionSeq = CsConditionSeq.MkTrue(nrOfCountingSets);
+            FalseCsConditionSeq = CsConditionSeq.MkFalse(nrOfCountingSets);
         }
 
         public CsPred<T> False
@@ -165,7 +190,7 @@ namespace Microsoft.Automata
         {
             get
             {
-                return algebra.LeafAlgebra.IsExtensional;
+                return NodeAlgebra.LeafAlgebra.IsExtensional;
             }
         }
 
@@ -179,12 +204,12 @@ namespace Microsoft.Automata
 
         public bool AreEquivalent(CsPred<T> pred1, CsPred<T> pred2)
         {
-            return algebra.AreEquivalent((BDD)pred1.pred, pred2.pred);
+            return NodeAlgebra.AreEquivalent((BDD)pred1.pred, pred2.pred);
         }
 
         public bool CheckImplication(CsPred<T> lhs, CsPred<T> rhs)
         {
-            return algebra.CheckImplication((BDD)lhs.pred, rhs.pred);
+            return NodeAlgebra.CheckImplication((BDD)lhs.pred, rhs.pred);
         }
 
         public bool EvaluateAtom(CsPred<T> atom, CsPred<T> psi)
@@ -194,7 +219,7 @@ namespace Microsoft.Automata
 
         public IEnumerable<Tuple<bool[], CsPred<T>>> GenerateMinterms(params CsPred<T>[] constraints)
         {
-            foreach (var minterm in algebra.GenerateMinterms((BDD[])Array.ConvertAll(constraints, x => x.pred)))
+            foreach (var minterm in NodeAlgebra.GenerateMinterms((BDD[])Array.ConvertAll(constraints, x => x.pred)))
                 yield return new Tuple<bool[], CsPred<T>>(minterm.Item1, new CsPred<T>(this, (BDD<T>)minterm.Item2));
         }
 
@@ -205,7 +230,7 @@ namespace Microsoft.Automata
 
         public bool IsSatisfiable(CsPred<T> predicate)
         {
-            return algebra.IsSatisfiable((BDD)predicate.pred);
+            return NodeAlgebra.IsSatisfiable((BDD)predicate.pred);
         }
 
         public CsPred<T> MkAnd(params CsPred<T>[] preds)
@@ -216,19 +241,19 @@ namespace Microsoft.Automata
             {
                 var bdd = preds[0].pred;
                 int i = 1;
-                while (algebra.IsSatisfiable((BDD)bdd) && i < preds.Length)
-                    bdd = (BDD<T>)algebra.MkAnd((BDD)bdd, preds[i++].pred);
+                while (NodeAlgebra.IsSatisfiable((BDD)bdd) && i < preds.Length)
+                    bdd = (BDD<T>)NodeAlgebra.MkAnd((BDD)bdd, preds[i++].pred);
                 return new CsPred<T>(this, bdd);
             }
         }
 
         public CsPred<T> MkAnd(IEnumerable<CsPred<T>> preds)
         {
-            var bdd = (BDD<T>)algebra.True;
+            var bdd = (BDD<T>)NodeAlgebra.True;
             foreach (var pred in preds)
             {
-                bdd = (BDD<T>)algebra.MkAnd((BDD)bdd, pred.pred);
-                if (!algebra.IsSatisfiable((BDD)bdd))
+                bdd = (BDD<T>)NodeAlgebra.MkAnd((BDD)bdd, pred.pred);
+                if (!NodeAlgebra.IsSatisfiable((BDD)bdd))
                     return __false;
             }
             return new Automata.CsPred<T>(this, bdd);
@@ -236,29 +261,29 @@ namespace Microsoft.Automata
 
         public CsPred<T> MkAnd(CsPred<T> pred1, CsPred<T> pred2)
         {
-            var bdd = (BDD<T>)algebra.MkAnd((BDD)pred1.pred, (BDD)pred2.pred);
+            var bdd = (BDD<T>)NodeAlgebra.MkAnd((BDD)pred1.pred, (BDD)pred2.pred);
             return new CsPred<T>(this, bdd);
         }
 
         public CsPred<T> MkDiff(CsPred<T> pred1, CsPred<T> pred2)
         {
-            var bdd = (BDD<T>)algebra.MkDiff((BDD)pred1.pred, (BDD)pred2.pred);
+            var bdd = (BDD<T>)NodeAlgebra.MkDiff((BDD)pred1.pred, (BDD)pred2.pred);
             return new CsPred<T>(this, bdd);
         }
 
         public CsPred<T> MkNot(CsPred<T> pred)
         {
-            var bdd = (BDD<T>)algebra.MkNot((BDD)pred.pred);
+            var bdd = (BDD<T>)NodeAlgebra.MkNot((BDD)pred.pred);
             return new CsPred<T>(this, bdd);
         }
 
         public CsPred<T> MkOr(IEnumerable<CsPred<T>> preds)
         {
-            var bdd = (BDD<T>)algebra.False;
+            var bdd = (BDD<T>)NodeAlgebra.False;
             foreach (var pred in preds)
             {
-                bdd = (BDD<T>)algebra.MkOr((BDD)bdd, pred.pred);
-                if (bdd.Equals(algebra.True))
+                bdd = (BDD<T>)NodeAlgebra.MkOr((BDD)bdd, pred.pred);
+                if (bdd.Equals(NodeAlgebra.True))
                     return __true;
             }
             return new CsPred<T>(this, bdd);
@@ -266,74 +291,13 @@ namespace Microsoft.Automata
 
         public CsPred<T> MkOr(CsPred<T> pred1, CsPred<T> pred2)
         {
-            var bdd = (BDD<T>)algebra.MkOr((BDD)pred1.pred, (BDD)pred2.pred);
+            var bdd = (BDD<T>)NodeAlgebra.MkOr((BDD)pred1.pred, (BDD)pred2.pred);
             return new CsPred<T>(this, bdd);
-        }
-
-        public CsPred<T> MkPredicate(T leafpred, CsConditionSeq vals)
-        {
-            return MkPredicate(leafpred, vals.ToArray());
-        }
-
-        public CsPred<T> MkPredicate(T leafpred, params CsCondition[] vals)
-        {
-            var alg = algebra;
-            var node = alg.MkLeaf(leafpred);
-            for (int i = 0; i < K; i++)
-            {
-                int canexit_bit = (i * 2);
-                int canloop_bit = (i * 2) + 1;
-                if (vals[i] != CsCondition.EMPTY)
-                {
-                    #region set the bit combinations in the node
-                    //exclude 00
-                    var canexitorloop = alg.MkOr(alg.MkBitTrue(canexit_bit), alg.MkBitTrue(canloop_bit));
-                    node = (BDD<T>)alg.MkAnd(node, canexitorloop);
-
-                    switch (vals[i])
-                    {
-                        case CsCondition.LOW:
-                            {
-                                //can increment but not exit
-                                node = (BDD<T>)alg.MkAnd(node, alg.MkBitFalse(canexit_bit), alg.MkBitTrue(canloop_bit));
-                                break;
-                            }
-                        case CsCondition.MIDDLE:
-                            {
-                                //can both increment and exit
-                                node = (BDD<T>)alg.MkAnd(node, alg.MkBitTrue(canexit_bit), alg.MkBitTrue(canloop_bit));
-                                break;
-                            }
-                        case CsCondition.HIGH:
-                            {
-                                //can exit but not increment
-                                node = (BDD<T>)alg.MkAnd(node, alg.MkBitTrue(canexit_bit), alg.MkBitFalse(canloop_bit));
-                                break;
-                            }
-                        case CsCondition.CANLOOP:
-                            {
-                                node = (BDD<T>)alg.MkAnd(node, alg.MkBitTrue(canloop_bit));
-                                break;
-                            }
-                        case CsCondition.CANEXIT:
-                            {
-                                node = (BDD<T>)alg.MkAnd(node, alg.MkBitTrue(canexit_bit));
-                                break;
-                            }
-                        default:
-                            {
-                                break;
-                            }
-                    }
-                    #endregion
-                }
-            }
-            return new CsPred<T>(this, node);
         }
 
         public CsPred<T> MkSymmetricDifference(CsPred<T> pred1, CsPred<T> pred2)
         {
-            var bdd = (BDD<T>)algebra.MkSymmetricDifference((BDD)pred1.pred, pred2.pred);
+            var bdd = (BDD<T>)NodeAlgebra.MkSymmetricDifference((BDD)pred1.pred, pred2.pred);
             return new CsPred<T>(this, bdd);
         }
 
@@ -349,7 +313,7 @@ namespace Microsoft.Automata
             {
                 if (s != "")
                     s += ";";
-                var pp = algebra.Second as IPrettyPrinter<T>;
+                var pp = NodeAlgebra.Second as IPrettyPrinter<T>;
                 string inp = "";
                 if (pp != null)
                     inp = pp.PrettyPrint(prod.Item2);
@@ -371,6 +335,73 @@ namespace Microsoft.Automata
         public string PrettyPrintCS(CsPred<T> t, Func<CsPred<T>, string> varLookup)
         {
             throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Make a product between leafpred and vals.
+        /// </summary>
+        /// <param name="leafpred">input predicate</param>
+        /// <param name="vals">this is either a conjunction or disjunction of counter conditions</param>
+        /// <returns></returns>
+        public CsPred<T> MkPredicate(T leafpred, CsConditionSeq vals)
+        {
+            return MkPredicate(leafpred, vals.IsAND, vals.ToArray());
+        }
+
+        /// <summary>
+        /// Make a product between leafpred and vals.
+        /// </summary>
+        /// <param name="leafpred">input predicate</param>
+        /// <param name="vals">sequence of counter conditions</param>
+        /// <param name="isAND">if true then treat vals as a conjunction, else as a disjunction</param>
+        /// <returns></returns>
+        public CsPred<T> MkPredicate(T leafpred, bool isAND, params CsCondition[] vals)
+        {
+            if (vals.Length != K)
+                throw new ArgumentOutOfRangeException("vals", "Incompatible number " + vals.Length + " of conditions, expecting " + K);
+
+            var alg = NodeAlgebra;
+            var node = alg.MkLeaf(leafpred);
+            BDD<T> vals_bdd = (isAND ? (BDD<T>)alg.True : (BDD<T>)alg.False);
+            for (int i = 0; i < K; i++)
+            {
+                int canexit_bit = (i * 2);
+                int canloop_bit = (i * 2) + 1;
+
+                CsCondition cond = vals[i];
+
+                BDD<T> union = (BDD<T>)alg.False;
+                if (cond == CsCondition.TRUE)
+                {
+                    union = (BDD<T>)alg.True;
+                }
+                else
+                {
+                    if (cond.HasFlag(CsCondition.LOW))
+                        union = (BDD<T>)alg.MkOr(union, alg.MkAnd(node, alg.MkBitFalse(canexit_bit), alg.MkBitTrue(canloop_bit)));
+                    if (cond.HasFlag(CsCondition.MIDDLE))
+                        union = (BDD<T>)alg.MkOr(union, alg.MkAnd(node, alg.MkBitTrue(canexit_bit), alg.MkBitTrue(canloop_bit)));
+                    if (cond.HasFlag(CsCondition.HIGH))
+                        union = (BDD<T>)alg.MkOr(union, alg.MkAnd(node, alg.MkBitTrue(canexit_bit), alg.MkBitFalse(canloop_bit)));
+                    if (cond.HasFlag(CsCondition.EMPTY))
+                        union = (BDD<T>)alg.MkOr(union, alg.MkAnd(node, alg.MkBitFalse(canexit_bit), alg.MkBitFalse(canloop_bit)));
+                }
+
+                if (isAND)
+                {
+                    vals_bdd = (BDD<T>)alg.MkAnd((BDD)vals_bdd, union);
+                    if (vals_bdd.Equals(alg.False))
+                        break;
+                }
+                else
+                {
+                    vals_bdd = (BDD<T>)alg.MkOr((BDD)vals_bdd, union);
+                    if (vals_bdd.Equals(alg.True))
+                        break;
+                }
+            }
+            node = (BDD<T>)alg.MkAnd((BDD)node, vals_bdd);
+            return new CsPred<T>(this, node);
         }
     }
 }

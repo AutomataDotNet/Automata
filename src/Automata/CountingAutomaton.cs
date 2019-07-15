@@ -437,7 +437,7 @@ namespace Microsoft.Automata
         private IEnumerable<CsConditionSeq> GenerateCounterMinterms(ConsList<int> list, S a)
         {
             if (list == null)
-                yield return CsConditionSeq.MkEmpty(countingStates.Count);
+                yield return CsConditionSeq.MkTrue(countingStates.Count);
             else
             {
                 var a_moves = new List<Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>>(GetMovesFrom(list.First, a)).ToArray();
@@ -453,18 +453,18 @@ namespace Microsoft.Automata
                     {
                         if (incr_exists && exit_exists)
                         {
-                            yield return seq.Or(i, CsCondition.LOW);
+                            yield return seq.Update(i, CsCondition.LOW);
                             if (!(IsSingletonCountingState(list.First) && GetCounter(list.First).LowerBound == GetCounter(list.First).UpperBound))
-                                yield return seq.Or(i, CsCondition.MIDDLE);
-                            yield return seq.Or(i, CsCondition.HIGH);
+                                yield return seq.Update(i, CsCondition.MIDDLE);
+                            yield return seq.Update(i, CsCondition.HIGH);
                         }
                         else if (incr_exists)
                         {
-                            yield return seq.Or(i, CsCondition.CANLOOP);
+                            yield return seq.Update(i, CsCondition.CANLOOP);
                         }
                         else if (exit_exists)
                         {
-                            yield return seq.Or(i, CsCondition.CANEXIT);
+                            yield return seq.Update(i, CsCondition.CANEXIT);
                         }
                         else
                         {
