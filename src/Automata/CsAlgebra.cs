@@ -133,6 +133,46 @@ namespace Microsoft.Automata
         {
             return pred.ToString();
         }
+
+        /// <summary>
+        /// Make the conjunction of left with right
+        /// </summary>
+        public static CsPred<T> operator &(CsPred<T> left, CsPred<T> right)
+        {
+            return left.Algebra.MkAnd(left, right);
+        }
+
+        /// <summary>
+        /// Make the disjunction of left with right
+        /// </summary>
+        public static CsPred<T> operator |(CsPred<T> left, CsPred<T> right)
+        {
+            return left.Algebra.MkOr(left, right);
+        }
+
+        /// <summary>
+        /// Make the negation of the predicate
+        /// </summary>
+        public static CsPred<T> operator ~(CsPred<T> predicate)
+        {
+            return predicate.Algebra.MkNot(predicate);
+        }
+
+        /// <summary>
+        /// Returns true if the predicate is satisfiable
+        /// </summary>
+        public bool CheckSat()
+        {
+            return alg.IsSatisfiable(this);
+        }
+
+        /// <summary>
+        /// Returns true if the predicate is valid
+        /// </summary>
+        public bool CheckValidity()
+        {
+            return !alg.IsSatisfiable(alg.MkNot(this));
+        }
     }
 
     /// <summary>

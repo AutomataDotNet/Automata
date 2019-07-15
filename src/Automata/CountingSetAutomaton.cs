@@ -18,6 +18,14 @@ namespace Microsoft.Automata
 
         CsAlgebra<S> productAlgebra;
 
+        public CsAlgebra<S> ProductAlgebra
+        {
+            get
+            {
+                return productAlgebra;
+            }
+        }
+
         Dictionary<int, HashSet<int>> activeCounterMap;
 
         HashSet<int> finalCounterSet;
@@ -154,7 +162,8 @@ namespace Microsoft.Automata
                     var upd = CsUpdateSeq.MkNOOP(ca.NrOfCounters);
                     foreach (var q in sb.GetMembers(dmove.SourceState))
                         upd = upd | ca.GetCounterUpdate(q, prodcond.Item2, prodcond.Item1);
-                    csmoves.Add(Move<CsLabel<S>>.Create(dmove.SourceState, dmove.TargetState, CsLabel<S>.MkTransitionLabel(prodcond.Item2, prodcond.Item1, upd, ((CABA<S>)ca.Algebra).builder.solver.PrettyPrint)));
+                    var guard = alg.MkPredicate(prodcond.Item2, prodcond.Item1);
+                    csmoves.Add(Move<CsLabel<S>>.Create(dmove.SourceState, dmove.TargetState, CsLabel<S>.MkTransitionLabel(guard, upd, ((CABA<S>)ca.Algebra).builder.solver.PrettyPrint)));
                 }
             }
 
@@ -211,9 +220,8 @@ namespace Microsoft.Automata
 
     public class CsLabel<S>
     {
-        S input;
         bool isFinalCondition;
-        public readonly CsConditionSeq Conditions;
+        public readonly CsPred<S> Guard;
         public readonly CsUpdateSeq Updates;
         Func<S, string> InputToString;
 
@@ -222,52 +230,44 @@ namespace Microsoft.Automata
             get { return isFinalCondition; }
         }
 
-        public S InputGuard
+        CsLabel(bool isFinalCondition, CsPred<S> guard, CsUpdateSeq updates, Func<S, string> inputToString)
         {
-            get
-            {
-                if (isFinalCondition)
-                    throw new AutomataException(AutomataExceptionKind.InvalidCall);
-
-                return input;
-            }
-        }
-
-        CsLabel(bool isFinalCondition, S input, CsConditionSeq conditions, CsUpdateSeq updates, Func<S, string> inputToString)
-        {
-            this.input = input;
             this.isFinalCondition = isFinalCondition;
-            this.Conditions = conditions;
+            this.Guard = guard;
             this.Updates = updates;
             this.InputToString = inputToString;
         }
 
-        public static CsLabel<S> MkFinalCondition(CsConditionSeq conditions, Func<S, string> inputToString = null)
+        public static CsLabel<S> MkFinalCondition(CsPred<S> guard, Func<S, string> inputToString = null)
         {
-            return new CsLabel<S>(true, default(S), conditions, CsUpdateSeq.MkNOOP(conditions.Length), inputToString);
+            return new CsLabel<S>(true, guard, null, inputToString);
         }
 
-        public static CsLabel<S> MkTransitionLabel(S input, CsConditionSeq conditions, CsUpdateSeq updates, Func<S, string> inputToString = null)
+        public static CsLabel<S> MkTransitionLabel(CsPred<S> guard, CsUpdateSeq updates, Func<S, string> inputToString = null)
         {
-            return new CsLabel<S>(false, input, conditions, updates, inputToString);
+            return new CsLabel<S>(false, guard, updates, inputToString);
         }
 
         public override string ToString()
         {
+            var cases = new Sequence<Tuple<CsConditionSeq, S>>(Guard.ToArray());
+            string cond = "";
+            foreach (var psi in cases)
+            {
+                var pp = Guard.Algebra.LeafAlgebra as ICharAlgebra<S>;
+                cond += (pp != null ? pp.PrettyPrint(psi.Item2) : psi.Item2.ToString());
+                var countercond = psi.Item1.ToString();
+                if (countercond != "TRUE")
+                    cond += "/" + countercond;
+            }
             if (isFinalCondition)
             {
-                return DescribeCounterCondition();
+                return cond;
             }
             else
             {
-                var s = (InputToString == null ? input.ToString() : InputToString(input));
-
-                var cond = DescribeCounterCondition();
+                var s = cond;
                 var upd = DescribeCounterUpdate();
-                if (cond != "")
-                {
-                    s += "/" + cond;
-                }
                 if (upd != "")
                 {
                     s += ":" + upd;
@@ -276,35 +276,35 @@ namespace Microsoft.Automata
             }
         }
 
-        private string DescribeCounterCondition()
-        {
-            string s = "";
-            for (int i = 0; i < Conditions.Length; i++)
-            {
-                if (Conditions[i] != CsCondition.EMPTY && Conditions[i] != CsCondition.NONEMPTY)
-                {
-                    if (s != "")
-                        s += "&";
-                    s += CsCondition_ToString(Conditions[i]) + "(c" + i.ToString() + ")";
-                }
-            }
-            return s;
-        }
+        //private string DescribeCounterCondition()
+        //{
+        //    string s = "";
+        //    for (int i = 0; i < Conditions.Length; i++)
+        //    {
+        //        if (Conditions[i] != CsCondition.EMPTY && Conditions[i] != CsCondition.NONEMPTY)
+        //        {
+        //            if (s != "")
+        //                s += "&";
+        //            s += CsCondition_ToString(Conditions[i]) + "(c" + i.ToString() + ")";
+        //        }
+        //    }
+        //    return s;
+        //}
 
-        static string CsCondition_ToString(CsCondition cond)
-        {
-            switch (cond)
-            {
-                case CsCondition.LOW:
-                    return "L";
-                case CsCondition.MIDDLE:
-                    return "M";
-                case CsCondition.HIGH:
-                    return "H";
-                default:
-                    return cond.ToString();
-            }
-        }
+        //static string CsCondition_ToString(CsCondition cond)
+        //{
+        //    switch (cond)
+        //    {
+        //        case CsCondition.LOW:
+        //            return "L";
+        //        case CsCondition.MIDDLE:
+        //            return "M";
+        //        case CsCondition.HIGH:
+        //            return "H";
+        //        default:
+        //            return cond.ToString();
+        //    }
+        //}
 
         private string DescribeCounterUpdate()
         {
@@ -314,39 +314,10 @@ namespace Microsoft.Automata
                 if (Updates[i] != CsUpdate.NOOP)
                 {
                     if (s != "")
-                        s += "&";
+                        s += ";";
                     s += Updates[i].ToString() + "(c" + i.ToString() + ")";
                 }
             }
-            //for (int i = 0; i < Updates.Length; i++)
-            //{
-            //    switch (Updates[i])
-            //    {
-            //        case CsUpdate.NOOP:
-            //            break;
-            //        case CsUpdate.INCR:
-            //            s += string.Format("c{0}++;", i);
-            //            break;
-            //        case CsUpdate.INCR0:
-            //            s += string.Format("c{0}+U{{0}};", i);
-            //            break;
-            //        case CsUpdate.INCR1:
-            //            s += string.Format("c{0}+U{{1}};", i);
-            //            break;
-            //        case CsUpdate.INCR01:
-            //            s += string.Format("c{0}+U{{0,1}};", i);
-            //            break;
-            //        case CsUpdate.SET0:
-            //            s += string.Format("c{0}:={{0}};", i);
-            //            break;
-            //        case CsUpdate.SET1:
-            //            s += string.Format("c{0}:={{1}};", i);
-            //            break;
-            //        case CsUpdate.SET01:
-            //            s += string.Format("c{0}:={{0,1}};", i);
-            //            break;
-            //    }
-            //}
             return s;
         }
     }
