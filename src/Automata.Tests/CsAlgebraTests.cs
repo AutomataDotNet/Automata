@@ -27,7 +27,7 @@ namespace Microsoft.Automata.Tests
             var a = css.MkCharConstraint('a', false);
             var b = css.MkCharConstraint('b');
             var ab = css.MkOr(a, b);
-            var csa = new CsAlgebra<BDD>(css, 3);
+            var csa = new CsAlgebra<BDD>(css, new ICounter[] {new BoundedCounter(0,4,5), new BoundedCounter(1, 4, 5), new BoundedCounter(2, 4, 5), });
             var alpha = csa.MkPredicate(ab, true, CsCondition.TRUE, CsCondition.CANEXIT, CsCondition.TRUE);
             var alpha_cases = alpha.ToArray();
             Assert.IsTrue(alpha_cases.Length == 1);

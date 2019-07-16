@@ -36,7 +36,6 @@ namespace Microsoft.Automata
         {
             this.stateBuilder = stateBuilder;
             this.countingStates = countingStates;
-            this.productAlgebra = new CsAlgebra<S>(inputAlgebra, countingStates.Count);
             this.origFinalStates = origFinalStates;
             activeCounterMap = new Dictionary<int, HashSet<int>>();
             finalCounterSet = new HashSet<int>();
@@ -57,6 +56,7 @@ namespace Microsoft.Automata
                     }
                 }
             }
+            this.productAlgebra = new CsAlgebra<S>(inputAlgebra, counters);
         }
 
         int GetOriginalInitialState()
@@ -83,7 +83,7 @@ namespace Microsoft.Automata
             mems.Sort();
             if (!__hidePowersets)
             {
-                s += "&#13;{";
+                s += "\n" + "{";
                 foreach (var q in mems)
                 {
                     if (!s.EndsWith("{"))
@@ -97,25 +97,25 @@ namespace Microsoft.Automata
             state_counters_list.Sort();
             foreach (var c in state_counters_list)
             {
-                s += "&#13;";
+                s += "\n";
                 if (finalCounterSet.Contains(c))
                     s += "(F)";
-                s += "c" + c + ":[" + counters[c].LowerBound + "," + counters[c].UpperBound + "]";
+                s += "c" + SpecialCharacters.ToSubscript(c) + "(" + counters[c].LowerBound + 
+                    SpecialCharacters.LEQ + "c" + SpecialCharacters.ToSubscript(c) + SpecialCharacters.LEQ + counters[c].UpperBound + ")";
             }
             return s;
         }
 
         /// <summary>
-        /// Describe if the initial state is associuated wit a counter, if so then set it to {0}
+        /// Describe if the initial state is associuated with a counter, if so then set it to {0}
         /// </summary>
-        /// <returns></returns>
         public override string DescribeStartLabel()
         {
             var initcounters = activeCounterMap[InitialState].GetEnumerator();
             if (initcounters.MoveNext())
             {
                 var c = initcounters.Current;
-                return string.Format("c{0}={{0}}", c);
+                return string.Format("c{0}={{0}}", SpecialCharacters.ToSubscript(c));
             }
             else
                 return "";
@@ -124,29 +124,46 @@ namespace Microsoft.Automata
         public static CsAutomaton<S> CreateFrom(CountingAutomaton<S> ca)
         {
             var productmoves = new List<Move<CsPred<S>>>();
-            var alg = new CsAlgebra<S>(((CABA<S>)ca.Algebra).builder.solver, ca.NrOfCounters);
+            var counters = ca.counters;
+            var alg = new CsAlgebra<S>(((CABA<S>)ca.Algebra).builder.solver, counters);
             foreach (var move in ca.GetMoves())
             {
                 var ccond = alg.TrueCsConditionSeq;
                 if (ca.IsCountingState(move.SourceState))
                 {
-                    var cid = ca.GetCounter(move.SourceState).CounterId;
+                    var counter = ca.GetCounter(move.SourceState);
+                    var cid = counter.CounterId;
                     if (move.Label.Item2.First.OperationKind == CounterOp.EXIT ||
                         move.Label.Item2.First.OperationKind == CounterOp.EXIT_SET0 ||
                         move.Label.Item2.First.OperationKind == CounterOp.EXIT_SET1)
                     {
-                        ccond = ccond.And(cid, CsCondition.CANEXIT);
+                        if (counter.LowerBound == counter.UpperBound && !ca.HasMovesTo(move.SourceState, move.Label.Item1.Element))
+                            ccond = ccond.And(cid, CsCondition.HIGH);
+                        else if (counter.LowerBound > 0)
+                            ccond = ccond.And(cid, CsCondition.CANEXIT);
+                        else
+                            ccond.And(cid, CsCondition.NONEMPTY);
                     }
                     else
                     {
                         if (move.Label.Item2.First.OperationKind != CounterOp.INCR)
                             throw new AutomataException(AutomataExceptionKind.InternalError);
 
-                        ccond = ccond.And(cid, CsCondition.CANLOOP);
+                        if (counter.LowerBound == counter.UpperBound && !ca.HasMovesTo(move.SourceState, move.Label.Item1.Element))
+                            ccond = ccond.And(cid, CsCondition.LOW);
+                        else
+                            ccond = ccond.And(cid, CsCondition.CANLOOP);
                     }
                 }
-                var pmove = Move<CsPred<S>>.Create(move.SourceState, move.TargetState, alg.MkPredicate(move.Label.Item1.Element, ccond));
-                productmoves.Add(pmove);
+                if (ccond.IsSatisfiable)
+                {
+                    var pmove = Move<CsPred<S>>.Create(move.SourceState, move.TargetState, alg.MkPredicate(move.Label.Item1.Element, ccond));
+                    productmoves.Add(pmove);
+                }
+                else
+                {
+                    ;
+                }
             }
             var prodaut = Automaton<CsPred<S>>.Create(alg, ca.InitialState, ca.GetFinalStates(), productmoves);
 
@@ -250,13 +267,13 @@ namespace Microsoft.Automata
 
         public override string ToString()
         {
-            var cases = new Sequence<Tuple<CsConditionSeq, S>>(Guard.ToArray());
+            var cases = Guard.ToArray();
             string cond = "";
             foreach (var psi in cases)
             {
                 var pp = Guard.Algebra.LeafAlgebra as ICharAlgebra<S>;
                 cond += (pp != null ? pp.PrettyPrint(psi.Item2) : psi.Item2.ToString());
-                var countercond = psi.Item1.ToString();
+                var countercond = psi.Item1.ToString<S>(Guard.Algebra);
                 if (countercond != "TRUE")
                     cond += "/" + countercond;
             }
@@ -276,36 +293,6 @@ namespace Microsoft.Automata
             }
         }
 
-        //private string DescribeCounterCondition()
-        //{
-        //    string s = "";
-        //    for (int i = 0; i < Conditions.Length; i++)
-        //    {
-        //        if (Conditions[i] != CsCondition.EMPTY && Conditions[i] != CsCondition.NONEMPTY)
-        //        {
-        //            if (s != "")
-        //                s += "&";
-        //            s += CsCondition_ToString(Conditions[i]) + "(c" + i.ToString() + ")";
-        //        }
-        //    }
-        //    return s;
-        //}
-
-        //static string CsCondition_ToString(CsCondition cond)
-        //{
-        //    switch (cond)
-        //    {
-        //        case CsCondition.LOW:
-        //            return "L";
-        //        case CsCondition.MIDDLE:
-        //            return "M";
-        //        case CsCondition.HIGH:
-        //            return "H";
-        //        default:
-        //            return cond.ToString();
-        //    }
-        //}
-
         private string DescribeCounterUpdate()
         {
             string s = "";
@@ -315,7 +302,7 @@ namespace Microsoft.Automata
                 {
                     if (s != "")
                         s += ";";
-                    s += Updates[i].ToString() + "(c" + i.ToString() + ")";
+                    s += Updates[i].ToString() + "(c" + SpecialCharacters.ToSubscript(i) + ")";
                 }
             }
             return s;
@@ -658,6 +645,44 @@ namespace Microsoft.Automata
             return (isAND ? elems.GetHashCode() : elems.GetHashCode() << 1);
         }
 
+        public static string DescribeCondition<S>(CsAlgebra<S> algebra, CsCondition cond, int i)
+        {
+            switch (cond)
+            {
+                case CsCondition.TRUE:
+                    return SpecialCharacters.TOP.ToString();
+                case CsCondition.FALSE:
+                    return SpecialCharacters.BOT.ToString();
+                case CsCondition.EMPTY:
+                    return string.Format("{0}={1}", DescrCntr(i), SpecialCharacters.EMPTYSET);
+                case CsCondition.NONEMPTY:
+                    return string.Format("{0}{1}{2}", DescrCntr(i), SpecialCharacters.NEQ, SpecialCharacters.EMPTYSET);
+                case CsCondition.LOW:
+                    return string.Format("{0}<{1}", DescrCntr(i), algebra.GetCounter(i).LowerBound);
+                case CsCondition.HIGH:
+                    return string.Format("{0}={{{1}}}", DescrCntr(i), algebra.GetCounter(i).UpperBound);
+                case CsCondition.CANEXIT:
+                    return string.Format("{0}{1}{2}", DescrCntr(i), SpecialCharacters.GEQ, algebra.GetCounter(i).LowerBound);
+                case CsCondition.CANNOTEXIT:
+                    return string.Format("{0}{1}{2}", DescrCntr(i), SpecialCharacters.NOTGEQ, algebra.GetCounter(i).LowerBound);
+                case CsCondition.CANLOOP:
+                    return string.Format("{0}+1{1}{2}", DescrCntr(i), SpecialCharacters.NEQ, SpecialCharacters.EMPTYSET);
+                case CsCondition.CANNOTLOOP:
+                    return string.Format("{0}+1{1}{2}", DescrCntr(i), "=", SpecialCharacters.EMPTYSET);
+                case CsCondition.MIDDLE:
+                    return string.Format("{0}{1}{2}<{3}", algebra.GetCounter(i).LowerBound, SpecialCharacters.LEQ, DescrCntr(i), algebra.GetCounter(i).UpperBound);
+                case CsCondition.LOWorHIGH:
+                    return string.Format("({0}{1}{2})", DescribeCondition<S>(algebra, CsCondition.LOW, i), SpecialCharacters.OR, DescribeCondition<S>(algebra, CsCondition.HIGH, i));
+                default:
+                    return string.Format("{0}({1})", cond, DescrCntr(i));
+            }
+        }
+
+        static string DescrCntr(int i)
+        {
+            return "c" + SpecialCharacters.ToSubscript(i);
+        }
+
         public override string ToString()
         {
             string s = "";
@@ -668,12 +693,12 @@ namespace Microsoft.Automata
                     if (this[i] != CsCondition.TRUE)
                     {
                         if (s != "")
-                            s += "&";
-                        s += string.Format("{0}({1})", this[i], i);
+                            s += SpecialCharacters.AND;
+                        s += string.Format("{0}(c{1})", this[i], SpecialCharacters.ToSubscript(i));
                     }
                 }
                 if (s == "")
-                    s = "TRUE";
+                    s = SpecialCharacters.TOP.ToString();
             }
             else
             {
@@ -682,12 +707,46 @@ namespace Microsoft.Automata
                     if (this[i] != CsCondition.FALSE)
                     {
                         if (s != "")
-                            s += "|";
-                        s += string.Format("{0}({1})", this[i], i);
+                            s += SpecialCharacters.OR;
+                        s += string.Format("{0}(c{1})", this[i], SpecialCharacters.ToSubscript(i));
                     }
                 }
                 if (s == "")
-                    s = "FALSE";
+                    s = SpecialCharacters.BOT.ToString();
+            }
+            return s;
+        }
+
+        public string ToString<S>(CsAlgebra<S> algebra)
+        {
+            string s = "";
+            if (isAND)
+            {
+                for (int i = 0; i < Length; i++)
+                {
+                    if (this[i] != CsCondition.TRUE)
+                    {
+                        if (s != "")
+                            s += SpecialCharacters.AND;
+                        s += DescribeCondition<S>(algebra, this[i], i);
+                    }
+                }
+                if (s == "")
+                    s = SpecialCharacters.TOP.ToString();
+            }
+            else
+            {
+                for (int i = 0; i < Length; i++)
+                {
+                    if (this[i] != CsCondition.FALSE)
+                    {
+                        if (s != "")
+                            s += SpecialCharacters.OR;
+                        s += DescribeCondition<S>(algebra, this[i], i);
+                    }
+                }
+                if (s == "")
+                    s = SpecialCharacters.BOT.ToString();
             }
             return s;
         }

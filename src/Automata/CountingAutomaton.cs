@@ -10,6 +10,7 @@ namespace Microsoft.Automata
     {
         internal Dictionary<int, ICounter> countingStates;
         Dictionary<int, SymbolicRegexNode<S>> stateMap;
+        internal ICounter[] counters;
 
         internal ICharAlgebra<S> solver;
 
@@ -19,6 +20,9 @@ namespace Microsoft.Automata
             this.countingStates = countingStates;
             this.stateMap = stateMap;
             this.solver = ((CABA<S>)Algebra).builder.solver;
+            this.counters = new ICounter[countingStates.Count];
+            foreach (var pair in countingStates)
+                counters[pair.Value.CounterId] = pair.Value;
         }
 
         /// <summary>
@@ -135,6 +139,16 @@ namespace Microsoft.Automata
         }
 
         /// <summary>
+        /// Returns the counter with the given id
+        /// </summary>
+        /// <param name="q">given counter id</param>
+        public ICounter GetCounterWithId(int counterId)
+        {
+            return counters[counterId];
+        }
+
+
+        /// <summary>
         /// Returns true if q is a counting state and outputs the counter of q.
         /// Returns false otherwise and sets counter to null.
         /// </summary>
@@ -173,14 +187,33 @@ namespace Microsoft.Automata
                     yield return move;
         }
 
-        public IEnumerable<Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>> GetMovesFrom(int sourceState, S minterm)
+        public IEnumerable<Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>> GetMovesFrom(int sourceState, S predicate)
         {
-            foreach (var move in base.GetMovesFrom(sourceState))
+            var moves = base.delta[sourceState];
+            for (int i=0; i < moves.Count; i++)
+            {
+                var move = moves[i];
                 if (move.Label.Item1.IsSomething)
                 {
-                    if (solver.IsSatisfiable(solver.MkAnd(minterm, move.Label.Item1.Element)))
+                    if (solver.IsSatisfiable(solver.MkAnd(predicate, move.Label.Item1.Element)))
                         yield return move;
                 }
+            }
+        }
+
+        public bool HasMovesTo(int targetState, S predicate)
+        {
+            var moves = base.deltaInv[targetState];
+            for (int i = 0; i < moves.Count; i++)
+            {
+                var move = moves[i];
+                if (move.Label.Item1.IsSomething)
+                {
+                    if (solver.IsSatisfiable(solver.MkAnd(predicate, move.Label.Item1.Element)))
+                        return true;
+                }
+            }
+            return false;
         }
 
         public IEnumerable<Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>> GetMovesFrom(IEnumerable<int> sourceStates, S minterm)

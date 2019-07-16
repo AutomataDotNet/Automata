@@ -156,6 +156,7 @@
     <Compile Include="Internal\HashSetSolver.cs" />
     <Compile Include="Internal\IntSet.cs" />
     <Compile Include="Internal\Maybe.cs" />
+    <Compile Include="Internal\SpecialCharacters.cs" />
     <Compile Include="Internal\StateDistinguisher.cs" />
     <Compile Include="Internal\UnicodeCategoryTheory.cs" />
     <Compile Include="Internal\UnicodeCategoryTheoryProviders.cs" />

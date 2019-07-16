@@ -195,19 +195,25 @@ namespace Microsoft.Automata
         public readonly int K;
         CsPred<T> __false;
         CsPred<T> __true;
+        internal ICounter[] counters;
+        public ICounter GetCounter(int i)
+        {
+            return counters[i];
+        }
 
         public readonly CsConditionSeq TrueCsConditionSeq;
         public readonly CsConditionSeq FalseCsConditionSeq;
 
-        public CsAlgebra(IBooleanAlgebra<T> leafAlgebra, int nrOfCountingSets)
+        public CsAlgebra(IBooleanAlgebra<T> leafAlgebra, ICounter[] counters)
         {
+            this.counters = counters;
             this.LeafAlgebra = leafAlgebra;
             this.NodeAlgebra = new BDDAlgebra<T>(leafAlgebra);
             __false = new CsPred<T>(this, (BDD<T>)NodeAlgebra.False);
             __true = new CsPred<T>(this, (BDD<T>)NodeAlgebra.True);
-            this.K = nrOfCountingSets;
-            TrueCsConditionSeq = CsConditionSeq.MkTrue(nrOfCountingSets);
-            FalseCsConditionSeq = CsConditionSeq.MkFalse(nrOfCountingSets);
+            this.K = counters.Length;
+            TrueCsConditionSeq = CsConditionSeq.MkTrue(counters.Length);
+            FalseCsConditionSeq = CsConditionSeq.MkFalse(counters.Length);
         }
 
         public CsPred<T> False

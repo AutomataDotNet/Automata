@@ -105,7 +105,7 @@ namespace Microsoft.Automata.DirectedGraphs
             foreach (int state in fa.GetStates())
                 if (state == fa.InitialState && fa.IsFinalState(state))
                 {
-                    tw.WriteLine("<Node Id=\"{0}\" Label=\"{1}\" Category=\"State\" >", state, fa.DescribeState(state));
+                    tw.WriteLine("<Node Id=\"{0}\" Label=\"{1}\" Category=\"State\" >", state, EncodeChars(fa.DescribeState(state)));
                     if (!finalMoves.ContainsKey(state))
                     {
                         //if (IsEpsilonState(state))
@@ -125,13 +125,13 @@ namespace Microsoft.Automata.DirectedGraphs
                 }
                 else if (state == fa.InitialState)
                 {
-                    tw.WriteLine("<Node Id=\"{0}\" Label=\"{1}\" Category=\"State\" >", state, fa.DescribeState(state));
+                    tw.WriteLine("<Node Id=\"{0}\" Label=\"{1}\" Category=\"State\" >", state, EncodeChars(fa.DescribeState(state)));
                     tw.WriteLine("<Category Ref=\"InitialState\" />");
                     tw.WriteLine("</Node>");
                 }
                 else if (fa.IsFinalState(state))
                 {
-                    tw.WriteLine("<Node Id=\"{0}\" Label=\"{1}\" Category=\"State\" >", state, fa.DescribeState(state));
+                    tw.WriteLine("<Node Id=\"{0}\" Label=\"{1}\" Category=\"State\" >", state, EncodeChars(fa.DescribeState(state)));
                     if (!finalMoves.ContainsKey(state))
                     {
                         //if (IsEpsilonState(state))
@@ -149,10 +149,10 @@ namespace Microsoft.Automata.DirectedGraphs
                     }
                 }
                 else
-                    tw.WriteLine("<Node Id=\"{0}\" Label=\"{1}\" Category=\"State\" />", state, fa.DescribeState(state));
+                    tw.WriteLine("<Node Id=\"{0}\" Label=\"{1}\" Category=\"State\" />", state, EncodeChars(fa.DescribeState(state)));
             tw.WriteLine("</Nodes>");
             tw.WriteLine("<Links>");
-            tw.WriteLine("<Link Source=\"init\" Target=\"{0}\" Label=\"{1}\" Category=\"StartTransition\" />", fa.InitialState, fa.DescribeStartLabel());
+            tw.WriteLine("<Link Source=\"init\" Target=\"{0}\" Label=\"{1}\" Category=\"StartTransition\" />", fa.InitialState, EncodeChars(fa.DescribeStartLabel()));
             foreach (var move in epsilonmoves)
                 tw.WriteLine("<Link Source=\"{0}\" Target=\"{1}\" Category=\"EpsilonTransition\" />", move.SourceState, move.TargetState);
 
@@ -215,7 +215,8 @@ namespace Microsoft.Automata.DirectedGraphs
 
         private static string EncodeChars(string s)
         {
-            return s.Replace("&true", "").Replace("&", "&amp;").Replace("\n", "&#xA;").Replace("<", "&lt;").Replace(">", "&gt;").Replace(@"\\", @"\").Replace("\"", "&quot;").Replace("\u0001", "\\u0001");
+            var v = System.Net.WebUtility.HtmlEncode(s).Replace("\n", "&#13;");
+            return v;
         }
 
         private static void WriteCategoriesAndStyles(System.IO.TextWriter tw)

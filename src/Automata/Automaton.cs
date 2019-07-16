@@ -16,7 +16,7 @@ namespace Microsoft.Automata
     public class Automaton<T> : IAutomaton<T>
     {
         protected Dictionary<int, List<Move<T>>> delta;
-        private Dictionary<int, List<Move<T>>> deltaInv;
+        protected Dictionary<int, List<Move<T>>> deltaInv;
         private int initialState;
         private HashSet<int> finalStateSet;
         private int maxState;
