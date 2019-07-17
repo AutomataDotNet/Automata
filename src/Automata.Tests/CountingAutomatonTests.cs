@@ -169,7 +169,9 @@ namespace Automata.Tests
             Assert.IsTrue(q1.ConcatCount == 2);
             var aut = q1.CreateCountingAutomaton();
             Assert.IsTrue(aut.NrOfCounters == 1);
-            //aut.ShowGraph("ATVARunningExample");
+            aut.ShowGraph("ATVARunningExample");
+            var CsA = CsAutomaton<ulong>.CreateFrom(aut);
+            CsA.ShowGraph("ATVARunningExample_det");
         }
 
         [TestMethod]
@@ -349,7 +351,8 @@ namespace Automata.Tests
             var aut = sr.Pattern.CreateCountingAutomaton();
             //aut.ShowGraph("CsAutomatonConstruction2_nondet");
             var det = CsAutomaton<ulong>.CreateFrom(aut);
-            //det.ShowGraph("CsAutomatonConstruction2_det");
+            //det.ShowGraph("CsAutomatonConstruction2_det_dbg",true);
+            //det.ShowGraph("CsAutomatonConstruction2_det", true);
             Assert.IsTrue(det.StateCount == 4);
         }
 
@@ -384,6 +387,33 @@ namespace Automata.Tests
                 Assert.IsFalse(ca.IsMatch(str));
                 Assert.IsFalse(regex.IsMatch(str));
             }
+        }
+
+        [TestMethod]
+        public void TestCA_TrickyCase()
+        {
+            var regex = new Regex("(.{3,6}.{4,8})*", RegexOptions.Singleline);
+            var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
+            var q1 = sr.Pattern;
+            var aut = q1.CreateCountingAutomaton();
+            Assert.IsTrue(aut.NrOfCounters == 2);
+            aut.ShowGraph("TrickyCase_NCA");
+            var CsA = CsAutomaton<ulong>.CreateFrom(aut);
+            CsA.ShowGraph("TrickyCase_DCA");
+        }
+
+        [TestMethod]
+        public void TestCA_TrickyCase2()
+        {
+            var regex = new Regex("d{1,2}aUa|d{1,2}aOa", RegexOptions.Singleline);
+            var sr = (SymbolicRegex<ulong>)regex.Compile(false, false);
+            var q1 = sr.Pattern;
+            var aut = q1.CreateCountingAutomaton();
+            Assert.IsTrue(aut.NrOfCounters == 2);
+            aut.ShowGraph("TrickyCase2_NCA");
+            var CsA = CsAutomaton<ulong>.CreateFrom(aut);
+            CsA.ShowGraph("TrickyCase2_DCA_dbg",true);
+            CsA.ShowGraph("TrickyCase2_DCA");
         }
     }
 }

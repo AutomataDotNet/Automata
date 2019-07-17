@@ -61,12 +61,15 @@ namespace Microsoft.Automata
             else
                 s = stateMap[state].ToString();
             if (IsCountingState(state))
-                s += "&#13;(c" + countingStates[state].CounterId.ToString() + ")";
+                s += "\n(" + SpecialCharacters.Cntr(countingStates[state].CounterId) + ")";
             if (IsFinalState(state) && IsCountingState(state))
             {
                 var f = GetFinalStateCondition(state);
-                if (f.Length > 0)
-                    s += f.ToString();
+                for (int i = 0; i < f.Length; i++)
+                {
+                    var op = f[i];
+                    s += op.ToString() + ";";
+                }
             }
             return s;
         }
@@ -76,7 +79,7 @@ namespace Microsoft.Automata
             if (IsCountingState(InitialState))
             {
                 var c = countingStates[InitialState];
-                return string.Format("c{0}:=0", c.CounterId);
+                return string.Format("{0}{1}0", SpecialCharacters.Cntr(c.CounterId),SpecialCharacters.ASSIGN);
             }
             else
                 return "";
@@ -146,7 +149,6 @@ namespace Microsoft.Automata
         {
             return counters[counterId];
         }
-
 
         /// <summary>
         /// Returns true if q is a counting state and outputs the counter of q.
@@ -649,17 +651,17 @@ namespace Microsoft.Automata
                     if (t.Item2[i].Counter.LowerBound == t.Item2[i].Counter.UpperBound)
                     {
                         if (s != "")
-                            s += " & ";
-                        s += string.Format("c{0}=={1}", t.Item2[i].Counter.CounterId, t.Item2[i].Counter.LowerBound);
+                            s += SpecialCharacters.AND;
+                        s += string.Format("{0}={1}", SpecialCharacters.Cntr(t.Item2[i].Counter.CounterId), t.Item2[i].Counter.LowerBound);
                     }
                     else if (t.Item2[i].Counter.LowerBound > 0)
                     {
                         if (s != "")
-                            s += " & ";
-                        s += string.Format("c{0}>={1}", t.Item2[i].Counter.CounterId, t.Item2[i].Counter.LowerBound);
+                            s += SpecialCharacters.AND;
+                        s += string.Format("{0}{1}{2}", SpecialCharacters.Cntr(t.Item2[i].Counter.CounterId), SpecialCharacters.GEQ, t.Item2[i].Counter.LowerBound);
                     }
                 }
-                return "F:" + (s == "" ? "true" : s);
+                return "F:" + (s == "" ? SpecialCharacters.TOP.ToString() : s);
             }
         }
 
