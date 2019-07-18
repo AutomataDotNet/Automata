@@ -22,6 +22,10 @@ namespace Microsoft.Automata
         public static char NOTEXISTS = '\u2204';
         //set operations
         public static char EMPTYSET = '\u2205';
+        public static char UNION = '\u222A';
+        public static char INTERSECT = '\u2229';
+        public static char IN = '\u2208';
+        public static char NOTIN = '\u2209';
         //misc
         public static char ASSIGN = '\u2254';
         public static char SUBSCRIPTMINUS = '\u208B';

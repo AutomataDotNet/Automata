@@ -302,6 +302,8 @@ namespace Microsoft.Automata
             foreach (var psi in cases)
             {
                 var pp = Guard.Algebra.LeafAlgebra as ICharAlgebra<S>;
+                if (cond != "")
+                    cond += ",\n";
                 cond += (pp != null ? pp.PrettyPrint(psi.Item2) : psi.Item2.ToString());
                 var countercond = (debugmode ? psi.Item1.ToString() : psi.Item1.ToString<S>(Guard.Algebra));
                 if (countercond != SpecialCharacters.TOP.ToString())
@@ -314,7 +316,7 @@ namespace Microsoft.Automata
             else
             {
                 var s = cond;
-                var upd = DescribeCounterUpdate();
+                var upd = DescribeCounterUpdate(debugmode);
                 if (upd != "")
                 {
                     s += ":" + upd;
@@ -323,19 +325,9 @@ namespace Microsoft.Automata
             }
         }
 
-        private string DescribeCounterUpdate()
+        private string DescribeCounterUpdate(bool debugmode)
         {
-            string s = "";
-            for (int i = 0; i < Updates.Length; i++)
-            {
-                if (Updates[i] != CsUpdate.NOOP)
-                {
-                    if (s != "")
-                        s += ";";
-                    s += Updates[i].ToString() + "(c" + SpecialCharacters.ToSubscript(i) + ")";
-                }
-            }
-            return s;
+            return Updates.ToString(debugmode);
         }
     }
 
@@ -547,18 +539,67 @@ namespace Microsoft.Automata
         {
             string s = "";
             for (int i = 0; i < Length; i++)
-            {
                 if (this[i] != CsUpdate.NOOP)
-                {
-                    if (s != "")
-                        s += ";";
-                    s += string.Format("{0}({1})", this[i], i);
-                }
+                    s += string.Format("{0}({1});", this[i], SpecialCharacters.Cntr(i));
+            return s;
+        }
+
+        internal string ToString(bool debugmode)
+        {
+            if (debugmode)
+            {
+                return ToString();
             }
-            if (s == "")
-                return "NOOP";
             else
+            {
+                string s = "";
+                for (int i = 0; i < Length; i++)
+                {
+                    switch (this[i])
+                    {
+                        case CsUpdate.INCR:
+                            {
+                                s += string.Format("{0}++;", SpecialCharacters.Cntr(i));
+                                break;
+                            }
+                        case CsUpdate.INCR0:
+                            {
+                                s += string.Format("{0}++{{0}};", SpecialCharacters.Cntr(i));
+                                break;
+                            }
+                        case CsUpdate.INCR1:
+                            {
+                                s += string.Format("{0}++{{1}};", SpecialCharacters.Cntr(i));
+                                break;
+                            }
+                        case CsUpdate.INCR01:
+                            {
+                                s += string.Format("{0}++{{0,1}};", SpecialCharacters.Cntr(i));
+                                break;
+                            }
+                        case CsUpdate.SET0:
+                            {
+                                s += string.Format("{0}{1}{{0}};", SpecialCharacters.Cntr(i), SpecialCharacters.ASSIGN);
+                                break;
+                            }
+                        case CsUpdate.SET1:
+                            {
+                                s += string.Format("{0}{1}{{1}};", SpecialCharacters.Cntr(i), SpecialCharacters.ASSIGN);
+                                break;
+                            }
+                        case CsUpdate.SET01:
+                            {
+                                s += string.Format("{0}{1}{{0,1}};", SpecialCharacters.Cntr(i), SpecialCharacters.ASSIGN);
+                                break;
+                            }
+                        default:
+                            {
+                                break;
+                            }
+                    }
+                }
                 return s;
+            }
         }
     }
 
@@ -696,9 +737,11 @@ namespace Microsoft.Automata
                 case CsCondition.CANNOTEXIT:
                     return string.Format("{0}{1}{2}", SpecialCharacters.Cntr(i), SpecialCharacters.NOTGEQ, algebra.GetCounter(i).LowerBound);
                 case CsCondition.CANLOOP:
-                    return string.Format("{0}+1{1}{2}", SpecialCharacters.Cntr(i), SpecialCharacters.NEQ, SpecialCharacters.EMPTYSET);
+                    //return string.Format("{0}+1{1}{2}", SpecialCharacters.Cntr(i), SpecialCharacters.NEQ, SpecialCharacters.EMPTYSET);
+                    return string.Format("{0}x{1}{2}(x<{3})", SpecialCharacters.EXISTS, SpecialCharacters.IN, SpecialCharacters.Cntr(i), algebra.GetCounter(i).UpperBound);
                 case CsCondition.CANNOTLOOP:
-                    return string.Format("{0}+1{1}{2}", SpecialCharacters.Cntr(i), "=", SpecialCharacters.EMPTYSET);
+                    //return string.Format("{0}+1{1}{2}", SpecialCharacters.Cntr(i), "=", SpecialCharacters.EMPTYSET);
+                    return string.Format("{0}x{1}{2}(x<{3})", SpecialCharacters.NOTEXISTS, SpecialCharacters.IN, SpecialCharacters.Cntr(i), algebra.GetCounter(i).UpperBound);
                 case CsCondition.MIDDLE:
                     return string.Format("{0}{1}{2}<{3}", algebra.GetCounter(i).LowerBound, SpecialCharacters.LEQ, SpecialCharacters.Cntr(i), algebra.GetCounter(i).UpperBound);
                 case CsCondition.LOWorHIGH:

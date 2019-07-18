@@ -195,6 +195,7 @@ namespace Microsoft.Automata
         public readonly int K;
         CsPred<T> __false;
         CsPred<T> __true;
+
         internal ICounter[] counters;
         public ICounter GetCounter(int i)
         {
