@@ -18,6 +18,9 @@ namespace Microsoft.Automata
 
         CsAlgebra<S> productAlgebra;
 
+        /// <summary>
+        /// Underlying Cartesian product algebra
+        /// </summary>
         public CsAlgebra<S> ProductAlgebra
         {
             get
@@ -29,6 +32,7 @@ namespace Microsoft.Automata
         Dictionary<int, HashSet<int>> activeCounterMap;
 
         HashSet<int> finalCounterSet;
+
 
         ICounter[] counters;
 
@@ -68,11 +72,19 @@ namespace Microsoft.Automata
 
         bool __hidePowersets = false;
         internal bool __debugmode = false;
+
         public void ShowGraph(string name = "CsAutomaton", bool debumode = false, bool hidePowersets = false)
         {
             __hidePowersets = hidePowersets;
             __debugmode = debumode;
             base.ShowGraph(name);
+        }
+
+        public void SaveGraph(string name = "CsAutomaton", bool debumode = false, bool hidePowersets = false)
+        {
+            __hidePowersets = hidePowersets;
+            __debugmode = debumode;
+            base.SaveGraph(name);
         }
 
         /// <summary>
@@ -186,6 +198,9 @@ namespace Microsoft.Automata
 
             var csmoves = new List<Move<CsLabel<S>>>();
 
+            //make disjunction of the guards of transitions with same update sequence
+            var trans = new Dictionary<Tuple<int,int>,Dictionary<CsUpdateSeq, CsPred<S>>>();
+
             foreach (var dmove in det.GetMoves())
             { 
                 foreach (var prodcond in dmove.Label.GetSumOfProducts())
@@ -199,13 +214,63 @@ namespace Microsoft.Automata
                     var counterGuard = prodcond.Item1 & counterFilter[dmove.SourceState];
                     if (counterGuard.IsSatisfiable)
                     {
+                        #region replace set with incr if possible
+                        for (int i = 0; i < upd.Length; i++)
+                        {
+                            var guard_i = counterGuard[i];
+                            if (guard_i == CsCondition.HIGH)
+                            {
+                                var upd_i = upd[i];
+                                switch (upd_i)
+                                {
+                                    case CsUpdate.SET0:
+                                        upd = upd.Set(i, CsUpdate.INCR0);
+                                        break;
+                                    case CsUpdate.SET1:
+                                        upd = upd.Set(i, CsUpdate.INCR1);
+                                        break;
+                                    case CsUpdate.SET01:
+                                        upd = upd.Set(i, CsUpdate.INCR01);
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            }
+                        }
+                        #endregion
+
                         var guard = alg.MkPredicate(prodcond.Item2, counterGuard);
-                        csmoves.Add(Move<CsLabel<S>>.Create(dmove.SourceState, dmove.TargetState, CsLabel<S>.MkTransitionLabel(guard, upd, ((CABA<S>)ca.Algebra).builder.solver.PrettyPrint)));
+                        var statepair = new Tuple<int, int>(dmove.SourceState, dmove.TargetState);
+                        Dictionary<CsUpdateSeq, CsPred<S>> labels;
+                        if (!trans.TryGetValue(statepair, out labels))
+                        {
+                            labels = new Dictionary<CsUpdateSeq, CsPred<S>>();
+                            trans[statepair] = labels;
+                        }
+                        CsPred<S> pred;
+                        if (!labels.TryGetValue(upd, out pred))
+                            pred = guard;
+                        else
+                            pred = guard | pred;
+                        labels[upd] = pred;
                     }
                     else
                     {
                         ;
                     }
+                }
+            }
+
+            Func<S,string> pp = ((CABA<S>)ca.Algebra).builder.solver.PrettyPrint;
+            foreach (var entry in trans)
+            {
+                var s = entry.Key.Item1;
+                var t = entry.Key.Item2;
+                foreach (var label in entry.Value)
+                {
+                    var upd = label.Key;
+                    var psi = label.Value;
+                    csmoves.Add(Move<CsLabel<S>>.Create(s, t, CsLabel<S>.MkTransitionLabel(psi, upd, pp)));
                 }
             }
 
@@ -498,22 +563,29 @@ namespace Microsoft.Automata
             }
         }
 
-        public override bool Equals(object obj)
-        {
-            return vals == ((CsUpdateSeq)obj).vals;
-        }
-
-        public override int GetHashCode()
-        {
-            return vals.GetHashCode();
-        }
-
         public CsUpdateSeq Or(int i, CsUpdate upd)
         {
             ulong bit = ((ulong)1) << i;
             ulong set0 = vals.Item2;
             ulong set1 = vals.Item3;
             ulong incr = vals.Item4;
+            if (upd.HasFlag(CsUpdate.SET0))
+                set0 = set0 | bit;
+            if (upd.HasFlag(CsUpdate.SET1))
+                set1 = set1 | bit;
+            if (upd.HasFlag(CsUpdate.INCR))
+                incr = incr | bit;
+            CsUpdateSeq res = new CsUpdateSeq(vals.Item1, set0, set1, incr);
+            return res;
+        }
+
+        public CsUpdateSeq Set(int i, CsUpdate upd)
+        {
+            ulong bit = ((ulong)1) << i;
+            var mask = ~bit;
+            ulong set0 = vals.Item2 & mask;
+            ulong set1 = vals.Item3 & mask;
+            ulong incr = vals.Item4 & mask;
             if (upd.HasFlag(CsUpdate.SET0))
                 set0 = set0 | bit;
             if (upd.HasFlag(CsUpdate.SET1))
@@ -600,6 +672,16 @@ namespace Microsoft.Automata
                 }
                 return s;
             }
+        }
+
+        public override bool Equals(object obj)
+        {
+            return vals.Equals(((CsUpdateSeq)obj).vals);
+        }
+
+        public override int GetHashCode()
+        {
+            return vals.GetHashCode();
         }
     }
 

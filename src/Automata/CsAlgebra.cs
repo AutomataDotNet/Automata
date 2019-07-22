@@ -102,29 +102,36 @@ namespace Microsoft.Automata
                 bool is_canexit_bit = (bdd.Ordinal % 2 == 0);
                 //counter id
                 int i = bdd.Ordinal / 2;
-                foreach (var path in EnumerateCases((BDD<T>)bdd.Zero))
+                if (bdd.Zero == bdd.One)
                 {
-                    #region Zero branch: means that the bit is 0
-                    var v = path.Item1[i];
-                    if (is_canexit_bit)
-                        v = v & CsCondition.CANNOTEXIT; //cannot exit
-                    else
-                        v = v & CsCondition.CANNOTLOOP; //cannot increment
-                    if (v != CsCondition.FALSE) //FALSE means unsatisfiable
-                        yield return new Tuple<CsConditionSeq, T>(path.Item1.And(i, v), path.Item2);
-                    #endregion
+                    ; //TBD
                 }
-                foreach (var path in EnumerateCases((BDD<T>)bdd.One))
+                else
                 {
-                    #region One branch: means that the bit is 1
-                    var v = path.Item1[i];
-                    if (is_canexit_bit)
-                        v = v & CsCondition.CANEXIT; //can exit
-                    else
-                        v = v & CsCondition.CANLOOP; //can increment
-                    if (v != CsCondition.FALSE) //FALSE means unsatisfiable
-                        yield return new Tuple<CsConditionSeq, T>(path.Item1.And(i, v), path.Item2);
-                    #endregion
+                    foreach (var path in EnumerateCases((BDD<T>)bdd.Zero))
+                    {
+                        #region Zero branch: means that the bit is 0
+                        var v = path.Item1[i];
+                        if (is_canexit_bit)
+                            v = v & CsCondition.CANNOTEXIT; //cannot exit
+                        else
+                            v = v & CsCondition.CANNOTLOOP; //cannot increment
+                        if (v != CsCondition.FALSE) //FALSE means unsatisfiable
+                            yield return new Tuple<CsConditionSeq, T>(path.Item1.And(i, v), path.Item2);
+                        #endregion
+                    }
+                    foreach (var path in EnumerateCases((BDD<T>)bdd.One))
+                    {
+                        #region One branch: means that the bit is 1
+                        var v = path.Item1[i];
+                        if (is_canexit_bit)
+                            v = v & CsCondition.CANEXIT; //can exit
+                        else
+                            v = v & CsCondition.CANLOOP; //can increment
+                        if (v != CsCondition.FALSE) //FALSE means unsatisfiable
+                            yield return new Tuple<CsConditionSeq, T>(path.Item1.And(i, v), path.Item2);
+                        #endregion
+                    }
                 }
             }
         }

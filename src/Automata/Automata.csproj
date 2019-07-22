@@ -41,6 +41,7 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Optimize>false</Optimize>
+    <UseVSHostingProcess>true</UseVSHostingProcess>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
     <OutputPath>bin\x64\Release\</OutputPath>
@@ -81,6 +82,9 @@
     <StartupObject />
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="envdte, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Numerics" />
     <Reference Include="System.Numerics.Vectors, Version=4.1.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
@@ -102,6 +106,7 @@
     <Compile Include="CountingAutomaton.cs" />
     <Compile Include="CountingSetAutomaton.cs" />
     <Compile Include="CsAlgebra.cs" />
+    <Compile Include="DirectedGraphs\DgmlWriter.cs" />
     <Compile Include="Interfaces\ICounter.cs" />
     <Compile Include="Interfaces\ICountingSet.cs" />
     <Compile Include="Internal\AutomataAlgebra.cs" />
@@ -149,7 +154,6 @@
     <Compile Include="Interfaces\ITransducer.cs" />
     <Compile Include="Interfaces\IValue.cs" />
     <Compile Include="Internal\CharRangeSolver.cs" />
-    <Compile Include="DirectedGraphs\DgmlWriter.cs" />
     <Compile Include="DirectedGraphs\DotWriter.cs" />
     <Compile Include="Generated\IgnoreCaseRelation.cs" />
     <Compile Include="Generated\UnicodeCategoryRanges.cs" />

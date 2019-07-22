@@ -366,6 +366,15 @@ namespace Microsoft.Automata
             }
         }
 
+        public void SaveGraph(string name = "Automaton")
+        {
+            var pp = algebra as IPrettyPrinter<T>;
+            if (pp != null)
+                DirectedGraphs.DgmlWriter.SaveGraph<T>(-1, this, name, pp.PrettyPrint);
+            else
+                DirectedGraphs.DgmlWriter.SaveGraph<T>(-1, this, name);
+        }
+
         /// <summary>
         /// Returns all states that are reachable via epsilon moves, including the state itself.
         /// </summary>

@@ -19,11 +19,14 @@ namespace Automata.Tests
     [TestClass]
     public class CountingAutomatonTests
     {
+        static object dte = null;
+
         [ClassInitialize]
         static public void Initialize(TestContext context)
         {
             //increase label length for viewing
             Microsoft.Automata.DirectedGraphs.Options.MaxDgmlTransitionLabelLength = 500;
+            //dte = System.Runtime.InteropServices.Marshal.GetActiveObject("VisualStudio.DTE.14.0");
         }
 
         [TestMethod]
@@ -34,7 +37,7 @@ namespace Automata.Tests
             var aut = q1.CreateCountingAutomaton();
             Assert.IsTrue(aut.StateCount == 2);
             Assert.IsTrue(aut.NrOfCounters == 1);
-            //aut.ShowGraph("a3");
+            aut.ShowGraph("aaa");
         }
 
         [TestMethod]
@@ -397,9 +400,10 @@ namespace Automata.Tests
             var q1 = sr.Pattern;
             var aut = q1.CreateCountingAutomaton();
             Assert.IsTrue(aut.NrOfCounters == 2);
-            aut.ShowGraph("TrickyCase_NCA");
             var CsA = CsAutomaton<ulong>.CreateFrom(aut);
-            CsA.ShowGraph("TrickyCase_DCA");
+            aut.ShowGraph("TrickyCase_NCA", true);
+            CsA.ShowGraph("TrickyCase_DCA_dbg", true, false);
+            CsA.ShowGraph("TrickyCase_DCA", false, true);
         }
 
         [TestMethod]
@@ -410,10 +414,10 @@ namespace Automata.Tests
             var q1 = sr.Pattern;
             var aut = q1.CreateCountingAutomaton();
             Assert.IsTrue(aut.NrOfCounters == 2);
-            aut.ShowGraph("TrickyCase2_NCA");
             var CsA = CsAutomaton<ulong>.CreateFrom(aut);
-            CsA.ShowGraph("TrickyCase2_DCA_dbg",true);
-            CsA.ShowGraph("TrickyCase2_DCA");
+            aut.ShowGraph("TrickyCase2_NCA", true);
+            CsA.ShowGraph("TrickyCase2_DCA_dbg", true, false);
+            CsA.ShowGraph("TrickyCase2_DCA", false, true);
         }
     }
 }

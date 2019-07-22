@@ -237,6 +237,12 @@ namespace Microsoft.Automata
             base.ShowGraph(name);
         }
 
+        public void SaveGraph(string name = "CountingAutomaton", bool hideDerivatives = false)
+        {
+            __hideDerivativesInViewer = hideDerivatives;
+            base.SaveGraph(name);
+        }
+
         /// <summary>
         /// Returns true if the input string is accepted by this counting automaton
         /// </summary>
