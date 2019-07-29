@@ -38,6 +38,8 @@ namespace Automata.Tests
             Assert.IsTrue(aut.StateCount == 2);
             Assert.IsTrue(aut.NrOfCounters == 1);
             aut.ShowGraph("aaa");
+            var daut = CsAutomaton<ulong>.CreateFrom(aut);
+            daut.ShowGraph("aaa_det", true);
         }
 
         [TestMethod]
@@ -54,13 +56,15 @@ namespace Automata.Tests
         [TestMethod]
         public void TestCA_LoopTwice()
         {
-            var regex = new Regex("a{9}a{9}", RegexOptions.Singleline);
+            var regex = new Regex("[ab]{5,9}[bc]{7,19}", RegexOptions.Singleline);
             var q1 = ((SymbolicRegex<ulong>)regex.Compile(true, false)).Pattern;
             var aut = q1.CreateCountingAutomaton();
-            Assert.IsTrue(aut.NrOfCounters == 2);
-            Assert.IsTrue(aut.MoveCount == 4);
-            Assert.IsTrue(aut.NrOfCounters == 2);
-            //aut.ShowGraph("LoopTwice",true);
+            var daut = CsAutomaton<ulong>.CreateFrom(aut);
+            //Assert.IsTrue(aut.NrOfCounters == 2);
+            //Assert.IsTrue(aut.MoveCount == 4);
+            //Assert.IsTrue(aut.NrOfCounters == 2);
+            aut.ShowGraph("LoopTwice",true);
+            daut.ShowGraph("LoopTwice_det", true);
         }
 
         [TestMethod]
@@ -165,7 +169,7 @@ namespace Automata.Tests
         [TestMethod]
         public void TestCA_ATVARunningExample()
         {
-            var regex = new Regex(".*a.{10}", RegexOptions.Singleline);
+            var regex = new Regex(".*a.{300}", RegexOptions.Singleline);
             var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
             var q1 = sr.Pattern;
             Assert.IsTrue(q1.kind == SymbolicRegexKind.Concat);
@@ -174,7 +178,7 @@ namespace Automata.Tests
             Assert.IsTrue(aut.NrOfCounters == 1);
             aut.ShowGraph("ATVARunningExample");
             var CsA = CsAutomaton<ulong>.CreateFrom(aut);
-            CsA.ShowGraph("ATVARunningExample_det");
+            CsA.ShowGraph("ATVARunningExample_det", true);
         }
 
         [TestMethod]
@@ -395,7 +399,7 @@ namespace Automata.Tests
         [TestMethod]
         public void TestCA_TrickyCase()
         {
-            var regex = new Regex("(.{3,6}.{4,8})*", RegexOptions.Singleline);
+            var regex = new Regex("([ab]{3,6}[bc]{4,8})*", RegexOptions.Singleline);
             var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
             var q1 = sr.Pattern;
             var aut = q1.CreateCountingAutomaton();
@@ -409,7 +413,7 @@ namespace Automata.Tests
         [TestMethod]
         public void TestCA_TrickyCase2()
         {
-            var regex = new Regex("d{1,2}aUa|d{1,2}aOa", RegexOptions.Singleline);
+            var regex = new Regex("d{1,20}aUa$|d{1,20}aOa$", RegexOptions.Singleline);
             var sr = (SymbolicRegex<ulong>)regex.Compile(false, false);
             var q1 = sr.Pattern;
             var aut = q1.CreateCountingAutomaton();

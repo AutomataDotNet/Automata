@@ -368,7 +368,7 @@ namespace Microsoft.Automata
             {
                 var pp = Guard.Algebra.LeafAlgebra as ICharAlgebra<S>;
                 if (cond != "")
-                    cond += ",\n";
+                    cond += SpecialCharacters.OR + "\n";
                 cond += (pp != null ? pp.PrettyPrint(psi.Item2) : psi.Item2.ToString());
                 var countercond = (debugmode ? psi.Item1.ToString() : psi.Item1.ToString<S>(Guard.Algebra));
                 if (countercond != SpecialCharacters.TOP.ToString())
@@ -811,7 +811,7 @@ namespace Microsoft.Automata
                 case CsCondition.NONEMPTY:
                     return string.Format("{0}{1}{2}", SpecialCharacters.Cntr(i), SpecialCharacters.NEQ, SpecialCharacters.EMPTYSET);
                 case CsCondition.LOW:
-                    return string.Format("{0}<{1}", SpecialCharacters.Cntr(i), algebra.GetCounter(i).LowerBound);
+                    return string.Format("{0}{2}{3}{4}max({0})<{1}", SpecialCharacters.Cntr(i), algebra.GetCounter(i).LowerBound, SpecialCharacters.NEQ, SpecialCharacters.EMPTYSET, SpecialCharacters.AND);
                 case CsCondition.HIGH:
                     return string.Format("{0}={{{1}}}", SpecialCharacters.Cntr(i), algebra.GetCounter(i).UpperBound);
                 case CsCondition.CANEXIT:
@@ -825,7 +825,7 @@ namespace Microsoft.Automata
                     //return string.Format("{0}+1{1}{2}", SpecialCharacters.Cntr(i), "=", SpecialCharacters.EMPTYSET);
                     return string.Format("{0}x{1}{2}(x<{3})", SpecialCharacters.NOTEXISTS, SpecialCharacters.IN, SpecialCharacters.Cntr(i), algebra.GetCounter(i).UpperBound);
                 case CsCondition.MIDDLE:
-                    return string.Format("{0}{1}{2}<{3}", algebra.GetCounter(i).LowerBound, SpecialCharacters.LEQ, SpecialCharacters.Cntr(i), algebra.GetCounter(i).UpperBound);
+                    return string.Format("{2}{4}{5}{6}{0}{1}max({2})<{3}", algebra.GetCounter(i).LowerBound, SpecialCharacters.LEQ, SpecialCharacters.Cntr(i), algebra.GetCounter(i).UpperBound, SpecialCharacters.NEQ, SpecialCharacters.EMPTYSET, SpecialCharacters.AND);
                 case CsCondition.LOWorHIGH:
                     return string.Format("({0}{1}{2})", DescribeCondition<S>(algebra, CsCondition.LOW, i), SpecialCharacters.OR, DescribeCondition<S>(algebra, CsCondition.HIGH, i));
                 default:

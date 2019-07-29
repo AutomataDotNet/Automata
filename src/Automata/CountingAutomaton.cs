@@ -538,7 +538,8 @@ namespace Microsoft.Automata
                             {
                                 var op = mv.Label.Item2[0];
                                 if (guard[p_counter.CounterId].HasFlag(CsCondition.LOW) ||
-                                    guard[p_counter.CounterId].HasFlag(CsCondition.MIDDLE))
+                                    guard[p_counter.CounterId].HasFlag(CsCondition.MIDDLE) ||
+                                    guard[p_counter.CounterId].HasFlag(CsCondition.HIGH))
                                 {
                                     if (op.OperationKind == CounterOp.INCR)
                                     {

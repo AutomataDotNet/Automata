@@ -92,9 +92,16 @@ namespace Microsoft.Automata.DirectedGraphs
             #endregion
             SaveGraph(k, fa, filename, describeS);
             #region Open the dgml file in VS
-            var dir = System.Environment.CurrentDirectory;
-            var fullfilename = dir + "/" + filename;
-            dte.ExecuteCommand("File.OpenFile", dir + "/" + filename);
+            try
+            {
+                var dir = System.Environment.CurrentDirectory;
+                var fullfilename = dir + "/" + filename;
+                dte.ExecuteCommand("File.OpenFile", dir + "/" + filename);
+            }
+            catch
+            {
+                OpenFileInNewProcess(filename);
+            }
             #endregion
         }
 

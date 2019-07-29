@@ -725,21 +725,29 @@ namespace Microsoft.Automata
                 case RegexNode.Eol:
                     return this.srBuilder.eolAnchor;
                 case RegexNode.Loop:
-                    return this.srBuilder.MkLoop(ConvertNodeToSymbolicRegex(node._children[0]), node._m, node._n);
+                    return this.srBuilder.MkLoop(ConvertNodeToSymbolicRegex(node._children[0]), false, node._m, node._n);
+                case RegexNode.Lazyloop:
+                    return this.srBuilder.MkLoop(ConvertNodeToSymbolicRegex(node._children[0]), true, node._m, node._n);
                 case RegexNode.Multi:
                     return ConvertNodeMultiToSymbolicRegex(node);
                 case RegexNode.Notone:
                     return ConvertNodeNotoneToSymbolicRegex(node);
                 case RegexNode.Notoneloop:
-                    return ConvertNodeNotoneloopToSymbolicRegex(node);
+                    return ConvertNodeNotoneloopToSymbolicRegex(node, false);
+                case RegexNode.Notonelazy:
+                    return ConvertNodeNotoneloopToSymbolicRegex(node, true);
                 case RegexNode.One:
                     return ConvertNodeOneToSymbolicRegex(node);
                 case RegexNode.Oneloop:
-                    return ConvertNodeOneloopToSymbolicRegex(node);
+                    return ConvertNodeOneloopToSymbolicRegex(node, false);
+                case RegexNode.Onelazy:
+                    return ConvertNodeOneloopToSymbolicRegex(node, true);
                 case RegexNode.Set:
                     return ConvertNodeSetToSymbolicRegex(node);
                 case RegexNode.Setloop:
-                    return ConvertNodeSetloopToSymbolicRegex(node);
+                    return ConvertNodeSetloopToSymbolicRegex(node, false);
+                case RegexNode.Setlazy:
+                    return ConvertNodeSetloopToSymbolicRegex(node, true);
                 case RegexNode.Testgroup:
                     return MkIfThenElse(ConvertNodeToSymbolicRegex(node._children[0]), ConvertNodeToSymbolicRegex(node._children[1]), ConvertNodeToSymbolicRegex(node._children[2]));
                 case RegexNode.ECMABoundary:
@@ -750,14 +758,6 @@ namespace Microsoft.Automata
                     throw new AutomataException(@"Not implemented: non-word-boundary \B");
                 case RegexNode.Nothing:
                     throw new AutomataException(@"Not implemented: Nothing");
-                case RegexNode.Lazyloop:
-                    throw new AutomataException("Not implemented: lazy constructs *? +? ?? {,}?");
-                case RegexNode.Notonelazy:
-                    throw new AutomataException("Not implemented: lazy loop .*?");
-                case RegexNode.Onelazy:
-                   throw new AutomataException("Not implemented: lazy loop  a*?");
-                case RegexNode.Setlazy:
-                    throw new AutomataException(@"Not implemented: lazy loop \d*?");
                 case RegexNode.Greedy:
                     throw new AutomataException("Not implemented: greedy constructs (?>) (?<)");
                 case RegexNode.Start:
@@ -838,7 +838,7 @@ namespace Microsoft.Automata
             return this.srBuilder.MkSingleton(moveCond);
         }
 
-        private SymbolicRegexNode<S> ConvertNodeNotoneloopToSymbolicRegex(RegexNode node)
+        private SymbolicRegexNode<S> ConvertNodeNotoneloopToSymbolicRegex(RegexNode node, bool isLazy)
         {
             bool ignoreCase = ((node._options & RegexOptions.IgnoreCase) != 0);
             S cond = solver.MkNot(solver.MkCharConstraint(node._ch, ignoreCase));
@@ -846,11 +846,11 @@ namespace Microsoft.Automata
                 description[cond] = string.Format("[^{0}]", Rex.RexEngine.Escape(node._ch));
 
             SymbolicRegexNode<S> body = this.srBuilder.MkSingleton(cond);
-            SymbolicRegexNode<S> loop = this.srBuilder.MkLoop(body, node._m, node._n);
+            SymbolicRegexNode<S> loop = this.srBuilder.MkLoop(body, isLazy, node._m, node._n);
             return loop;
         }
 
-        private SymbolicRegexNode<S> ConvertNodeOneloopToSymbolicRegex(RegexNode node)
+        private SymbolicRegexNode<S> ConvertNodeOneloopToSymbolicRegex(RegexNode node, bool isLazy)
         {
             bool ignoreCase = ((node._options & RegexOptions.IgnoreCase) != 0);
             S cond = solver.MkCharConstraint(node._ch, ignoreCase);
@@ -858,11 +858,11 @@ namespace Microsoft.Automata
                 description[cond] = string.Format("{0}", Rex.RexEngine.Escape(node._ch));
 
             SymbolicRegexNode<S> body = this.srBuilder.MkSingleton(cond);
-            SymbolicRegexNode<S> loop = this.srBuilder.MkLoop(body, node._m, node._n);
+            SymbolicRegexNode<S> loop = this.srBuilder.MkLoop(body, isLazy, node._m, node._n);
             return loop;
         }
 
-        private SymbolicRegexNode<S> ConvertNodeSetloopToSymbolicRegex(RegexNode node)
+        private SymbolicRegexNode<S> ConvertNodeSetloopToSymbolicRegex(RegexNode node, bool isLazy)
         {
             //ranges and categories are encoded in set
             string set = node._str;
@@ -873,7 +873,7 @@ namespace Microsoft.Automata
                 description[moveCond] = RegexCharClass.SetDescription(set);
 
             SymbolicRegexNode<S> body = this.srBuilder.MkSingleton(moveCond);
-            SymbolicRegexNode<S> loop = this.srBuilder.MkLoop(body, node._m, node._n);
+            SymbolicRegexNode<S> loop = this.srBuilder.MkLoop(body, isLazy, node._m, node._n);
             return loop;
         }
 
@@ -914,9 +914,9 @@ namespace Microsoft.Automata
             return this.srBuilder.epsilon;
         }
 
-        public SymbolicRegexNode<S> MkLoop(SymbolicRegexNode<S> regex, int lower = 0, int upper = int.MaxValue)
+        public SymbolicRegexNode<S> MkLoop(SymbolicRegexNode<S> regex, int lower = 0, int upper = int.MaxValue, bool isLazy = false)
         {
-            return this.srBuilder.MkLoop(regex, lower, upper);
+            return this.srBuilder.MkLoop(regex, isLazy, lower, upper);
         }
 
         public SymbolicRegexNode<S> MkStartAnchor()
