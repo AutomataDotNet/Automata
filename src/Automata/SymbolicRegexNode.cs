@@ -485,7 +485,9 @@ namespace Microsoft.Automata
 
         internal static SymbolicRegexNode<S> MkWatchDog(SymbolicRegexBuilder<S> builder, int length)
         {
-            return new SymbolicRegexNode<S>(builder, SymbolicRegexKind.WatchDog, null, null, length, -1, default(S), null, null);
+            var wd = new SymbolicRegexNode<S>(builder, SymbolicRegexKind.WatchDog, null, null, length, -1, default(S), null, null);
+            wd.isNullable = true;
+            return wd;
         }
 
         internal static SymbolicRegexNode<S> MkEpsilon(SymbolicRegexBuilder<S> builder)
@@ -736,7 +738,7 @@ namespace Microsoft.Automata
                     }
                 case SymbolicRegexKind.WatchDog:
                     {
-                        return "$" + SpecialCharacters.ToSubscript(lower);
+                        return "()" + SpecialCharacters.ToSubscript(lower);
                     }
                 case SymbolicRegexKind.Epsilon:
                     {
@@ -834,7 +836,7 @@ namespace Microsoft.Automata
                         }
                     case SymbolicRegexKind.WatchDog:
                         {
-                            sb.Append("$" + SpecialCharacters.ToSubscript(node.lower));
+                            sb.Append("()" + SpecialCharacters.ToSubscript(node.lower));
                             continue;
                         }
                     case SymbolicRegexKind.Singleton:
@@ -1043,14 +1045,6 @@ namespace Microsoft.Automata
         }
 
         /// <summary>
-        /// Produce a string representation of the symbolic regex with explicit start and end anchors. 
-        /// </summary>
-        public string ToStringWithAnchors()
-        {
-            return string.Format("^({0})$", this.ToString());
-        }
-
-        /// <summary>
         /// Transform the symbolic regex so that all singletons have been intersected with the given predicate pred. 
         /// </summary>
         public SymbolicRegexNode<S> Restrict(S pred)
@@ -1114,6 +1108,53 @@ namespace Microsoft.Automata
                             return this;
                         else
                             return builder.MkIfThenElse(cond, truecase, falsecase);
+                    }
+            }
+        }
+
+        /// <summary>
+        /// Returns the fixed matching length of the regex or -1 if the regex does not have a fixed matching length.
+        /// </summary>
+        public int GetFixedLength()
+        {
+            switch (kind)
+            {
+                case SymbolicRegexKind.WatchDog:
+                case SymbolicRegexKind.Epsilon:
+                    return 0;
+                case SymbolicRegexKind.Singleton:
+                    return 1;
+                case SymbolicRegexKind.Loop:
+                    {
+                        if (this.lower == this.upper)
+                        {
+                            var body_length = this.left.GetFixedLength();
+                            if (body_length >= 0)
+                                return this.lower * body_length;
+                            else
+                                return -1;
+                        }
+                        else
+                            return -1;
+                    }
+                case SymbolicRegexKind.Concat:
+                    {
+                        var left_length = this.left.GetFixedLength();
+                        if (left_length >= 0)
+                        {
+                            var right_length = this.right.GetFixedLength();
+                            if (right_length >= 0)
+                                return left_length + right_length;
+                        }
+                        return -1;
+                    }
+                case SymbolicRegexKind.Or:
+                    {
+                        return alts.GetFixedLength();
+                    }
+                default: 
+                    {
+                        return -1;
                     }
             }
         }
@@ -2506,7 +2547,7 @@ namespace Microsoft.Automata
                                 }
                                 else
                                     nodes[lower] = builder.MkLoop(body, isLazyLoop);
-                                return builder.MkConcat(nodes);
+                                return builder.MkConcat(nodes, false);
                             }
                             #endregion
                         }
@@ -2611,7 +2652,7 @@ namespace Microsoft.Automata
         /// </summary>
         public bool CheckIfAllLoopsAreLazy()
         {
-            bool existsEagerLoop =  this.ExistsNode(node => (node.kind == SymbolicRegexKind.Loop && !node.isLazyLoop));
+            bool existsEagerLoop =  this.ExistsNode(node => (node.kind == SymbolicRegexKind.Loop && !node.IsMaybe && !node.isLazyLoop));
             return !existsEagerLoop;
         }
 
@@ -2683,6 +2724,11 @@ namespace Microsoft.Automata
         }
 
         /// <summary>
+        /// if >= 0 then the maximal length of a watchdog in the set
+        /// </summary>
+        internal int watchdog = -1;
+
+        /// <summary>
         /// Denotes the empty conjunction
         /// </summary>
         public bool IsEverything
@@ -2728,10 +2774,15 @@ namespace Microsoft.Automata
         {
             var loops = new Dictionary<Tuple<SymbolicRegexNode<S>, SymbolicRegexNode<S>>, int>();
             var other = new HashSet<SymbolicRegexNode<S>>();
+            int watchdog = -1;
             if (optimizeLoops)
             { 
                 foreach (var elem in elems)
                 {
+                    //keep track of maximal watchdog in the set
+                    if (elem.kind == SymbolicRegexKind.WatchDog && elem.lower > watchdog)
+                        watchdog = elem.lower;
+
                     #region start foreach
                     if (elem == builder.dotStar)
                         return builder.fullSet;
@@ -2867,7 +2918,11 @@ namespace Microsoft.Automata
             if (other.Count == 0 && loops.Count == 0)
                 return builder.emptySet;
             else
-                return new SymbolicRegexSet<S>(builder, SymbolicRegexSetKind.Disjunction,  other, loops);
+            {
+                var disj = new SymbolicRegexSet<S>(builder, SymbolicRegexSetKind.Disjunction, other, loops);
+                disj.watchdog = watchdog;
+                return disj;
+            }
         }
 
         static internal SymbolicRegexSet<S> CreateConjunction(SymbolicRegexBuilder<S> builder, IEnumerable<SymbolicRegexNode<S>> elems)
@@ -3210,6 +3265,27 @@ namespace Microsoft.Automata
         internal void Serialize(StringBuilder sb)
         {
             sb.Append(Serialize());
+        }
+
+        internal int GetFixedLength()
+        {
+            if (loops.Count > 0)
+                return -1;
+            else
+            {
+                int length = -1;
+                foreach (var node in this.set)
+                {
+                    var node_length = node.GetFixedLength();
+                    if (node_length == -1)
+                        return -1;
+                    else if (length == -1)
+                        length = node_length;
+                    else if (length != node_length)
+                        return -1;
+                }
+                return length;
+            }
         }
 
         /// <summary>

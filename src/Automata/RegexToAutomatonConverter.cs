@@ -672,7 +672,7 @@ namespace Microsoft.Automata
 
         internal SymbolicRegexNode<S> ConvertToSymbolicRegex(RegexNode root, bool keepAnchors = false, bool unwindlowerbounds = false)
         {
-            var sregex = ConvertNodeToSymbolicRegex(root);
+            var sregex = ConvertNodeToSymbolicRegex(root, true);
             if (keepAnchors)
             {
                 if (unwindlowerbounds)
@@ -703,20 +703,20 @@ namespace Microsoft.Automata
             return node;
         }
 
-        internal SymbolicRegexNode<S> ConvertNodeToSymbolicRegex(RegexNode node)
+        internal SymbolicRegexNode<S> ConvertNodeToSymbolicRegex(RegexNode node, bool topLevel)
         {
             switch (node._type)
             {
                 case RegexNode.Alternate:
-                    return this.srBuilder.MkOr(Array.ConvertAll(node._children.ToArray(), ConvertNodeToSymbolicRegex));
+                    return this.srBuilder.MkOr(Array.ConvertAll(node._children.ToArray(), x => ConvertNodeToSymbolicRegex(x, topLevel)));
                 case RegexNode.Beginning:
                     return this.srBuilder.startAnchor;
                 case RegexNode.Bol:
                     return this.srBuilder.bolAnchor;
                 case RegexNode.Capture:  //paranthesis (...)
-                    return ConvertNodeToSymbolicRegex(node.Child(0));
+                    return ConvertNodeToSymbolicRegex(node.Child(0), topLevel);
                 case RegexNode.Concatenate:
-                    return this.srBuilder.MkConcat(Array.ConvertAll(node._children.ToArray(), ConvertNodeToSymbolicRegex));
+                    return this.srBuilder.MkConcat(Array.ConvertAll(node._children.ToArray(), x => ConvertNodeToSymbolicRegex(x, false)), topLevel);
                 case RegexNode.Empty:
                     return this.srBuilder.epsilon;
                 case RegexNode.End:
@@ -725,11 +725,11 @@ namespace Microsoft.Automata
                 case RegexNode.Eol:
                     return this.srBuilder.eolAnchor;
                 case RegexNode.Loop:
-                    return this.srBuilder.MkLoop(ConvertNodeToSymbolicRegex(node._children[0]), false, node._m, node._n);
+                    return this.srBuilder.MkLoop(ConvertNodeToSymbolicRegex(node._children[0], false), false, node._m, node._n);
                 case RegexNode.Lazyloop:
-                    return this.srBuilder.MkLoop(ConvertNodeToSymbolicRegex(node._children[0]), true, node._m, node._n);
+                    return this.srBuilder.MkLoop(ConvertNodeToSymbolicRegex(node._children[0], false), true, node._m, node._n);
                 case RegexNode.Multi:
-                    return ConvertNodeMultiToSymbolicRegex(node);
+                    return ConvertNodeMultiToSymbolicRegex(node, topLevel);
                 case RegexNode.Notone:
                     return ConvertNodeNotoneToSymbolicRegex(node);
                 case RegexNode.Notoneloop:
@@ -749,7 +749,7 @@ namespace Microsoft.Automata
                 case RegexNode.Setlazy:
                     return ConvertNodeSetloopToSymbolicRegex(node, true);
                 case RegexNode.Testgroup:
-                    return MkIfThenElse(ConvertNodeToSymbolicRegex(node._children[0]), ConvertNodeToSymbolicRegex(node._children[1]), ConvertNodeToSymbolicRegex(node._children[2]));
+                    return MkIfThenElse(ConvertNodeToSymbolicRegex(node._children[0], false), ConvertNodeToSymbolicRegex(node._children[1], false), ConvertNodeToSymbolicRegex(node._children[2], false));
                 case RegexNode.ECMABoundary:
                 case RegexNode.Boundary:
                     throw new AutomataException(@"Not implemented: word-boundary \b");
@@ -781,15 +781,14 @@ namespace Microsoft.Automata
         /// <summary>
         /// Sequence of characters in node._str
         /// </summary>
-        private SymbolicRegexNode<S> ConvertNodeMultiToSymbolicRegex(RegexNode node)
+        private SymbolicRegexNode<S> ConvertNodeMultiToSymbolicRegex(RegexNode node, bool topLevel)
         {
             //sequence of characters
             string sequence = node._str;
             bool ignoreCase = ((node._options & RegexOptions.IgnoreCase) != 0);
 
             S[] conds = Array.ConvertAll(sequence.ToCharArray(), c => solver.MkCharConstraint(c, ignoreCase));
-
-            var seq = this.srBuilder.MkSequence(conds);
+            var seq = this.srBuilder.MkSequence(conds, topLevel);
             return seq;
         }
 
@@ -906,7 +905,7 @@ namespace Microsoft.Automata
 
         public SymbolicRegexNode<S> MkConcat(params SymbolicRegexNode<S>[] regexes)
         {
-            return this.srBuilder.MkConcat(regexes);
+            return this.srBuilder.MkConcat(regexes, false);
         }
 
         public SymbolicRegexNode<S> MkEpsilon()

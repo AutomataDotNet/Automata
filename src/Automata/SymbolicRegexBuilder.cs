@@ -200,14 +200,6 @@ namespace Microsoft.Automata
                 return SymbolicRegexNode<S>.MkAnd(this, regexset);
         }
 
-        internal SymbolicRegexNode<S> MkConcatWithWatchDogIfPossible(SymbolicRegexNode<S>[] regexes)
-        {
-            var wd = MkWatchDog(regexes.Length);
-            var regexes1 = new List<SymbolicRegexNode<S>>(regexes);
-            regexes1.Add(wd);
-            return MkConcat(regexes1.ToArray());
-        }
-
         /// <summary>
         /// Make a concatenation of given regexes, if any regex is nothing then return nothing, eliminate 
         /// intermediate epsilons
@@ -224,38 +216,49 @@ namespace Microsoft.Automata
 
         /// <summary>
         /// Make a concatenation of given regexes, if any regex is nothing then return nothing, eliminate 
-        /// intermediate epsilons
+        /// intermediate epsilons, if toplevel, add watchdog at the end
         /// </summary>
-        public SymbolicRegexNode<S> MkConcat(SymbolicRegexNode<S>[] regexes)
+        public SymbolicRegexNode<S> MkConcat(SymbolicRegexNode<S>[] regexes, bool topLevel)
         {
             if (regexes.Length == 0)
                 return this.epsilon;
 
-            var sr = regexes[regexes.Length - 1];
-            if (sr == this.nothing)
+            var sr = this.epsilon;
+            int length = CalculateFixedLength(regexes);
+            if (topLevel && length >= 0)
+                sr = MkWatchDog(length);
+
+            //exclude epsilons from the concatenation
+            for (int i = regexes.Length - 1; i >= 0; i--)
             {
-                return this.nothing;
-            }
-            else
-            {
-                //exclude epsilons from the concatenation
-                for (int i = regexes.Length - 2; i >= 0; i--)
+                if (regexes[i] == this.nothing)
                 {
-                    if (regexes[i] == this.nothing)
-                    {
-                        return this.nothing;
-                    }
-                    else if (sr.IsEpsilon)
-                    {
-                        sr = regexes[i];
-                    }
-                    else if (!regexes[i].IsEpsilon)
-                    {
-                        sr = SymbolicRegexNode<S>.MkConcat(this, regexes[i], sr);
-                    }
+                    return this.nothing;
                 }
-                return sr;
+                else if (sr.IsEpsilon)
+                {
+                    sr = regexes[i];
+                }
+                else if (!regexes[i].IsEpsilon)
+                {
+                    sr = SymbolicRegexNode<S>.MkConcat(this, regexes[i], sr);
+                }
             }
+            return sr;
+        }
+
+        private int CalculateFixedLength(SymbolicRegexNode<S>[] regexes)
+        {
+            int length = 0;
+            for (int i=0; i < regexes.Length; i++)
+            {
+                int k = regexes[i].GetFixedLength();
+                if (k < 0)
+                    return -1;
+                else
+                    length += k;
+            }
+            return length;
         }
 
 
@@ -318,7 +321,7 @@ namespace Microsoft.Automata
         /// <summary>
         /// Make a sequence regex, i.e., a concatenation of singletons, with a watchdog at the end
         /// </summary>
-        public SymbolicRegexNode<S> MkSequence(params S[] seq)
+        public SymbolicRegexNode<S> MkSequence(S[] seq, bool topLevel)
         {
             int k = seq.Length;
             if (k == 0)
@@ -327,12 +330,15 @@ namespace Microsoft.Automata
             }
             else if (k == 1)
             {
-                return MkSingleton(seq[0]);
+                if (topLevel)
+                    return MkConcat(MkSingleton(seq[0]), MkWatchDog(1));
+                else
+                    return MkSingleton(seq[0]);
             }
             else
             {
                 var singletons = Array.ConvertAll(seq, MkSingleton);
-                return this.MkConcat(singletons);
+                return this.MkConcat(singletons, topLevel);
             }
         }
 
@@ -475,7 +481,7 @@ namespace Microsoft.Automata
                             {
                                 if (sr.IsStartOfLineAnchor)
                                 {
-                                    return this.bolRegex;
+                                    return this.newLine;
                                 }
                                 else
                                 {
@@ -501,7 +507,7 @@ namespace Microsoft.Automata
                             {
                                 if (sr.IsEndOfLineAnchor)
                                 {
-                                    return this.eolRegex;
+                                    return this.newLine;
                                 }
                                 else
                                 {
@@ -1023,7 +1029,7 @@ namespace Microsoft.Automata
                     {
                         var sr_elems = sr.ToArray();
                         var sr_elems_trasformed = Array.ConvertAll(sr_elems, x => Transform(x, builderT, predicateTransformer));
-                        return builderT.MkConcat(sr_elems_trasformed);
+                        return builderT.MkConcat(sr_elems_trasformed, false);
                     }
                 default: //ITE
                     return
@@ -1117,7 +1123,7 @@ namespace Microsoft.Automata
                         #region concatenation
                         int n;
                         SymbolicRegexNode<S>[] nodes = ParseSequence(s, i + 2, out n);
-                        var concat = this.MkConcat(nodes);
+                        var concat = this.MkConcat(nodes, false);
                         i_next = n;
                         return concat;
                         #endregion

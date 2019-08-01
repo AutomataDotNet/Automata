@@ -129,7 +129,7 @@ namespace Microsoft.Automata
             if (initcounters.MoveNext())
             {
                 var c = initcounters.Current;
-                return string.Format("c{0}={{0}}", SpecialCharacters.ToSubscript(c));
+                return string.Format("{0}={{0}}", SpecialCharacters.Cntr(c));
             }
             else
                 return "";

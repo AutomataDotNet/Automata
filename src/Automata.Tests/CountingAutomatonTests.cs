@@ -37,9 +37,9 @@ namespace Automata.Tests
             var aut = q1.CreateCountingAutomaton();
             Assert.IsTrue(aut.StateCount == 2);
             Assert.IsTrue(aut.NrOfCounters == 1);
-            aut.ShowGraph("aaa");
+            //aut.ShowGraph("aaa");
             var daut = CsAutomaton<ulong>.CreateFrom(aut);
-            daut.ShowGraph("aaa_det", true);
+            //daut.ShowGraph("aaa_det", true);
         }
 
         [TestMethod]
@@ -405,9 +405,9 @@ namespace Automata.Tests
             var aut = q1.CreateCountingAutomaton();
             Assert.IsTrue(aut.NrOfCounters == 2);
             var CsA = CsAutomaton<ulong>.CreateFrom(aut);
-            aut.ShowGraph("TrickyCase_NCA", true);
-            CsA.ShowGraph("TrickyCase_DCA_dbg", true, false);
-            CsA.ShowGraph("TrickyCase_DCA", false, true);
+            //aut.ShowGraph("TrickyCase_NCA", true);
+            //CsA.ShowGraph("TrickyCase_DCA_dbg", true, false);
+            //CsA.ShowGraph("TrickyCase_DCA", false, true);
         }
 
         [TestMethod]
@@ -419,9 +419,10 @@ namespace Automata.Tests
             var aut = q1.CreateCountingAutomaton();
             Assert.IsTrue(aut.NrOfCounters == 2);
             var CsA = CsAutomaton<ulong>.CreateFrom(aut);
-            aut.ShowGraph("TrickyCase2_NCA", true);
-            CsA.ShowGraph("TrickyCase2_DCA_dbg", true, false);
-            CsA.ShowGraph("TrickyCase2_DCA", false, true);
+            //aut.ShowGraph("TrickyCase2_NCA", true);
+            //CsA.ShowGraph("TrickyCase2_DCA_dbg", true, false);
+            //CsA.ShowGraph("TrickyCase2_DCA", false, true);
         }
+
     }
 }

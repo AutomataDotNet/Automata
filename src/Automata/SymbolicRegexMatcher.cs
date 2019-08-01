@@ -1041,16 +1041,17 @@ namespace Microsoft.Automata
 
             bool A_has_nonempty_prefix = (!this.A_prefix.Equals(string.Empty));
 
-            bool AisSinglePass = A_allLoopsAreLazy;
+            bool AisLazy = A_allLoopsAreLazy;
             bool AisSingleSeq = A.IsSequenceOfSingletons;
 
             while (true)
             {
                 int i_q0_A1;
+                int watchdog;
                 //optimize for the case when A starts with a fixed prefix
                 i = (A_has_nonempty_prefix ?
-                        FindFinalStatePositionOpt(input, k, i, out i_q0_A1) :
-                        FindFinalStatePosition(input, k, i, out i_q0_A1));
+                        FindFinalStatePositionOpt(input, k, i, out i_q0_A1, out watchdog) :
+                        FindFinalStatePosition(input, k, i, out i_q0_A1, out watchdog));
 
                 if (i == k)
                 {
@@ -1060,20 +1061,28 @@ namespace Microsoft.Automata
 
                 int i_start;
                 int i_end;
-                if (AisSinglePass)
+
+                if (watchdog >= 0)
                 {
-                    //TBD: how to avoid computing FindStartPosition
-                    //by keeping information of start positions on the fly
-                    if (AisSingleSeq)
-                        i_start = i - A.sequenceOfSingletons_count + 1;
-                    else
-                        i_start = FindStartPosition(input, i, i_q0_A1);
+                    i_start = i - watchdog + 1;
                     i_end = i;
                 }
                 else
                 {
-                    i_start = FindStartPosition(input, i, i_q0_A1);
-                    i_end = FindEndPosition(input, i_start);
+                    //If A is lazy then there is no need to maximize length of end-position
+                    if (AisLazy)
+                    {
+                        if (AisSingleSeq)
+                            i_start = i - A.sequenceOfSingletons_count + 1;
+                        else
+                            i_start = FindStartPosition(input, i, i_q0_A1);
+                        i_end = i;
+                    }
+                    else
+                    {
+                        i_start = FindStartPosition(input, i, i_q0_A1);
+                        i_end = FindEndPosition(input, i_start);
+                    }
                 }
 
                 var newmatch = new Tuple<int, int>(i_start, i_end + 1 - i_start);
@@ -1087,6 +1096,27 @@ namespace Microsoft.Automata
             }
 
             return matches.ToArray();
+        }
+
+        /// <summary>
+        /// It is known here that regex is nullable
+        /// </summary>
+        /// <param name="regex"></param>
+        /// <returns></returns>
+        int GetWatchdog(SymbolicRegexNode<S> regex)
+        {
+            if (regex.kind == SymbolicRegexKind.WatchDog)
+            {
+                return regex.lower;
+            }
+            else if (regex.kind == SymbolicRegexKind.Or)
+            {
+                return regex.alts.watchdog;
+            }
+            else
+            {
+                return -1;
+            }
         }
 
         /// <summary>
@@ -1206,13 +1236,14 @@ namespace Microsoft.Automata
                 //reuse A1
                 int i;
                 int i_q0;
+                int watchdog;
                 if (this.A_prefix != string.Empty)
                 {
-                    i = FindFinalStatePositionOpt(input, k, startat, out i_q0);
+                    i = FindFinalStatePositionOpt(input, k, startat, out i_q0, out watchdog);
                 }
                 else
                 {
-                    i = FindFinalStatePosition(input, k, startat, out i_q0);
+                    i = FindFinalStatePosition(input, k, startat, out i_q0, out watchdog);
                 }
                 if (i == k)
                 {
@@ -1421,10 +1452,13 @@ namespace Microsoft.Automata
         /// <param name="i">start position</param>
         /// <param name="i_q0">last position the initial state of A1 was visited</param>
         /// <param name="k">input length or bounded input length</param>
-        private int FindFinalStatePosition(string input, int k, int i, out int i_q0)
+        private int FindFinalStatePosition(string input, int k, int i, out int i_q0, out int watchdog)
         {
             int q = q0_A1;
             int i_q0_A1 = i;
+
+            //TBD: anchors
+            SymbolicRegexNode<S> regex = null;
 
             while (i < k)
             {
@@ -1435,13 +1469,12 @@ namespace Microsoft.Automata
                     if (i == -1)
                     {
                         i_q0 = i_q0_A1;
+                        watchdog = -1;
                         return k;
                     }
                     i_q0_A1 = i;
                 }
 
-                //TBD: anchors
-                SymbolicRegexNode<S> regex;
                 int c = input[i];
                 int p;
 
@@ -1493,6 +1526,7 @@ namespace Microsoft.Automata
                 {
                     //p is a deadend state so any further search is meaningless
                     i_q0 = i_q0_A1;
+                    watchdog = -1;
                     return k;
                 }
 
@@ -1501,6 +1535,7 @@ namespace Microsoft.Automata
                 i += 1;
             }
             i_q0 = i_q0_A1;
+            watchdog = (regex == null ? -1  : this.GetWatchdog(regex));
             return i;
         }
 
@@ -1511,17 +1546,16 @@ namespace Microsoft.Automata
         /// <param name="i">start position</param>
         /// <param name="i_q0">last position the initial state of A1 was visited</param>
         /// <param name="k">input length or bounded input length</param>
-        private int FindFinalStatePositionOpt(string input, int k, int i, out int i_q0)
+        private int FindFinalStatePositionOpt(string input, int k, int i, out int i_q0, out int watchdog)
         {
             int q = q0_A1;
             int i_q0_A1 = i;
             var prefix = this.A_prefix;
             //it is important to use Ordinal/OrdinalIgnoreCase to avoid culture dependent semantics of IndexOf
             StringComparison comparison = (this.A_fixedPrefix_ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+            SymbolicRegexNode<S> regex = null;
             while (i < k)
             {
-                SymbolicRegexNode<S> regex = null;
-
                 // ++++ the following prefix optimization can be commented out without affecting correctness ++++
                 // but this optimization has a huge perfomance boost when fixed prefix exists .... in the order of 10x
                 //
@@ -1559,12 +1593,14 @@ namespace Microsoft.Automata
                         if (regex.isNullable)
                         {
                             i_q0 = i_q0_A1;
+                            watchdog = GetWatchdog(regex);
                             //return the last position of the match
                             return i - 1;
                         }
                         if (i == k)
                         {
                             i_q0 = i_q0_A1;
+                            watchdog = -1;
                             return k;
                         }
                     }
@@ -1622,7 +1658,8 @@ namespace Microsoft.Automata
                 else if (regex == this.builder.nothing)
                 {
                     i_q0 = i_q0_A1;
-                    //p is a deadend state so any further saerch is meaningless
+                    //p is a deadend state so any further search is meaningless
+                    watchdog = -1;
                     return k;
                 }
 
@@ -1631,6 +1668,7 @@ namespace Microsoft.Automata
                 i += 1;
             }
             i_q0 = i_q0_A1;
+            watchdog = (regex == null ? -1 : this.GetWatchdog(regex));
             return i;
         }
 
