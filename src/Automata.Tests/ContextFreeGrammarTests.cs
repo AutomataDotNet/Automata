@@ -15,8 +15,8 @@ namespace Automata.Tests
         {
             var input = @"
 START -> AS BS 
-AS -> AS a a | a a | @ 
-BS -> b b b BS | b b b";
+AS -> AS (a) (a) | (a) (a) | (@)
+BS -> (b) (b) (b) BS | (b) (b) (b)";
             TestCFGParser_validate(input);
             var input2 = GrammarParser<string>.Parse(MapTerminalToDummyAutomaton, input).ToString();
             TestCFGParser_validate(input2);
@@ -30,9 +30,9 @@ BS -> b b b BS | b b b";
             Assert.AreEqual(3, cfg.Nonterminals.Count);
             var terminals = new List<GrammarSymbol>(cfg.GetTerminals());
             Assert.AreEqual(3, terminals.Count);
-            var a = new Terminal<string>("a");
-            var b = new Terminal<string>("b");
-            var at = new Terminal<string>("@");
+            var a = new Terminal<string>("(a)");
+            var b = new Terminal<string>("(b)");
+            var at = new Terminal<string>("(@)");
             Assert.IsTrue(terminals.Contains(a));
             Assert.IsTrue(terminals.Contains(b));
             Assert.IsTrue(terminals.Contains(at));
@@ -88,7 +88,7 @@ BS -> b b b BS | b b b";
         [TestMethod]
         public void TestCFG_EmptyRHS()
         {
-            var input = "S -> x S y | () | a";
+            var input = "S -> (x) S (y) | () | (a)";
             ContextFreeGrammar cfg = ContextFreeGrammar.Parse(input);
             TestCFG_EmptyRHS_check(cfg);
             ContextFreeGrammar cfg_ = ContextFreeGrammar.Parse(cfg.ToString());
@@ -157,7 +157,7 @@ BS -> b b b BS | b b b";
         [TestMethod]
         public void TestCFG_MultipleRegexesAsTerminals()
         {
-            var input = @"S -> \( S \) | \x20 | cd | a+b+";
+            var input = @"S -> \( S \) | \x20 | (cd) | (a+b+)";
             ContextFreeGrammar cfg = ContextFreeGrammar.Parse(input);
             Assert.IsTrue(cfg.NonterminalCount == 5);
             string w;
@@ -168,7 +168,7 @@ BS -> b b b BS | b b b";
         [TestMethod]
         public void TestCFG_IntersectionWithRegexOptions()
         {
-            var input = @"S -> \( S \) | a";
+            var input = @"S -> \( S \) | (a)";
             ContextFreeGrammar cfg = ContextFreeGrammar.Parse(input);
 
             int k = 5;
@@ -217,7 +217,7 @@ BS -> b b b BS | b b b";
         [TestMethod]
         public void TestCFG_PDAConstruction()
         {
-            var input = "S -> x y";
+            var input = "S -> (x) (y)";
             var cfg = ContextFreeGrammar.Parse(input);
             var pda = cfg.ToPDA<BDD>();
             var aut = ContextFreeGrammar.GetContext().Convert("xy");
@@ -269,6 +269,26 @@ BS -> b b b BS | b b b";
         }
 
         [TestMethod]
+        public void TestCFG_PDAConstruction_GenerateWitnesses()
+        {
+            var input = @"S -> \( S \) | [0-9]+ ";
+            var cfg = ContextFreeGrammar.Parse(input);
+            //---
+            var pda1 = cfg.ToPDA<BDD>();
+            var aut1 = cfg.BuiltinTerminalAlgebra.Convert(@"\({2,5}").RemoveEpsilons();
+            var pda2 = pda1.Intersect(aut1);
+
+            var witnesses = new List<string>();
+            foreach (var w in pda2.GenerateWitnesses(5))
+            {
+                witnesses.Add(cfg.BuiltinTerminalAlgebra.ChooseString(w));
+            }
+            Assert.IsTrue(witnesses.Count == 5);
+            foreach (var w in witnesses)
+                Assert.IsTrue(w.EndsWith("))") && w.StartsWith("(("));
+        }
+
+        [TestMethod]
         public void TestCFG_Parse_Medium()
         {
             var input = @"
@@ -297,6 +317,122 @@ NAME -> (\w*)
 ";
             var cfg = ContextFreeGrammar.Parse(input);
             Assert.IsTrue(cfg.ProductionCount == 46);
+        }
+
+        [TestMethod]
+        public void TestCFG_Parse_SmallNFA()
+        {
+            var input = @"
+S -> R0_q0 
+R0_q0 -> (a) R0_q1 
+R0_q1 -> (s) R0_q2 
+R0_q2 ->
+";
+            var cfg = ContextFreeGrammar.Parse(input);
+            Assert.IsTrue(cfg.ProductionCount == 4);
+            var pda = cfg.ToPDA<BDD>();
+            BDD[] witness;
+            Assert.IsTrue(pda.IsNonempty(out witness));
+            var s = ChooseString(witness);
+            Assert.IsTrue(s == "as");
+            string s2;
+            cfg.IntersectsWith("", out s2);
+            Assert.IsTrue(s2 == "as");
+        }
+
+        string ChooseString(BDD[] witness)
+        {
+            if (witness.Length == 0)
+                return "";
+            else
+            {
+                var solver = (ICharAlgebra<BDD>)witness[0].algebra;
+                var chars = Array.ConvertAll(witness, x => (char)solver.Choose(x));
+                var str = new String(chars);
+                return str;
+            }
+        }
+
+        [TestMethod]
+        public void TestCFG_PDAConstruction_Explore_Small()
+        {
+            var input = @"S -> \( S \) | (A) ";
+            var cfg = ContextFreeGrammar.Parse(input);
+            var pda = cfg.ToPDA<BDD>();
+            var aut = cfg.BuiltinTerminalAlgebra.Convert(@"^.{0,10}$", System.Text.RegularExpressions.RegexOptions.Singleline).RemoveEpsilons();
+            var pda2 = pda.Intersect(aut);
+            //pda2.ShowGraph();
+            var aut2 = pda2.Explore(4);
+            //aut2.ShowGraph("aut2");
+            var chooser = new Chooser();
+            for (int i = 0; i < 10; i++)
+            {
+                BDD[] w = new List<BDD>(aut2.ChoosePathToSomeFinalState(chooser)).ToArray();
+                string s = cfg.BuiltinTerminalAlgebra.ChooseString(w);
+                Assert.IsTrue(cfg.BuiltinTerminalAlgebra.Accepts(aut, s));
+                Assert.IsTrue(cfg.BuiltinTerminalAlgebra.Accepts(aut2, s));
+            }
+        }
+
+        [TestMethod]
+        public void TestCFG_PDAConstruction_Explore_Medium()
+        {
+            var input = @"
+S -> NAME MAIN
+MAIN -> SEARCH_CONDITION 
+SEARCH_CONDITION -> (OR) PREDICATE | (AND) PREDICATE 
+PREDICATE -> COMPARISON_PREDICATE | BETWEEN_PREDICATE | LIKE_PREDICATE | TEST_FOR_NULL | IN_PREDICATE | ALL_OR_ANY_PREDICATE | EXISTENCE_TEST
+COMPARISON_PREDICATE -> SCALAR_EXP COMPARISON_OP SCALAR_EXP | SCALAR_EXP COMPARISON SUBQUERY
+BETWEEN_PREDICATE -> SCALAR_EXP BETWEEN SCALAR_EXP (AND) SCALAR_EXP
+LIKE_PREDICATE ->  SCALAR_EXP (LIKE) ATOM 
+TEST_FOR_NULL -> COLUMN_REF (IS) (NULL)
+IN_PREDICATE -> SCALAR_EXP (IN) \( SUBQUERY \) | SCALAR_EXP (IN) \( ATOM \) 
+ALL_OR_ANY_PREDICATE -> SCALAR_EXP COMPARISON_OP ALL_ANY_SOME SUBQUERY
+EXISTENCE_TEST -> (EXISTS) SUBQUERY
+SCALAR_EXP ->  SCALAR_EXP OP SCALAR_EXP | ATOM | COLUMN_REF  | \( SCALAR_EXP \) 
+ATOM -> PARAMETER | INTNUM 
+SUBQUERY -> SELECT_EXP
+SELECT_EXP -> (SELECT) NAME
+ALL_ANY_SOME -> (ANY) | (ALL) | (SOME)
+COLUMN_REF -> NAME
+PARAMETER -> NAME
+INTNUM -> ([0-9]+)
+OP -> (\+)  | (-) | (\*) | (\/) 
+COMPARISON_OP -> (=) | (<) | (>)  
+NAME -> ([a-zA-Z][a-zA-Z0-9]*)
+";
+            var cfg = ContextFreeGrammar.Parse(input);
+            var pda = cfg.ToPDA<BDD>();
+            int t = System.Environment.TickCount;
+            var aut = pda.Explore(15);
+            t = System.Environment.TickCount - t;
+            aut = aut.RemoveEpsilons().Determinize();
+            var autm = aut.Minimize();
+            //aut.ShowGraph("pda_explored_stack_depth_5");
+            var chooser = new Chooser();
+            for (int i = 0; i < 10; i++)
+            {
+                BDD[] w = new List<BDD>(aut.ChoosePathToSomeFinalState(chooser)).ToArray();
+                string s = cfg.BuiltinTerminalAlgebra.ChooseString(w);
+                Assert.IsTrue(s.Length > 1);
+                //Assert.IsTrue(cfg.BuiltinTerminalAlgebra.Accepts(aut, s));
+                //Assert.IsTrue(cfg.BuiltinTerminalAlgebra.Accepts(aut, s));
+            }
+        }
+
+        [TestMethod]
+        public void TestCFG_PDAConstruction_Large()
+        {
+            var sqlgrammar = System.IO.File.ReadAllText("../../../../Automata.Tests/Samples/grammar-sql.txt");
+            var cfg = ContextFreeGrammar.Parse(sqlgrammar);
+            var cfg2 = cfg.RemoveEpsilonsAndUselessSymbols().RemoveUnitProductions();
+            var pda = cfg2.ToPDA<BDD>();
+            //var pda2 = pda.Intersect(cfg.BuiltinTerminalAlgebra.Convert("^(SELECT.*)$").RemoveEpsilons());
+            //BDD[] w;
+            //bool ne = pda2.IsNonempty(out w);
+            //var s = cfg.BuiltinTerminalAlgebra.ChooseString(w);
+            //Assert.IsTrue(s.StartsWith("SELECT"));
+            Assert.IsTrue(cfg.StartSymbol.Name == "sql_clauses");
         }
     }
 }

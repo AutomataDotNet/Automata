@@ -6,10 +6,11 @@ using System.Threading.Tasks;
 namespace Microsoft.Automata
 {
 
-    public class CountingAutomaton<S> : Automaton<Tuple<Maybe<S>, Sequence<CounterOperation>>>
+    public partial class CountingAutomaton<S> : Automaton<Tuple<Maybe<S>, Sequence<CounterOperation>>>
     {
-        Dictionary<int, ICounter> countingStates;
+        internal Dictionary<int, ICounter> countingStates;
         Dictionary<int, SymbolicRegexNode<S>> stateMap;
+        internal ICounter[] counters;
 
         internal ICharAlgebra<S> solver;
 
@@ -19,6 +20,9 @@ namespace Microsoft.Automata
             this.countingStates = countingStates;
             this.stateMap = stateMap;
             this.solver = ((CABA<S>)Algebra).builder.solver;
+            this.counters = new ICounter[countingStates.Count];
+            foreach (var pair in countingStates)
+                counters[pair.Value.CounterId] = pair.Value;
         }
 
         /// <summary>
@@ -57,12 +61,15 @@ namespace Microsoft.Automata
             else
                 s = stateMap[state].ToString();
             if (IsCountingState(state))
-                s += "&#13;(c" + countingStates[state].CounterId.ToString() + ")";
+                s += "\n(" + SpecialCharacters.Cntr(countingStates[state].CounterId) + ")";
             if (IsFinalState(state) && IsCountingState(state))
             {
                 var f = GetFinalStateCondition(state);
-                if (f.Length > 0)
-                    s += f.ToString();
+                for (int i = 0; i < f.Length; i++)
+                {
+                    var op = f[i];
+                    s += op.ToString() + ";";
+                }
             }
             return s;
         }
@@ -72,7 +79,7 @@ namespace Microsoft.Automata
             if (IsCountingState(InitialState))
             {
                 var c = countingStates[InitialState];
-                return string.Format("c{0}:=0", c.CounterId);
+                return string.Format("{0}{1}0", SpecialCharacters.Cntr(c.CounterId),SpecialCharacters.ASSIGN);
             }
             else
                 return "";
@@ -87,6 +94,43 @@ namespace Microsoft.Automata
             return countingStates.ContainsKey(q);
         }
 
+        Dictionary<int, bool> IsSingletonCountingState_result = new Dictionary<int, bool>();
+        /// <summary>
+        /// Returns true if q is a counting-state that only needs one copy of the counter.
+        /// A sufficient condition is when no incoming transition overlaps with any loop.
+        /// </summary>
+        /// <param name="q">given state</param>
+        public bool IsSingletonCountingState(int q)
+        {
+            bool res;
+            if (!IsSingletonCountingState_result.TryGetValue(q, out res))
+            {
+                S loopCond = solver.False;
+                foreach (var loop in GetMovesFrom(q))
+                {
+                    if (loop.IsSelfLoop && loop.Label.Item1.IsSomething)
+                    {
+                        loopCond = solver.MkOr(loopCond, loop.Label.Item1.Element);
+                    }
+                }
+                res = true;
+                foreach (var trans in GetMovesTo(q))
+                {
+                    if (!trans.IsSelfLoop)
+                    {
+                        if (solver.IsSatisfiable(solver.MkAnd(trans.Label.Item1.Element, loopCond)))
+                        {
+                            res = false;
+                            break;
+                        }
+                    }
+                }
+                IsSingletonCountingState_result[q] = res;
+                return res;
+            }
+            return res;
+        }
+
         /// <summary>
         /// Returns the counter associated with the state q.
         /// The state q must be a couting state.
@@ -95,6 +139,15 @@ namespace Microsoft.Automata
         public ICounter GetCounter(int q)
         {
             return countingStates[q];
+        }
+
+        /// <summary>
+        /// Returns the counter with the given id
+        /// </summary>
+        /// <param name="q">given counter id</param>
+        public ICounter GetCounterWithId(int counterId)
+        {
+            return counters[counterId];
         }
 
         /// <summary>
@@ -136,14 +189,44 @@ namespace Microsoft.Automata
                     yield return move;
         }
 
-        public IEnumerable<Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>> GetMovesFrom(int sourceState, S minterm)
+        public IEnumerable<Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>> GetMovesFrom(int sourceState, S predicate)
         {
-            foreach (var move in base.GetMovesFrom(sourceState))
+            var moves = base.delta[sourceState];
+            for (int i=0; i < moves.Count; i++)
+            {
+                var move = moves[i];
                 if (move.Label.Item1.IsSomething)
                 {
-                    if (solver.IsSatisfiable(solver.MkAnd(minterm, move.Label.Item1.Element)))
+                    if (solver.IsSatisfiable(solver.MkAnd(predicate, move.Label.Item1.Element)))
                         yield return move;
                 }
+            }
+        }
+
+        public bool HasMovesTo(int targetState, S predicate)
+        {
+            var moves = base.deltaInv[targetState];
+            for (int i = 0; i < moves.Count; i++)
+            {
+                var move = moves[i];
+                if (move.Label.Item1.IsSomething)
+                {
+                    if (solver.IsSatisfiable(solver.MkAnd(predicate, move.Label.Item1.Element)))
+                        return true;
+                }
+            }
+            return false;
+        }
+
+        public IEnumerable<Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>> GetMovesFrom(IEnumerable<int> sourceStates, S minterm)
+        {
+            foreach (var sourceState in sourceStates)
+                foreach (var move in base.GetMovesFrom(sourceState))
+                    if (move.Label.Item1.IsSomething)
+                    {
+                        if (solver.IsSatisfiable(solver.MkAnd(minterm, move.Label.Item1.Element)))
+                            yield return move;
+                    }
         }
 
 
@@ -152,6 +235,12 @@ namespace Microsoft.Automata
         {
             __hideDerivativesInViewer = hideDerivatives;
             base.ShowGraph(name);
+        }
+
+        public void SaveGraph(string name = "CountingAutomaton", bool hideDerivatives = false)
+        {
+            __hideDerivativesInViewer = hideDerivatives;
+            base.SaveGraph(name);
         }
 
         /// <summary>
@@ -374,6 +463,168 @@ namespace Microsoft.Automata
                 return false;
             }
         }
+
+        private IEnumerable<Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>> GetMovesFrom(List<int> states, S a, CsConditionSeq psi)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Creates counter minterms for the given set of counting states and input predicate.
+        /// </summary>
+        /// <param name="list">list of counting states, possibly empty i.e. null</param>
+        /// <param name="a">input predicate</param>
+        /// <returns></returns>
+        private IEnumerable<CsConditionSeq> GenerateCounterMinterms(ConsList<int> list, S a)
+        {
+            if (list == null)
+                yield return CsConditionSeq.MkTrue(countingStates.Count);
+            else
+            {
+                var a_moves = new List<Move<Tuple<Maybe<S>, Sequence<CounterOperation>>>>(GetMovesFrom(list.First, a)).ToArray();
+
+
+                var incr_exists = Array.Exists(a_moves, m => m.Label.Item2.First.OperationKind == CounterOp.INCR);
+                var exit_exists = Array.Exists(a_moves, m => m.Label.Item2.First.OperationKind != CounterOp.INCR);
+                var i = GetCounter(list.First).CounterId;
+
+                foreach (var seq in GenerateCounterMinterms(list.Rest, a))
+                {
+                    if (a_moves.Length > 0)
+                    {
+                        if (incr_exists && exit_exists)
+                        {
+                            yield return seq.Update(i, CsCondition.LOW);
+                            if (!(IsSingletonCountingState(list.First) && GetCounter(list.First).LowerBound == GetCounter(list.First).UpperBound))
+                                yield return seq.Update(i, CsCondition.MIDDLE);
+                            yield return seq.Update(i, CsCondition.HIGH);
+                        }
+                        else if (incr_exists)
+                        {
+                            yield return seq.Update(i, CsCondition.CANLOOP);
+                        }
+                        else if (exit_exists)
+                        {
+                            yield return seq.Update(i, CsCondition.CANEXIT);
+                        }
+                        else
+                        {
+                            throw new AutomataException(AutomataExceptionKind.InternalError_GenerateCounterMinterms);
+                        }
+                    }
+                    else
+                        yield return seq;
+                }
+            }
+        }
+
+        internal CsUpdateSeq  GetCounterUpdate(int q, S input, CsConditionSeq guard)
+        {
+            var res = CsUpdateSeq.MkNOOP(countingStates.Count);
+            foreach (var mv in delta[q])
+            {
+                if (mv.Label.Item1.IsSomething && solver.IsSatisfiable(solver.MkAnd(mv.Label.Item1.Element, input)))
+                {
+                    var p = mv.TargetState;
+                    if (IsCountingState(p))
+                    {
+                        var p_counter = GetCounter(p);
+                        if (p == q)
+                        {
+                            #region loop
+                            if (mv.Label.Item2.Length != 1)
+                                throw new AutomataException(AutomataExceptionKind.InternalError);
+                            else
+                            {
+                                var op = mv.Label.Item2[0];
+                                if (guard[p_counter.CounterId].HasFlag(CsCondition.LOW) ||
+                                    guard[p_counter.CounterId].HasFlag(CsCondition.MIDDLE) ||
+                                    guard[p_counter.CounterId].HasFlag(CsCondition.HIGH))
+                                {
+                                    if (op.OperationKind == CounterOp.INCR)
+                                    {
+                                        res = res.Or(op.Counter.CounterId, CsUpdate.INCR);
+                                    }
+                                    else if (op.OperationKind == CounterOp.EXIT_SET0)
+                                    {
+                                        res = res.Or(op.Counter.CounterId, CsUpdate.SET0);
+                                    }
+                                    else if (op.OperationKind == CounterOp.EXIT_SET1)
+                                    {
+                                        res = res.Or(op.Counter.CounterId, CsUpdate.SET1);
+                                    }
+                                    else
+                                    {
+                                        throw new AutomataException(AutomataExceptionKind.InternalError);
+                                    }
+                                }
+                            }
+                            #endregion
+                        }
+                        else if (IsCountingState(q))
+                        {
+                            #region q is counting state too
+                            var q_counter = GetCounter(q);
+                            if (mv.Label.Item2.Length != 2)
+                                throw new AutomataException(AutomataExceptionKind.InternalError);
+                            else
+                            {
+                                var q_exit = mv.Label.Item2[0];
+                                var p_set = mv.Label.Item2[1];
+                                if (q_exit.Counter.CounterId != q_counter.CounterId || p_set.Counter.CounterId != p_counter.CounterId)
+                                    throw new AutomataException(AutomataExceptionKind.InternalError);
+
+                                if (guard[q_counter.CounterId].HasFlag(CsCondition.HIGH) ||
+                                    guard[q_counter.CounterId].HasFlag(CsCondition.MIDDLE))
+                                {
+                                    if (p_set.OperationKind == CounterOp.SET0)
+                                    {
+                                        res = res.Or(p_set.Counter.CounterId, CsUpdate.SET0);
+                                    }
+                                    else if (p_set.OperationKind == CounterOp.SET1)
+                                    {
+                                        res = res.Or(p_set.Counter.CounterId, CsUpdate.SET1);
+                                    }
+                                    else 
+                                    {
+                                        throw new AutomataException(AutomataExceptionKind.InternalError);
+                                    }
+                                }
+                            }
+                            #endregion
+                        }
+                        else
+                        {
+                            #region q is non-counting state
+                            if (mv.Label.Item2.Length != 1)
+                                throw new AutomataException(AutomataExceptionKind.InternalError);
+                            else
+                            {
+                                var p_set = mv.Label.Item2[0];
+                                if (p_set.Counter.CounterId != p_counter.CounterId)
+                                    throw new AutomataException(AutomataExceptionKind.InternalError);
+
+
+                                if (p_set.OperationKind == CounterOp.SET0)
+                                {
+                                    res = res.Or(p_set.Counter.CounterId, CsUpdate.SET0);
+                                }
+                                else if (p_set.OperationKind == CounterOp.SET1)
+                                {
+                                    res = res.Or(p_set.Counter.CounterId, CsUpdate.SET1);
+                                }
+                                else
+                                {
+                                    throw new AutomataException(AutomataExceptionKind.InternalError);
+                                }
+                            }
+                            #endregion
+                        }
+                    }
+                }
+            }
+            return res;
+        }
     }
 
     /// <summary>
@@ -407,17 +658,17 @@ namespace Microsoft.Automata
                     if (t.Item2[i].Counter.LowerBound == t.Item2[i].Counter.UpperBound)
                     {
                         if (s != "")
-                            s += " & ";
-                        s += string.Format("c{0}=={1}", t.Item2[i].Counter.CounterId, t.Item2[i].Counter.LowerBound);
+                            s += SpecialCharacters.AND;
+                        s += string.Format("{0}={1}", SpecialCharacters.Cntr(t.Item2[i].Counter.CounterId), t.Item2[i].Counter.LowerBound);
                     }
                     else if (t.Item2[i].Counter.LowerBound > 0)
                     {
                         if (s != "")
-                            s += " & ";
-                        s += string.Format("c{0}>={1}", t.Item2[i].Counter.CounterId, t.Item2[i].Counter.LowerBound);
+                            s += SpecialCharacters.AND;
+                        s += string.Format("{0}{1}{2}", SpecialCharacters.Cntr(t.Item2[i].Counter.CounterId), SpecialCharacters.GEQ, t.Item2[i].Counter.LowerBound);
                     }
                 }
-                return "F:" + (s == "" ? "true" : s);
+                return "F:" + (s == "" ? SpecialCharacters.TOP.ToString() : s);
             }
         }
 

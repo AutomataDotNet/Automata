@@ -1,0 +1,4972 @@
+sql_clauses -> select_statement
+NT_1 -> SEMI
+SEMI -> ;
+NT_2 -> NT_1 |
+NT_0 -> sql_clause NT_2
+sql_clause -> dml_clause | ddl_clause | cfl_statement | dbcc_clause | empty_statement | another_statement | backup_statement
+NT_3 -> NT_0
+NT_4 -> NT_3 | NT_4 NT_4
+dml_clause -> merge_statement | delete_statement | insert_statement | select_statement | update_statement
+ddl_clause -> alter_application_role | alter_assembly | alter_asymmetric_key | alter_authorization | alter_authorization_for_azure_dw | alter_authorization_for_parallel_dw | alter_authorization_for_sql_database | alter_availability_group | alter_certificate | alter_column_encryption_key | alter_credential | alter_cryptographic_provider | alter_database | alter_db_role | alter_endpoint | create_or_alter_event_session | alter_external_data_source | alter_external_library | alter_external_resource_pool | alter_fulltext_catalog | alter_fulltext_stoplist | alter_login_azure_sql | alter_login_azure_sql_dw_and_pdw | alter_login_sql_server | alter_master_key_azure_sql | alter_master_key_sql_server | alter_message_type | alter_partition_function | alter_partition_scheme | alter_remote_service_binding | alter_resource_governor | alter_schema_azure_sql_dw_and_pdw | alter_schema_sql | alter_sequence | alter_server_audit | alter_server_audit_specification | alter_server_configuration | alter_server_role | alter_server_role_pdw | alter_service | alter_service_master_key | alter_symmetric_key | alter_table | alter_user | alter_user_azure_sql | alter_workload_group | create_application_role | create_assembly | create_asymmetric_key | create_column_encryption_key | create_column_master_key | create_credential | create_cryptographic_provider | create_database | create_db_role | create_event_notification | create_external_library | create_external_resource_pool | create_fulltext_catalog | create_fulltext_stoplist | create_index | create_login_azure_sql | create_login_pdw | create_login_sql_server | create_master_key_azure_sql | create_master_key_sql_server | create_or_alter_broker_priority | create_or_alter_function | create_or_alter_procedure | create_or_alter_trigger | create_remote_service_binding | create_resource_pool | create_route | create_rule | create_schema | create_schema_azure_sql_dw_and_pdw | create_search_property_list | create_security_policy | create_sequence | create_server_audit | create_server_audit_specification | create_server_role | create_service | create_statistics | create_symmetric_key | create_synonym | create_table | create_type | create_user | create_user_azure_sql_dw | create_view | create_workload_group | create_xml_schema_collection | drop_aggregate | drop_application_role | drop_assembly | drop_asymmetric_key | drop_availability_group | drop_broker_priority | drop_certificate | drop_column_encryption_key | drop_column_master_key | drop_contract | drop_credential | drop_cryptograhic_provider | drop_database | drop_database_audit_specification | drop_database_scoped_credential | drop_db_role | drop_default | drop_endpoint | drop_event_notifications | drop_event_session | drop_external_data_source | drop_external_file_format | drop_external_library | drop_external_resource_pool | drop_external_table | drop_fulltext_catalog | drop_fulltext_index | drop_fulltext_stoplist | drop_function | drop_index | drop_login | drop_master_key | drop_message_type | drop_partition_function | drop_partition_scheme | drop_procedure | drop_queue | drop_remote_service_binding | drop_resource_pool | drop_route | drop_rule | drop_schema | drop_search_property_list | drop_security_policy | drop_sequence | drop_server_audit | drop_server_audit_specification | drop_server_role | drop_service | drop_signature | drop_statistics | drop_statistics_name_azure_dw_and_pdw | drop_symmetric_key | drop_synonym | drop_table | drop_trigger | drop_type | drop_user | drop_view | drop_workload_group | drop_xml_schema_collection | disable_trigger | enable_trigger | lock_table | truncate_table | update_statistics
+cfl_statement -> block_statement | break_statement | continue_statement | goto_statement | if_statement | return_statement | throw_statement | try_catch_statement | waitfor_statement | while_statement | print_statement | raiseerror_statement
+dbcc_clause -> DBCC simple_id NT_2744 NT_2747 NT_2749
+empty_statement -> ;
+another_statement -> declare_statement | cursor_statement | conversation_statement | create_contract | create_queue | alter_queue | execute_statement | message_statement | security_statement | set_statement | transaction_statement | use_statement | setuser_statement
+backup_statement -> backup_database | backup_log | backup_certificate | backup_master_key | backup_service_master_key
+merge_statement -> NT_1682 MERGE NT_1687 NT_1689 ddl_object NT_1691 NT_1693 USING table_sources ON search_condition NT_1699 NT_1708 NT_1714 NT_1716 NT_1718 ;
+delete_statement -> NT_1727 DELETE NT_1732 NT_1734 delete_statement_from NT_1736 NT_1738 NT_1741 NT_1748 NT_1750 NT_1752 NT_1754
+insert_statement -> NT_1756 INSERT NT_1761 NT_1763 NT_1764 NT_1766 NT_1769 NT_1771 insert_statement_value NT_1773 NT_1775 NT_1777
+select_statement -> NT_1793 query_expression NT_1795 NT_1797 NT_1799 NT_1801
+update_statement -> NT_1804 UPDATE NT_1809 NT_1810 NT_1812 SET update_elem NT_1815 NT_1817 NT_1820 NT_1827 NT_1829 NT_1831 NT_1833
+alter_application_role -> ALTER APPLICATION ROLE id WITH NT_87 NT_92 NT_97
+alter_assembly -> alter_assembly_start id alter_assembly_clause
+alter_asymmetric_key -> alter_asymmetric_key_start id NT_152
+alter_authorization -> alter_authorization_start NT_177 entity_name entity_to authorization_grantee
+alter_authorization_for_azure_dw -> alter_authorization_start NT_183 entity_name_for_azure_dw entity_to authorization_grantee
+alter_authorization_for_parallel_dw -> alter_authorization_start NT_186 entity_name_for_parallel_dw entity_to authorization_grantee
+alter_authorization_for_sql_database -> alter_authorization_start NT_180 entity_name entity_to authorization_grantee
+alter_availability_group -> alter_availability_group_start alter_availability_group_options
+alter_certificate -> ALTER CERTIFICATE id NT_336
+alter_column_encryption_key -> ALTER COLUMN ENCRYPTION KEY id NT_347 VALUE LR_BRACKET COLUMN_MASTER_KEY EQUAL id NT_350 RR_BRACKET
+alter_credential -> ALTER CREDENTIAL id WITH IDENTITY EQUAL STRING NT_510
+alter_cryptographic_provider -> ALTER CRYPTOGRAPHIC PROVIDER id NT_519 NT_522
+alter_database -> ALTER DATABASE NT_2086 NT_2087 NT_2092
+alter_db_role -> ALTER ROLE id NT_1050
+alter_endpoint -> ALTER ENDPOINT id NT_2107 NT_2111 AS TCP LR_BRACKET LISTENER_PORT EQUAL DECIMAL NT_2115 RR_BRACKET NT_2116
+create_or_alter_event_session -> NT_532 EVENT SESSION id ON SERVER NT_567 NT_575 NT_595 NT_601 NT_646 NT_650
+alter_external_data_source -> ALTER EXTERNAL DATA SOURCE id SET NT_690 | ALTER EXTERNAL DATA SOURCE id WITH LR_BRACKET TYPE EQUAL BLOB_STORAGE COMMA LOCATION EQUAL STRING NT_693 RR_BRACKET
+alter_external_library -> ALTER EXTERNAL LIBRARY id NT_696 NT_697 NT_698
+alter_external_resource_pool -> ALTER EXTERNAL RESOURCE POOL NT_737 WITH LR_BRACKET MAX_CPU_PERCENT EQUAL DECIMAL NT_738 NT_758 NT_763 RR_BRACKET
+alter_fulltext_catalog -> ALTER FULLTEXT CATALOG id NT_790
+alter_fulltext_stoplist -> ALTER FULLTEXT STOPLIST id NT_811
+alter_login_azure_sql -> ALTER LOGIN id NT_922
+alter_login_azure_sql_dw_and_pdw -> ALTER LOGIN id NT_933
+alter_login_sql_server -> ALTER LOGIN id NT_826
+alter_master_key_azure_sql -> ALTER MASTER KEY NT_961
+alter_master_key_sql_server -> ALTER MASTER KEY NT_955
+alter_message_type -> ALTER MESSAGE TYPE id VALIDATION EQUAL NT_969
+alter_partition_function -> ALTER PARTITION FUNCTION id LR_BRACKET RR_BRACKET NT_970 RANGE LR_BRACKET DECIMAL RR_BRACKET
+alter_partition_scheme -> ALTER PARTITION SCHEME id NEXT USED NT_973
+alter_remote_service_binding -> ALTER REMOTE SERVICE BINDING id WITH NT_976 NT_980
+alter_resource_governor -> ALTER RESOURCE GOVERNOR NT_1047
+alter_schema_azure_sql_dw_and_pdw -> ALTER SCHEMA id TRANSFER NT_1108 id NT_1111
+alter_schema_sql -> ALTER SCHEMA id TRANSFER NT_1086 id NT_1089
+alter_sequence -> ALTER SEQUENCE NT_1159 id NT_1165 NT_1168 NT_1171 NT_1174 NT_1177 NT_1180
+alter_server_audit -> ALTER SERVER AUDIT id NT_1213
+alter_server_audit_specification -> ALTER SERVER AUDIT SPECIFICATION id NT_1339 NT_1343 NT_1347
+alter_server_configuration -> ALTER SERVER CONFIGURATION SET NT_1358
+alter_server_role -> ALTER SERVER ROLE id NT_1391
+alter_server_role_pdw -> ALTER SERVER ROLE id NT_1396 MEMBER id
+alter_service -> ALTER SERVICE id NT_1400 NT_1406
+alter_service_master_key -> ALTER SERVICE MASTER KEY NT_1422
+alter_symmetric_key -> ALTER SYMMETRIC KEY id NT_1429
+alter_table -> ALTER TABLE table_name NT_2079 NT_2085
+alter_user -> ALTER USER id WITH NT_1483
+alter_user_azure_sql -> ALTER USER id WITH NT_1561
+alter_workload_group -> ALTER WORKLOAD GROUP NT_1562 NT_1573 NT_1577
+create_application_role -> CREATE APPLICATION ROLE id WITH NT_102 NT_107
+create_assembly -> CREATE ASSEMBLY id NT_130 FROM NT_136 NT_140
+create_asymmetric_key -> CREATE ASYMMETRIC KEY id NT_158 NT_162 NT_168 NT_171
+create_column_encryption_key -> CREATE COLUMN ENCRYPTION KEY id WITH VALUES NT_357
+create_column_master_key -> CREATE COLUMN MASTER KEY id WITH LR_BRACKET KEY_STORE_PROVIDER_NAME EQUAL STRING COMMA KEY_PATH EQUAL STRING RR_BRACKET
+create_credential -> CREATE CREDENTIAL id WITH IDENTITY EQUAL STRING NT_513 NT_516
+create_cryptographic_provider -> CREATE CRYPTOGRAPHIC PROVIDER id FROM FILE EQUAL STRING
+create_database -> CREATE DATABASE NT_1849 NT_1853 NT_1861 NT_1867 NT_1870 NT_1876
+create_db_role -> CREATE ROLE id NT_1054
+create_event_notification -> CREATE EVENT NOTIFICATION id ON NT_523 NT_526 FOR NT_531 TO SERVICE STRING COMMA STRING
+create_external_library -> CREATE EXTERNAL LIBRARY id NT_712 FROM NT_713 NT_736
+create_external_resource_pool -> CREATE EXTERNAL RESOURCE POOL id WITH LR_BRACKET MAX_CPU_PERCENT EQUAL DECIMAL NT_764 NT_784 NT_789 RR_BRACKET
+create_fulltext_catalog -> CREATE FULLTEXT CATALOG id NT_797 NT_800 NT_804 NT_807 NT_810
+create_fulltext_stoplist -> CREATE FULLTEXT STOPLIST id NT_822 NT_825
+create_index -> CREATE NT_1878 NT_1880 INDEX id ON table_name_with_hint \x28 column_name_list_with_order \x29 NT_1883 NT_1886 NT_1889 NT_1892 NT_1894
+create_login_azure_sql -> CREATE LOGIN id WITH PASSWORD EQUAL STRING NT_932
+create_login_pdw -> CREATE LOGIN id NT_944
+create_login_sql_server -> CREATE LOGIN id NT_868
+create_master_key_azure_sql -> CREATE MASTER KEY NT_968
+create_master_key_sql_server -> CREATE MASTER KEY ENCRYPTION BY PASSWORD EQUAL STRING
+create_or_alter_broker_priority -> NT_310 BROKER PRIORITY id FOR CONVERSATION SET LR_BRACKET NT_317 NT_325 NT_331 NT_335 RR_BRACKET
+create_or_alter_function -> NT_1961 FUNCTION func_proc_name_schema NT_1966 NT_1971 NT_1973
+create_or_alter_procedure -> NT_1895 NT_1900 func_proc_name_schema NT_1903 NT_1913 NT_1919 NT_1922 AS sql_clauses
+create_or_alter_trigger -> create_or_alter_dml_trigger | create_or_alter_ddl_trigger
+create_remote_service_binding -> CREATE REMOTE SERVICE BINDING id NT_983 TO SERVICE STRING WITH NT_986 NT_990
+create_resource_pool -> CREATE RESOURCE POOL id NT_1046
+create_route -> CREATE ROUTE id NT_1057 WITH NT_1062 NT_1067 NT_1072 NT_1074 ADDRESS EQUAL NT_1075 NT_1079
+create_rule -> CREATE RULE NT_1082 id AS search_condition
+create_schema -> CREATE SCHEMA NT_1090 NT_1102
+create_schema_azure_sql_dw_and_pdw -> CREATE SCHEMA id NT_1105
+create_search_property_list -> CREATE SEARCH PROPERTY LIST id NT_1117 NT_1120
+create_security_policy -> CREATE SECURITY POLICY NT_1123 id NT_1145 NT_1153 NT_1156
+create_sequence -> CREATE SEQUENCE NT_1183 id NT_1186 NT_1189 NT_1194 NT_1199 NT_1204 NT_1207 NT_1212
+create_server_audit -> CREATE SERVER AUDIT id NT_1274
+create_server_audit_specification -> CREATE SERVER AUDIT SPECIFICATION id NT_1350 NT_1353 NT_1357
+create_server_role -> CREATE SERVER ROLE id NT_1395
+create_service -> CREATE SERVICE id NT_1409 ON QUEUE NT_1412 id NT_1421
+create_statistics -> CREATE STATISTICS id ON table_name_with_hint \x28 column_name_list \x29 NT_2032 NT_2034
+create_symmetric_key -> ALTER SYMMETRIC KEY id NT_1434 NT_1437 NT_1438
+create_synonym -> CREATE SYNONYM NT_1446 id FOR NT_1447
+create_table -> CREATE TABLE table_name \x28 column_def_table_constraints NT_2044 \x29 NT_2047 NT_2049 NT_2052 NT_2055 NT_2057
+create_type -> CREATE TYPE simple_name NT_2266 NT_2269
+create_user -> CREATE USER id NT_1487 NT_1498 | CREATE USER NT_1499 | CREATE USER id NT_1529 | CREATE USER id
+create_user_azure_sql_dw -> CREATE USER id NT_1543 NT_1546 | CREATE USER id FROM EXTERNAL PROVIDER NT_1549
+create_view -> CREATE VIEW simple_name NT_2067 NT_2073 AS select_statement NT_2076 NT_2078
+create_workload_group -> CREATE WORKLOAD GROUP id NT_1588 NT_1599
+create_xml_schema_collection -> CREATE XML SCHEMA COLLECTION NT_1602 id AS NT_1603
+drop_aggregate -> DROP AGGREGATE NT_110 NT_113 id
+drop_application_role -> DROP APPLICATION ROLE id
+drop_assembly -> DROP ASSEMBLY NT_143 NT_148 NT_151
+drop_asymmetric_key -> DROP ASYMMETRIC KEY id NT_174
+drop_availability_group -> DROP AVAILABILITY GROUP id
+drop_broker_priority -> DROP BROKER PRIORITY id
+drop_certificate -> DROP CERTIFICATE id
+drop_column_encryption_key -> DROP COLUMN ENCRYPTION KEY id
+drop_column_master_key -> DROP COLUMN MASTER KEY id
+drop_contract -> DROP CONTRACT id
+drop_credential -> DROP CREDENTIAL id
+drop_cryptograhic_provider -> DROP CRYPTOGRAPHIC PROVIDER id
+drop_database -> DROP DATABASE NT_360 NT_365
+drop_database_audit_specification -> DROP DATABASE AUDIT SPECIFICATION id
+drop_database_scoped_credential -> DROP DATABASE SCOPED CREDENTIAL id
+drop_db_role -> DROP ROLE NT_401 id
+drop_default -> DROP DEFAULT NT_368 NT_369
+drop_endpoint -> DROP ENDPOINT id
+drop_event_notifications -> DROP EVENT NOTIFICATION NT_388 ON NT_389
+drop_event_session -> DROP EVENT SESSION id ON SERVER
+drop_external_data_source -> DROP EXTERNAL DATA SOURCE id
+drop_external_file_format -> DROP EXTERNAL FILE FORMAT id
+drop_external_library -> DROP EXTERNAL LIBRARY id NT_377
+drop_external_resource_pool -> DROP EXTERNAL RESOURCE POOL id
+drop_external_table -> DROP EXTERNAL TABLE NT_380 NT_383 id
+drop_fulltext_catalog -> DROP FULLTEXT CATALOG id
+drop_fulltext_index -> DROP FULLTEXT INDEX ON NT_392 id
+drop_fulltext_stoplist -> DROP FULLTEXT STOPLIST id
+drop_function -> DROP FUNCTION NT_2237 func_proc_name_schema NT_2240 NT_2242
+drop_index -> DROP INDEX NT_2196 NT_2197 NT_2205
+drop_login -> DROP LOGIN id
+drop_master_key -> DROP MASTER KEY
+drop_message_type -> DROP MESSAGE TYPE id
+drop_partition_function -> DROP PARTITION FUNCTION id
+drop_partition_scheme -> DROP PARTITION SCHEME id
+drop_procedure -> DROP NT_2209 NT_2212 func_proc_name_schema NT_2215 NT_2217
+drop_queue -> DROP QUEUE NT_395 NT_398 id
+drop_remote_service_binding -> DROP REMOTE SERVICE BINDING id
+drop_resource_pool -> DROP RESOURCE POOL id
+drop_route -> DROP ROUTE id
+drop_rule -> DROP RULE NT_404 NT_412
+drop_schema -> DROP SCHEMA NT_415 id
+drop_search_property_list -> DROP SEARCH PROPERTY LIST id
+drop_security_policy -> DROP SECURITY POLICY NT_418 NT_421 id
+drop_sequence -> DROP SEQUENCE NT_424 NT_435
+drop_server_audit -> DROP SERVER AUDIT id
+drop_server_audit_specification -> DROP SERVER AUDIT SPECIFICATION id
+drop_server_role -> DROP SERVER ROLE id
+drop_service -> DROP SERVICE id
+drop_signature -> DROP NT_438 SIGNATURE FROM NT_441 id BY NT_448
+drop_statistics -> DROP STATISTICS NT_2250 ;
+drop_statistics_name_azure_dw_and_pdw -> DROP STATISTICS NT_451 id DOT id
+drop_symmetric_key -> DROP SYMMETRIC KEY id NT_454
+drop_synonym -> DROP SYNONYM NT_457 NT_460 id
+drop_table -> DROP TABLE NT_2253 table_name NT_2255
+drop_trigger -> drop_dml_trigger | drop_ddl_trigger
+drop_type -> DROP TYPE NT_2272 simple_name
+drop_user -> DROP USER NT_463 id
+drop_view -> DROP VIEW NT_2258 simple_name NT_2261 NT_2263
+drop_workload_group -> DROP WORKLOAD GROUP id
+drop_xml_schema_collection -> DROP XML SCHEMA COLLECTION NT_466 id
+disable_trigger -> DISABLE TRIGGER NT_467 ON NT_476
+enable_trigger -> ENABLE TRIGGER NT_480 ON NT_489
+lock_table -> LOCK TABLE table_name IN NT_493 MODE NT_496 NT_498
+truncate_table -> TRUNCATE TABLE table_name NT_507
+update_statistics -> UPDATE NT_2037 STATISTICS full_table_name NT_2039 NT_2042
+backup_database -> BACKUP DATABASE NT_2311 NT_2320 NT_2326 NT_2327 NT_2360 NT_2434
+backup_log -> BACKUP LOG NT_2435 NT_2436 NT_2469 NT_2548
+backup_certificate -> BACKUP CERTIFICATE id TO FILE EQUAL STRING NT_2560
+backup_master_key -> BACKUP MASTER KEY TO FILE EQUAL STRING ENCRYPTION BY PASSWORD EQUAL STRING
+backup_service_master_key -> BACKUP SERVICE MASTER KEY TO FILE EQUAL STRING ENCRYPTION BY PASSWORD EQUAL STRING
+block_statement -> BEGIN NT_6 NT_8 END NT_10
+break_statement -> BREAK NT_12
+continue_statement -> CONTINUE NT_14
+goto_statement -> GOTO id NT_16 | id \x3A NT_18
+if_statement -> IF search_condition sql_clause NT_25 NT_27
+return_statement -> RETURN NT_20 NT_22
+throw_statement -> THROW NT_30 NT_32
+try_catch_statement -> BEGIN TRY NT_34 NT_36 END TRY NT_38 BEGIN CATCH NT_40 NT_42 END CATCH NT_44
+waitfor_statement -> WAITFOR NT_46 NT_48 NT_52 NT_54 NT_56
+while_statement -> WHILE search_condition NT_57
+print_statement -> PRINT NT_62 NT_65 NT_67
+raiseerror_statement -> RAISERROR \x28 NT_68 \x2C constant_LOCAL_ID \x2C constant_LOCAL_ID NT_71 \x29 NT_75 NT_77 | RAISERROR DECIMAL NT_78 NT_82
+NT_5 -> ;
+NT_6 -> NT_5 |
+NT_7 -> sql_clauses
+NT_8 -> NT_7 |
+NT_9 -> ;
+NT_10 -> NT_9 |
+BEGIN -> (B) (E) (G) (I) (N)
+END -> (E) (N) (D)
+NT_11 -> ;
+NT_12 -> NT_11 |
+BREAK -> (B) (R) (E) (A) (K)
+NT_13 -> ;
+NT_14 -> NT_13 |
+CONTINUE -> (C) (O) (N) (T) (I) (N) (U) (E)
+NT_15 -> ;
+NT_16 -> NT_15 |
+GOTO -> (G) (O) (T) (O)
+id -> simple_id | DOUBLE_QUOTE_ID | SQUARE_BRACKET_ID
+NT_17 -> ;
+NT_18 -> NT_17 |
+NT_19 -> expression
+expression -> primitive_expression | function_call | expression COLLATE id | case_expression | full_column_name | bracket_expression | unary_operator_expression | expression NT_2902 expression | expression NT_2903 expression | expression comparison_operator expression | expression assignment_operator expression | over_clause
+NT_20 -> NT_19 |
+NT_21 -> ;
+NT_22 -> NT_21 |
+RETURN -> (R) (E) (T) (U) (R) (N)
+NT_23 -> ELSE sql_clause
+ELSE -> (E) (L) (S) (E)
+NT_24 -> NT_23
+NT_25 -> NT_24 |
+NT_26 -> ;
+NT_27 -> NT_26 |
+IF -> (I) (F)
+search_condition -> search_condition_and NT_2934
+NT_28 -> throw_error_number \x2C throw_message \x2C throw_state
+throw_error_number -> DECIMAL | LOCAL_ID
+throw_message -> STRING | LOCAL_ID
+throw_state -> DECIMAL | LOCAL_ID
+NT_29 -> NT_28
+NT_30 -> NT_29 |
+NT_31 -> ;
+NT_32 -> NT_31 |
+THROW -> (T) (H) (R) (O) (W)
+DECIMAL -> NT_3472
+LOCAL_ID -> \x40 NT_3470
+STRING -> NT_3491 SINGLE_QUOTE NT_3496 SINGLE_QUOTE
+NT_33 -> ;
+NT_34 -> NT_33 |
+NT_35 -> sql_clauses
+NT_36 -> NT_35 |
+NT_37 -> ;
+NT_38 -> NT_37 |
+NT_39 -> ;
+NT_40 -> NT_39 |
+NT_41 -> sql_clauses
+NT_42 -> NT_41 |
+NT_43 -> ;
+NT_44 -> NT_43 |
+TRY -> (T) (R) (Y)
+CATCH -> (C) (A) (T) (C) (H)
+NT_45 -> receive_statement
+receive_statement -> NT_1779 RECEIVE NT_1780 NT_1785 FROM full_table_name NT_1789 NT_1791
+NT_46 -> NT_45 |
+NT_47 -> \x2C
+NT_48 -> NT_47 |
+NT_50 -> DELAY | TIME | TIMEOUT
+DELAY -> (D) (E) (L) (A) (Y)
+TIME -> (T) (I) (M) (E)
+TIMEOUT -> (T) (I) (M) (E) (O) (U) (T)
+NT_49 -> NT_50 time
+time -> NT_1802
+NT_51 -> NT_49
+NT_52 -> NT_51 |
+NT_53 -> expression
+NT_54 -> NT_53 |
+NT_55 -> ;
+NT_56 -> NT_55 |
+WAITFOR -> (W) (A) (I) (T) (F) (O) (R)
+NT_57 -> sql_clause | BREAK NT_59 | CONTINUE NT_61
+NT_58 -> ;
+NT_59 -> NT_58 |
+NT_60 -> ;
+NT_61 -> NT_60 |
+WHILE -> (W) (H) (I) (L) (E)
+NT_62 -> expression | DOUBLE_QUOTE_ID
+DOUBLE_QUOTE_ID -> R3464_Q0
+NT_63 -> \x2C LOCAL_ID
+NT_64 -> NT_63
+NT_65 -> NT_64 | NT_65 NT_65 |
+NT_66 -> ;
+NT_67 -> NT_66 |
+PRINT -> (P) (R) (I) (N) (T)
+NT_68 -> DECIMAL | STRING | LOCAL_ID
+NT_69 -> \x2C constant_LOCAL_ID
+constant_LOCAL_ID -> constant | LOCAL_ID
+NT_70 -> NT_69
+NT_71 -> NT_70 | NT_71 NT_71 |
+NT_73 -> LOG | SETERROR
+LOG -> (L) (O) (G)
+SETERROR -> (S) (E) (T) (E) (R) (R) (O) (R)
+NT_72 -> WITH NT_73
+WITH -> (W) (I) (T) (H)
+NT_74 -> NT_72
+NT_75 -> NT_74 |
+NT_76 -> ;
+NT_77 -> NT_76 |
+RAISERROR -> (R) (A) (I) (S) (E) (R) (R) (O) (R)
+NT_78 -> STRING | LOCAL_ID | DOUBLE_QUOTE_ID
+NT_80 -> DECIMAL | STRING | LOCAL_ID
+NT_79 -> \x2C NT_80
+NT_81 -> NT_79
+NT_82 -> NT_81 | NT_82 NT_82 |
+declare_statement -> DECLARE LOCAL_ID NT_2281 table_type_definition NT_2283 | DECLARE declare_local NT_2286 NT_2288 | DECLARE LOCAL_ID NT_2290 xml_type_definition NT_2292 | WITH XMLNAMESPACES \x28 STRING NT_2294 AS id \x29 NT_2296
+cursor_statement -> CLOSE NT_2298 cursor_name NT_2300 | DEALLOCATE NT_2302 NT_2304 cursor_name NT_2306 | declare_cursor | fetch_cursor | OPEN NT_2308 cursor_name NT_2310
+conversation_statement -> begin_conversation_timer | begin_conversation_dialog | end_conversation | get_conversation | send_conversation | waitfor_conversation
+create_contract -> CREATE CONTRACT contract_name NT_1668 LR_BRACKET NT_1675 RR_BRACKET
+create_queue -> CREATE QUEUE NT_1604 NT_1606 NT_1609
+alter_queue -> ALTER QUEUE NT_1656 NT_1657
+execute_statement -> EXECUTE execute_body
+message_statement -> CREATE MESSAGE TYPE id NT_1678 NT_1679
+security_statement -> execute_clause NT_2593 | GRANT NT_2594 NT_2602 TO id NT_2605 NT_2608 NT_2611 NT_2613 | REVERT NT_2616 NT_2618 | open_key | close_key | create_key | create_certificate
+set_statement -> SET LOCAL_ID NT_2674 = expression NT_2676 | SET LOCAL_ID assignment_operator expression NT_2678 | SET LOCAL_ID = CURSOR declare_set_cursor_common NT_2685 NT_2687 | set_special
+transaction_statement -> BEGIN DISTRIBUTED NT_2688 NT_2691 NT_2693 | BEGIN NT_2694 NT_2701 NT_2703 | COMMIT NT_2704 NT_2712 NT_2714 | COMMIT NT_2716 NT_2718 | COMMIT id | ROLLBACK id | ROLLBACK NT_2719 NT_2722 NT_2724 | ROLLBACK NT_2726 NT_2728 | SAVE NT_2729 NT_2732 NT_2734
+use_statement -> USE id NT_2739
+setuser_statement -> SETUSER NT_2741
+NT_84 -> COMMA
+COMMA -> \x2C
+NT_85 -> NT_84 |
+NT_83 -> NT_85 NAME EQUAL id
+NAME -> (N) (A) (M) (E)
+EQUAL -> =
+NT_86 -> NT_83
+NT_87 -> NT_86 |
+NT_89 -> COMMA
+NT_90 -> NT_89 |
+NT_88 -> NT_90 PASSWORD EQUAL STRING
+PASSWORD -> (P) (A) (S) (S) (W) (O) (R) (D)
+NT_91 -> NT_88
+NT_92 -> NT_91 |
+NT_94 -> COMMA
+NT_95 -> NT_94 |
+NT_93 -> NT_95 DEFAULT_SCHEMA EQUAL id
+DEFAULT_SCHEMA -> (D) (E) (F) (A) (U) (L) (T) \x5F (S) (C) (H) (E) (M) (A)
+NT_96 -> NT_93
+NT_97 -> NT_96 |
+ALTER -> (A) (L) (T) (E) (R)
+APPLICATION -> (A) (P) (P) (L) (I) (C) (A) (T) (I) (O) (N)
+ROLE -> (R) (O) (L) (E)
+NT_99 -> COMMA
+NT_100 -> NT_99 |
+NT_98 -> NT_100 PASSWORD EQUAL STRING
+NT_101 -> NT_98
+NT_102 -> NT_101 |
+NT_104 -> COMMA
+NT_105 -> NT_104 |
+NT_103 -> NT_105 DEFAULT_SCHEMA EQUAL id
+NT_106 -> NT_103
+NT_107 -> NT_106 |
+CREATE -> (C) (R) (E) (A) (T) (E)
+NT_108 -> IF EXISTS
+EXISTS -> (E) (X) (I) (S) (T) (S)
+NT_109 -> NT_108
+NT_110 -> NT_109 |
+NT_111 -> id DOT
+DOT -> [^\n]
+NT_112 -> NT_111
+NT_113 -> NT_112 |
+DROP -> (D) (R) (O) (P)
+AGGREGATE -> (A) (G) (G) (R) (E) (G) (A) (T) (E)
+alter_assembly_start -> ALTER ASSEMBLY
+alter_assembly_clause -> NT_115 NT_117 NT_119 NT_121
+ASSEMBLY -> (A) (S) (S) (E) (M) (B) (L) (Y)
+NT_114 -> alter_assembly_from_clause
+alter_assembly_from_clause -> alter_assembly_from_clause_start NT_122
+NT_115 -> NT_114 |
+NT_116 -> alter_assembly_with_clause
+alter_assembly_with_clause -> alter_assembly_with assembly_option
+NT_117 -> NT_116 |
+NT_118 -> alter_assembly_drop_clause
+alter_assembly_drop_clause -> alter_assembly_drop alter_assembly_drop_multiple_files
+NT_119 -> NT_118 |
+NT_120 -> alter_assembly_add_clause
+alter_assembly_add_clause -> alter_asssembly_add_clause_start alter_assembly_client_file_clause
+NT_121 -> NT_120 |
+NT_122 -> client_assembly_specifier | alter_assembly_file_bits
+client_assembly_specifier -> network_file_share | local_file | STRING
+alter_assembly_file_bits -> alter_assembly_as id
+alter_assembly_from_clause_start -> FROM
+FROM -> (F) (R) (O) (M)
+alter_assembly_drop -> DROP
+alter_assembly_drop_multiple_files -> ALL | multiple_local_files
+ALL -> (A) (L) (L)
+multiple_local_files -> multiple_local_file_start local_file SINGLE_QUOTE COMMA | local_file
+alter_asssembly_add_clause_start -> ADD FILE FROM
+alter_assembly_client_file_clause -> alter_assembly_file_name NT_125
+ADD -> (A) (D) (D)
+FILE -> (F) (I) (L) (E)
+NT_123 -> alter_assembly_as id
+alter_assembly_as -> AS
+NT_124 -> NT_123
+NT_125 -> NT_124 |
+alter_assembly_file_name -> STRING
+AS -> (A) (S)
+alter_assembly_with -> WITH
+assembly_option -> PERMISSION_SET EQUAL NT_126 | VISIBILITY EQUAL NT_127 | UNCHECKED DATA | assembly_option COMMA
+network_file_share -> network_file_start network_computer file_path
+local_file -> local_drive file_path
+NT_126 -> SAFE | EXTERNAL_ACCESS | UNSAFE
+SAFE -> (S) (A) (F) (E)
+EXTERNAL_ACCESS -> (E) (X) (T) (E) (R) (N) (A) (L) \x5F (A) (C) (C) (E) (S) (S)
+UNSAFE -> (U) (N) (S) (A) (F) (E)
+PERMISSION_SET -> (P) (E) (R) (M) (I) (S) (S) (I) (O) (N) \x5F (S) (E) (T)
+NT_127 -> ON | OFF
+ON -> (O) (N)
+OFF -> (O) (F) (F)
+VISIBILITY -> (V) (I) (S) (I) (B) (I) (L) (I) (T) (Y)
+UNCHECKED -> (U) (N) (C) (H) (E) (C) (K) (E) (D)
+DATA -> (D) (A) (T) (A)
+network_file_start -> DOUBLE_BACK_SLASH
+network_computer -> id
+file_path -> file_directory_path_separator file_path | id
+DOUBLE_BACK_SLASH -> R3453_Q0
+file_directory_path_separator -> /
+local_drive -> DISK_DRIVE
+DISK_DRIVE -> R3463_Q0
+multiple_local_file_start -> SINGLE_QUOTE
+SINGLE_QUOTE -> R3465_Q0
+NT_128 -> AUTHORIZATION id
+AUTHORIZATION -> (A) (U) (T) (H) (O) (R) (I) (Z) (A) (T) (I) (O) (N)
+NT_129 -> NT_128
+NT_130 -> NT_129 |
+NT_132 -> COMMA
+NT_133 -> NT_132 |
+NT_134 -> STRING | BINARY
+BINARY -> 0 (X) NT_3498
+NT_131 -> NT_133 NT_134
+NT_135 -> NT_131
+NT_136 -> NT_135 | NT_136 NT_136
+NT_138 -> SAFE | EXTERNAL_ACCESS | UNSAFE
+NT_137 -> WITH PERMISSION_SET EQUAL NT_138
+NT_139 -> NT_137
+NT_140 -> NT_139 |
+NT_141 -> IF EXISTS
+NT_142 -> NT_141
+NT_143 -> NT_142 |
+NT_145 -> COMMA
+NT_146 -> NT_145 |
+NT_144 -> NT_146 id
+NT_147 -> NT_144
+NT_148 -> NT_147 | NT_148 NT_148
+NT_149 -> WITH NO DEPENDENTS
+NO -> (N) (O)
+DEPENDENTS -> (D) (E) (P) (E) (N) (D) (E) (N) (T) (S)
+NT_150 -> NT_149
+NT_151 -> NT_150 |
+NT_152 -> asymmetric_key_option | REMOVE PRIVATE KEY
+asymmetric_key_option -> asymmetric_key_option_start asymmetric_key_password_change_option NT_155 RR_BRACKET
+REMOVE -> (R) (E) (M) (O) (V) (E)
+PRIVATE -> (P) (R) (I) (V) (A) (T) (E)
+KEY -> (K) (E) (Y)
+alter_asymmetric_key_start -> ALTER ASYMMETRIC KEY
+ASYMMETRIC -> (A) (S) (Y) (M) (M) (E) (T) (R) (I) (C)
+NT_153 -> COMMA asymmetric_key_password_change_option
+asymmetric_key_password_change_option -> DECRYPTION BY PASSWORD EQUAL STRING | ENCRYPTION BY PASSWORD EQUAL STRING
+NT_154 -> NT_153
+NT_155 -> NT_154 |
+asymmetric_key_option_start -> WITH PRIVATE KEY LR_BRACKET
+RR_BRACKET -> \x29
+LR_BRACKET -> \x28
+DECRYPTION -> (D) (E) (C) (R) (Y) (P) (T) (I) (O) (N)
+BY -> (B) (Y)
+ENCRYPTION -> (E) (N) (C) (R) (Y) (P) (T) (I) (O) (N)
+NT_156 -> AUTHORIZATION id
+NT_157 -> NT_156
+NT_158 -> NT_157 |
+NT_160 -> FILE EQUAL STRING | EXECUTABLE_FILE EQUAL STRING | ASSEMBLY id | PROVIDER id
+EXECUTABLE_FILE -> (E) (X) (E) (C) (U) (T) (A) (B) (L) (E) \x5F (F) (I) (L) (E)
+PROVIDER -> (P) (R) (O) (V) (I) (D) (E) (R)
+NT_159 -> FROM NT_160
+NT_161 -> NT_159
+NT_162 -> NT_161 |
+NT_165 -> RSA_4096 | RSA_3072 | RSA_2048 | RSA_1024 | RSA_512
+RSA_4096 -> (R) (S) (A) \x5F 4 0 9 6
+RSA_3072 -> (R) (S) (A) \x5F 3 0 7 2
+RSA_2048 -> (R) (S) (A) \x5F 2 0 4 8
+RSA_1024 -> (R) (S) (A) \x5F 1 0 2 4
+RSA_512 -> (R) (S) (A) \x5F 5 1 2
+NT_164 -> ALGORITHM EQUAL NT_165 | PROVIDER_KEY_NAME EQUAL STRING | CREATION_DISPOSITION EQUAL NT_166
+ALGORITHM -> (A) (L) (G) (O) (R) (I) (T) (H) (M)
+PROVIDER_KEY_NAME -> (P) (R) (O) (V) (I) (D) (E) (R) \x5F (K) (E) (Y) \x5F (N) (A) (M) (E)
+NT_166 -> CREATE_NEW | OPEN_EXISTING
+CREATE_NEW -> (C) (R) (E) (A) (T) (E) \x5F (N) (E) (W)
+OPEN_EXISTING -> (O) (P) (E) (N) \x5F (E) (X) (I) (S) (T) (I) (N) (G)
+CREATION_DISPOSITION -> (C) (R) (E) (A) (T) (I) (O) (N) \x5F (D) (I) (S) (P) (O) (S) (I) (T) (I) (O) (N)
+NT_163 -> WITH NT_164
+NT_167 -> NT_163
+NT_168 -> NT_167 |
+NT_169 -> ENCRYPTION BY PASSWORD EQUAL STRING
+NT_170 -> NT_169
+NT_171 -> NT_170 |
+NT_172 -> REMOVE PROVIDER KEY
+NT_173 -> NT_172
+NT_174 -> NT_173 |
+NT_175 -> class_type colon_colon
+class_type -> OBJECT | ASSEMBLY | ASYMMETRIC KEY | AVAILABILITY GROUP | CERTIFICATE | CONTRACT | TYPE | DATABASE | ENDPOINT | FULLTEXT CATALOG | FULLTEXT STOPLIST | MESSAGE TYPE | REMOTE SERVICE BINDING | ROLE | ROUTE | SCHEMA | SEARCH PROPERTY LIST | SERVER ROLE | SERVICE | SYMMETRIC KEY | XML SCHEMA COLLECTION
+colon_colon -> COLON COLON
+NT_176 -> NT_175
+NT_177 -> NT_176 |
+alter_authorization_start -> ALTER AUTHORIZATION ON
+entity_name -> NT_3285 id
+entity_to -> TO
+authorization_grantee -> id | SCHEMA OWNER
+SCHEMA -> (S) (C) (H) (E) (M) (A)
+OWNER -> (O) (W) (N) (E) (R)
+TO -> (T) (O)
+COLON -> \x3A
+NT_178 -> class_type_for_sql_database colon_colon
+class_type_for_sql_database -> OBJECT | ASSEMBLY | ASYMMETRIC KEY | CERTIFICATE | TYPE | DATABASE | FULLTEXT CATALOG | FULLTEXT STOPLIST | ROLE | SCHEMA | SEARCH PROPERTY LIST | SYMMETRIC KEY | XML SCHEMA COLLECTION
+NT_179 -> NT_178
+NT_180 -> NT_179 |
+NT_181 -> class_type_for_azure_dw colon_colon
+class_type_for_azure_dw -> SCHEMA | OBJECT
+NT_182 -> NT_181
+NT_183 -> NT_182 |
+entity_name_for_azure_dw -> id | id [^\n] id
+NT_184 -> class_type_for_parallel_dw colon_colon
+class_type_for_parallel_dw -> DATABASE | SCHEMA | OBJECT
+NT_185 -> NT_184
+NT_186 -> NT_185 |
+entity_name_for_parallel_dw -> id | id [^\n] id
+OBJECT -> (O) (B) (J) (E) (C) (T)
+AVAILABILITY -> (A) (V) (A) (I) (L) (A) (B) (I) (L) (I) (T) (Y)
+GROUP -> (G) (R) (O) (U) (P)
+CERTIFICATE -> (C) (E) (R) (T) (I) (F) (I) (C) (A) (T) (E)
+CONTRACT -> (C) (O) (N) (T) (R) (A) (C) (T)
+TYPE -> (T) (Y) (P) (E)
+DATABASE -> (D) (A) (T) (A) (B) (A) (S) (E)
+ENDPOINT -> (E) (N) (D) (P) (O) (I) (N) (T)
+FULLTEXT -> (F) (U) (L) (L) (T) (E) (X) (T)
+CATALOG -> (C) (A) (T) (A) (L) (O) (G)
+STOPLIST -> (S) (T) (O) (P) (L) (I) (S) (T)
+MESSAGE -> (M) (E) (S) (S) (A) (G) (E)
+REMOTE -> (R) (E) (M) (O) (T) (E)
+SERVICE -> (S) (E) (R) (V) (I) (C) (E)
+BINDING -> (B) (I) (N) (D) (I) (N) (G)
+ROUTE -> (R) (O) (U) (T) (E)
+SEARCH -> (S) (E) (A) (R) (C) (H)
+PROPERTY -> (P) (R) (O) (P) (E) (R) (T) (Y)
+LIST -> (L) (I) (S) (T)
+SERVER -> (S) (E) (R) (V) (E) (R)
+SYMMETRIC -> (S) (Y) (M) (M) (E) (T) (R) (I) (C)
+XML -> (X) (M) (L)
+COLLECTION -> (C) (O) (L) (L) (E) (C) (T) (I) (O) (N)
+alter_availability_group_start -> ALTER AVAILABILITY GROUP id
+alter_availability_group_options -> SET LR_BRACKET NT_187 | ADD DATABASE id | REMOVE DATABASE id | ADD REPLICA ON STRING NT_191 RR_BRACKET | SECONDARY_ROLE LR_BRACKET NT_231 | PRIMARY_ROLE LR_BRACKET NT_236 | MODIFY REPLICA ON STRING NT_245 RR_BRACKET | REMOVE REPLICA ON STRING | JOIN | JOIN AVAILABILITY GROUP ON NT_271 | MODIFY AVAILABILITY GROUP ON NT_294 | GRANT CREATE ANY DATABASE | DENY CREATE ANY DATABASE | FAILOVER | FORCE_FAILOVER_ALLOW_DATA_LOSS | ADD LISTENER STRING LR_BRACKET NT_295 RR_BRACKET | MODIFY LISTENER NT_308 | RESTART LISTENER STRING | REMOVE LISTENER STRING | OFFLINE | WITH LR_BRACKET DTC_SUPPORT EQUAL PER_DB RR_BRACKET
+NT_189 -> PRIMARY | SECONDARY_ONLY | SECONDARY | NONE
+PRIMARY -> (P) (R) (I) (M) (A) (R) (Y)
+SECONDARY_ONLY -> (S) (E) (C) (O) (N) (D) (A) (R) (Y) \x5F (O) (N) (L) (Y)
+SECONDARY -> (S) (E) (C) (O) (N) (D) (A) (R) (Y)
+NONE -> (N) (O) (N) (E)
+NT_188 -> AUTOMATED_BACKUP_PREFERENCE EQUAL NT_189 | FAILURE_CONDITION_LEVEL EQUAL DECIMAL | HEALTH_CHECK_TIMEOUT EQUAL DECIMAL | DB_FAILOVER EQUAL NT_190 | REQUIRED_SYNCHRONIZED_SECONDARIES_TO_COMMIT EQUAL DECIMAL
+AUTOMATED_BACKUP_PREFERENCE -> (A) (U) (T) (O) (M) (A) (T) (E) (D) \x5F (B) (A) (C) (K) (U) (P) \x5F (P) (R) (E) (F) (E) (R) (E) (N) (C) (E)
+FAILURE_CONDITION_LEVEL -> (F) (A) (I) (L) (U) (R) (E) \x5F (C) (O) (N) (D) (I) (T) (I) (O) (N) \x5F (L) (E) (V) (E) (L)
+HEALTH_CHECK_TIMEOUT -> (H) (E) (A) (L) (T) (H) \x5F (C) (H) (E) (C) (K) \x5F (T) (I) (M) (E) (O) (U) (T)
+NT_190 -> ON | OFF
+DB_FAILOVER -> (D) (B) \x5F (F) (A) (I) (L) (O) (V) (E) (R)
+REQUIRED_SYNCHRONIZED_SECONDARIES_TO_COMMIT -> (R) (E) (Q) (U) (I) (R) (E) (D) \x5F (S) (Y) (N) (C) (H) (R) (O) (N) (I) (Z) (E) (D) \x5F (S) (E) (C) (O) (N) (D) (A) (R) (I) (E) (S) \x5F (T) (O) \x5F (C) (O) (M) (M) (I) (T)
+NT_187 -> NT_188 RR_BRACKET
+SET -> (S) (E) (T)
+NT_193 -> ENDPOINT_URL EQUAL STRING
+ENDPOINT_URL -> (E) (N) (D) (P) (O) (I) (N) (T) \x5F (U) (R) (L)
+NT_194 -> NT_193
+NT_195 -> NT_194 |
+NT_197 -> COMMA
+NT_198 -> NT_197 |
+NT_199 -> SYNCHRONOUS_COMMIT | ASYNCHRONOUS_COMMIT
+SYNCHRONOUS_COMMIT -> (S) (Y) (N) (C) (H) (R) (O) (N) (O) (U) (S) \x5F (C) (O) (M) (M) (I) (T)
+ASYNCHRONOUS_COMMIT -> (A) (S) (Y) (N) (C) (H) (R) (O) (N) (O) (U) (S) \x5F (C) (O) (M) (M) (I) (T)
+NT_196 -> NT_198 AVAILABILITY_MODE EQUAL NT_199
+AVAILABILITY_MODE -> (A) (V) (A) (I) (L) (A) (B) (I) (L) (I) (T) (Y) \x5F (M) (O) (D) (E)
+NT_200 -> NT_196
+NT_201 -> NT_200 |
+NT_203 -> COMMA
+NT_204 -> NT_203 |
+NT_205 -> AUTOMATIC | MANUAL
+AUTOMATIC -> (A) (U) (T) (O) (M) (A) (T) (I) (C)
+MANUAL -> (M) (A) (N) (U) (A) (L)
+NT_202 -> NT_204 FAILOVER_MODE EQUAL NT_205
+FAILOVER_MODE -> (F) (A) (I) (L) (O) (V) (E) (R) \x5F (M) (O) (D) (E)
+NT_206 -> NT_202
+NT_207 -> NT_206 |
+NT_209 -> COMMA
+NT_210 -> NT_209 |
+NT_211 -> AUTOMATIC | MANUAL
+NT_208 -> NT_210 SEEDING_MODE EQUAL NT_211
+SEEDING_MODE -> (S) (E) (E) (D) (I) (N) (G) \x5F (M) (O) (D) (E)
+NT_212 -> NT_208
+NT_213 -> NT_212 |
+NT_215 -> COMMA
+NT_216 -> NT_215 |
+NT_214 -> NT_216 BACKUP_PRIORITY EQUAL DECIMAL
+BACKUP_PRIORITY -> (B) (A) (C) (K) (U) (P) \x5F (P) (R) (I) (O) (R) (I) (T) (Y)
+NT_217 -> NT_214
+NT_218 -> NT_217 |
+NT_220 -> COMMA
+NT_221 -> NT_220 |
+NT_222 -> READ_WRITE | ALL
+READ_WRITE -> (R) (E) (A) (D) \x5F (W) (R) (I) (T) (E)
+NT_219 -> NT_221 PRIMARY_ROLE LR_BRACKET ALLOW_CONNECTIONS EQUAL NT_222 RR_BRACKET
+PRIMARY_ROLE -> (P) (R) (I) (M) (A) (R) (Y) \x5F (R) (O) (L) (E)
+ALLOW_CONNECTIONS -> (A) (L) (L) (O) (W) \x5F (C) (O) (N) (N) (E) (C) (T) (I) (O) (N) (S)
+NT_223 -> NT_219
+NT_224 -> NT_223 |
+NT_226 -> COMMA
+NT_227 -> NT_226 |
+NT_228 -> READ_ONLY
+READ_ONLY -> (R) (E) (A) (D) \x5F (O) (N) (L) (Y)
+NT_225 -> NT_227 SECONDARY_ROLE LR_BRACKET ALLOW_CONNECTIONS EQUAL NT_228 RR_BRACKET
+SECONDARY_ROLE -> (S) (E) (C) (O) (N) (D) (A) (R) (Y) \x5F (R) (O) (L) (E)
+NT_229 -> NT_225
+NT_230 -> NT_229 |
+NT_192 -> NT_195 NT_201 NT_207 NT_213 NT_218 NT_224 NT_230
+NT_191 -> WITH LR_BRACKET NT_192
+REPLICA -> (R) (E) (P) (L) (I) (C) (A)
+NT_232 -> NO | READ_ONLY | ALL
+NT_231 -> ALLOW_CONNECTIONS EQUAL NT_232 | READ_ONLY_ROUTING_LIST EQUAL NT_233
+NT_235 -> STRING
+NT_234 -> NT_235
+NT_233 -> LR_BRACKET NT_234 RR_BRACKET
+READ_ONLY_ROUTING_LIST -> (R) (E) (A) (D) \x5F (O) (N) (L) (Y) \x5F (R) (O) (U) (T) (I) (N) (G) \x5F (L) (I) (S) (T)
+NT_237 -> NO | READ_ONLY | ALL
+NT_236 -> ALLOW_CONNECTIONS EQUAL NT_237 | READ_ONLY_ROUTING_LIST EQUAL NT_238 | SESSION_TIMEOUT EQUAL DECIMAL
+NT_241 -> COMMA
+NT_242 -> NT_241 |
+NT_240 -> NT_242 STRING
+NT_243 -> NT_240
+NT_244 -> NT_243 | NT_244 NT_244 |
+NT_239 -> NT_244 | NONE
+NT_238 -> LR_BRACKET NT_239 RR_BRACKET
+SESSION_TIMEOUT -> (S) (E) (S) (S) (I) (O) (N) \x5F (T) (I) (M) (E) (O) (U) (T)
+NT_246 -> ENDPOINT_URL EQUAL STRING | AVAILABILITY_MODE EQUAL NT_247 | FAILOVER_MODE EQUAL NT_248 | SEEDING_MODE EQUAL NT_249 | BACKUP_PRIORITY EQUAL DECIMAL
+NT_247 -> SYNCHRONOUS_COMMIT | ASYNCHRONOUS_COMMIT
+NT_248 -> AUTOMATIC | MANUAL
+NT_249 -> AUTOMATIC | MANUAL
+NT_245 -> WITH LR_BRACKET NT_246 | SECONDARY_ROLE LR_BRACKET NT_250 | PRIMARY_ROLE LR_BRACKET NT_255
+NT_251 -> NO | READ_ONLY | ALL
+NT_250 -> ALLOW_CONNECTIONS EQUAL NT_251 | READ_ONLY_ROUTING_LIST EQUAL NT_252
+NT_254 -> STRING
+NT_253 -> NT_254
+NT_252 -> LR_BRACKET NT_253 RR_BRACKET
+NT_256 -> NO | READ_ONLY | ALL
+NT_255 -> ALLOW_CONNECTIONS EQUAL NT_256 | READ_ONLY_ROUTING_LIST EQUAL NT_257 | SESSION_TIMEOUT EQUAL DECIMAL
+NT_260 -> COMMA
+NT_261 -> NT_260 |
+NT_259 -> NT_261 STRING
+NT_262 -> NT_259
+NT_263 -> NT_262 | NT_263 NT_263 |
+NT_258 -> NT_263 | NONE
+NT_257 -> LR_BRACKET NT_258 RR_BRACKET
+MODIFY -> (M) (O) (D) (I) (F) (Y)
+JOIN -> (J) (O) (I) (N)
+NT_265 -> COMMA
+NT_266 -> NT_265 |
+NT_268 -> SYNCHRONOUS_COMMIT | ASYNCHRONOUS_COMMIT
+NT_269 -> AUTOMATIC | MANUAL
+NT_267 -> LISTENER_URL EQUAL STRING COMMA AVAILABILITY_MODE EQUAL NT_268 COMMA FAILOVER_MODE EQUAL MANUAL COMMA SEEDING_MODE EQUAL NT_269 RR_BRACKET
+LISTENER_URL -> (L) (I) (S) (T) (E) (N) (E) (R) \x5F (U) (R) (L)
+NT_264 -> NT_266 STRING WITH LR_BRACKET NT_267
+NT_270 -> NT_264
+NT_271 -> NT_270 | NT_271 NT_271
+NT_273 -> COMMA
+NT_274 -> NT_273 |
+NT_277 -> COMMA
+NT_278 -> NT_277 |
+NT_279 -> SYNCHRONOUS_COMMIT | ASYNCHRONOUS_COMMIT
+NT_276 -> NT_278 AVAILABILITY_MODE EQUAL NT_279
+NT_280 -> NT_276
+NT_281 -> NT_280 |
+NT_283 -> COMMA
+NT_284 -> NT_283 |
+NT_282 -> NT_284 FAILOVER_MODE EQUAL MANUAL
+NT_285 -> NT_282
+NT_286 -> NT_285 |
+NT_288 -> COMMA
+NT_289 -> NT_288 |
+NT_290 -> AUTOMATIC | MANUAL
+NT_287 -> NT_289 SEEDING_MODE EQUAL NT_290
+NT_291 -> NT_287
+NT_292 -> NT_291 |
+NT_275 -> LISTENER_URL EQUAL STRING NT_281 NT_286 NT_292 RR_BRACKET
+NT_272 -> NT_274 STRING WITH LR_BRACKET NT_275
+NT_293 -> NT_272
+NT_294 -> NT_293 | NT_294 NT_294
+GRANT -> (G) (R) (A) (N) (T)
+ANY -> (A) (N) (Y)
+DENY -> (D) (E) (N) (Y)
+FAILOVER -> (F) (A) (I) (L) (O) (V) (E) (R)
+FORCE_FAILOVER_ALLOW_DATA_LOSS -> (F) (O) (R) (C) (E) \x5F (F) (A) (I) (L) (O) (V) (E) (R) \x5F (A) (L) (L) (O) (W) \x5F (D) (A) (T) (A) \x5F (L) (O) (S) (S)
+NT_297 -> IPV4_ADDR IPV4_ADDR
+IPV4_ADDR -> R3456_Q0 IPV4_OCTECT DOT IPV4_OCTECT DOT IPV4_OCTECT DOT IPV4_OCTECT R3457_Q0
+NT_296 -> ON LR_BRACKET NT_297 RR_BRACKET
+NT_295 -> WITH DHCP NT_296 | WITH IP LR_BRACKET NT_298
+DHCP -> (D) (H) (C) (P)
+NT_300 -> COMMA
+NT_301 -> NT_300 |
+NT_302 -> IPV4_ADDR COMMA IPV4_ADDR | IPV6_ADDR
+IPV6_ADDR -> R3458_Q0
+NT_299 -> NT_301 LR_BRACKET NT_302 RR_BRACKET
+NT_303 -> NT_299
+NT_304 -> NT_303 | NT_304 NT_304
+NT_305 -> COMMA PORT EQUAL DECIMAL
+PORT -> (P) (O) (R) (T)
+NT_306 -> NT_305
+NT_307 -> NT_306 |
+NT_298 -> NT_304 RR_BRACKET NT_307
+IP -> (I) (P)
+LISTENER -> (L) (I) (S) (T) (E) (N) (E) (R)
+NT_309 -> IPV4_ADDR IPV4_ADDR | IPV6_ADDR
+NT_308 -> ADD IP LR_BRACKET NT_309 RR_BRACKET | PORT EQUAL DECIMAL
+RESTART -> (R) (E) (S) (T) (A) (R) (T)
+OFFLINE -> (O) (F) (F) (L) (I) (N) (E)
+DTC_SUPPORT -> (D) (T) (C) \x5F (S) (U) (P) (P) (O) (R) (T)
+PER_DB -> (P) (E) (R) \x5F (D) (B)
+NT_310 -> CREATE | ALTER
+NT_313 -> id
+NT_312 -> NT_313 | ANY
+NT_314 -> COMMA
+NT_315 -> NT_314 |
+NT_311 -> CONTRACT_NAME EQUAL NT_312 NT_315
+CONTRACT_NAME -> (C) (O) (N) (T) (R) (A) (C) (T) \x5F (N) (A) (M) (E)
+NT_316 -> NT_311
+NT_317 -> NT_316 |
+NT_320 -> DOUBLE_FORWARD_SLASH
+DOUBLE_FORWARD_SLASH -> / /
+NT_321 -> NT_320 |
+NT_319 -> NT_321 id | ANY
+NT_322 -> COMMA
+NT_323 -> NT_322 |
+NT_318 -> LOCAL_SERVICE_NAME EQUAL NT_319 NT_323
+LOCAL_SERVICE_NAME -> (L) (O) (C) (A) (L) \x5F (S) (E) (R) (V) (I) (C) (E) \x5F (N) (A) (M) (E)
+NT_324 -> NT_318
+NT_325 -> NT_324 |
+NT_327 -> STRING | ANY
+NT_328 -> COMMA
+NT_329 -> NT_328 |
+NT_326 -> REMOTE_SERVICE_NAME EQUAL NT_327 NT_329
+REMOTE_SERVICE_NAME -> (R) (E) (M) (O) (T) (E) \x5F (S) (E) (R) (V) (I) (C) (E) \x5F (N) (A) (M) (E)
+NT_330 -> NT_326
+NT_331 -> NT_330 |
+NT_333 -> DECIMAL | DEFAULT
+DEFAULT -> (D) (E) (F) (A) (U) (L) (T)
+NT_332 -> PRIORITY_LEVEL EQUAL NT_333
+PRIORITY_LEVEL -> (P) (R) (I) (O) (R) (I) (T) (Y) \x5F (L) (E) (V) (E) (L)
+NT_334 -> NT_332
+NT_335 -> NT_334 |
+BROKER -> (B) (R) (O) (K) (E) (R)
+PRIORITY -> (P) (R) (I) (O) (R) (I) (T) (Y)
+FOR -> (F) (O) (R)
+CONVERSATION -> (C) (O) (N) (V) (E) (R) (S) (A) (T) (I) (O) (N)
+NT_336 -> REMOVE PRIVATE_KEY | WITH PRIVATE KEY LR_BRACKET NT_345 RR_BRACKET | WITH ACTIVE FOR BEGIN_DIALOG EQUAL NT_346
+PRIVATE_KEY -> (P) (R) (I) (V) (A) (T) (E) \x5F (K) (E) (Y)
+NT_338 -> COMMA
+NT_339 -> NT_338 |
+NT_337 -> FILE EQUAL STRING NT_339 | DECRYPTION BY PASSWORD EQUAL STRING NT_341 | ENCRYPTION BY PASSWORD EQUAL STRING NT_343
+NT_340 -> COMMA
+NT_341 -> NT_340 |
+NT_342 -> COMMA
+NT_343 -> NT_342 |
+NT_344 -> NT_337
+NT_345 -> NT_344 | NT_345 NT_345
+NT_346 -> ON | OFF
+ACTIVE -> (A) (C) (T) (I) (V) (E)
+BEGIN_DIALOG -> (B) (E) (G) (I) (N) \x5F (D) (I) (A) (L) (O) (G)
+NT_347 -> ADD | DROP
+NT_348 -> COMMA ALGORITHM EQUAL STRING COMMA ENCRYPTED_VALUE EQUAL BINARY
+ENCRYPTED_VALUE -> (E) (N) (C) (R) (Y) (P) (T) (E) (D) \x5F (V) (A) (L) (U) (E)
+NT_349 -> NT_348
+NT_350 -> NT_349 |
+COLUMN -> (C) (O) (L) (U) (M) (N)
+VALUE -> (V) (A) (L) (U) (E)
+COLUMN_MASTER_KEY -> (C) (O) (L) (U) (M) (N) \x5F (M) (A) (S) (T) (E) (R) \x5F (K) (E) (Y)
+NT_352 -> COMMA
+NT_353 -> NT_352 |
+NT_354 -> COMMA
+NT_355 -> NT_354 |
+NT_351 -> LR_BRACKET NT_353 COLUMN_MASTER_KEY EQUAL id COMMA ALGORITHM EQUAL STRING COMMA ENCRYPTED_VALUE EQUAL BINARY RR_BRACKET NT_355
+NT_356 -> NT_351
+NT_357 -> NT_356 | NT_357 NT_357
+VALUES -> (V) (A) (L) (U) (E) (S)
+MASTER -> (M) (A) (S) (T) (E) (R)
+CREDENTIAL -> (C) (R) (E) (D) (E) (N) (T) (I) (A) (L)
+CRYPTOGRAPHIC -> (C) (R) (Y) (P) (T) (O) (G) (R) (A) (P) (H) (I) (C)
+NT_358 -> IF EXISTS
+NT_359 -> NT_358
+NT_360 -> NT_359 |
+NT_362 -> COMMA
+NT_363 -> NT_362 |
+NT_361 -> NT_363 id
+NT_364 -> NT_361
+NT_365 -> NT_364 | NT_365 NT_365
+AUDIT -> (A) (U) (D) (I) (T)
+SPECIFICATION -> (S) (P) (E) (C) (I) (F) (I) (C) (A) (T) (I) (O) (N)
+SCOPED -> (S) (C) (O) (P) (E) (D)
+NT_366 -> IF EXISTS
+NT_367 -> NT_366
+NT_368 -> NT_367 |
+NT_370 -> COMMA
+NT_371 -> NT_370 |
+NT_372 -> id DOT
+NT_373 -> NT_372
+NT_374 -> NT_373 |
+NT_369 -> NT_371 NT_374 id
+EXTERNAL -> (E) (X) (T) (E) (R) (N) (A) (L)
+SOURCE -> (S) (O) (U) (R) (C) (E)
+FORMAT -> (F) (O) (R) (M) (A) (T)
+NT_375 -> AUTHORIZATION id
+NT_376 -> NT_375
+NT_377 -> NT_376 |
+LIBRARY -> (L) (I) (B) (R) (A) (R) (Y)
+RESOURCE -> (R) (E) (S) (O) (U) (R) (C) (E)
+POOL -> (P) (O) (O) (L)
+NT_378 -> id DOT
+NT_379 -> NT_378
+NT_380 -> NT_379 |
+NT_381 -> id DOT
+NT_382 -> NT_381
+NT_383 -> NT_382 |
+TABLE -> (T) (A) (B) (L) (E)
+NT_385 -> COMMA
+NT_386 -> NT_385 |
+NT_384 -> NT_386 id
+NT_387 -> NT_384
+NT_388 -> NT_387 | NT_388 NT_388
+NT_389 -> SERVER | DATABASE | QUEUE id
+QUEUE -> (Q) (U) (E) (U) (E)
+EVENT -> (E) (V) (E) (N) (T)
+NOTIFICATION -> (N) (O) (T) (I) (F) (I) (C) (A) (T) (I) (O) (N)
+SESSION -> (S) (E) (S) (S) (I) (O) (N)
+NT_390 -> id DOT
+NT_391 -> NT_390
+NT_392 -> NT_391 |
+INDEX -> (I) (N) (D) (E) (X)
+LOGIN -> (L) (O) (G) (I) (N)
+PARTITION -> (P) (A) (R) (T) (I) (T) (I) (O) (N)
+FUNCTION -> (F) (U) (N) (C) (T) (I) (O) (N)
+SCHEME -> (S) (C) (H) (E) (M) (E)
+NT_393 -> id DOT
+NT_394 -> NT_393
+NT_395 -> NT_394 |
+NT_396 -> id DOT
+NT_397 -> NT_396
+NT_398 -> NT_397 |
+NT_399 -> IF EXISTS
+NT_400 -> NT_399
+NT_401 -> NT_400 |
+NT_402 -> IF EXISTS
+NT_403 -> NT_402
+NT_404 -> NT_403 |
+NT_406 -> COMMA
+NT_407 -> NT_406 |
+NT_408 -> id DOT
+NT_409 -> NT_408
+NT_410 -> NT_409 |
+NT_405 -> NT_407 NT_410 id
+NT_411 -> NT_405
+NT_412 -> NT_411 |
+RULE -> (R) (U) (L) (E)
+NT_413 -> IF EXISTS
+NT_414 -> NT_413
+NT_415 -> NT_414 |
+NT_416 -> IF EXISTS
+NT_417 -> NT_416
+NT_418 -> NT_417 |
+NT_419 -> id DOT
+NT_420 -> NT_419
+NT_421 -> NT_420 |
+SECURITY -> (S) (E) (C) (U) (R) (I) (T) (Y)
+POLICY -> (P) (O) (L) (I) (C) (Y)
+NT_422 -> IF EXISTS
+NT_423 -> NT_422
+NT_424 -> NT_423 |
+NT_426 -> COMMA
+NT_427 -> NT_426 |
+NT_428 -> id DOT
+NT_429 -> NT_428
+NT_430 -> NT_429 |
+NT_431 -> id DOT
+NT_432 -> NT_431
+NT_433 -> NT_432 |
+NT_425 -> NT_427 NT_430 NT_433 id
+NT_434 -> NT_425
+NT_435 -> NT_434 |
+SEQUENCE -> (S) (E) (Q) (U) (E) (N) (C) (E)
+NT_436 -> COUNTER
+COUNTER -> (C) (O) (U) (N) (T) (E) (R)
+NT_437 -> NT_436
+NT_438 -> NT_437 |
+NT_439 -> id DOT
+NT_440 -> NT_439
+NT_441 -> NT_440 |
+NT_443 -> COMMA
+NT_444 -> NT_443 |
+NT_442 -> NT_444 CERTIFICATE id | NT_446 ASYMMETRIC KEY id
+NT_445 -> COMMA
+NT_446 -> NT_445 |
+NT_447 -> NT_442
+NT_448 -> NT_447 | NT_448 NT_448
+SIGNATURE -> (S) (I) (G) (N) (A) (T) (U) (R) (E)
+NT_449 -> id DOT
+NT_450 -> NT_449
+NT_451 -> NT_450 |
+STATISTICS -> (S) (T) (A) (T) (I) (S) (T) (I) (C) (S)
+NT_452 -> REMOVE PROVIDER KEY
+NT_453 -> NT_452
+NT_454 -> NT_453 |
+NT_455 -> IF EXISTS
+NT_456 -> NT_455
+NT_457 -> NT_456 |
+NT_458 -> id DOT
+NT_459 -> NT_458
+NT_460 -> NT_459 |
+SYNONYM -> (S) (Y) (N) (O) (N) (Y) (M)
+NT_461 -> IF EXISTS
+NT_462 -> NT_461
+NT_463 -> NT_462 |
+USER -> (U) (S) (E) (R)
+WORKLOAD -> (W) (O) (R) (K) (L) (O) (A) (D)
+NT_464 -> id DOT
+NT_465 -> NT_464
+NT_466 -> NT_465 |
+NT_469 -> COMMA
+NT_470 -> NT_469 |
+NT_471 -> id DOT
+NT_472 -> NT_471
+NT_473 -> NT_472 |
+NT_468 -> NT_470 NT_473 id
+NT_474 -> NT_468
+NT_475 -> NT_474 | NT_475 NT_475
+NT_467 -> NT_475 | ALL
+NT_477 -> id DOT
+NT_478 -> NT_477
+NT_479 -> NT_478 |
+NT_476 -> NT_479 id | DATABASE | ALL SERVER
+DISABLE -> (D) (I) (S) (A) (B) (L) (E)
+TRIGGER -> (T) (R) (I) (G) (G) (E) (R)
+NT_482 -> COMMA
+NT_483 -> NT_482 |
+NT_484 -> id DOT
+NT_485 -> NT_484
+NT_486 -> NT_485 |
+NT_481 -> NT_483 NT_486 id
+NT_487 -> NT_481
+NT_488 -> NT_487 | NT_488 NT_488
+NT_480 -> NT_488 | ALL
+NT_490 -> id DOT
+NT_491 -> NT_490
+NT_492 -> NT_491 |
+NT_489 -> NT_492 id | DATABASE | ALL SERVER
+ENABLE -> (E) (N) (A) (B) (L) (E)
+NT_493 -> SHARE | EXCLUSIVE
+SHARE -> (S) (H) (A) (R) (E)
+EXCLUSIVE -> (E) (X) (C) (L) (U) (S) (I) (V) (E)
+NT_494 -> WAIT DECIMAL | NOWAIT
+WAIT -> (W) (A) (I) (T)
+NOWAIT -> (N) (O) (W) (A) (I) (T)
+NT_495 -> NT_494
+NT_496 -> NT_495 |
+NT_497 -> ;
+NT_498 -> NT_497 |
+LOCK -> (L) (O) (C) (K)
+table_name -> NT_3297 id | NT_3303 BLOCKING_HIERARCHY
+IN -> (I) (N)
+MODE -> (M) (O) (D) (E)
+NT_501 -> COMMA
+NT_502 -> NT_501 |
+NT_503 -> DECIMAL | DECIMAL TO DECIMAL
+NT_500 -> NT_502 NT_503
+NT_504 -> NT_500
+NT_505 -> NT_504 | NT_505 NT_505
+NT_499 -> WITH LR_BRACKET PARTITIONS LR_BRACKET NT_505 RR_BRACKET RR_BRACKET
+PARTITIONS -> (P) (A) (R) (T) (I) (T) (I) (O) (N) (S)
+NT_506 -> NT_499
+NT_507 -> NT_506 |
+TRUNCATE -> (T) (R) (U) (N) (C) (A) (T) (E)
+KEY_STORE_PROVIDER_NAME -> (K) (E) (Y) \x5F (S) (T) (O) (R) (E) \x5F (P) (R) (O) (V) (I) (D) (E) (R) \x5F (N) (A) (M) (E)
+KEY_PATH -> (K) (E) (Y) \x5F (P) (A) (T) (H)
+NT_508 -> COMMA SECRET EQUAL STRING
+SECRET -> (S) (E) (C) (R) (E) (T)
+NT_509 -> NT_508
+NT_510 -> NT_509 |
+IDENTITY -> (I) (D) (E) (N) (T) (I) (T) (Y)
+NT_511 -> COMMA SECRET EQUAL STRING
+NT_512 -> NT_511
+NT_513 -> NT_512 |
+NT_514 -> FOR CRYPTOGRAPHIC PROVIDER id
+NT_515 -> NT_514
+NT_516 -> NT_515 |
+NT_517 -> FROM FILE EQUAL STRING
+NT_518 -> NT_517
+NT_519 -> NT_518 |
+NT_520 -> ENABLE | DISABLE
+NT_521 -> NT_520
+NT_522 -> NT_521 |
+NT_523 -> SERVER | DATABASE | QUEUE id
+NT_524 -> WITH FAN_IN
+FAN_IN -> (F) (A) (N) \x5F (I) (N)
+NT_525 -> NT_524
+NT_526 -> NT_525 |
+NT_528 -> COMMA
+NT_529 -> NT_528 |
+NT_527 -> NT_529 id
+NT_530 -> NT_527
+NT_531 -> NT_530 | NT_531 NT_531
+NT_532 -> CREATE | ALTER
+NT_534 -> COMMA
+NT_535 -> NT_534 |
+NT_537 -> id DOT
+NT_538 -> NT_537
+NT_539 -> NT_538 |
+NT_536 -> NT_539 id DOT id
+NT_543 -> COMMA
+NT_544 -> NT_543 |
+NT_545 -> DECIMAL | STRING
+NT_542 -> NT_544 id EQUAL NT_545
+NT_546 -> NT_542
+NT_547 -> NT_546 | NT_547 NT_547 |
+NT_541 -> SET NT_547
+NT_548 -> NT_541
+NT_549 -> NT_548 |
+NT_552 -> COMMA
+NT_553 -> NT_552 |
+NT_554 -> id DOT
+NT_555 -> NT_554
+NT_556 -> NT_555 |
+NT_551 -> NT_553 NT_556 id DOT id
+NT_557 -> NT_551
+NT_558 -> NT_557 | NT_558 NT_558
+NT_550 -> ACTION LR_BRACKET NT_558 RR_BRACKET
+ACTION -> (A) (C) (T) (I) (O) (N)
+NT_559 -> NT_550
+NT_560 -> NT_559 | NT_560 NT_560
+NT_561 -> WHERE event_session_predicate_expression
+WHERE -> (W) (H) (E) (R) (E)
+event_session_predicate_expression -> NT_661
+NT_562 -> NT_561
+NT_563 -> NT_562 |
+NT_540 -> LR_BRACKET NT_549 NT_560 NT_563 RR_BRACKET
+NT_564 -> NT_540
+NT_565 -> NT_564 | NT_565 NT_565 |
+NT_533 -> NT_535 ADD EVENT NT_536 NT_565
+NT_566 -> NT_533
+NT_567 -> NT_566 | NT_567 NT_567 |
+NT_569 -> COMMA
+NT_570 -> NT_569 |
+NT_571 -> id DOT
+NT_572 -> NT_571
+NT_573 -> NT_572 |
+NT_568 -> NT_570 DROP EVENT NT_573 id DOT id
+NT_574 -> NT_568
+NT_575 -> NT_574 | NT_575 NT_575 |
+NT_578 -> id DOT
+NT_579 -> NT_578
+NT_580 -> NT_579 |
+NT_577 -> ADD TARGET NT_580 id DOT id
+TARGET -> (T) (A) (R) (G) (E) (T)
+NT_583 -> COMMA
+NT_584 -> NT_583 |
+NT_586 -> LR_BRACKET
+NT_587 -> NT_586 |
+NT_588 -> RR_BRACKET
+NT_589 -> NT_588 |
+NT_585 -> NT_587 DECIMAL NT_589 | STRING
+NT_582 -> NT_584 id EQUAL NT_585
+NT_590 -> NT_582
+NT_591 -> NT_590 | NT_591 NT_591
+NT_581 -> LR_BRACKET SET NT_591 RR_BRACKET
+NT_592 -> NT_581
+NT_593 -> NT_592 | NT_593 NT_593 |
+NT_576 -> NT_577 NT_593
+NT_594 -> NT_576
+NT_595 -> NT_594 | NT_595 NT_595 |
+NT_597 -> id DOT
+NT_598 -> NT_597
+NT_599 -> NT_598 |
+NT_596 -> DROP TARGET NT_599 id DOT id
+NT_600 -> NT_596
+NT_601 -> NT_600 | NT_601 NT_601 |
+NT_604 -> COMMA
+NT_605 -> NT_604 |
+NT_606 -> KB | MB
+KB -> (K) (B)
+MB -> (M) (B)
+NT_603 -> NT_605 MAX_MEMORY EQUAL DECIMAL NT_606
+MAX_MEMORY -> (M) (A) (X) \x5F (M) (E) (M) (O) (R) (Y)
+NT_607 -> NT_603
+NT_608 -> NT_607 |
+NT_610 -> COMMA
+NT_611 -> NT_610 |
+NT_612 -> ALLOW_SINGLE_EVENT_LOSS | ALLOW_MULTIPLE_EVENT_LOSS | NO_EVENT_LOSS
+ALLOW_SINGLE_EVENT_LOSS -> (A) (L) (L) (O) (W) \x5F (S) (I) (N) (G) (L) (E) \x5F (E) (V) (E) (N) (T) \x5F (L) (O) (S) (S)
+ALLOW_MULTIPLE_EVENT_LOSS -> (A) (L) (L) (O) (W) \x5F (M) (U) (L) (T) (I) (P) (L) (E) \x5F (E) (V) (E) (N) (T) \x5F (L) (O) (S) (S)
+NO_EVENT_LOSS -> (N) (O) \x5F (E) (V) (E) (N) (T) \x5F (L) (O) (S) (S)
+NT_609 -> NT_611 EVENT_RETENTION_MODE EQUAL NT_612
+EVENT_RETENTION_MODE -> (E) (V) (E) (N) (T) \x5F (R) (E) (T) (E) (N) (T) (I) (O) (N) \x5F (M) (O) (D) (E)
+NT_613 -> NT_609
+NT_614 -> NT_613 |
+NT_616 -> COMMA
+NT_617 -> NT_616 |
+NT_618 -> DECIMAL SECONDS | INFINITE
+SECONDS -> (S) (E) (C) (O) (N) (D) (S)
+INFINITE -> (I) (N) (F) (I) (N) (I) (T) (E)
+NT_615 -> NT_617 MAX_DISPATCH_LATENCY EQUAL NT_618
+MAX_DISPATCH_LATENCY -> (M) (A) (X) \x5F (D) (I) (S) (P) (A) (T) (C) (H) \x5F (L) (A) (T) (E) (N) (C) (Y)
+NT_619 -> NT_615
+NT_620 -> NT_619 |
+NT_622 -> COMMA
+NT_623 -> NT_622 |
+NT_624 -> KB | MB
+NT_621 -> NT_623 MAX_EVENT_SIZE EQUAL DECIMAL NT_624
+MAX_EVENT_SIZE -> (M) (A) (X) \x5F (E) (V) (E) (N) (T) \x5F (S) (I) (Z) (E)
+NT_625 -> NT_621
+NT_626 -> NT_625 |
+NT_628 -> COMMA
+NT_629 -> NT_628 |
+NT_630 -> NONE | PER_NODE | PER_CPU
+PER_NODE -> (P) (E) (R) \x5F (N) (O) (D) (E)
+PER_CPU -> (P) (E) (R) \x5F (C) (P) (U)
+NT_627 -> NT_629 MEMORY_PARTITION_MODE EQUAL NT_630
+MEMORY_PARTITION_MODE -> (M) (E) (M) (O) (R) (Y) \x5F (P) (A) (R) (T) (I) (T) (I) (O) (N) \x5F (M) (O) (D) (E)
+NT_631 -> NT_627
+NT_632 -> NT_631 |
+NT_634 -> COMMA
+NT_635 -> NT_634 |
+NT_636 -> ON | OFF
+NT_633 -> NT_635 TRACK_CAUSALITY EQUAL NT_636
+TRACK_CAUSALITY -> (T) (R) (A) (C) (K) \x5F (C) (A) (U) (S) (A) (L) (I) (T) (Y)
+NT_637 -> NT_633
+NT_638 -> NT_637 |
+NT_640 -> COMMA
+NT_641 -> NT_640 |
+NT_642 -> ON | OFF
+NT_639 -> NT_641 STARTUP_STATE EQUAL NT_642
+STARTUP_STATE -> (S) (T) (A) (R) (T) (U) (P) \x5F (S) (T) (A) (T) (E)
+NT_643 -> NT_639
+NT_644 -> NT_643 |
+NT_602 -> WITH LR_BRACKET NT_608 NT_614 NT_620 NT_626 NT_632 NT_638 NT_644 RR_BRACKET
+NT_645 -> NT_602
+NT_646 -> NT_645 |
+NT_648 -> START | STOP
+START -> (S) (T) (A) (R) (T)
+STOP -> (S) (T) (O) (P)
+NT_647 -> STATE EQUAL NT_648
+STATE -> (S) (T) (A) (T) (E)
+NT_649 -> NT_647
+NT_650 -> NT_649 |
+NT_652 -> COMMA
+NT_653 -> NT_652 |
+NT_654 -> AND | OR
+AND -> (A) (N) (D)
+OR -> (O) (R)
+NT_655 -> NT_654
+NT_656 -> NT_655 |
+NT_657 -> NOT
+NOT -> (N) (O) (T)
+NT_658 -> NT_657 |
+NT_659 -> event_session_predicate_factor | LR_BRACKET event_session_predicate_expression RR_BRACKET
+event_session_predicate_factor -> event_session_predicate_leaf | LR_BRACKET event_session_predicate_expression RR_BRACKET
+NT_651 -> NT_653 NT_656 NT_658 NT_659
+NT_660 -> NT_651
+NT_661 -> NT_660 | NT_661 NT_661
+event_session_predicate_leaf -> NT_662 | NT_675 id DOT id LR_BRACKET NT_676 RR_BRACKET
+NT_662 -> id | NT_663 NT_668 NT_672
+NT_663 -> id | NT_664
+NT_665 -> id DOT
+NT_666 -> NT_665
+NT_667 -> NT_666 |
+NT_664 -> NT_667 id DOT id
+NT_668 -> EQUAL | NT_669 | NT_670 | GREATER | NT_671 | LESS | LESS EQUAL
+NT_669 -> LESS GREATER
+LESS -> \x3C
+GREATER -> \x3E
+NT_670 -> EXCLAMATION EQUAL
+EXCLAMATION -> !
+NT_671 -> GREATER EQUAL
+NT_672 -> DECIMAL | STRING
+NT_673 -> id DOT
+NT_674 -> NT_673
+NT_675 -> NT_674 |
+NT_676 -> id | NT_677 COMMA NT_681
+NT_678 -> id DOT
+NT_679 -> NT_678
+NT_680 -> NT_679 |
+NT_677 -> NT_680 id DOT id
+NT_681 -> DECIMAL | STRING
+NT_683 -> QUOTED_URL | QUOTED_HOST_AND_PORT
+QUOTED_URL -> SINGLE_QUOTE NT_3479 / / NT_3481 R3484_Q0 DECIMAL SINGLE_QUOTE
+QUOTED_HOST_AND_PORT -> SINGLE_QUOTE NT_3485 NT_3488 SINGLE_QUOTE
+NT_684 -> COMMA
+NT_685 -> NT_684 |
+NT_682 -> LOCATION EQUAL NT_683 NT_685 | RESOURCE_MANAGER_LOCATION EQUAL NT_686 NT_688 | CREDENTIAL EQUAL id
+LOCATION -> (L) (O) (C) (A) (T) (I) (O) (N)
+NT_686 -> QUOTED_URL | QUOTED_HOST_AND_PORT
+NT_687 -> COMMA
+NT_688 -> NT_687 |
+RESOURCE_MANAGER_LOCATION -> (R) (E) (S) (O) (U) (R) (C) (E) \x5F (M) (A) (N) (A) (G) (E) (R) \x5F (L) (O) (C) (A) (T) (I) (O) (N)
+NT_689 -> NT_682
+NT_690 -> NT_689 | NT_690 NT_690
+NT_691 -> COMMA CREDENTIAL EQUAL id
+NT_692 -> NT_691
+NT_693 -> NT_692 |
+BLOB_STORAGE -> (B) (L) (O) (B) \x5F (S) (T) (O) (R) (A) (G) (E)
+NT_694 -> AUTHORIZATION id
+NT_695 -> NT_694
+NT_696 -> NT_695 |
+NT_697 -> SET | ADD
+NT_699 -> STRING | BINARY | NONE
+NT_701 -> WINDOWS | LINUX
+WINDOWS -> (W) (I) (N) (D) (O) (W) (S)
+LINUX -> (L) (I) (N) (U) (X)
+NT_702 -> NT_701
+NT_703 -> NT_702 |
+NT_700 -> COMMA PLATFORM EQUAL NT_703 RR_BRACKET
+PLATFORM -> (P) (L) (A) (T) (F) (O) (R) (M)
+NT_705 -> COMMA
+NT_706 -> NT_705 |
+NT_707 -> R | PYTHON
+R -> (R)
+PYTHON -> (P) (Y) (T) (H) (O) (N)
+NT_704 -> NT_706 LANGUAGE EQUAL NT_707 | DATA_SOURCE EQUAL id
+LANGUAGE -> (L) (A) (N) (G) (U) (A) (G) (E)
+DATA_SOURCE -> (D) (A) (T) (A) \x5F (S) (O) (U) (R) (C) (E)
+NT_708 -> NT_704
+NT_709 -> NT_708 | NT_709 NT_709
+NT_698 -> LR_BRACKET CONTENT EQUAL NT_699 NT_700 WITH NT_709 RR_BRACKET
+CONTENT -> (C) (O) (N) (T) (E) (N) (T)
+NT_710 -> AUTHORIZATION id
+NT_711 -> NT_710
+NT_712 -> NT_711 |
+NT_714 -> COMMA
+NT_715 -> NT_714 |
+NT_716 -> LR_BRACKET
+NT_717 -> NT_716 |
+NT_718 -> CONTENT EQUAL
+NT_719 -> NT_718
+NT_720 -> NT_719 |
+NT_721 -> STRING | BINARY | NONE
+NT_723 -> WINDOWS | LINUX
+NT_724 -> NT_723
+NT_725 -> NT_724 |
+NT_722 -> COMMA PLATFORM EQUAL NT_725 RR_BRACKET
+NT_726 -> NT_722
+NT_727 -> NT_726 |
+NT_713 -> NT_715 NT_717 NT_720 NT_721 NT_727
+NT_730 -> COMMA
+NT_731 -> NT_730 |
+NT_732 -> R | PYTHON
+NT_729 -> NT_731 LANGUAGE EQUAL NT_732 | DATA_SOURCE EQUAL id
+NT_733 -> NT_729
+NT_734 -> NT_733 | NT_734 NT_734
+NT_728 -> WITH NT_734 RR_BRACKET
+NT_735 -> NT_728
+NT_736 -> NT_735 |
+NT_737 -> id | DEFAULT_DOUBLE_QUOTE
+DEFAULT_DOUBLE_QUOTE -> R3461_Q0 (D) (E) (F) (A) (U) (L) (T) R3462_Q0
+NT_739 -> COMMA
+NT_740 -> NT_739 |
+NT_741 -> AUTO | NT_746
+AUTO -> (A) (U) (T) (O)
+NT_743 -> COMMA
+NT_744 -> NT_743 |
+NT_742 -> NT_744 DECIMAL TO DECIMAL | COMMA DECIMAL
+NT_745 -> NT_742
+NT_746 -> NT_745 | NT_746 NT_746
+NT_738 -> NT_740 AFFINITY CPU EQUAL NT_741 | NUMANODE EQUAL NT_753
+AFFINITY -> (A) (F) (F) (I) (N) (I) (T) (Y)
+CPU -> (C) (P) (U)
+NT_748 -> COMMA
+NT_749 -> NT_748 |
+NT_747 -> NT_749 DECIMAL TO DECIMAL | NT_751 DECIMAL
+NT_750 -> COMMA
+NT_751 -> NT_750 |
+NT_752 -> NT_747
+NT_753 -> NT_752 | NT_753 NT_753
+NUMANODE -> (N) (U) (M) (A) (N) (O) (D) (E)
+NT_755 -> COMMA
+NT_756 -> NT_755 |
+NT_754 -> NT_756 MAX_MEMORY_PERCENT EQUAL DECIMAL
+MAX_MEMORY_PERCENT -> (M) (A) (X) \x5F (M) (E) (M) (O) (R) (Y) \x5F (P) (E) (R) (C) (E) (N) (T)
+NT_757 -> NT_754
+NT_758 -> NT_757 |
+NT_760 -> COMMA
+NT_761 -> NT_760 |
+NT_759 -> NT_761 MAX_PROCESSES EQUAL DECIMAL
+MAX_PROCESSES -> (M) (A) (X) \x5F (P) (R) (O) (C) (E) (S) (S) (E) (S)
+NT_762 -> NT_759
+NT_763 -> NT_762 |
+MAX_CPU_PERCENT -> (M) (A) (X) \x5F (C) (P) (U) \x5F (P) (E) (R) (C) (E) (N) (T)
+NT_765 -> COMMA
+NT_766 -> NT_765 |
+NT_767 -> AUTO | NT_772
+NT_769 -> COMMA
+NT_770 -> NT_769 |
+NT_768 -> NT_770 DECIMAL TO DECIMAL | COMMA DECIMAL
+NT_771 -> NT_768
+NT_772 -> NT_771 | NT_772 NT_772
+NT_764 -> NT_766 AFFINITY CPU EQUAL NT_767 | NUMANODE EQUAL NT_779
+NT_774 -> COMMA
+NT_775 -> NT_774 |
+NT_773 -> NT_775 DECIMAL TO DECIMAL | NT_777 DECIMAL
+NT_776 -> COMMA
+NT_777 -> NT_776 |
+NT_778 -> NT_773
+NT_779 -> NT_778 | NT_779 NT_779
+NT_781 -> COMMA
+NT_782 -> NT_781 |
+NT_780 -> NT_782 MAX_MEMORY_PERCENT EQUAL DECIMAL
+NT_783 -> NT_780
+NT_784 -> NT_783 |
+NT_786 -> COMMA
+NT_787 -> NT_786 |
+NT_785 -> NT_787 MAX_PROCESSES EQUAL DECIMAL
+NT_788 -> NT_785
+NT_789 -> NT_788 |
+NT_792 -> ON | OFF
+NT_791 -> WITH ACCENT_SENSITIVITY EQUAL NT_792
+ACCENT_SENSITIVITY -> (A) (C) (C) (E) (N) (T) \x5F (S) (E) (N) (S) (I) (T) (I) (V) (I) (T) (Y)
+NT_793 -> NT_791
+NT_794 -> NT_793 |
+NT_790 -> REBUILD NT_794 | REORGANIZE | AS DEFAULT
+REBUILD -> (R) (E) (B) (U) (I) (L) (D)
+REORGANIZE -> (R) (E) (O) (R) (G) (A) (N) (I) (Z) (E)
+NT_795 -> ON FILEGROUP id
+FILEGROUP -> (F) (I) (L) (E) (G) (R) (O) (U) (P)
+NT_796 -> NT_795
+NT_797 -> NT_796 |
+NT_798 -> IN PATH STRING
+PATH -> (P) (A) (T) (H)
+NT_799 -> NT_798
+NT_800 -> NT_799 |
+NT_802 -> ON | OFF
+NT_801 -> WITH ACCENT_SENSITIVITY EQUAL NT_802
+NT_803 -> NT_801
+NT_804 -> NT_803 |
+NT_805 -> AS DEFAULT
+NT_806 -> NT_805
+NT_807 -> NT_806 |
+NT_808 -> AUTHORIZATION id
+NT_809 -> NT_808
+NT_810 -> NT_809 |
+NT_812 -> STRING | DECIMAL | BINARY
+NT_811 -> ADD STRING LANGUAGE NT_812 | DROP NT_813
+NT_814 -> STRING | DECIMAL | BINARY
+NT_813 -> STRING LANGUAGE NT_814 | ALL NT_815 | ALL
+NT_815 -> STRING | DECIMAL | BINARY
+NT_818 -> id DOT
+NT_819 -> NT_818
+NT_820 -> NT_819 |
+NT_817 -> NT_820 id | SYSTEM STOPLIST
+SYSTEM -> (S) (Y) (S) (T) (E) (M)
+NT_816 -> FROM NT_817
+NT_821 -> NT_816
+NT_822 -> NT_821 |
+NT_823 -> AUTHORIZATION id
+NT_824 -> NT_823
+NT_825 -> NT_824 |
+NT_827 -> ENABLE | DISABLE
+NT_828 -> NT_827
+NT_829 -> NT_828 |
+NT_826 -> NT_829 | WITH NT_837 NT_843 NT_846 NT_849 NT_852 NT_856 NT_860 NT_863 NT_866 | NT_867 CREDENTIAL id
+NT_832 -> STRING | BINARY HASHED
+HASHED -> (H) (A) (S) (H) (E) (D)
+NT_831 -> PASSWORD EQUAL NT_832
+NT_833 -> MUST_CHANGE | UNLOCK
+MUST_CHANGE -> (M) (U) (S) (T) \x5F (C) (H) (A) (N) (G) (E)
+UNLOCK -> (U) (N) (L) (O) (C) (K)
+NT_834 -> NT_833
+NT_835 -> NT_834 | NT_835 NT_835 |
+NT_830 -> NT_831 NT_835
+NT_836 -> NT_830
+NT_837 -> NT_836 |
+NT_839 -> MUST_CHANGE | UNLOCK
+NT_840 -> NT_839
+NT_841 -> NT_840 | NT_841 NT_841 |
+NT_838 -> OLD_PASSWORD EQUAL STRING NT_841
+OLD_PASSWORD -> (O) (L) (D) \x5F (P) (A) (S) (S) (W) (O) (R) (D)
+NT_842 -> NT_838
+NT_843 -> NT_842 |
+NT_844 -> DEFAULT_DATABASE EQUAL id
+DEFAULT_DATABASE -> (D) (E) (F) (A) (U) (L) (T) \x5F (D) (A) (T) (A) (B) (A) (S) (E)
+NT_845 -> NT_844
+NT_846 -> NT_845 |
+NT_847 -> DEFAULT_LANGUAGE EQUAL id
+DEFAULT_LANGUAGE -> (D) (E) (F) (A) (U) (L) (T) \x5F (L) (A) (N) (G) (U) (A) (G) (E)
+NT_848 -> NT_847
+NT_849 -> NT_848 |
+NT_850 -> NAME EQUAL id
+NT_851 -> NT_850
+NT_852 -> NT_851 |
+NT_854 -> ON | OFF
+NT_853 -> CHECK_POLICY EQUAL NT_854
+CHECK_POLICY -> (C) (H) (E) (C) (K) \x5F (P) (O) (L) (I) (C) (Y)
+NT_855 -> NT_853
+NT_856 -> NT_855 |
+NT_858 -> ON | OFF
+NT_857 -> CHECK_EXPIRATION EQUAL NT_858
+CHECK_EXPIRATION -> (C) (H) (E) (C) (K) \x5F (E) (X) (P) (I) (R) (A) (T) (I) (O) (N)
+NT_859 -> NT_857
+NT_860 -> NT_859 |
+NT_861 -> CREDENTIAL EQUAL id
+NT_862 -> NT_861
+NT_863 -> NT_862 |
+NT_864 -> NO CREDENTIAL
+NT_865 -> NT_864
+NT_866 -> NT_865 |
+NT_867 -> ADD | DROP
+NT_871 -> STRING | BINARY HASHED
+NT_870 -> PASSWORD EQUAL NT_871
+NT_872 -> MUST_CHANGE | UNLOCK
+NT_873 -> NT_872
+NT_874 -> NT_873 | NT_874 NT_874 |
+NT_869 -> NT_870 NT_874
+NT_875 -> NT_869
+NT_876 -> NT_875 |
+NT_878 -> COMMA
+NT_879 -> NT_878 |
+NT_877 -> NT_879 SID EQUAL BINARY
+SID -> (S) (I) (D)
+NT_880 -> NT_877
+NT_881 -> NT_880 |
+NT_883 -> COMMA
+NT_884 -> NT_883 |
+NT_882 -> NT_884 DEFAULT_DATABASE EQUAL id
+NT_885 -> NT_882
+NT_886 -> NT_885 |
+NT_888 -> COMMA
+NT_889 -> NT_888 |
+NT_887 -> NT_889 DEFAULT_LANGUAGE EQUAL id
+NT_890 -> NT_887
+NT_891 -> NT_890 |
+NT_893 -> COMMA
+NT_894 -> NT_893 |
+NT_895 -> ON | OFF
+NT_892 -> NT_894 CHECK_EXPIRATION EQUAL NT_895
+NT_896 -> NT_892
+NT_897 -> NT_896 |
+NT_899 -> COMMA
+NT_900 -> NT_899 |
+NT_901 -> ON | OFF
+NT_898 -> NT_900 CHECK_POLICY EQUAL NT_901
+NT_902 -> NT_898
+NT_903 -> NT_902 |
+NT_905 -> COMMA
+NT_906 -> NT_905 |
+NT_904 -> NT_906 CREDENTIAL EQUAL id
+NT_907 -> NT_904
+NT_908 -> NT_907 |
+NT_868 -> WITH NT_876 NT_881 NT_886 NT_891 NT_897 NT_903 NT_908 | NT_909
+NT_913 -> COMMA
+NT_914 -> NT_913 |
+NT_912 -> NT_914 DEFAULT_DATABASE EQUAL id
+NT_915 -> NT_912
+NT_916 -> NT_915 |
+NT_918 -> COMMA
+NT_919 -> NT_918 |
+NT_917 -> NT_919 DEFAULT_LANGUAGE EQUAL STRING
+NT_920 -> NT_917
+NT_921 -> NT_920 |
+NT_911 -> WITH NT_916 NT_921
+NT_910 -> WINDOWS NT_911 | CERTIFICATE id | ASYMMETRIC KEY id
+NT_909 -> FROM NT_910
+NT_923 -> ENABLE | DISABLE
+NT_924 -> NT_923
+NT_925 -> NT_924 |
+NT_922 -> NT_925 | WITH NT_926
+NT_927 -> OLD_PASSWORD EQUAL STRING
+NT_928 -> NT_927
+NT_929 -> NT_928 |
+NT_926 -> PASSWORD EQUAL STRING NT_929 | NAME EQUAL id
+NT_930 -> SID EQUAL BINARY
+NT_931 -> NT_930
+NT_932 -> NT_931 |
+NT_934 -> ENABLE | DISABLE
+NT_935 -> NT_934
+NT_936 -> NT_935 |
+NT_933 -> NT_936 | WITH NT_937
+NT_939 -> MUST_CHANGE | UNLOCK
+NT_940 -> NT_939
+NT_941 -> NT_940 | NT_941 NT_941 |
+NT_938 -> OLD_PASSWORD EQUAL STRING NT_941
+NT_942 -> NT_938
+NT_943 -> NT_942 |
+NT_937 -> PASSWORD EQUAL STRING NT_943 | NAME EQUAL id
+NT_946 -> MUST_CHANGE
+NT_947 -> NT_946
+NT_948 -> NT_947 |
+NT_950 -> ON | OFF
+NT_951 -> NT_950
+NT_952 -> NT_951 |
+NT_949 -> CHECK_POLICY EQUAL NT_952
+NT_953 -> NT_949
+NT_954 -> NT_953 |
+NT_945 -> PASSWORD EQUAL STRING NT_948 NT_954
+NT_944 -> WITH NT_945 | FROM WINDOWS
+NT_956 -> FORCE
+FORCE -> (F) (O) (R) (C) (E)
+NT_957 -> NT_956
+NT_958 -> NT_957 |
+NT_955 -> NT_958 REGENERATE WITH ENCRYPTION BY PASSWORD EQUAL STRING | NT_959 ENCRYPTION BY NT_960
+REGENERATE -> (R) (E) (G) (E) (N) (E) (R) (A) (T) (E)
+NT_959 -> ADD | DROP
+NT_960 -> SERVICE MASTER KEY | PASSWORD EQUAL STRING
+NT_962 -> FORCE
+NT_963 -> NT_962
+NT_964 -> NT_963 |
+NT_961 -> NT_964 REGENERATE WITH ENCRYPTION BY PASSWORD EQUAL STRING | ADD ENCRYPTION BY NT_965 | DROP ENCRYPTION BY PASSWORD EQUAL STRING
+NT_965 -> SERVICE MASTER KEY | PASSWORD EQUAL STRING
+NT_966 -> ENCRYPTION BY PASSWORD EQUAL STRING
+NT_967 -> NT_966
+NT_968 -> NT_967 |
+NT_969 -> NONE | EMPTY | WELL_FORMED_XML | VALID_XML WITH SCHEMA COLLECTION id
+EMPTY -> (E) (M) (P) (T) (Y)
+WELL_FORMED_XML -> (W) (E) (L) (L) \x5F (F) (O) (R) (M) (E) (D) \x5F (X) (M) (L)
+VALID_XML -> (V) (A) (L) (I) (D) \x5F (X) (M) (L)
+VALIDATION -> (V) (A) (L) (I) (D) (A) (T) (I) (O) (N)
+NT_970 -> SPLIT | MERGE
+SPLIT -> (S) (P) (L) (I) (T)
+MERGE -> (M) (E) (R) (G) (E)
+RANGE -> (R) (A) (N) (G) (E)
+NT_971 -> id
+NT_972 -> NT_971
+NT_973 -> NT_972 |
+NEXT -> (N) (E) (X) (T)
+USED -> (U) (S) (E) (D)
+NT_974 -> USER EQUAL id
+NT_975 -> NT_974
+NT_976 -> NT_975 |
+NT_978 -> ON | OFF
+NT_977 -> COMMA ANONYMOUS EQUAL NT_978
+ANONYMOUS -> (A) (N) (O) (N) (Y) (M) (O) (U) (S)
+NT_979 -> NT_977
+NT_980 -> NT_979 |
+NT_981 -> AUTHORIZATION id
+NT_982 -> NT_981
+NT_983 -> NT_982 |
+NT_984 -> USER EQUAL id
+NT_985 -> NT_984
+NT_986 -> NT_985 |
+NT_988 -> ON | OFF
+NT_987 -> COMMA ANONYMOUS EQUAL NT_988
+NT_989 -> NT_987
+NT_990 -> NT_989 |
+NT_993 -> COMMA
+NT_994 -> NT_993 |
+NT_992 -> NT_994 MIN_CPU_PERCENT EQUAL DECIMAL
+MIN_CPU_PERCENT -> (M) (I) (N) \x5F (C) (P) (U) \x5F (P) (E) (R) (C) (E) (N) (T)
+NT_995 -> NT_992
+NT_996 -> NT_995 |
+NT_998 -> COMMA
+NT_999 -> NT_998 |
+NT_997 -> NT_999 MAX_CPU_PERCENT EQUAL DECIMAL
+NT_1000 -> NT_997
+NT_1001 -> NT_1000 |
+NT_1003 -> COMMA
+NT_1004 -> NT_1003 |
+NT_1002 -> NT_1004 CAP_CPU_PERCENT EQUAL DECIMAL
+CAP_CPU_PERCENT -> (C) (A) (P) \x5F (C) (P) (U) \x5F (P) (E) (R) (C) (E) (N) (T)
+NT_1005 -> NT_1002
+NT_1006 -> NT_1005 |
+NT_1008 -> COMMA
+NT_1009 -> NT_1008 |
+NT_1010 -> AUTO | LR_BRACKET NT_1016 RR_BRACKET | NUMANODE EQUAL LR_BRACKET NT_1022 RR_BRACKET
+NT_1012 -> COMMA
+NT_1013 -> NT_1012 |
+NT_1014 -> DECIMAL | DECIMAL TO DECIMAL
+NT_1011 -> NT_1013 NT_1014
+NT_1015 -> NT_1011
+NT_1016 -> NT_1015 | NT_1016 NT_1016
+NT_1018 -> COMMA
+NT_1019 -> NT_1018 |
+NT_1020 -> DECIMAL | DECIMAL TO DECIMAL
+NT_1017 -> NT_1019 NT_1020
+NT_1021 -> NT_1017
+NT_1022 -> NT_1021 | NT_1022 NT_1022
+NT_1007 -> NT_1009 AFFINITY SCHEDULER EQUAL NT_1010
+SCHEDULER -> (S) (C) (H) (E) (D) (U) (L) (E) (R)
+NT_1023 -> NT_1007
+NT_1024 -> NT_1023 |
+NT_1026 -> COMMA
+NT_1027 -> NT_1026 |
+NT_1025 -> NT_1027 MIN_MEMORY_PERCENT EQUAL DECIMAL
+MIN_MEMORY_PERCENT -> (M) (I) (N) \x5F (M) (E) (M) (O) (R) (Y) \x5F (P) (E) (R) (C) (E) (N) (T)
+NT_1028 -> NT_1025
+NT_1029 -> NT_1028 |
+NT_1031 -> COMMA
+NT_1032 -> NT_1031 |
+NT_1030 -> NT_1032 MAX_MEMORY_PERCENT EQUAL DECIMAL
+NT_1033 -> NT_1030
+NT_1034 -> NT_1033 |
+NT_1036 -> COMMA
+NT_1037 -> NT_1036 |
+NT_1035 -> NT_1037 MIN_IOPS_PER_VOLUME EQUAL DECIMAL
+MIN_IOPS_PER_VOLUME -> (M) (I) (N) \x5F (I) (O) (P) (S) \x5F (P) (E) (R) \x5F (V) (O) (L) (U) (M) (E)
+NT_1038 -> NT_1035
+NT_1039 -> NT_1038 |
+NT_1041 -> COMMA
+NT_1042 -> NT_1041 |
+NT_1040 -> NT_1042 MAX_IOPS_PER_VOLUME EQUAL DECIMAL
+MAX_IOPS_PER_VOLUME -> (M) (A) (X) \x5F (I) (O) (P) (S) \x5F (P) (E) (R) \x5F (V) (O) (L) (U) (M) (E)
+NT_1043 -> NT_1040
+NT_1044 -> NT_1043 |
+NT_991 -> WITH LR_BRACKET NT_996 NT_1001 NT_1006 NT_1024 NT_1029 NT_1034 NT_1039 NT_1044 RR_BRACKET
+NT_1045 -> NT_991
+NT_1046 -> NT_1045 |
+NT_1048 -> DISABLE | RECONFIGURE
+RECONFIGURE -> (R) (E) (C) (O) (N) (F) (I) (G) (U) (R) (E)
+NT_1047 -> NT_1048 | WITH LR_BRACKET CLASSIFIER_FUNCTION EQUAL NT_1049 RR_BRACKET | RESET STATISTICS | WITH LR_BRACKET MAX_OUTSTANDING_IO_PER_VOLUME EQUAL DECIMAL RR_BRACKET
+NT_1049 -> id DOT id | NULL
+NULL -> (N) (U) (L) (L)
+CLASSIFIER_FUNCTION -> (C) (L) (A) (S) (S) (I) (F) (I) (E) (R) \x5F (F) (U) (N) (C) (T) (I) (O) (N)
+RESET -> (R) (E) (S) (E) (T)
+MAX_OUTSTANDING_IO_PER_VOLUME -> (M) (A) (X) \x5F (O) (U) (T) (S) (T) (A) (N) (D) (I) (N) (G) \x5F (I) (O) \x5F (P) (E) (R) \x5F (V) (O) (L) (U) (M) (E)
+GOVERNOR -> (G) (O) (V) (E) (R) (N) (O) (R)
+NT_1051 -> ADD | DROP
+NT_1050 -> NT_1051 MEMBER id | WITH NAME EQUAL id
+MEMBER -> (M) (E) (M) (B) (E) (R)
+NT_1052 -> AUTHORIZATION id
+NT_1053 -> NT_1052
+NT_1054 -> NT_1053 |
+NT_1055 -> AUTHORIZATION id
+NT_1056 -> NT_1055
+NT_1057 -> NT_1056 |
+NT_1059 -> COMMA
+NT_1060 -> NT_1059 |
+NT_1058 -> NT_1060 SERVICE_NAME EQUAL STRING
+SERVICE_NAME -> (S) (E) (R) (V) (I) (C) (E) \x5F (N) (A) (M) (E)
+NT_1061 -> NT_1058
+NT_1062 -> NT_1061 |
+NT_1064 -> COMMA
+NT_1065 -> NT_1064 |
+NT_1063 -> NT_1065 BROKER_INSTANCE EQUAL STRING
+BROKER_INSTANCE -> (B) (R) (O) (K) (E) (R) \x5F (I) (N) (S) (T) (A) (N) (C) (E)
+NT_1066 -> NT_1063
+NT_1067 -> NT_1066 |
+NT_1069 -> COMMA
+NT_1070 -> NT_1069 |
+NT_1068 -> NT_1070 LIFETIME EQUAL DECIMAL
+LIFETIME -> (L) (I) (F) (E) (T) (I) (M) (E)
+NT_1071 -> NT_1068
+NT_1072 -> NT_1071 |
+NT_1073 -> COMMA
+NT_1074 -> NT_1073 |
+NT_1075 -> STRING | QUOTED_URL
+NT_1077 -> STRING | QUOTED_URL
+NT_1076 -> COMMA MIRROR_ADDRESS EQUAL NT_1077
+MIRROR_ADDRESS -> (M) (I) (R) (R) (O) (R) \x5F (A) (D) (D) (R) (E) (S) (S)
+NT_1078 -> NT_1076
+NT_1079 -> NT_1078 |
+ADDRESS -> (A) (D) (D) (R) (E) (S) (S)
+NT_1080 -> id DOT
+NT_1081 -> NT_1080
+NT_1082 -> NT_1081 |
+NT_1084 -> OBJECT | TYPE | XML SCHEMA COLLECTION
+NT_1083 -> NT_1084 COLON COLON
+NT_1085 -> NT_1083
+NT_1086 -> NT_1085 |
+NT_1087 -> DOT id
+NT_1088 -> NT_1087
+NT_1089 -> NT_1088 |
+TRANSFER -> (T) (R) (A) (N) (S) (F) (E) (R)
+NT_1090 -> id | AUTHORIZATION id | id AUTHORIZATION id
+NT_1091 -> create_table | create_view | NT_1092 NT_1093 ON NT_1096 id TO id | REVOKE NT_1097 ON NT_1100 id FROM id
+NT_1092 -> GRANT | DENY
+NT_1093 -> SELECT | INSERT | DELETE | UPDATE
+SELECT -> (S) (E) (L) (E) (C) (T)
+INSERT -> (I) (N) (S) (E) (R) (T)
+DELETE -> (D) (E) (L) (E) (T) (E)
+UPDATE -> (U) (P) (D) (A) (T) (E)
+NT_1094 -> SCHEMA COLON COLON
+NT_1095 -> NT_1094
+NT_1096 -> NT_1095 |
+NT_1097 -> SELECT | INSERT | DELETE | UPDATE
+NT_1098 -> SCHEMA COLON COLON
+NT_1099 -> NT_1098
+NT_1100 -> NT_1099 |
+REVOKE -> (R) (E) (V) (O) (K) (E)
+NT_1101 -> NT_1091
+NT_1102 -> NT_1101 | NT_1102 NT_1102 |
+NT_1103 -> AUTHORIZATION id
+NT_1104 -> NT_1103
+NT_1105 -> NT_1104 |
+NT_1106 -> OBJECT COLON COLON
+NT_1107 -> NT_1106
+NT_1108 -> NT_1107 |
+NT_1109 -> DOT ID
+ID -> NT_3473 NT_3478
+NT_1110 -> NT_1109
+NT_1111 -> NT_1110 |
+NT_1113 -> id DOT
+NT_1114 -> NT_1113
+NT_1115 -> NT_1114 |
+NT_1112 -> FROM NT_1115 id
+NT_1116 -> NT_1112
+NT_1117 -> NT_1116 |
+NT_1118 -> AUTHORIZATION id
+NT_1119 -> NT_1118
+NT_1120 -> NT_1119 |
+NT_1121 -> id DOT
+NT_1122 -> NT_1121
+NT_1123 -> NT_1122 |
+NT_1125 -> COMMA
+NT_1126 -> NT_1125 |
+NT_1127 -> FILTER | BLOCK
+FILTER -> (F) (I) (L) (T) (E) (R)
+BLOCK -> (B) (L) (O) (C) (K)
+NT_1128 -> NT_1127
+NT_1129 -> NT_1128 |
+NT_1131 -> COMMA
+NT_1132 -> NT_1131 |
+NT_1130 -> NT_1132 id
+NT_1133 -> NT_1130
+NT_1134 -> NT_1133 | NT_1134 NT_1134
+NT_1136 -> COMMA
+NT_1137 -> NT_1136 |
+NT_1138 -> INSERT | UPDATE
+NT_1135 -> NT_1137 AFTER NT_1138 | NT_1140 BEFORE NT_1141
+AFTER -> (A) (F) (T) (E) (R)
+NT_1139 -> COMMA
+NT_1140 -> NT_1139 |
+NT_1141 -> UPDATE | DELETE
+BEFORE -> (B) (E) (F) (O) (R) (E)
+NT_1142 -> NT_1135
+NT_1143 -> NT_1142 | NT_1143 NT_1143 |
+NT_1124 -> NT_1126 ADD NT_1129 PREDICATE id DOT id LR_BRACKET NT_1134 RR_BRACKET ON id DOT id NT_1143
+PREDICATE -> (P) (R) (E) (D) (I) (C) (A) (T) (E)
+NT_1144 -> NT_1124
+NT_1145 -> NT_1144 | NT_1145 NT_1145
+NT_1147 -> ON | OFF
+NT_1149 -> ON | OFF
+NT_1148 -> SCHEMABINDING NT_1149
+SCHEMABINDING -> (S) (C) (H) (E) (M) (A) (B) (I) (N) (D) (I) (N) (G)
+NT_1150 -> NT_1148
+NT_1151 -> NT_1150 |
+NT_1146 -> WITH LR_BRACKET STATE EQUAL NT_1147 NT_1151 RR_BRACKET
+NT_1152 -> NT_1146
+NT_1153 -> NT_1152 |
+NT_1154 -> NOT FOR REPLICATION
+REPLICATION -> (R) (E) (P) (L) (I) (C) (A) (T) (I) (O) (N)
+NT_1155 -> NT_1154
+NT_1156 -> NT_1155 |
+NT_1157 -> id DOT
+NT_1158 -> NT_1157
+NT_1159 -> NT_1158 |
+NT_1161 -> WITH DECIMAL
+NT_1162 -> NT_1161
+NT_1163 -> NT_1162 |
+NT_1160 -> RESTART NT_1163
+NT_1164 -> NT_1160
+NT_1165 -> NT_1164 |
+NT_1166 -> INCREMENT BY DECIMAL
+INCREMENT -> (I) (N) (C) (R) (E) (M) (E) (N) (T)
+NT_1167 -> NT_1166
+NT_1168 -> NT_1167 |
+NT_1169 -> MINVALUE DECIMAL | NO MINVALUE
+MINVALUE -> (M) (I) (N) (V) (A) (L) (U) (E)
+NT_1170 -> NT_1169
+NT_1171 -> NT_1170 |
+NT_1172 -> MAXVALUE DECIMAL | NO MAXVALUE
+MAXVALUE -> (M) (A) (X) (V) (A) (L) (U) (E)
+NT_1173 -> NT_1172
+NT_1174 -> NT_1173 |
+NT_1175 -> CYCLE | NO CYCLE
+CYCLE -> (C) (Y) (C) (L) (E)
+NT_1176 -> NT_1175
+NT_1177 -> NT_1176 |
+NT_1178 -> CACHE DECIMAL | NO CACHE
+CACHE -> (C) (A) (C) (H) (E)
+NT_1179 -> NT_1178
+NT_1180 -> NT_1179 |
+NT_1181 -> id DOT
+NT_1182 -> NT_1181
+NT_1183 -> NT_1182 |
+NT_1184 -> AS data_type
+data_type -> id NT_3429 NT_3436 | DOUBLE NT_3438 | INT | TINYINT | SMALLINT | BIGINT
+NT_1185 -> NT_1184
+NT_1186 -> NT_1185 |
+NT_1187 -> START WITH DECIMAL
+NT_1188 -> NT_1187
+NT_1189 -> NT_1188 |
+NT_1191 -> MINUS
+MINUS -> \x2D
+NT_1192 -> NT_1191 |
+NT_1190 -> INCREMENT BY NT_1192 DECIMAL
+NT_1193 -> NT_1190
+NT_1194 -> NT_1193 |
+NT_1196 -> DECIMAL
+NT_1197 -> NT_1196 |
+NT_1195 -> MINVALUE NT_1197 | NO MINVALUE
+NT_1198 -> NT_1195
+NT_1199 -> NT_1198 |
+NT_1201 -> DECIMAL
+NT_1202 -> NT_1201 |
+NT_1200 -> MAXVALUE NT_1202 | NO MAXVALUE
+NT_1203 -> NT_1200
+NT_1204 -> NT_1203 |
+NT_1205 -> CYCLE | NO CYCLE
+NT_1206 -> NT_1205
+NT_1207 -> NT_1206 |
+NT_1209 -> DECIMAL
+NT_1210 -> NT_1209 |
+NT_1208 -> CACHE NT_1210 | NO CACHE
+NT_1211 -> NT_1208
+NT_1212 -> NT_1211 |
+NT_1218 -> COMMA
+NT_1219 -> NT_1218 |
+NT_1217 -> NT_1219 FILEPATH EQUAL STRING | NT_1221 MAXSIZE EQUAL NT_1222 | NT_1225 MAX_ROLLOVER_FILES EQUAL NT_1226 | NT_1228 MAX_FILES EQUAL DECIMAL | NT_1230 RESERVE_DISK_SPACE EQUAL NT_1231
+FILEPATH -> (F) (I) (L) (E) (P) (A) (T) (H)
+NT_1220 -> COMMA
+NT_1221 -> NT_1220 |
+NT_1223 -> MB | GB | TB
+GB -> (G) (B)
+TB -> (T) (B)
+NT_1222 -> DECIMAL NT_1223 | UNLIMITED
+UNLIMITED -> (U) (N) (L) (I) (M) (I) (T) (E) (D)
+MAXSIZE -> (M) (A) (X) (S) (I) (Z) (E)
+NT_1224 -> COMMA
+NT_1225 -> NT_1224 |
+NT_1226 -> DECIMAL | UNLIMITED
+MAX_ROLLOVER_FILES -> (M) (A) (X) \x5F (R) (O) (L) (L) (O) (V) (E) (R) \x5F (F) (I) (L) (E) (S)
+NT_1227 -> COMMA
+NT_1228 -> NT_1227 |
+MAX_FILES -> (M) (A) (X) \x5F (F) (I) (L) (E) (S)
+NT_1229 -> COMMA
+NT_1230 -> NT_1229 |
+NT_1231 -> ON | OFF
+RESERVE_DISK_SPACE -> (R) (E) (S) (E) (R) (V) (E) \x5F (D) (I) (S) (K) \x5F (S) (P) (A) (C) (E)
+NT_1232 -> NT_1217
+NT_1233 -> NT_1232 | NT_1233 NT_1233 |
+NT_1216 -> LR_BRACKET NT_1233 RR_BRACKET
+NT_1215 -> FILE NT_1216 | APPLICATION_LOG | SECURITY_LOG
+APPLICATION_LOG -> (A) (P) (P) (L) (I) (C) (A) (T) (I) (O) (N) \x5F (L) (O) (G)
+SECURITY_LOG -> (S) (E) (C) (U) (R) (I) (T) (Y) \x5F (L) (O) (G)
+NT_1214 -> TO NT_1215
+NT_1234 -> NT_1214
+NT_1235 -> NT_1234 |
+NT_1238 -> COMMA
+NT_1239 -> NT_1238 |
+NT_1237 -> NT_1239 QUEUE_DELAY EQUAL DECIMAL | NT_1241 ON_FAILURE EQUAL NT_1242 | NT_1244 STATE EQUAL NT_1245
+QUEUE_DELAY -> (Q) (U) (E) (U) (E) \x5F (D) (E) (L) (A) (Y)
+NT_1240 -> COMMA
+NT_1241 -> NT_1240 |
+NT_1242 -> CONTINUE | SHUTDOWN | FAIL_OPERATION
+SHUTDOWN -> (S) (H) (U) (T) (D) (O) (W) (N)
+FAIL_OPERATION -> (F) (A) (I) (L) \x5F (O) (P) (E) (R) (A) (T) (I) (O) (N)
+ON_FAILURE -> (O) (N) \x5F (F) (A) (I) (L) (U) (R) (E)
+NT_1243 -> COMMA
+NT_1244 -> NT_1243 |
+NT_1245 -> ON | OFF
+NT_1246 -> NT_1237
+NT_1247 -> NT_1246 | NT_1247 NT_1247 |
+NT_1236 -> WITH LR_BRACKET NT_1247 RR_BRACKET
+NT_1248 -> NT_1236
+NT_1249 -> NT_1248 |
+NT_1252 -> COMMA
+NT_1253 -> NT_1252 |
+NT_1255 -> NOT
+NT_1256 -> NT_1255 |
+NT_1254 -> NT_1256
+NT_1257 -> EQUAL | NT_1258 | NT_1259 | GREATER | NT_1260 | LESS | LESS EQUAL
+NT_1258 -> LESS GREATER
+NT_1259 -> EXCLAMATION EQUAL
+NT_1260 -> GREATER EQUAL
+NT_1261 -> DECIMAL | STRING
+NT_1251 -> NT_1253 NT_1254 id NT_1257 NT_1261 | NT_1263 NT_1264 NT_1266 NT_1267 NT_1271
+NT_1262 -> COMMA
+NT_1263 -> NT_1262 |
+NT_1264 -> AND | OR
+NT_1265 -> NOT
+NT_1266 -> NT_1265 |
+NT_1267 -> EQUAL | NT_1268 | NT_1269 | GREATER | NT_1270 | LESS | LESS EQUAL
+NT_1268 -> LESS GREATER
+NT_1269 -> EXCLAMATION EQUAL
+NT_1270 -> GREATER EQUAL
+NT_1271 -> DECIMAL | STRING
+NT_1250 -> WHERE NT_1251
+NT_1272 -> NT_1250
+NT_1273 -> NT_1272 |
+NT_1213 -> NT_1235 NT_1249 NT_1273 | REMOVE WHERE | MODIFY NAME EQUAL id
+NT_1279 -> COMMA
+NT_1280 -> NT_1279 |
+NT_1278 -> NT_1280 FILEPATH EQUAL STRING | NT_1282 MAXSIZE EQUAL NT_1283 | NT_1286 MAX_ROLLOVER_FILES EQUAL NT_1287 | NT_1289 MAX_FILES EQUAL DECIMAL | NT_1291 RESERVE_DISK_SPACE EQUAL NT_1292
+NT_1281 -> COMMA
+NT_1282 -> NT_1281 |
+NT_1284 -> MB | GB | TB
+NT_1283 -> DECIMAL NT_1284 | UNLIMITED
+NT_1285 -> COMMA
+NT_1286 -> NT_1285 |
+NT_1287 -> DECIMAL | UNLIMITED
+NT_1288 -> COMMA
+NT_1289 -> NT_1288 |
+NT_1290 -> COMMA
+NT_1291 -> NT_1290 |
+NT_1292 -> ON | OFF
+NT_1293 -> NT_1278
+NT_1294 -> NT_1293 | NT_1294 NT_1294 |
+NT_1277 -> LR_BRACKET NT_1294 RR_BRACKET
+NT_1276 -> FILE NT_1277 | APPLICATION_LOG | SECURITY_LOG
+NT_1275 -> TO NT_1276
+NT_1295 -> NT_1275
+NT_1296 -> NT_1295 |
+NT_1299 -> COMMA
+NT_1300 -> NT_1299 |
+NT_1298 -> NT_1300 QUEUE_DELAY EQUAL DECIMAL | NT_1302 ON_FAILURE EQUAL NT_1303 | NT_1305 STATE EQUAL NT_1306 | NT_1308 AUDIT_GUID EQUAL id
+NT_1301 -> COMMA
+NT_1302 -> NT_1301 |
+NT_1303 -> CONTINUE | SHUTDOWN | FAIL_OPERATION
+NT_1304 -> COMMA
+NT_1305 -> NT_1304 |
+NT_1306 -> ON | OFF
+NT_1307 -> COMMA
+NT_1308 -> NT_1307 |
+AUDIT_GUID -> (A) (U) (D) (I) (T) \x5F (G) (U) (I) (D)
+NT_1309 -> NT_1298
+NT_1310 -> NT_1309 | NT_1310 NT_1310 |
+NT_1297 -> WITH LR_BRACKET NT_1310 RR_BRACKET
+NT_1311 -> NT_1297
+NT_1312 -> NT_1311 |
+NT_1315 -> COMMA
+NT_1316 -> NT_1315 |
+NT_1318 -> NOT
+NT_1319 -> NT_1318 |
+NT_1317 -> NT_1319
+NT_1320 -> EQUAL | NT_1321 | NT_1322 | GREATER | NT_1323 | LESS | LESS EQUAL
+NT_1321 -> LESS GREATER
+NT_1322 -> EXCLAMATION EQUAL
+NT_1323 -> GREATER EQUAL
+NT_1324 -> DECIMAL | STRING
+NT_1314 -> NT_1316 NT_1317 id NT_1320 NT_1324 | NT_1326 NT_1327 NT_1329 NT_1330 NT_1334
+NT_1325 -> COMMA
+NT_1326 -> NT_1325 |
+NT_1327 -> AND | OR
+NT_1328 -> NOT
+NT_1329 -> NT_1328 |
+NT_1330 -> EQUAL | NT_1331 | NT_1332 | GREATER | NT_1333 | LESS | LESS EQUAL
+NT_1331 -> LESS GREATER
+NT_1332 -> EXCLAMATION EQUAL
+NT_1333 -> GREATER EQUAL
+NT_1334 -> DECIMAL | STRING
+NT_1313 -> WHERE NT_1314
+NT_1335 -> NT_1313
+NT_1336 -> NT_1335 |
+NT_1274 -> NT_1296 NT_1312 NT_1336 | REMOVE WHERE | MODIFY NAME EQUAL id
+NT_1337 -> FOR SERVER AUDIT id
+NT_1338 -> NT_1337
+NT_1339 -> NT_1338 |
+NT_1341 -> ADD | DROP
+NT_1340 -> NT_1341 LR_BRACKET id RR_BRACKET
+NT_1342 -> NT_1340
+NT_1343 -> NT_1342 | NT_1343 NT_1343 |
+NT_1345 -> ON | OFF
+NT_1344 -> WITH LR_BRACKET STATE EQUAL NT_1345 RR_BRACKET
+NT_1346 -> NT_1344
+NT_1347 -> NT_1346 |
+NT_1348 -> FOR SERVER AUDIT id
+NT_1349 -> NT_1348
+NT_1350 -> NT_1349 |
+NT_1351 -> ADD LR_BRACKET id RR_BRACKET
+NT_1352 -> NT_1351
+NT_1353 -> NT_1352 | NT_1353 NT_1353 |
+NT_1355 -> ON | OFF
+NT_1354 -> WITH LR_BRACKET STATE EQUAL NT_1355 RR_BRACKET
+NT_1356 -> NT_1354
+NT_1357 -> NT_1356 |
+NT_1361 -> AUTO | NT_1368
+NT_1363 -> COMMA
+NT_1364 -> NT_1363 |
+NT_1362 -> NT_1364 DECIMAL | NT_1366 DECIMAL TO DECIMAL
+NT_1365 -> COMMA
+NT_1366 -> NT_1365 |
+NT_1367 -> NT_1362
+NT_1368 -> NT_1367 | NT_1368 NT_1368
+NT_1360 -> CPU EQUAL NT_1361 | NUMANODE EQUAL NT_1375
+NT_1370 -> COMMA
+NT_1371 -> NT_1370 |
+NT_1369 -> NT_1371 DECIMAL | NT_1373 DECIMAL TO DECIMAL
+NT_1372 -> COMMA
+NT_1373 -> NT_1372 |
+NT_1374 -> NT_1369
+NT_1375 -> NT_1374 | NT_1375 NT_1375
+NT_1359 -> PROCESS AFFINITY NT_1360 | DIAGNOSTICS LOG NT_1376 | FAILOVER CLUSTER PROPERTY NT_1380 | HADR CLUSTER CONTEXT EQUAL NT_1387 | BUFFER POOL EXTENSION NT_1388 | SET SOFTNUMA NT_1390
+PROCESS -> (P) (R) (O) (C) (E) (S) (S)
+NT_1376 -> ON | OFF | PATH EQUAL NT_1377 | MAX_SIZE EQUAL NT_1378 | MAX_FILES EQUAL NT_1379
+NT_1377 -> STRING | DEFAULT
+NT_1378 -> DECIMAL MB | DEFAULT
+MAX_SIZE -> (M) (A) (X) \x5F (S) (I) (Z) (E)
+NT_1379 -> DECIMAL | DEFAULT
+DIAGNOSTICS -> (D) (I) (A) (G) (N) (O) (S) (T) (I) (C) (S)
+NT_1381 -> STRING | DEFAULT
+NT_1380 -> VERBOSELOGGING EQUAL NT_1381 | SQLDUMPERFLAGS EQUAL NT_1382 | SQLDUMPERPATH EQUAL NT_1383 | SQLDUMPERTIMEOUT NT_1384 | FAILURECONDITIONLEVEL EQUAL NT_1385 | HEALTHCHECKTIMEOUT EQUAL NT_1386
+VERBOSELOGGING -> (V) (E) (R) (B) (O) (S) (E) (L) (O) (G) (G) (I) (N) (G)
+NT_1382 -> STRING | DEFAULT
+SQLDUMPERFLAGS -> (S) (Q) (L) (D) (U) (M) (P) (E) (R) (F) (L) (A) (G) (S)
+NT_1383 -> STRING | DEFAULT
+SQLDUMPERPATH -> (S) (Q) (L) (D) (U) (M) (P) (E) (R) (P) (A) (T) (H)
+NT_1384 -> STRING | DEFAULT
+SQLDUMPERTIMEOUT -> (S) (Q) (L) (D) (U) (M) (P) (E) (R) (T) (I) (M) (E) (O) (U) (T) (S)
+NT_1385 -> STRING | DEFAULT
+FAILURECONDITIONLEVEL -> (F) (A) (I) (L) (U) (R) (E) (C) (O) (N) (D) (I) (T) (I) (O) (N) (L) (E) (V) (E) (L)
+NT_1386 -> DECIMAL | DEFAULT
+HEALTHCHECKTIMEOUT -> (H) (E) (A) (L) (T) (H) (C) (H) (E) (C) (K) (T) (I) (M) (E) (O) (U) (T)
+CLUSTER -> (C) (L) (U) (S) (T) (E) (R)
+NT_1387 -> STRING | LOCAL
+LOCAL -> (L) (O) (C) (A) (L)
+HADR -> (H) (A) (D) (R)
+CONTEXT -> (C) (O) (N) (T) (E) (X) (T)
+NT_1389 -> KB | MB | GB
+NT_1388 -> ON LR_BRACKET FILENAME EQUAL STRING COMMA SIZE EQUAL DECIMAL NT_1389 RR_BRACKET | OFF
+FILENAME -> (F) (I) (L) (E) (N) (A) (M) (E)
+SIZE -> (S) (I) (Z) (E)
+BUFFER -> (B) (U) (F) (F) (E) (R)
+EXTENSION -> (E) (X) (T) (E) (N) (S) (I) (O) (N)
+NT_1390 -> ON | OFF
+SOFTNUMA -> (S) (O) (F) (T) (N) (U) (M) (A)
+NT_1358 -> NT_1359
+CONFIGURATION -> (C) (O) (N) (F) (I) (G) (U) (R) (A) (T) (I) (O) (N)
+NT_1392 -> ADD | DROP
+NT_1391 -> NT_1392 MEMBER id | WITH NAME EQUAL id
+NT_1393 -> AUTHORIZATION id
+NT_1394 -> NT_1393
+NT_1395 -> NT_1394 |
+NT_1396 -> ADD | DROP
+NT_1398 -> id DOT
+NT_1397 -> ON QUEUE NT_1398 id
+NT_1399 -> NT_1397
+NT_1400 -> NT_1399 |
+NT_1402 -> COMMA
+NT_1403 -> NT_1402 |
+NT_1404 -> ADD | DROP
+NT_1401 -> NT_1403 NT_1404 id
+NT_1405 -> NT_1401
+NT_1406 -> NT_1405 | NT_1406 NT_1406 |
+NT_1407 -> AUTHORIZATION id
+NT_1408 -> NT_1407
+NT_1409 -> NT_1408 |
+NT_1410 -> id DOT
+NT_1411 -> NT_1410
+NT_1412 -> NT_1411 |
+NT_1415 -> COMMA
+NT_1416 -> NT_1415 |
+NT_1417 -> id | DEFAULT
+NT_1414 -> NT_1416 NT_1417
+NT_1418 -> NT_1414
+NT_1419 -> NT_1418 | NT_1419 NT_1419
+NT_1413 -> LR_BRACKET NT_1419 RR_BRACKET
+NT_1420 -> NT_1413
+NT_1421 -> NT_1420 |
+NT_1423 -> FORCE
+NT_1424 -> NT_1423 |
+NT_1422 -> NT_1424 REGENERATE | NT_1425
+NT_1426 -> OLD_ACCOUNT EQUAL STRING COMMA OLD_PASSWORD EQUAL STRING | NEW_ACCOUNT EQUAL STRING COMMA NEW_PASSWORD EQUAL STRING
+OLD_ACCOUNT -> (O) (L) (D) \x5F (A) (C) (C) (O) (U) (N) (T)
+NEW_ACCOUNT -> (N) (E) (W) \x5F (A) (C) (C) (O) (U) (N) (T)
+NEW_PASSWORD -> (N) (E) (W) \x5F (P) (A) (S) (S) (W) (O) (R) (D)
+NT_1427 -> NT_1426
+NT_1428 -> NT_1427 |
+NT_1425 -> WITH NT_1428
+NT_1430 -> ADD | DROP
+NT_1431 -> CERTIFICATE id | PASSWORD EQUAL STRING | SYMMETRIC KEY id | ASYMMETRIC KEY id
+NT_1429 -> NT_1430 ENCRYPTION BY NT_1431
+NT_1432 -> AUTHORIZATION id
+NT_1433 -> NT_1432
+NT_1434 -> NT_1433 |
+NT_1435 -> FROM PROVIDER id
+NT_1436 -> NT_1435
+NT_1437 -> NT_1436 |
+NT_1440 -> KEY_SOURCE EQUAL STRING | ALGORITHM EQUAL NT_1441 | IDENTITY_VALUE EQUAL STRING | PROVIDER_KEY_NAME EQUAL STRING | CREATION_DISPOSITION EQUAL NT_1442
+KEY_SOURCE -> (K) (E) (Y) \x5F (S) (O) (U) (R) (C) (E)
+NT_1441 -> DES | TRIPLE_DES | TRIPLE_DES_3KEY | RC2 | RC4 | RC4_128 | DESX | AES_128 | AES_192 | AES_256
+DES -> (D) (E) (S)
+TRIPLE_DES -> (T) (R) (I) (P) (L) (E) \x5F (D) (E) (S)
+TRIPLE_DES_3KEY -> (T) (R) (I) (P) (L) (E) \x5F (D) (E) (S) \x5F 3 (K) (E) (Y)
+RC2 -> (R) (C) 2
+RC4 -> (R) (C) 4
+RC4_128 -> (R) (C) 4 \x5F 1 2 8
+DESX -> (D) (E) (S) (X)
+AES_128 -> (A) (E) (S) \x5F 1 2 8
+AES_192 -> (A) (E) (S) \x5F 1 9 2
+AES_256 -> (A) (E) (S) \x5F 2 5 6
+IDENTITY_VALUE -> (I) (D) (E) (N) (T) (I) (T) (Y) \x5F (V) (A) (L) (U) (E)
+NT_1442 -> CREATE_NEW | OPEN_EXISTING
+NT_1439 -> NT_1440 | ENCRYPTION BY NT_1443
+NT_1443 -> CERTIFICATE id | PASSWORD EQUAL STRING | SYMMETRIC KEY id | ASYMMETRIC KEY id
+NT_1438 -> WITH NT_1439
+NT_1444 -> id DOT
+NT_1445 -> NT_1444
+NT_1446 -> NT_1445 |
+NT_1448 -> id DOT
+NT_1449 -> NT_1448
+NT_1450 -> NT_1449 |
+NT_1451 -> id DOT
+NT_1452 -> NT_1451
+NT_1453 -> NT_1452 |
+NT_1454 -> id DOT
+NT_1455 -> NT_1454
+NT_1456 -> NT_1455 |
+NT_1447 -> NT_1450 NT_1453 NT_1456 id | NT_1459 NT_1462
+NT_1457 -> id DOT
+NT_1458 -> NT_1457
+NT_1459 -> NT_1458 |
+NT_1460 -> id DOT
+NT_1461 -> NT_1460
+NT_1462 -> NT_1461 |
+NT_1464 -> COMMA
+NT_1465 -> NT_1464 |
+NT_1463 -> NT_1465 NAME EQUAL id | NT_1467 DEFAULT_SCHEMA EQUAL NT_1468 | NT_1470 LOGIN EQUAL id | NT_1472 PASSWORD EQUAL STRING NT_1475 | NT_1477 DEFAULT_LANGUAGE EQUAL NT_1478 | NT_1480 ALLOW_ENCRYPTED_VALUE_MODIFICATIONS EQUAL NT_1481
+NT_1466 -> COMMA
+NT_1467 -> NT_1466 |
+NT_1468 -> id | NULL
+NT_1469 -> COMMA
+NT_1470 -> NT_1469 |
+NT_1471 -> COMMA
+NT_1472 -> NT_1471 |
+NT_1473 -> OLD_PASSWORD EQUAL STRING
+NT_1474 -> NT_1473
+NT_1475 -> NT_1474 | NT_1475 NT_1475
+NT_1476 -> COMMA
+NT_1477 -> NT_1476 |
+NT_1478 -> NONE | DECIMAL | id
+NT_1479 -> COMMA
+NT_1480 -> NT_1479 |
+NT_1481 -> ON | OFF
+ALLOW_ENCRYPTED_VALUE_MODIFICATIONS -> (A) (L) (L) (O) (W) \x5F (E) (N) (C) (R) (Y) (P) (T) (E) (D) \x5F (V) (A) (L) (U) (E) \x5F (M) (O) (D) (I) (F) (I) (C) (A) (T) (I) (O) (N) (S)
+NT_1482 -> NT_1463
+NT_1483 -> NT_1482 | NT_1483 NT_1483
+NT_1485 -> FOR | FROM
+NT_1484 -> NT_1485 LOGIN id
+NT_1486 -> NT_1484
+NT_1487 -> NT_1486 |
+NT_1490 -> COMMA
+NT_1491 -> NT_1490 |
+NT_1489 -> NT_1491 DEFAULT_SCHEMA EQUAL id | NT_1493 ALLOW_ENCRYPTED_VALUE_MODIFICATIONS EQUAL NT_1494
+NT_1492 -> COMMA
+NT_1493 -> NT_1492 |
+NT_1494 -> ON | OFF
+NT_1495 -> NT_1489
+NT_1496 -> NT_1495 | NT_1496 NT_1496 |
+NT_1488 -> WITH NT_1496
+NT_1497 -> NT_1488
+NT_1498 -> NT_1497 |
+NT_1502 -> COMMA
+NT_1503 -> NT_1502 |
+NT_1501 -> NT_1503 DEFAULT_SCHEMA EQUAL id | NT_1505 DEFAULT_LANGUAGE EQUAL NT_1506 | NT_1508 SID EQUAL BINARY | NT_1510 ALLOW_ENCRYPTED_VALUE_MODIFICATIONS EQUAL NT_1511
+NT_1504 -> COMMA
+NT_1505 -> NT_1504 |
+NT_1506 -> NONE | DECIMAL | id
+NT_1507 -> COMMA
+NT_1508 -> NT_1507 |
+NT_1509 -> COMMA
+NT_1510 -> NT_1509 |
+NT_1511 -> ON | OFF
+NT_1512 -> NT_1501
+NT_1513 -> NT_1512 | NT_1513 NT_1513 |
+NT_1500 -> WITH NT_1513
+NT_1514 -> NT_1500
+NT_1515 -> NT_1514 |
+NT_1499 -> id NT_1515 | id WITH PASSWORD EQUAL STRING NT_1528 | id FROM EXTERNAL PROVIDER
+NT_1517 -> COMMA
+NT_1518 -> NT_1517 |
+NT_1516 -> NT_1518 DEFAULT_SCHEMA EQUAL id | NT_1520 DEFAULT_LANGUAGE EQUAL NT_1521 | NT_1523 SID EQUAL BINARY | NT_1525 ALLOW_ENCRYPTED_VALUE_MODIFICATIONS EQUAL NT_1526
+NT_1519 -> COMMA
+NT_1520 -> NT_1519 |
+NT_1521 -> NONE | DECIMAL | id
+NT_1522 -> COMMA
+NT_1523 -> NT_1522 |
+NT_1524 -> COMMA
+NT_1525 -> NT_1524 |
+NT_1526 -> ON | OFF
+NT_1527 -> NT_1516
+NT_1528 -> NT_1527 | NT_1528 NT_1528 |
+NT_1531 -> COMMA
+NT_1532 -> NT_1531 |
+NT_1530 -> NT_1532 DEFAULT_SCHEMA EQUAL id | NT_1534 ALLOW_ENCRYPTED_VALUE_MODIFICATIONS EQUAL NT_1535
+NT_1533 -> COMMA
+NT_1534 -> NT_1533 |
+NT_1535 -> ON | OFF
+NT_1536 -> NT_1530
+NT_1537 -> NT_1536 | NT_1537 NT_1537 |
+NT_1529 -> WITHOUT LOGIN NT_1537 | NT_1538 CERTIFICATE id | NT_1539 ASYMMETRIC KEY id
+WITHOUT -> (W) (I) (T) (H) (O) (U) (T)
+NT_1538 -> FOR | FROM
+NT_1539 -> FOR | FROM
+NT_1541 -> FOR | FROM
+NT_1540 -> NT_1541 LOGIN id | WITHOUT LOGIN
+NT_1542 -> NT_1540
+NT_1543 -> NT_1542 |
+NT_1544 -> WITH DEFAULT_SCHEMA EQUAL id
+NT_1545 -> NT_1544
+NT_1546 -> NT_1545 |
+NT_1547 -> WITH DEFAULT_SCHEMA EQUAL id
+NT_1548 -> NT_1547
+NT_1549 -> NT_1548 |
+NT_1551 -> COMMA
+NT_1552 -> NT_1551 |
+NT_1550 -> NT_1552 NAME EQUAL id | NT_1554 DEFAULT_SCHEMA EQUAL id | NT_1556 LOGIN EQUAL id | NT_1558 ALLOW_ENCRYPTED_VALUE_MODIFICATIONS EQUAL NT_1559
+NT_1553 -> COMMA
+NT_1554 -> NT_1553 |
+NT_1555 -> COMMA
+NT_1556 -> NT_1555 |
+NT_1557 -> COMMA
+NT_1558 -> NT_1557 |
+NT_1559 -> ON | OFF
+NT_1560 -> NT_1550
+NT_1561 -> NT_1560 | NT_1561 NT_1561
+NT_1562 -> id | DEFAULT_DOUBLE_QUOTE
+NT_1565 -> LOW | MEDIUM | HIGH
+LOW -> (L) (O) (W)
+MEDIUM -> (M) (E) (D) (I) (U) (M)
+HIGH -> (H) (I) (G) (H)
+NT_1564 -> IMPORTANCE EQUAL NT_1565 | NT_1567 REQUEST_MAX_MEMORY_GRANT_PERCENT EQUAL DECIMAL | NT_1569 REQUEST_MAX_CPU_TIME_SEC EQUAL DECIMAL | REQUEST_MEMORY_GRANT_TIMEOUT_SEC EQUAL DECIMAL | MAX_DOP EQUAL DECIMAL | GROUP_MAX_REQUESTS EQUAL DECIMAL
+IMPORTANCE -> (I) (M) (P) (O) (R) (T) (A) (N) (C) (E)
+NT_1566 -> COMMA
+NT_1567 -> NT_1566 |
+REQUEST_MAX_MEMORY_GRANT_PERCENT -> (R) (E) (Q) (U) (E) (S) (T) \x5F (M) (A) (X) \x5F (M) (E) (M) (O) (R) (Y) \x5F (G) (R) (A) (N) (T) \x5F (P) (E) (R) (C) (E) (N) (T)
+NT_1568 -> COMMA
+NT_1569 -> NT_1568 |
+REQUEST_MAX_CPU_TIME_SEC -> (R) (E) (Q) (U) (E) (S) (T) \x5F (M) (A) (X) \x5F (C) (P) (U) \x5F (T) (I) (M) (E) \x5F (S) (E) (C)
+REQUEST_MEMORY_GRANT_TIMEOUT_SEC -> (R) (E) (Q) (U) (E) (S) (T) \x5F (M) (E) (M) (O) (R) (Y) \x5F (G) (R) (A) (N) (T) \x5F (T) (I) (M) (E) (O) (U) (T) \x5F (S) (E) (C)
+MAX_DOP -> (M) (A) (X) \x5F (D) (O) (P)
+GROUP_MAX_REQUESTS -> (G) (R) (O) (U) (P) \x5F (M) (A) (X) \x5F (R) (E) (Q) (U) (E) (S) (T) (S)
+NT_1570 -> NT_1564
+NT_1571 -> NT_1570 | NT_1571 NT_1571
+NT_1563 -> WITH LR_BRACKET NT_1571 RR_BRACKET
+NT_1572 -> NT_1563
+NT_1573 -> NT_1572 |
+NT_1575 -> id | DEFAULT_DOUBLE_QUOTE
+NT_1574 -> USING NT_1575
+USING -> (U) (S) (I) (N) (G)
+NT_1576 -> NT_1574
+NT_1577 -> NT_1576 |
+NT_1580 -> LOW | MEDIUM | HIGH
+NT_1579 -> IMPORTANCE EQUAL NT_1580 | NT_1582 REQUEST_MAX_MEMORY_GRANT_PERCENT EQUAL DECIMAL | NT_1584 REQUEST_MAX_CPU_TIME_SEC EQUAL DECIMAL | REQUEST_MEMORY_GRANT_TIMEOUT_SEC EQUAL DECIMAL | MAX_DOP EQUAL DECIMAL | GROUP_MAX_REQUESTS EQUAL DECIMAL
+NT_1581 -> COMMA
+NT_1582 -> NT_1581 |
+NT_1583 -> COMMA
+NT_1584 -> NT_1583 |
+NT_1585 -> NT_1579
+NT_1586 -> NT_1585 | NT_1586 NT_1586
+NT_1578 -> WITH LR_BRACKET NT_1586 RR_BRACKET
+NT_1587 -> NT_1578
+NT_1588 -> NT_1587 |
+NT_1590 -> id | DEFAULT_DOUBLE_QUOTE
+NT_1591 -> NT_1590
+NT_1592 -> NT_1591 |
+NT_1594 -> COMMA
+NT_1595 -> NT_1594 |
+NT_1593 -> NT_1595 EXTERNAL id | DEFAULT_DOUBLE_QUOTE
+NT_1596 -> NT_1593
+NT_1597 -> NT_1596 |
+NT_1589 -> USING NT_1592 NT_1597
+NT_1598 -> NT_1589
+NT_1599 -> NT_1598 |
+NT_1600 -> id DOT
+NT_1601 -> NT_1600
+NT_1602 -> NT_1601 |
+NT_1603 -> STRING | id | LOCAL_ID
+NT_1604 -> full_table_name | id
+full_table_name -> NT_3291 id
+NT_1605 -> queue_settings
+queue_settings -> WITH NT_1615 NT_1621 NT_1650 NT_1655
+NT_1606 -> NT_1605 |
+NT_1607 -> ON id | DEFAULT
+NT_1608 -> NT_1607
+NT_1609 -> NT_1608 |
+NT_1611 -> ON | OFF
+NT_1612 -> COMMA
+NT_1613 -> NT_1612 |
+NT_1610 -> STATUS EQUAL NT_1611 NT_1613
+STATUS -> (S) (T) (A) (T) (U) (S)
+NT_1614 -> NT_1610
+NT_1615 -> NT_1614 |
+NT_1617 -> ON | OFF
+NT_1618 -> COMMA
+NT_1619 -> NT_1618 |
+NT_1616 -> RETENTION EQUAL NT_1617 NT_1619
+RETENTION -> (R) (E) (T) (E) (N) (T) (I) (O) (N)
+NT_1620 -> NT_1616
+NT_1621 -> NT_1620 |
+NT_1626 -> ON | OFF
+NT_1627 -> COMMA
+NT_1628 -> NT_1627 |
+NT_1625 -> STATUS EQUAL NT_1626 NT_1628
+NT_1629 -> NT_1625
+NT_1630 -> NT_1629 |
+NT_1632 -> COMMA
+NT_1633 -> NT_1632 |
+NT_1631 -> PROCEDURE_NAME EQUAL func_proc_name_database_schema NT_1633
+PROCEDURE_NAME -> (P) (R) (O) (C) (E) (D) (U) (R) (E) \x5F (N) (A) (M) (E)
+func_proc_name_database_schema -> func_proc_name_schema | NT_3316 id
+NT_1634 -> NT_1631
+NT_1635 -> NT_1634 |
+NT_1637 -> COMMA
+NT_1638 -> NT_1637 |
+NT_1636 -> MAX_QUEUE_READERS EQUAL DECIMAL NT_1638
+MAX_QUEUE_READERS -> (M) (A) (X) \x5F (Q) (U) (E) (U) (E) \x5F (R) (E) (A) (D) (E) (R) (S)
+NT_1639 -> NT_1636
+NT_1640 -> NT_1639 |
+NT_1642 -> SELF | STRING | OWNER
+SELF -> (S) (E) (L) (F)
+NT_1643 -> COMMA
+NT_1644 -> NT_1643 |
+NT_1641 -> EXECUTE AS NT_1642 NT_1644
+EXECUTE -> (E) (X) (E) (C) NT_3455
+NT_1645 -> NT_1641
+NT_1646 -> NT_1645 |
+NT_1624 -> NT_1630 NT_1635 NT_1640 NT_1646
+NT_1623 -> NT_1624 | DROP
+NT_1647 -> COMMA
+NT_1648 -> NT_1647 |
+NT_1622 -> ACTIVATION LR_BRACKET NT_1623 RR_BRACKET NT_1648
+ACTIVATION -> (A) (C) (T) (I) (V) (A) (T) (I) (O) (N)
+NT_1649 -> NT_1622
+NT_1650 -> NT_1649 |
+NT_1653 -> ON | OFF
+NT_1652 -> STATUS EQUAL NT_1653
+NT_1651 -> POISON_MESSAGE_HANDLING LR_BRACKET NT_1652 RR_BRACKET
+POISON_MESSAGE_HANDLING -> (P) (O) (I) (S) (O) (N) \x5F (M) (E) (S) (S) (A) (G) (E) \x5F (H) (A) (N) (D) (L) (I) (N) (G)
+NT_1654 -> NT_1651
+NT_1655 -> NT_1654 |
+NT_1656 -> full_table_name | id
+NT_1657 -> queue_settings | queue_action
+queue_action -> REBUILD NT_1660 | REORGANIZE NT_1664 | MOVE TO NT_1665
+NT_1658 -> WITH LR_BRACKET queue_rebuild_options RR_BRACKET
+queue_rebuild_options -> MAXDOP EQUAL DECIMAL
+NT_1659 -> NT_1658
+NT_1660 -> NT_1659 |
+NT_1662 -> ON | OFF
+NT_1661 -> WITH LOB_COMPACTION EQUAL NT_1662
+LOB_COMPACTION -> (L) (O) (B) \x5F (C) (O) (M) (P) (A) (C) (T) (I) (O) (N)
+NT_1663 -> NT_1661
+NT_1664 -> NT_1663 |
+NT_1665 -> id | DEFAULT
+MOVE -> (M) (O) (V) (E)
+MAXDOP -> (M) (A) (X) (D) (O) (P)
+NT_1666 -> AUTHORIZATION id
+NT_1667 -> NT_1666
+NT_1668 -> NT_1667 |
+NT_1670 -> id | DEFAULT
+NT_1671 -> INITIATOR | TARGET | ANY
+INITIATOR -> (I) (N) (I) (T) (I) (A) (T) (O) (R)
+NT_1672 -> COMMA
+NT_1673 -> NT_1672 |
+NT_1669 -> NT_1670 SENT BY NT_1671 NT_1673
+SENT -> (S) (E) (N) (T)
+NT_1674 -> NT_1669
+NT_1675 -> NT_1674 | NT_1675 NT_1675
+contract_name -> NT_3394
+begin_conversation_timer -> BEGIN CONVERSATION TIMER \x28 LOCAL_ID \x29 TIMEOUT = time NT_3366
+begin_conversation_dialog -> BEGIN DIALOG NT_3369 LOCAL_ID FROM SERVICE service_name TO SERVICE service_name NT_3372 ON CONTRACT contract_name NT_3391 NT_3393
+end_conversation -> END CONVERSATION LOCAL_ID NT_3397 NT_3407
+get_conversation -> GET CONVERSATION GROUP NT_3417 FROM queue_id NT_3419
+send_conversation -> SEND ON CONVERSATION NT_3421 MESSAGE TYPE expression NT_3425 NT_3427
+waitfor_conversation -> NT_3409 \x28 get_conversation \x29 NT_3414 NT_3416
+NT_1676 -> AUTHORIZATION id
+NT_1677 -> NT_1676
+NT_1678 -> NT_1677 |
+NT_1680 -> NONE | EMPTY | WELL_FORMED_XML | VALID_XML WITH SCHEMA COLLECTION id
+NT_1679 -> VALIDATION EQUAL NT_1680
+NT_1681 -> with_expression
+with_expression -> WITH NT_2917 common_table_expression NT_2920 | WITH BLOCKING_HIERARCHY NT_2923 AS \x28 select_statement \x29
+NT_1682 -> NT_1681 |
+NT_1684 -> PERCENT
+PERCENT -> (P) (E) (R) (C) (E) (N) (T)
+NT_1685 -> NT_1684 |
+NT_1683 -> TOP \x28 expression \x29 NT_1685
+TOP -> (T) (O) (P)
+NT_1686 -> NT_1683
+NT_1687 -> NT_1686 |
+NT_1688 -> INTO
+INTO -> (I) (N) (T) (O)
+NT_1689 -> NT_1688 |
+NT_1690 -> insert_with_table_hints
+insert_with_table_hints -> WITH \x28 table_hint NT_3180 \x29
+NT_1691 -> NT_1690 |
+NT_1692 -> as_table_alias
+as_table_alias -> NT_3166 table_alias
+NT_1693 -> NT_1692 |
+NT_1695 -> AND search_condition
+NT_1696 -> NT_1695
+NT_1697 -> NT_1696 |
+NT_1694 -> WHEN MATCHED NT_1697 THEN merge_matched
+WHEN -> (W) (H) (E) (N)
+MATCHED -> (M) (A) (T) (C) (H) (E) (D)
+THEN -> (T) (H) (E) (N)
+merge_matched -> UPDATE SET update_elem NT_1721 | DELETE
+NT_1698 -> NT_1694
+NT_1699 -> NT_1698 | NT_1699 NT_1699 |
+NT_1701 -> BY TARGET
+NT_1702 -> NT_1701
+NT_1703 -> NT_1702 |
+NT_1704 -> AND search_condition
+NT_1705 -> NT_1704
+NT_1706 -> NT_1705 |
+NT_1700 -> WHEN NOT MATCHED NT_1703 NT_1706 THEN merge_not_matched
+merge_not_matched -> INSERT NT_1724 NT_1725
+NT_1707 -> NT_1700
+NT_1708 -> NT_1707 |
+NT_1710 -> AND search_condition
+NT_1711 -> NT_1710
+NT_1712 -> NT_1711 |
+NT_1709 -> WHEN NOT MATCHED BY SOURCE NT_1712 THEN merge_matched
+NT_1713 -> NT_1709
+NT_1714 -> NT_1713 | NT_1714 NT_1714 |
+NT_1715 -> output_clause
+output_clause -> OUTPUT output_dml_list_elem NT_1836 NT_1843
+NT_1716 -> NT_1715 |
+NT_1717 -> option_clause
+option_clause -> OPTION \x28 option NT_3052 \x29
+NT_1718 -> NT_1717 |
+ddl_object -> full_table_name | LOCAL_ID
+table_sources -> table_source NT_3084
+NT_1719 -> \x2C update_elem
+update_elem -> NT_2927 NT_2928 expression | id [^\n] id \x28 expression_list \x29
+NT_1720 -> NT_1719
+NT_1721 -> NT_1720 | NT_1721 NT_1721 |
+NT_1722 -> \x28 column_name_list \x29
+column_name_list -> id NT_3358
+NT_1723 -> NT_1722
+NT_1724 -> NT_1723 |
+NT_1725 -> table_value_constructor | DEFAULT VALUES
+table_value_constructor -> VALUES \x28 expression_list \x29 NT_3202
+NT_1726 -> with_expression
+NT_1727 -> NT_1726 |
+NT_1729 -> PERCENT
+NT_1730 -> NT_1729 |
+NT_1728 -> TOP \x28 expression \x29 NT_1730 | TOP DECIMAL
+NT_1731 -> NT_1728
+NT_1732 -> NT_1731 |
+NT_1733 -> FROM
+NT_1734 -> NT_1733 |
+NT_1735 -> insert_with_table_hints
+NT_1736 -> NT_1735 |
+NT_1737 -> output_clause
+NT_1738 -> NT_1737 |
+NT_1739 -> FROM table_sources
+NT_1740 -> NT_1739
+NT_1741 -> NT_1740 |
+NT_1743 -> search_condition | CURRENT OF NT_1744
+NT_1745 -> GLOBAL
+GLOBAL -> (G) (L) (O) (B) (A) (L)
+NT_1746 -> NT_1745 |
+NT_1744 -> NT_1746 cursor_name | LOCAL_ID
+cursor_name -> id | LOCAL_ID
+CURRENT -> (C) (U) (R) (R) (E) (N) (T)
+OF -> (O) (F)
+NT_1742 -> WHERE NT_1743
+NT_1747 -> NT_1742
+NT_1748 -> NT_1747 |
+NT_1749 -> for_clause
+for_clause -> FOR BROWSE | FOR XML NT_3002 NT_3007 NT_3014 NT_3018 | FOR XML EXPLICIT NT_3020 NT_3023 | FOR XML PATH NT_3026 NT_3028 NT_3032 | FOR JSON NT_3033 NT_3039 NT_3042 NT_3045
+NT_1750 -> NT_1749 |
+NT_1751 -> option_clause
+NT_1752 -> NT_1751 |
+NT_1753 -> ;
+NT_1754 -> NT_1753 |
+delete_statement_from -> ddl_object | table_alias | rowset_function_limited | LOCAL_ID
+table_alias -> id NT_3168
+rowset_function_limited -> openquery | opendatasource
+NT_1755 -> with_expression
+NT_1756 -> NT_1755 |
+NT_1758 -> PERCENT
+NT_1759 -> NT_1758 |
+NT_1757 -> TOP \x28 expression \x29 NT_1759
+NT_1760 -> NT_1757
+NT_1761 -> NT_1760 |
+NT_1762 -> INTO
+NT_1763 -> NT_1762 |
+NT_1764 -> ddl_object | rowset_function_limited
+NT_1765 -> insert_with_table_hints
+NT_1766 -> NT_1765 |
+NT_1767 -> \x28 column_name_list \x29
+NT_1768 -> NT_1767
+NT_1769 -> NT_1768 |
+NT_1770 -> output_clause
+NT_1771 -> NT_1770 |
+NT_1772 -> for_clause
+NT_1773 -> NT_1772 |
+NT_1774 -> option_clause
+NT_1775 -> NT_1774 |
+NT_1776 -> ;
+NT_1777 -> NT_1776 |
+insert_statement_value -> table_value_constructor | derived_table | execute_statement | DEFAULT VALUES
+derived_table -> subquery | \x28 subquery \x29 | table_value_constructor | \x28 table_value_constructor \x29
+NT_1778 -> \x28
+NT_1779 -> NT_1778 |
+NT_1780 -> ALL | DISTINCT | top_clause | \x2A
+DISTINCT -> (D) (I) (S) (T) (I) (N) (C) (T)
+top_clause -> TOP NT_2985 NT_2988
+NT_1782 -> \x2C
+NT_1783 -> NT_1782 |
+NT_1781 -> LOCAL_ID = expression NT_1783
+NT_1784 -> NT_1781
+NT_1785 -> NT_1784 | NT_1785 NT_1785 |
+NT_1787 -> WHERE search_condition
+NT_1786 -> INTO id NT_1787
+NT_1788 -> NT_1786
+NT_1789 -> NT_1788 |
+NT_1790 -> \x29
+NT_1791 -> NT_1790 |
+RECEIVE -> (R) (E) (C) (E) (I) (V) (E)
+NT_1792 -> with_expression
+NT_1793 -> NT_1792 |
+NT_1794 -> order_by_clause
+order_by_clause -> ORDER BY order_by_expression NT_2992 NT_3001
+NT_1795 -> NT_1794 |
+NT_1796 -> for_clause
+NT_1797 -> NT_1796 |
+NT_1798 -> option_clause
+NT_1799 -> NT_1798 |
+NT_1800 -> ;
+NT_1801 -> NT_1800 |
+query_expression -> NT_2951 NT_2953
+NT_1802 -> LOCAL_ID | constant
+constant -> STRING | BINARY | NT_3440 DECIMAL | NT_3442 NT_3443 | NT_3445 \x24 NT_3446
+NT_1803 -> with_expression
+NT_1804 -> NT_1803 |
+NT_1806 -> PERCENT
+NT_1807 -> NT_1806 |
+NT_1805 -> TOP \x28 expression \x29 NT_1807
+NT_1808 -> NT_1805
+NT_1809 -> NT_1808 |
+NT_1810 -> ddl_object | rowset_function_limited
+NT_1811 -> with_table_hints
+with_table_hints -> NT_3170 \x28 table_hint NT_3175 \x29
+NT_1812 -> NT_1811 |
+NT_1813 -> \x2C update_elem
+NT_1814 -> NT_1813
+NT_1815 -> NT_1814 | NT_1815 NT_1815 |
+NT_1816 -> output_clause
+NT_1817 -> NT_1816 |
+NT_1818 -> FROM table_sources
+NT_1819 -> NT_1818
+NT_1820 -> NT_1819 |
+NT_1822 -> search_condition_list | CURRENT OF NT_1823
+search_condition_list -> search_condition NT_2931
+NT_1824 -> GLOBAL
+NT_1825 -> NT_1824 |
+NT_1823 -> NT_1825 cursor_name | LOCAL_ID
+NT_1821 -> WHERE NT_1822
+NT_1826 -> NT_1821
+NT_1827 -> NT_1826 |
+NT_1828 -> for_clause
+NT_1829 -> NT_1828 |
+NT_1830 -> option_clause
+NT_1831 -> NT_1830 |
+NT_1832 -> ;
+NT_1833 -> NT_1832 |
+NT_1834 -> \x2C output_dml_list_elem
+output_dml_list_elem -> NT_1844 NT_1846
+NT_1835 -> NT_1834
+NT_1836 -> NT_1835 | NT_1836 NT_1836 |
+NT_1838 -> LOCAL_ID | table_name
+NT_1839 -> \x28 column_name_list \x29
+NT_1840 -> NT_1839
+NT_1841 -> NT_1840 |
+NT_1837 -> INTO NT_1838 NT_1841
+NT_1842 -> NT_1837
+NT_1843 -> NT_1842 |
+OUTPUT -> (O) (U) (T) (P) (U) (T)
+NT_1844 -> output_column_name | expression
+output_column_name -> NT_1847 [^\n] NT_1848 | DOLLAR_ACTION
+NT_1845 -> as_column_alias
+as_column_alias -> NT_3164 column_alias
+NT_1846 -> NT_1845 |
+NT_1847 -> DELETED | INSERTED | table_name
+DELETED -> (D) (E) (L) (E) (T) (E) (D)
+INSERTED -> (I) (N) (S) (E) (R) (T) (E) (D)
+NT_1848 -> \x2A | id
+DOLLAR_ACTION -> \x24 (A) (C) (T) (I) (O) (N)
+NT_1849 -> id
+NT_1851 -> NONE | PARTIAL
+PARTIAL -> (P) (A) (R) (T) (I) (A) (L)
+NT_1850 -> CONTAINMENT = NT_1851
+CONTAINMENT -> (C) (O) (N) (T) (A) (I) (N) (M) (E) (N) (T)
+NT_1852 -> NT_1850
+NT_1853 -> NT_1852 |
+NT_1855 -> PRIMARY
+NT_1856 -> NT_1855 |
+NT_1857 -> \x2C database_file_spec
+database_file_spec -> file_group | file_spec
+NT_1858 -> NT_1857
+NT_1859 -> NT_1858 | NT_1859 NT_1859 |
+NT_1854 -> ON NT_1856 database_file_spec NT_1859
+NT_1860 -> NT_1854
+NT_1861 -> NT_1860 |
+NT_1863 -> \x2C database_file_spec
+NT_1864 -> NT_1863
+NT_1865 -> NT_1864 | NT_1865 NT_1865 |
+NT_1862 -> LOG ON database_file_spec NT_1865
+NT_1866 -> NT_1862
+NT_1867 -> NT_1866 |
+NT_1868 -> COLLATE id
+COLLATE -> (C) (O) (L) (L) (A) (T) (E)
+NT_1869 -> NT_1868
+NT_1870 -> NT_1869 |
+NT_1872 -> \x2C create_database_option
+create_database_option -> FILESTREAM NT_3233 | DEFAULT_LANGUAGE EQUAL NT_3237 | DEFAULT_FULLTEXT_LANGUAGE EQUAL NT_3238 | NESTED_TRIGGERS EQUAL NT_3239 | TRANSFORM_NOISE_WORDS EQUAL NT_3240 | TWO_DIGIT_YEAR_CUTOFF EQUAL DECIMAL | DB_CHAINING NT_3241 | TRUSTWORTHY NT_3242
+NT_1873 -> NT_1872
+NT_1874 -> NT_1873 | NT_1874 NT_1874 |
+NT_1871 -> WITH create_database_option NT_1874
+NT_1875 -> NT_1871
+NT_1876 -> NT_1875 |
+NT_1877 -> UNIQUE
+UNIQUE -> (U) (N) (I) (Q) (U) (E)
+NT_1878 -> NT_1877 |
+NT_1879 -> clustered
+clustered -> CLUSTERED | NONCLUSTERED
+NT_1880 -> NT_1879 |
+NT_1881 -> INCLUDE \x28 column_name_list \x29
+INCLUDE -> (I) (N) (C) (L) (U) (D) (E)
+NT_1882 -> NT_1881
+NT_1883 -> NT_1882 |
+NT_1884 -> WHERE search_condition
+NT_1885 -> NT_1884
+NT_1886 -> NT_1885 |
+NT_1887 -> index_options
+index_options -> WITH \x28 index_option NT_2847 \x29
+NT_1888 -> NT_1887
+NT_1889 -> NT_1888 |
+NT_1890 -> ON id
+NT_1891 -> NT_1890
+NT_1892 -> NT_1891 |
+NT_1893 -> ;
+NT_1894 -> NT_1893 |
+table_name_with_hint -> table_name NT_3136
+column_name_list_with_order -> id NT_3349 NT_3355
+NT_1897 -> OR ALTER
+NT_1898 -> NT_1897
+NT_1899 -> NT_1898 |
+NT_1896 -> CREATE NT_1899
+NT_1895 -> NT_1896 | ALTER
+NT_1900 -> PROC | PROCEDURE
+PROC -> (P) (R) (O) (C)
+PROCEDURE -> (P) (R) (O) (C) (E) (D) (U) (R) (E)
+NT_1901 -> ; DECIMAL
+NT_1902 -> NT_1901
+NT_1903 -> NT_1902 |
+NT_1905 -> \x28
+NT_1906 -> NT_1905 |
+NT_1907 -> \x2C procedure_param
+procedure_param -> LOCAL_ID NT_2011 NT_2013 data_type NT_2015 NT_2018 NT_2021
+NT_1908 -> NT_1907
+NT_1909 -> NT_1908 | NT_1909 NT_1909 |
+NT_1910 -> \x29
+NT_1911 -> NT_1910 |
+NT_1904 -> NT_1906 procedure_param NT_1909 NT_1911
+NT_1912 -> NT_1904
+NT_1913 -> NT_1912 |
+NT_1915 -> \x2C procedure_option
+procedure_option -> ENCRYPTION | RECOMPILE | execute_clause
+NT_1916 -> NT_1915
+NT_1917 -> NT_1916 | NT_1917 NT_1917 |
+NT_1914 -> WITH procedure_option NT_1917
+NT_1918 -> NT_1914
+NT_1919 -> NT_1918 |
+NT_1920 -> FOR REPLICATION
+NT_1921 -> NT_1920
+NT_1922 -> NT_1921 |
+func_proc_name_schema -> NT_3310 id
+create_or_alter_dml_trigger -> NT_1923 TRIGGER simple_name ON table_name NT_1933 NT_1934 dml_trigger_operation NT_1937 NT_1940 NT_1943 AS sql_clauses
+create_or_alter_ddl_trigger -> NT_1945 TRIGGER simple_id ON NT_1950 NT_1956 NT_1957 ddl_trigger_operation NT_1960 AS sql_clauses
+NT_1925 -> OR ALTER
+NT_1926 -> NT_1925
+NT_1927 -> NT_1926 |
+NT_1924 -> CREATE NT_1927
+NT_1923 -> NT_1924 | ALTER
+NT_1929 -> \x2C dml_trigger_option
+dml_trigger_option -> ENCRYPTION | execute_clause
+NT_1930 -> NT_1929
+NT_1931 -> NT_1930 | NT_1931 NT_1931 |
+NT_1928 -> WITH dml_trigger_option NT_1931
+NT_1932 -> NT_1928
+NT_1933 -> NT_1932 |
+NT_1934 -> FOR | AFTER | INSTEAD OF
+INSTEAD -> (I) (N) (S) (T) (E) (A) (D)
+NT_1935 -> \x2C dml_trigger_operation
+dml_trigger_operation -> NT_1944
+NT_1936 -> NT_1935
+NT_1937 -> NT_1936 | NT_1937 NT_1937 |
+NT_1938 -> WITH APPEND
+APPEND -> (A) (P) (P) (E) (N) (D)
+NT_1939 -> NT_1938
+NT_1940 -> NT_1939 |
+NT_1941 -> NOT FOR REPLICATION
+NT_1942 -> NT_1941
+NT_1943 -> NT_1942 |
+simple_name -> NT_3306 id
+execute_clause -> EXECUTE AS NT_2753
+NT_1944 -> INSERT | UPDATE | DELETE
+NT_1947 -> OR ALTER
+NT_1948 -> NT_1947
+NT_1949 -> NT_1948 |
+NT_1946 -> CREATE NT_1949
+NT_1945 -> NT_1946 | ALTER
+NT_1950 -> ALL SERVER | DATABASE
+NT_1952 -> \x2C dml_trigger_option
+NT_1953 -> NT_1952
+NT_1954 -> NT_1953 | NT_1954 NT_1954 |
+NT_1951 -> WITH dml_trigger_option NT_1954
+NT_1955 -> NT_1951
+NT_1956 -> NT_1955 |
+NT_1957 -> FOR | AFTER
+NT_1958 -> \x2C dml_trigger_operation
+NT_1959 -> NT_1958
+NT_1960 -> NT_1959 | NT_1960 NT_1960 |
+simple_id -> ID | ABSOLUTE | ACCENT_SENSITIVITY | ACTION | ACTIVATION | ACTIVE | ADDRESS | AES_128 | AES_192 | AES_256 | AFFINITY | AFTER | AGGREGATE | ALGORITHM | ALLOW_ENCRYPTED_VALUE_MODIFICATIONS | ALLOW_SNAPSHOT_ISOLATION | ALLOWED | ANSI_NULL_DEFAULT | ANSI_NULLS | ANSI_PADDING | ANSI_WARNINGS | APPLICATION_LOG | APPLY | ARITHABORT | ASSEMBLY | AUDIT | AUDIT_GUID | AUTO | AUTO_CLEANUP | AUTO_CLOSE | AUTO_CREATE_STATISTICS | AUTO_SHRINK | AUTO_UPDATE_STATISTICS | AUTO_UPDATE_STATISTICS_ASYNC | AVAILABILITY | AVG | BACKUP_PRIORITY | BEGIN_DIALOG | BIGINT | BINARY_BASE64 | BINARY_CHECKSUM | BINDING | BLOB_STORAGE | BROKER | BROKER_INSTANCE | BULK_LOGGED | CALLED | CALLER | CAP_CPU_PERCENT | CAST | CATALOG | CATCH | CHANGE_RETENTION | CHANGE_TRACKING | CHECKSUM | CHECKSUM_AGG | CLEANUP | COLLECTION | COLUMN_MASTER_KEY | COMMITTED | COMPATIBILITY_LEVEL | CONCAT | CONCAT_NULL_YIELDS_NULL | CONTENT | CONTROL | COOKIE | COUNT | COUNT_BIG | COUNTER | CPU | CREATE_NEW | CREATION_DISPOSITION | CREDENTIAL | CRYPTOGRAPHIC | CURSOR_CLOSE_ON_COMMIT | CURSOR_DEFAULT | DATA_COMPRESSION | DATE_CORRELATION_OPTIMIZATION | DATEADD | DATEDIFF | DATENAME | DATEPART | DAYS | DB_CHAINING | DB_FAILOVER | DECRYPTION | DEFAULT_DOUBLE_QUOTE | DEFAULT_FULLTEXT_LANGUAGE | DEFAULT_LANGUAGE | DELAY | DELAYED_DURABILITY | DELETED | DENSE_RANK | DEPENDENTS | DES | DESCRIPTION | DESX | DHCP | DIALOG | DIRECTORY_NAME | DISABLE | DISABLE_BROKER | DISABLED | DISK_DRIVE | DOCUMENT | DYNAMIC | EMERGENCY | EMPTY | ENABLE | ENABLE_BROKER | ENCRYPTED_VALUE | ENCRYPTION | ENDPOINT_URL | ERROR_BROKER_CONVERSATIONS | EVENTDATA | EXCLUSIVE | EXECUTABLE | EXIST | EXPAND | EXPIRY_DATE | EXPLICIT | FAIL_OPERATION | FAILOVER_MODE | FAILURE | FAILURE_CONDITION_LEVEL | FAST | FAST_FORWARD | FILEGROUP | FILEGROWTH | FILENAME | FILEPATH | FILESTREAM | FILLFACTOR | FILTER | FIRST | FIRST_VALUE | FOLLOWING | FORCE | FORCE_FAILOVER_ALLOW_DATA_LOSS | FORCED | FORCESEEK | FORMAT | FORWARD_ONLY | FULLSCAN | FULLTEXT | GB | GETDATE | GETUTCDATE | GLOBAL | GO | GROUP_MAX_REQUESTS | GROUPING | GROUPING_ID | HADR | HASH | HEALTH_CHECK_TIMEOUT | HIGH | HONOR_BROKER_PRIORITY | HOURS | IDENTITY_VALUE | IGNORE_NONCLUSTERED_COLUMNSTORE_INDEX | IMMEDIATE | IMPERSONATE | IMPORTANCE | INCREMENTAL | INIT | INITIATOR | INPUT | INSENSITIVE | INSERTED | INT | IP | ISOLATION | KB | KEEP | KEEPFIXED | KEY | KEY_SOURCE | KEYS | KEYSET | LAG | LAST | LAST_VALUE | LEAD | LEVEL | LIST | LISTENER | LISTENER_URL | LOB_COMPACTION | LOCAL | LOCATION | LOCK | LOCK_ESCALATION | LOGIN | LOOP | LOW | MANUAL | MARK | MASTER | MATERIALIZED | MAX | MAX_CPU_PERCENT | MAX_DOP | MAX_FILES | MAX_IOPS_PER_VOLUME | MAX_MEMORY | MAX_MEMORY_PERCENT | MAX_PROCESSES | MAX_QUEUE_READERS | MAX_ROLLOVER_FILES | MAXDOP | MAXRECURSION | MAXSIZE | MB | MEDIUM | MEMORY_OPTIMIZED_DATA | MESSAGE | MIN | MIN_ACTIVE_ROWVERSION | MIN_CPU_PERCENT | MIN_IOPS_PER_VOLUME | MIN_MEMORY_PERCENT | MINUTES | MIRROR_ADDRESS | MIXED_PAGE_ALLOCATION | MODE | MODIFY | MOVE | MULTI_USER | NAME | NESTED_TRIGGERS | NEW_ACCOUNT | NEW_BROKER | NEW_PASSWORD | NEXT | NO | NO_TRUNCATE | NO_WAIT | NOCOUNT | NODES | NOEXPAND | NON_TRANSACTED_ACCESS | NORECOMPUTE | NORECOVERY | NOWAIT | NTILE | NUMANODE | NUMBER | NUMERIC_ROUNDABORT | OBJECT | OFFLINE | OFFSET | OFFSETS | OLD_ACCOUNT | ONLINE | ONLY | OPEN_EXISTING | OPTIMISTIC | OPTIMIZE | OUT | OUTPUT | OWNER | PAGE | PAGE_VERIFY | PARAMETERIZATION | PARTITION | PARTITIONS | PARTNER | PATH | POISON_MESSAGE_HANDLING | POOL | PORT | PRECEDING | PRIMARY_ROLE | PRIOR | PRIORITY | PRIORITY_LEVEL | PRIVATE | PRIVATE_KEY | PRIVILEGES | PROCEDURE_NAME | PROPERTY | PROVIDER | PROVIDER_KEY_NAME | PUBLIC | QUERY | QUEUE | QUEUE_DELAY | QUOTED_IDENTIFIER | R | RANGE | RANK | RAW | RC2 | RC4 | RC4_128 | READ_COMMITTED_SNAPSHOT | READ_ONLY | READ_ONLY_ROUTING_LIST | READ_WRITE | READONLY | REBUILD | RECEIVE | RECOMPILE | RECOVERY | RECURSIVE_TRIGGERS | RELATIVE | REMOTE | REMOTE_SERVICE_NAME | REMOVE | REORGANIZE | REPEATABLE | REPLICA | REQUEST_MAX_CPU_TIME_SEC | REQUEST_MAX_MEMORY_GRANT_PERCENT | REQUEST_MEMORY_GRANT_TIMEOUT_SEC | REQUIRED_SYNCHRONIZED_SECONDARIES_TO_COMMIT | RESERVE_DISK_SPACE | RESOURCE | RESOURCE_MANAGER_LOCATION | RESTRICTED_USER | RETENTION | RETURN | RETURNS | ROBUST | ROOT | ROUTE | ROW | ROW_NUMBER | ROWCOUNT | ROWGUID | ROWS | SAFETY | SAMPLE | SCHEMABINDING | SCOPED | SCROLL | SCROLL_LOCKS | SEARCH | SECONDARY | SECONDARY_ONLY | SECONDARY_ROLE | SECONDS | SECRET | SECURITY_LOG | SEEDING_MODE | SELF | SEMI_SENSITIVE | SEND | SENT | SERIALIZABLE | SERVER | SESSION_TIMEOUT | SETERROR | SHARE | SHOWPLAN | SID | SID | SIGNATURE | SIMPLE | SINGLE_USER | SIZE | SMALLINT | SNAPSHOT | SOURCE | SPATIAL_WINDOW_MAX_CELLS | STANDBY | START | START_DATE | STATE | STATIC | STATS_STREAM | STATUS | STDEV | STDEVP | STOPLIST | STUFF | SUBJECT | SUM | SUSPEND | SYMMETRIC | SYNCHRONOUS_COMMIT | SYNONYM | TAKE | TARGET | TARGET_RECOVERY_TIME | TB | TEXTIMAGE_ON | THROW | TIES | TIME | TIMEOUT | TIMER | TINYINT | TORN_PAGE_DETECTION | TRANSFORM_NOISE_WORDS | TRIPLE_DES | TRIPLE_DES_3KEY | TRUSTWORTHY | TRY | TSQL | TWO_DIGIT_YEAR_CUTOFF | TYPE | TYPE_WARNING | UNBOUNDED | UNCOMMITTED | UNKNOWN | UNLIMITED | USING | VALID_XML | VALIDATION | VALUE | VAR | VARP | VIEW_METADATA | VIEWS | WAIT | WELL_FORMED_XML | WORK | WORKLOAD | XML | XMLNAMESPACES
+ddl_trigger_operation -> simple_id
+NT_1963 -> OR ALTER
+NT_1964 -> NT_1963
+NT_1965 -> NT_1964 |
+NT_1962 -> CREATE NT_1965
+NT_1961 -> NT_1962 | ALTER
+NT_1968 -> \x2C procedure_param
+NT_1969 -> NT_1968
+NT_1970 -> NT_1969 | NT_1970 NT_1970 |
+NT_1967 -> \x28 procedure_param NT_1970 \x29
+NT_1966 -> NT_1967 | \x28 \x29
+NT_1971 -> func_body_returns_select | func_body_returns_table | func_body_returns_scalar
+func_body_returns_select -> RETURNS TABLE NT_1979 NT_1981 RETURN NT_1982
+func_body_returns_table -> RETURNS LOCAL_ID table_type_definition NT_1988 NT_1990 BEGIN NT_1992 RETURN NT_1994 END NT_1996
+func_body_returns_scalar -> RETURNS data_type NT_2002 NT_2004 BEGIN NT_2006 RETURN expression NT_2008 END
+NT_1972 -> ;
+NT_1973 -> NT_1972 |
+NT_1975 -> \x2C function_option
+function_option -> ENCRYPTION | SCHEMABINDING | RETURNS NULL ON NULL INPUT | CALLED ON NULL INPUT | execute_clause
+NT_1976 -> NT_1975
+NT_1977 -> NT_1976 | NT_1977 NT_1977 |
+NT_1974 -> WITH function_option NT_1977
+NT_1978 -> NT_1974
+NT_1979 -> NT_1978 |
+NT_1980 -> AS
+NT_1981 -> NT_1980 |
+NT_1982 -> \x28 select_statement \x29 | select_statement
+RETURNS -> (R) (E) (T) (U) (R) (N) (S)
+NT_1984 -> \x2C function_option
+NT_1985 -> NT_1984
+NT_1986 -> NT_1985 | NT_1986 NT_1986 |
+NT_1983 -> WITH function_option NT_1986
+NT_1987 -> NT_1983
+NT_1988 -> NT_1987 |
+NT_1989 -> AS
+NT_1990 -> NT_1989 |
+NT_1991 -> sql_clause
+NT_1992 -> NT_1991 | NT_1992 NT_1992 |
+NT_1993 -> ;
+NT_1994 -> NT_1993 |
+NT_1995 -> ;
+NT_1996 -> NT_1995 |
+table_type_definition -> TABLE \x28 column_def_table_constraints \x29
+NT_1998 -> \x2C function_option
+NT_1999 -> NT_1998
+NT_2000 -> NT_1999 | NT_2000 NT_2000 |
+NT_1997 -> WITH function_option NT_2000
+NT_2001 -> NT_1997
+NT_2002 -> NT_2001 |
+NT_2003 -> AS
+NT_2004 -> NT_2003 |
+NT_2005 -> sql_clause
+NT_2006 -> NT_2005 | NT_2006 NT_2006 |
+NT_2007 -> ;
+NT_2008 -> NT_2007 |
+NT_2009 -> id [^\n]
+NT_2010 -> NT_2009
+NT_2011 -> NT_2010 |
+NT_2012 -> AS
+NT_2013 -> NT_2012 |
+NT_2014 -> VARYING
+VARYING -> (V) (A) (R) (Y) (I) (N) (G)
+NT_2015 -> NT_2014 |
+NT_2016 -> = default_value
+default_value -> NULL | DEFAULT | constant
+NT_2017 -> NT_2016
+NT_2018 -> NT_2017 |
+NT_2019 -> OUT | OUTPUT | READONLY
+OUT -> (O) (U) (T)
+READONLY -> (R) (E) (A) (D) (O) (N) (L) (Y)
+NT_2020 -> NT_2019
+NT_2021 -> NT_2020 |
+RECOMPILE -> (R) (E) (C) (O) (M) (P) (I) (L) (E)
+INPUT -> (I) (N) (P) (U) (T)
+CALLED -> (C) (A) (L) (L) (E) (D)
+NT_2023 -> FULLSCAN | SAMPLE DECIMAL NT_2024 | STATS_STREAM
+FULLSCAN -> (F) (U) (L) (L) (S) (C) (A) (N)
+NT_2024 -> PERCENT | ROWS
+ROWS -> (R) (O) (W) (S)
+SAMPLE -> (S) (A) (M) (P) (L) (E)
+STATS_STREAM -> (S) (T) (A) (T) (S) \x5F (S) (T) (R) (E) (A) (M)
+NT_2025 -> \x2C NORECOMPUTE
+NORECOMPUTE -> (N) (O) (R) (E) (C) (O) (M) (P) (U) (T) (E)
+NT_2026 -> NT_2025
+NT_2027 -> NT_2026 |
+NT_2028 -> \x2C INCREMENTAL EQUAL on_off
+INCREMENTAL -> (I) (N) (C) (R) (E) (M) (E) (N) (T) (A) (L)
+on_off -> ON | OFF
+NT_2029 -> NT_2028
+NT_2030 -> NT_2029 |
+NT_2022 -> WITH NT_2023 NT_2027 NT_2030
+NT_2031 -> NT_2022
+NT_2032 -> NT_2031 |
+NT_2033 -> ;
+NT_2034 -> NT_2033 |
+NT_2035 -> INDEX | ALL
+NT_2036 -> NT_2035
+NT_2037 -> NT_2036 |
+NT_2038 -> id
+NT_2039 -> NT_2038 |
+NT_2040 -> USING DECIMAL VALUES
+NT_2041 -> NT_2040
+NT_2042 -> NT_2041 |
+NT_2043 -> \x2C
+NT_2044 -> NT_2043 |
+NT_2045 -> LOCK simple_id
+NT_2046 -> NT_2045
+NT_2047 -> NT_2046 |
+NT_2048 -> table_options
+table_options -> WITH NT_2058
+NT_2049 -> NT_2048 | NT_2049 NT_2049 |
+NT_2050 -> ON id | DEFAULT
+NT_2051 -> NT_2050
+NT_2052 -> NT_2051 |
+NT_2053 -> TEXTIMAGE_ON id | DEFAULT
+TEXTIMAGE_ON -> (T) (E) (X) (T) (I) (M) (A) (G) (E) \x5F (O) (N)
+NT_2054 -> NT_2053
+NT_2055 -> NT_2054 |
+NT_2056 -> ;
+NT_2057 -> NT_2056 |
+column_def_table_constraints -> column_def_table_constraint NT_2766
+NT_2059 -> \x2C index_option
+index_option -> simple_id = NT_2848
+NT_2060 -> NT_2059
+NT_2061 -> NT_2060 | NT_2061 NT_2061 |
+NT_2058 -> \x28 index_option NT_2061 \x29 | index_option NT_2064
+NT_2062 -> \x2C index_option
+NT_2063 -> NT_2062
+NT_2064 -> NT_2063 | NT_2064 NT_2064 |
+NT_2065 -> \x28 column_name_list \x29
+NT_2066 -> NT_2065
+NT_2067 -> NT_2066 |
+NT_2069 -> \x2C view_attribute
+view_attribute -> ENCRYPTION | SCHEMABINDING | VIEW_METADATA
+NT_2070 -> NT_2069
+NT_2071 -> NT_2070 | NT_2071 NT_2071 |
+NT_2068 -> WITH view_attribute NT_2071
+NT_2072 -> NT_2068
+NT_2073 -> NT_2072 |
+NT_2074 -> WITH CHECK OPTION
+CHECK -> (C) (H) (E) (C) (K)
+OPTION -> (O) (P) (T) (I) (O) (N)
+NT_2075 -> NT_2074
+NT_2076 -> NT_2075 |
+NT_2077 -> ;
+NT_2078 -> NT_2077 |
+VIEW -> (V) (I) (E) (W)
+VIEW_METADATA -> (V) (I) (E) (W) \x5F (M) (E) (T) (A) (D) (A) (T) (A)
+NT_2080 -> AUTO | TABLE | DISABLE
+NT_2079 -> SET \x28 LOCK_ESCALATION = NT_2080 \x29 | ADD column_def_table_constraint | ALTER COLUMN column_definition | DROP COLUMN id | DROP CONSTRAINT id | WITH CHECK ADD CONSTRAINT id FOREIGN KEY \x28 column_name_list \x29 REFERENCES table_name \x28 column_name_list \x29 | CHECK CONSTRAINT id | NT_2081 TRIGGER NT_2083 | REBUILD table_options
+LOCK_ESCALATION -> (L) (O) (C) (K) \x5F (E) (S) (C) (A) (L) (A) (T) (I) (O) (N)
+column_def_table_constraint -> column_definition | materialized_column_definition | table_constraint
+column_definition -> id NT_2767 NT_2770 NT_2772 NT_2786 NT_2788 NT_2790
+CONSTRAINT -> (C) (O) (N) (S) (T) (R) (A) (I) (N) (T)
+FOREIGN -> (F) (O) (R) (E) (I) (G) (N)
+REFERENCES -> (R) (E) (F) (E) (R) (E) (N) (C) (E) (S)
+NT_2081 -> ENABLE | DISABLE
+NT_2082 -> id
+NT_2083 -> NT_2082 |
+NT_2084 -> ;
+NT_2085 -> NT_2084 |
+NT_2086 -> id | CURRENT
+NT_2087 -> MODIFY NAME = id | COLLATE id | SET database_optionspec NT_2090
+NT_2088 -> WITH termination
+termination -> ROLLBACK AFTER DECIMAL | ROLLBACK IMMEDIATE | NO_WAIT
+NT_2089 -> NT_2088
+NT_2090 -> NT_2089 |
+database_optionspec -> auto_option | change_tracking_option | containment_option | cursor_option | database_mirroring_option | date_correlation_optimization_option | db_encryption_option | db_state_option | db_update_option | db_user_access_option | delayed_durability_option | external_access_option | FILESTREAM database_filestream_option | hadr_options | mixed_page_allocation_option | parameterization_option | recovery_option | service_broker_option | snapshot_option | sql_option | target_recovery_time_option | termination
+NT_2091 -> ;
+NT_2092 -> NT_2091 |
+auto_option -> AUTO_CLOSE on_off | AUTO_CREATE_STATISTICS OFF | ON NT_2093 | AUTO_SHRINK on_off | AUTO_UPDATE_STATISTICS on_off | AUTO_UPDATE_STATISTICS_ASYNC NT_2094
+change_tracking_option -> CHANGE_TRACKING EQUAL NT_2095
+containment_option -> CONTAINMENT EQUAL NT_2103
+cursor_option -> CURSOR_CLOSE_ON_COMMIT on_off | CURSOR_DEFAULT NT_2104
+database_mirroring_option -> mirroring_set_option
+date_correlation_optimization_option -> DATE_CORRELATION_OPTIMIZATION on_off
+db_encryption_option -> ENCRYPTION on_off
+db_state_option -> NT_2177
+db_update_option -> READ_ONLY | READ_WRITE
+db_user_access_option -> NT_2178
+delayed_durability_option -> DELAYED_DURABILITY EQUAL NT_2179
+external_access_option -> DB_CHAINING on_off | TRUSTWORTHY on_off | DEFAULT_LANGUAGE EQUAL NT_2180 | DEFAULT_FULLTEXT_LANGUAGE EQUAL NT_2181 | NESTED_TRIGGERS EQUAL NT_2182 | TRANSFORM_NOISE_WORDS EQUAL NT_2183 | TWO_DIGIT_YEAR_CUTOFF EQUAL DECIMAL
+FILESTREAM -> (F) (I) (L) (E) (S) (T) (R) (E) (A) (M)
+database_filestream_option -> LR_BRACKET NT_3243 RR_BRACKET
+hadr_options -> HADR NT_2184
+mixed_page_allocation_option -> MIXED_PAGE_ALLOCATION NT_2187
+parameterization_option -> PARAMETERIZATION NT_2188
+recovery_option -> RECOVERY NT_2189 | TORN_PAGE_DETECTION on_off | PAGE_VERIFY NT_2190
+service_broker_option -> ENABLE_BROKER | DISABLE_BROKER | NEW_BROKER | ERROR_BROKER_CONVERSATIONS | HONOR_BROKER_PRIORITY on_off
+snapshot_option -> ALLOW_SNAPSHOT_ISOLATION on_off | READ_COMMITTED_SNAPSHOT NT_2191 | NT_2192
+sql_option -> ANSI_NULL_DEFAULT on_off | ANSI_NULLS on_off | ANSI_PADDING on_off | ANSI_WARNINGS on_off | ARITHABORT on_off | COMPATIBILITY_LEVEL EQUAL DECIMAL | CONCAT_NULL_YIELDS_NULL on_off | NUMERIC_ROUNDABORT on_off | QUOTED_IDENTIFIER on_off | RECURSIVE_TRIGGERS on_off
+target_recovery_time_option -> TARGET_RECOVERY_TIME EQUAL DECIMAL NT_2193
+AUTO_CLOSE -> (A) (U) (T) (O) \x5F (C) (L) (O) (S) (E)
+AUTO_CREATE_STATISTICS -> (A) (U) (T) (O) \x5F (C) (R) (E) (A) (T) (E) \x5F (S) (T) (A) (T) (I) (S) (T) (I) (C) (S)
+NT_2093 -> INCREMENTAL EQUAL ON | OFF
+AUTO_SHRINK -> (A) (U) (T) (O) \x5F (S) (H) (R) (I) (N) (K)
+AUTO_UPDATE_STATISTICS -> (A) (U) (T) (O) \x5F (U) (P) (D) (A) (T) (E) \x5F (S) (T) (A) (T) (I) (S) (T) (I) (C) (S)
+NT_2094 -> ON | OFF
+AUTO_UPDATE_STATISTICS_ASYNC -> (A) (U) (T) (O) \x5F (U) (P) (D) (A) (T) (E) \x5F (S) (T) (A) (T) (I) (S) (T) (I) (C) (S) \x5F (A) (S) (Y) (N) (C)
+NT_2095 -> OFF | ON NT_2101
+NT_2097 -> \x2C change_tracking_option_list
+change_tracking_option_list -> AUTO_CLEANUP EQUAL on_off | CHANGE_RETENTION EQUAL NT_2102
+NT_2098 -> NT_2097
+NT_2099 -> NT_2098 | NT_2099 NT_2099 |
+NT_2096 -> change_tracking_option_list NT_2099
+NT_2100 -> NT_2096
+NT_2101 -> NT_2100 | NT_2101 NT_2101 |
+CHANGE_TRACKING -> (C) (H) (A) (N) (G) (E) \x5F (T) (R) (A) (C) (K) (I) (N) (G)
+AUTO_CLEANUP -> (A) (U) (T) (O) \x5F (C) (L) (E) (A) (N) (U) (P)
+NT_2102 -> DAYS | HOURS | MINUTES
+DAYS -> (D) (A) (Y) (S)
+HOURS -> (H) (O) (U) (R) (S)
+MINUTES -> (M) (I) (N) (U) (T) (E) (S)
+CHANGE_RETENTION -> (C) (H) (A) (N) (G) (E) \x5F (R) (E) (T) (E) (N) (T) (I) (O) (N)
+NT_2103 -> NONE | PARTIAL
+CURSOR_CLOSE_ON_COMMIT -> (C) (U) (R) (S) (O) (R) \x5F (C) (L) (O) (S) (E) \x5F (O) (N) \x5F (C) (O) (M) (M) (I) (T)
+NT_2104 -> LOCAL | GLOBAL
+CURSOR_DEFAULT -> (C) (U) (R) (S) (O) (R) \x5F (D) (E) (F) (A) (U) (L) (T)
+NT_2105 -> AUTHORIZATION id
+NT_2106 -> NT_2105
+NT_2107 -> NT_2106 |
+NT_2109 -> STARTED | STOPPED | DISABLED
+STARTED -> (S) (T) (A) (R) (T) (E) (D)
+STOPPED -> (S) (T) (O) (P) (P) (E) (D)
+DISABLED -> (D) (I) (S) (A) (B) (L) (E) (D)
+NT_2108 -> STATE EQUAL NT_2109
+NT_2110 -> NT_2108
+NT_2111 -> NT_2110 |
+NT_2113 -> ALL | IPV4_ADDR | IPV6_ADDR
+NT_2112 -> COMMA LISTENER_IP EQUAL NT_2113
+LISTENER_IP -> (L) (I) (S) (T) (E) (N) (E) (R) \x5F (I) (P)
+NT_2114 -> NT_2112
+NT_2115 -> NT_2114 |
+NT_2116 -> TSQL | FOR SERVICE_BROKER LR_BRACKET AUTHENTICATION EQUAL NT_2117 NT_2138 NT_2144 NT_2149 RR_BRACKET | FOR DATABASE_MIRRORING LR_BRACKET AUTHENTICATION EQUAL NT_2150 NT_2171 NT_2173 ROLE EQUAL NT_2174 RR_BRACKET
+TSQL -> (T) (S) (Q) (L)
+NT_2118 -> NTLM | KERBEROS | NEGOTIATE
+NTLM -> (N) (T) (L) (M)
+KERBEROS -> (K) (E) (R) (B) (E) (R) (O) (S)
+NEGOTIATE -> (N) (E) (G) (O) (T) (I) (A) (T) (E)
+NT_2119 -> NT_2118
+NT_2120 -> NT_2119 |
+NT_2121 -> CERTIFICATE id
+NT_2122 -> NT_2121
+NT_2123 -> NT_2122 |
+NT_2117 -> WINDOWS NT_2120 NT_2123 | CERTIFICATE id NT_2125 NT_2128
+NT_2124 -> WINDOWS
+NT_2125 -> NT_2124 |
+NT_2126 -> NTLM | KERBEROS | NEGOTIATE
+NT_2127 -> NT_2126
+NT_2128 -> NT_2127 |
+NT_2130 -> COMMA
+NT_2131 -> NT_2130 |
+NT_2132 -> DISABLED | SUPPORTED | REQUIRED
+SUPPORTED -> (S) (U) (P) (P) (O) (R) (T) (E) (D)
+REQUIRED -> (R) (E) (Q) (U) (I) (R) (E) (D)
+NT_2134 -> AES | RC4 | AES RC4 | RC4 AES
+AES -> (A) (E) (S)
+NT_2133 -> ALGORITHM NT_2134
+NT_2135 -> NT_2133
+NT_2136 -> NT_2135 |
+NT_2129 -> NT_2131 ENCRYPTION EQUAL NT_2132 NT_2136
+NT_2137 -> NT_2129
+NT_2138 -> NT_2137 |
+NT_2140 -> COMMA
+NT_2141 -> NT_2140 |
+NT_2142 -> ENABLED | DISABLED
+ENABLED -> (E) (N) (A) (B) (L) (E) (D)
+NT_2139 -> NT_2141 MESSAGE_FORWARDING EQUAL NT_2142
+MESSAGE_FORWARDING -> (M) (E) (S) (S) (A) (G) (E) \x5F (F) (O) (R) (W) (A) (R) (D) (I) (N) (G)
+NT_2143 -> NT_2139
+NT_2144 -> NT_2143 |
+NT_2146 -> COMMA
+NT_2147 -> NT_2146 |
+NT_2145 -> NT_2147 MESSAGE_FORWARD_SIZE EQUAL DECIMAL
+MESSAGE_FORWARD_SIZE -> (M) (E) (S) (S) (A) (G) (E) \x5F (F) (O) (R) (W) (A) (R) (D) \x5F (S) (I) (Z) (E)
+NT_2148 -> NT_2145
+NT_2149 -> NT_2148 |
+SERVICE_BROKER -> (S) (E) (R) (V) (I) (C) (E) \x5F (B) (R) (O) (K) (E) (R)
+AUTHENTICATION -> (A) (U) (T) (H) (E) (N) (T) (I) (C) (A) (T) (I) (O) (N)
+NT_2151 -> NTLM | KERBEROS | NEGOTIATE
+NT_2152 -> NT_2151
+NT_2153 -> NT_2152 |
+NT_2154 -> CERTIFICATE id
+NT_2155 -> NT_2154
+NT_2156 -> NT_2155 |
+NT_2150 -> WINDOWS NT_2153 NT_2156 | CERTIFICATE id NT_2158 NT_2161
+NT_2157 -> WINDOWS
+NT_2158 -> NT_2157 |
+NT_2159 -> NTLM | KERBEROS | NEGOTIATE
+NT_2160 -> NT_2159
+NT_2161 -> NT_2160 |
+NT_2163 -> COMMA
+NT_2164 -> NT_2163 |
+NT_2165 -> DISABLED | SUPPORTED | REQUIRED
+NT_2167 -> AES | RC4 | AES RC4 | RC4 AES
+NT_2166 -> ALGORITHM NT_2167
+NT_2168 -> NT_2166
+NT_2169 -> NT_2168 |
+NT_2162 -> NT_2164 ENCRYPTION EQUAL NT_2165 NT_2169
+NT_2170 -> NT_2162
+NT_2171 -> NT_2170 |
+NT_2172 -> COMMA
+NT_2173 -> NT_2172 |
+NT_2174 -> WITNESS | PARTNER | ALL
+WITNESS -> (W) (I) (T) (N) (E) (S) (S)
+PARTNER -> (P) (A) (R) (T) (N) (E) (R)
+DATABASE_MIRRORING -> (D) (A) (T) (A) (B) (A) (S) (E) \x5F (M) (I) (R) (R) (O) (R) (I) (N) (G)
+TCP -> (T) (C) (P)
+LISTENER_PORT -> (L) (I) (S) (T) (E) (N) (E) (R) \x5F (P) (O) (R) (T)
+mirroring_set_option -> mirroring_partner partner_option | mirroring_witness witness_option
+mirroring_partner -> PARTNER
+partner_option -> witness_partner_equal partner_server | FAILOVER | FORCE_SERVICE_ALLOW_DATA_LOSS | OFF | RESUME | SAFETY NT_2175 | SUSPEND | TIMEOUT DECIMAL
+mirroring_witness -> WITNESS
+witness_option -> witness_partner_equal witness_server | OFF
+witness_partner_equal -> EQUAL
+partner_server -> partner_server_tcp_prefix host mirroring_host_port_seperator port_number
+FORCE_SERVICE_ALLOW_DATA_LOSS -> (F) (O) (R) (C) (E) \x5F (S) (E) (R) (V) (I) (C) (E) \x5F (A) (L) (L) (O) (W) \x5F (D) (A) (T) (A) \x5F (L) (O) (S) (S)
+RESUME -> (R) (E) (S) (U) (M) (E)
+NT_2175 -> FULL | OFF
+FULL -> (F) (U) (L) (L)
+SAFETY -> (S) (A) (F) (E) (T) (Y)
+SUSPEND -> (S) (U) (S) (P) (E) (N) (D)
+witness_server -> partner_server
+partner_server_tcp_prefix -> TCP COLON DOUBLE_FORWARD_SLASH
+host -> id DOT host | NT_2176
+mirroring_host_port_seperator -> COLON
+port_number -> DECIMAL
+NT_2176 -> id DOT | id
+DATE_CORRELATION_OPTIMIZATION -> (D) (A) (T) (E) \x5F (C) (O) (R) (R) (E) (L) (A) (T) (I) (O) (N) \x5F (O) (P) (T) (I) (M) (I) (Z) (A) (T) (I) (O) (N)
+NT_2177 -> ONLINE | OFFLINE | EMERGENCY
+ONLINE -> (O) (N) (L) (I) (N) (E)
+EMERGENCY -> (E) (M) (E) (R) (G) (E) (N) (C) (Y)
+NT_2178 -> SINGLE_USER | RESTRICTED_USER | MULTI_USER
+SINGLE_USER -> (S) (I) (N) (G) (L) (E) \x5F (U) (S) (E) (R)
+RESTRICTED_USER -> (R) (E) (S) (T) (R) (I) (C) (T) (E) (D) \x5F (U) (S) (E) (R)
+MULTI_USER -> (M) (U) (L) (T) (I) \x5F (U) (S) (E) (R)
+NT_2179 -> DISABLED | ALLOWED | FORCED
+ALLOWED -> (A) (L) (L) (O) (W) (E) (D)
+FORCED -> (F) (O) (R) (C) (E) (D)
+DELAYED_DURABILITY -> (D) (E) (L) (A) (Y) (E) (D) \x5F (D) (U) (R) (A) (B) (I) (L) (I) (T) (Y)
+DB_CHAINING -> (D) (B) \x5F (C) (H) (A) (I) (N) (I) (N) (G)
+TRUSTWORTHY -> (T) (R) (U) (S) (T) (W) (O) (R) (T) (H) (Y)
+NT_2180 -> id | STRING
+NT_2181 -> id | STRING
+DEFAULT_FULLTEXT_LANGUAGE -> (D) (E) (F) (A) (U) (L) (T) \x5F (F) (U) (L) (L) (T) (E) (X) (T) \x5F (L) (A) (N) (G) (U) (A) (G) (E)
+NT_2182 -> OFF | ON
+NESTED_TRIGGERS -> (N) (E) (S) (T) (E) (D) \x5F (T) (R) (I) (G) (G) (E) (R) (S)
+NT_2183 -> OFF | ON
+TRANSFORM_NOISE_WORDS -> (T) (R) (A) (N) (S) (F) (O) (R) (M) \x5F (N) (O) (I) (S) (E) \x5F (W) (O) (R) (D) (S)
+TWO_DIGIT_YEAR_CUTOFF -> (T) (W) (O) \x5F (D) (I) (G) (I) (T) \x5F (Y) (E) (A) (R) \x5F (C) (U) (T) (O) (F) (F)
+NT_2185 -> AVAILABILITY GROUP EQUAL id | OFF
+NT_2184 -> NT_2185 | NT_2186
+NT_2186 -> SUSPEND | RESUME
+NT_2187 -> OFF | ON
+MIXED_PAGE_ALLOCATION -> (M) (I) (X) (E) (D) \x5F (P) (A) (G) (E) \x5F (A) (L) (L) (O) (C) (A) (T) (I) (O) (N)
+NT_2188 -> SIMPLE | FORCED
+SIMPLE -> (S) (I) (M) (P) (L) (E)
+PARAMETERIZATION -> (P) (A) (R) (A) (M) (E) (T) (E) (R) (I) (Z) (A) (T) (I) (O) (N)
+NT_2189 -> FULL | BULK_LOGGED | SIMPLE
+BULK_LOGGED -> (B) (U) (L) (K) \x5F (L) (O) (G) (G) (E) (D)
+RECOVERY -> (R) (E) (C) (O) (V) (E) (R) (Y)
+TORN_PAGE_DETECTION -> (T) (O) (R) (N) \x5F (P) (A) (G) (E) \x5F (D) (E) (T) (E) (C) (T) (I) (O) (N)
+NT_2190 -> CHECKSUM | TORN_PAGE_DETECTION | NONE
+CHECKSUM -> (C) (H) (E) (C) (K) (S) (U) (M)
+PAGE_VERIFY -> (P) (A) (G) (E) \x5F (V) (E) (R) (I) (F) (Y)
+ENABLE_BROKER -> (E) (N) (A) (B) (L) (E) \x5F (B) (R) (O) (K) (E) (R)
+DISABLE_BROKER -> (D) (I) (S) (A) (B) (L) (E) \x5F (B) (R) (O) (K) (E) (R)
+NEW_BROKER -> (N) (E) (W) \x5F (B) (R) (O) (K) (E) (R)
+ERROR_BROKER_CONVERSATIONS -> (E) (R) (R) (O) (R) \x5F (B) (R) (O) (K) (E) (R) \x5F (C) (O) (N) (V) (E) (R) (S) (A) (T) (I) (O) (N) (S)
+HONOR_BROKER_PRIORITY -> (H) (O) (N) (O) (R) \x5F (B) (R) (O) (K) (E) (R) \x5F (P) (R) (I) (O) (R) (I) (T) (Y)
+ALLOW_SNAPSHOT_ISOLATION -> (A) (L) (L) (O) (W) \x5F (S) (N) (A) (P) (S) (H) (O) (T) \x5F (I) (S) (O) (L) (A) (T) (I) (O) (N)
+NT_2191 -> ON | OFF
+READ_COMMITTED_SNAPSHOT -> (R) (E) (A) (D) \x5F (C) (O) (M) (M) (I) (T) (T) (E) (D) \x5F (S) (N) (A) (P) (S) (H) (O) (T)
+NT_2192 -> ON | OFF
+ANSI_NULL_DEFAULT -> (A) (N) (S) (I) \x5F (N) (U) (L) (L) \x5F (D) (E) (F) (A) (U) (L) (T)
+ANSI_NULLS -> (A) (N) (S) (I) \x5F (N) (U) (L) (L) (S)
+ANSI_PADDING -> (A) (N) (S) (I) \x5F (P) (A) (D) (D) (I) (N) (G)
+ANSI_WARNINGS -> (A) (N) (S) (I) \x5F (W) (A) (R) (N) (I) (N) (G) (S)
+ARITHABORT -> (A) (R) (I) (T) (H) (A) (B) (O) (R) (T)
+COMPATIBILITY_LEVEL -> (C) (O) (M) (P) (A) (T) (I) (B) (I) (L) (I) (T) (Y) \x5F (L) (E) (V) (E) (L)
+CONCAT_NULL_YIELDS_NULL -> (C) (O) (N) (C) (A) (T) \x5F (N) (U) (L) (L) \x5F (Y) (I) (E) (L) (D) (S) \x5F (N) (U) (L) (L)
+NUMERIC_ROUNDABORT -> (N) (U) (M) (E) (R) (I) (C) \x5F (R) (O) (U) (N) (D) (A) (B) (O) (R) (T)
+QUOTED_IDENTIFIER -> (Q) (U) (O) (T) (E) (D) \x5F (I) (D) (E) (N) (T) (I) (F) (I) (E) (R)
+RECURSIVE_TRIGGERS -> (R) (E) (C) (U) (R) (S) (I) (V) (E) \x5F (T) (R) (I) (G) (G) (E) (R) (S)
+NT_2193 -> SECONDS | MINUTES
+TARGET_RECOVERY_TIME -> (T) (A) (R) (G) (E) (T) \x5F (R) (E) (C) (O) (V) (E) (R) (Y) \x5F (T) (I) (M) (E)
+ROLLBACK -> (R) (O) (L) (L) (B) (A) (C) (K)
+IMMEDIATE -> (I) (M) (M) (E) (D) (I) (A) (T) (E)
+NO_WAIT -> (N) (O) \x5F (W) (A) (I) (T)
+NT_2194 -> IF EXISTS
+NT_2195 -> NT_2194
+NT_2196 -> NT_2195 |
+NT_2198 -> \x2C drop_relational_or_xml_or_spatial_index
+drop_relational_or_xml_or_spatial_index -> id ON full_table_name
+NT_2199 -> NT_2198
+NT_2200 -> NT_2199 | NT_2200 NT_2200 |
+NT_2197 -> drop_relational_or_xml_or_spatial_index NT_2200 | drop_backward_compatible_index NT_2203
+NT_2201 -> \x2C drop_backward_compatible_index
+drop_backward_compatible_index -> NT_2208 id [^\n] id
+NT_2202 -> NT_2201
+NT_2203 -> NT_2202 | NT_2203 NT_2203 |
+NT_2204 -> ;
+NT_2205 -> NT_2204 |
+NT_2206 -> id [^\n]
+NT_2207 -> NT_2206
+NT_2208 -> NT_2207 |
+NT_2209 -> PROC | PROCEDURE
+NT_2210 -> IF EXISTS
+NT_2211 -> NT_2210
+NT_2212 -> NT_2211 |
+NT_2213 -> \x2C func_proc_name_schema
+NT_2214 -> NT_2213
+NT_2215 -> NT_2214 | NT_2215 NT_2215 |
+NT_2216 -> ;
+NT_2217 -> NT_2216 |
+drop_dml_trigger -> DROP TRIGGER NT_2220 simple_name NT_2223 NT_2225
+drop_ddl_trigger -> DROP TRIGGER NT_2228 simple_name NT_2231 ON NT_2232 NT_2234
+NT_2218 -> IF EXISTS
+NT_2219 -> NT_2218
+NT_2220 -> NT_2219 |
+NT_2221 -> \x2C simple_name
+NT_2222 -> NT_2221
+NT_2223 -> NT_2222 | NT_2223 NT_2223 |
+NT_2224 -> ;
+NT_2225 -> NT_2224 |
+NT_2226 -> IF EXISTS
+NT_2227 -> NT_2226
+NT_2228 -> NT_2227 |
+NT_2229 -> \x2C simple_name
+NT_2230 -> NT_2229
+NT_2231 -> NT_2230 | NT_2231 NT_2231 |
+NT_2232 -> DATABASE | ALL SERVER
+NT_2233 -> ;
+NT_2234 -> NT_2233 |
+NT_2235 -> IF EXISTS
+NT_2236 -> NT_2235
+NT_2237 -> NT_2236 |
+NT_2238 -> \x2C func_proc_name_schema
+NT_2239 -> NT_2238
+NT_2240 -> NT_2239 | NT_2240 NT_2240 |
+NT_2241 -> ;
+NT_2242 -> NT_2241 |
+NT_2244 -> COMMA
+NT_2245 -> NT_2244 |
+NT_2246 -> table_name [^\n]
+NT_2247 -> NT_2246
+NT_2248 -> NT_2247 |
+NT_2243 -> NT_2245 NT_2248 id
+NT_2249 -> NT_2243
+NT_2250 -> NT_2249 | NT_2250 NT_2250
+NT_2251 -> IF EXISTS
+NT_2252 -> NT_2251
+NT_2253 -> NT_2252 |
+NT_2254 -> ;
+NT_2255 -> NT_2254 |
+NT_2256 -> IF EXISTS
+NT_2257 -> NT_2256
+NT_2258 -> NT_2257 |
+NT_2259 -> \x2C simple_name
+NT_2260 -> NT_2259
+NT_2261 -> NT_2260 | NT_2261 NT_2261 |
+NT_2262 -> ;
+NT_2263 -> NT_2262 |
+NT_2264 -> FROM data_type default_value
+NT_2265 -> NT_2264
+NT_2266 -> NT_2265 |
+NT_2267 -> AS TABLE LR_BRACKET column_def_table_constraints RR_BRACKET
+NT_2268 -> NT_2267
+NT_2269 -> NT_2268 |
+NT_2270 -> IF EXISTS
+NT_2271 -> NT_2270
+NT_2272 -> NT_2271 |
+openquery -> OPENQUERY \x28 id \x2C STRING \x29
+opendatasource -> OPENDATASOURCE \x28 STRING \x2C STRING \x29 [^\n] NT_2275 [^\n] NT_2278 [^\n] NT_2279
+OPENQUERY -> (O) (P) (E) (N) (Q) (U) (E) (R) (Y)
+NT_2273 -> id
+NT_2274 -> NT_2273
+NT_2275 -> NT_2274 |
+NT_2276 -> id
+NT_2277 -> NT_2276
+NT_2278 -> NT_2277 |
+NT_2279 -> id
+OPENDATASOURCE -> (O) (P) (E) (N) (D) (A) (T) (A) (S) (O) (U) (R) (C) (E)
+NT_2280 -> AS
+NT_2281 -> NT_2280 |
+NT_2282 -> ;
+NT_2283 -> NT_2282 |
+DECLARE -> (D) (E) (C) (L) (A) (R) (E)
+NT_2284 -> \x2C declare_local
+declare_local -> LOCAL_ID NT_2755 data_type NT_2758
+NT_2285 -> NT_2284
+NT_2286 -> NT_2285 | NT_2286 NT_2286 |
+NT_2287 -> ;
+NT_2288 -> NT_2287 |
+NT_2289 -> AS
+NT_2290 -> NT_2289 |
+NT_2291 -> ;
+NT_2292 -> NT_2291 |
+xml_type_definition -> XML \x28 NT_2761 xml_schema_collection \x29
+NT_2293 -> \x2C
+NT_2294 -> NT_2293 |
+NT_2295 -> ;
+NT_2296 -> NT_2295 |
+XMLNAMESPACES -> (X) (M) (L) (N) (A) (M) (E) (S) (P) (A) (C) (E) (S)
+NT_2297 -> GLOBAL
+NT_2298 -> NT_2297 |
+NT_2299 -> ;
+NT_2300 -> NT_2299 |
+CLOSE -> (C) (L) (O) (S) (E)
+NT_2301 -> GLOBAL
+NT_2302 -> NT_2301 |
+NT_2303 -> CURSOR
+CURSOR -> (C) (U) (R) (S) (O) (R)
+NT_2304 -> NT_2303 |
+NT_2305 -> ;
+NT_2306 -> NT_2305 |
+DEALLOCATE -> (D) (E) (A) (L) (L) (O) (C) (A) (T) (E)
+declare_cursor -> DECLARE cursor_name NT_2849 NT_2870
+fetch_cursor -> FETCH NT_2883 NT_2885 cursor_name NT_2891 NT_2893
+NT_2307 -> GLOBAL
+NT_2308 -> NT_2307 |
+NT_2309 -> ;
+NT_2310 -> NT_2309 |
+OPEN -> (O) (P) (E) (N)
+NT_2311 -> id
+NT_2314 -> COMMA
+NT_2315 -> NT_2314 |
+NT_2316 -> FILE | FILEGROUP
+NT_2313 -> NT_2315 NT_2316 EQUAL STRING
+NT_2317 -> NT_2313
+NT_2318 -> NT_2317 | NT_2318 NT_2318 |
+NT_2312 -> READ_WRITE_FILEGROUPS NT_2318
+READ_WRITE_FILEGROUPS -> (R) (E) (A) (D) \x5F (W) (R) (I) (T) (E) \x5F (F) (I) (L) (E) (G) (R) (O) (U) (P) (S)
+NT_2319 -> NT_2312
+NT_2320 -> NT_2319 |
+NT_2322 -> COMMA
+NT_2323 -> NT_2322 |
+NT_2324 -> FILE | FILEGROUP
+NT_2321 -> NT_2323 NT_2324 EQUAL STRING
+NT_2325 -> NT_2321
+NT_2326 -> NT_2325 | NT_2326 NT_2326 |
+NT_2329 -> COMMA
+NT_2330 -> NT_2329 |
+NT_2328 -> NT_2330 id
+NT_2331 -> NT_2328
+NT_2332 -> NT_2331 | NT_2332 NT_2332
+NT_2327 -> TO NT_2332 | TO NT_2339
+NT_2334 -> COMMA
+NT_2335 -> NT_2334 |
+NT_2336 -> DISK | TAPE | URL
+DISK -> (D) (I) (S) (K)
+TAPE -> (T) (A) (P) (E)
+URL -> (U) (R) (L)
+NT_2337 -> STRING | id
+NT_2333 -> NT_2335 NT_2336 EQUAL NT_2337
+NT_2338 -> NT_2333
+NT_2339 -> NT_2338 | NT_2339 NT_2339
+NT_2343 -> COMMA
+NT_2344 -> NT_2343 |
+NT_2342 -> NT_2344 id
+NT_2345 -> NT_2342
+NT_2346 -> NT_2345 | NT_2346 NT_2346
+NT_2341 -> MIRROR TO NT_2346
+MIRROR -> (M) (I) (R) (R) (O) (R)
+NT_2347 -> NT_2341
+NT_2348 -> NT_2347 | NT_2348 NT_2348
+NT_2340 -> NT_2348 | NT_2358
+NT_2351 -> COMMA
+NT_2352 -> NT_2351 |
+NT_2353 -> DISK | TAPE | URL
+NT_2354 -> STRING | id
+NT_2350 -> NT_2352 NT_2353 EQUAL NT_2354
+NT_2355 -> NT_2350
+NT_2356 -> NT_2355 | NT_2356 NT_2356
+NT_2349 -> MIRROR TO NT_2356
+NT_2357 -> NT_2349
+NT_2358 -> NT_2357 | NT_2358 NT_2358
+NT_2359 -> NT_2340
+NT_2360 -> NT_2359 |
+NT_2363 -> COMMA
+NT_2364 -> NT_2363 |
+NT_2362 -> NT_2364 DIFFERENTIAL | NT_2366 COPY_ONLY | NT_2368 NT_2369 | NT_2371 DESCRIPTION EQUAL NT_2372 | NT_2374 NAME EQUAL id | NT_2376 CREDENTIAL | NT_2378 FILE_SNAPSHOT | NT_2380 NT_2381 | NT_2385 NT_2386 | NT_2388 NT_2389 | NT_2391 NT_2392 | NT_2394 MEDIADESCRIPTION EQUAL NT_2395 | NT_2397 MEDIANAME EQUAL NT_2398 | NT_2400 BLOCKSIZE EQUAL NT_2401 | NT_2403 BUFFERCOUNT EQUAL NT_2404 | NT_2406 MAXTRANSFER EQUAL NT_2407 | NT_2409 NT_2410 | NT_2412 NT_2413 | NT_2415 RESTART | NT_2417 STATS NT_2420 | NT_2422 NT_2423 | NT_2425 NT_2426 | NT_2428 ENCRYPTION LR_BRACKET ALGORITHM EQUAL NT_2429 COMMA SERVER CERTIFICATE EQUAL NT_2430
+DIFFERENTIAL -> (D) (I) (F) (F) (E) (R) (E) (N) (T) (I) (A) (L)
+NT_2365 -> COMMA
+NT_2366 -> NT_2365 |
+COPY_ONLY -> (C) (O) (P) (Y) \x5F (O) (N) (L) (Y)
+NT_2367 -> COMMA
+NT_2368 -> NT_2367 |
+NT_2369 -> COMPRESSION | NO_COMPRESSION
+COMPRESSION -> (C) (O) (M) (P) (R) (E) (S) (S) (I) (O) (N)
+NO_COMPRESSION -> (N) (O) \x5F (C) (O) (M) (P) (R) (E) (S) (S) (I) (O) (N)
+NT_2370 -> COMMA
+NT_2371 -> NT_2370 |
+NT_2372 -> STRING | id
+DESCRIPTION -> (D) (E) (S) (C) (R) (I) (P) (T) (I) (O) (N)
+NT_2373 -> COMMA
+NT_2374 -> NT_2373 |
+NT_2375 -> COMMA
+NT_2376 -> NT_2375 |
+NT_2377 -> COMMA
+NT_2378 -> NT_2377 |
+FILE_SNAPSHOT -> (F) (I) (L) (E) \x5F (S) (N) (A) (P) (S) (H) (O) (T)
+NT_2379 -> COMMA
+NT_2380 -> NT_2379 |
+NT_2382 -> STRING | id
+NT_2381 -> EXPIREDATE EQUAL NT_2382 | RETAINDAYS EQUAL NT_2383
+EXPIREDATE -> (E) (X) (P) (I) (R) (E) (D) (A) (T) (E)
+NT_2383 -> DECIMAL | id
+RETAINDAYS -> (R) (E) (T) (A) (I) (N) (D) (A) (Y) (S)
+NT_2384 -> COMMA
+NT_2385 -> NT_2384 |
+NT_2386 -> NOINIT | INIT
+NOINIT -> (N) (O) (I) (N) (I) (T)
+INIT -> (I) (N) (I) (T)
+NT_2387 -> COMMA
+NT_2388 -> NT_2387 |
+NT_2389 -> NOSKIP | SKIP_KEYWORD
+NOSKIP -> (N) (O) (S) (K) (I) (P)
+SKIP_KEYWORD -> (S) (K) (I) (P)
+NT_2390 -> COMMA
+NT_2391 -> NT_2390 |
+NT_2392 -> NOFORMAT | FORMAT
+NOFORMAT -> (N) (O) (F) (O) (R) (M) (A) (T)
+NT_2393 -> COMMA
+NT_2394 -> NT_2393 |
+NT_2395 -> STRING | id
+MEDIADESCRIPTION -> (M) (E) (D) (I) (A) (D) (E) (S) (C) (R) (I) (P) (T) (I) (O) (N)
+NT_2396 -> COMMA
+NT_2397 -> NT_2396 |
+NT_2398 -> STRING
+MEDIANAME -> (M) (E) (D) (I) (A) (N) (A) (M) (E)
+NT_2399 -> COMMA
+NT_2400 -> NT_2399 |
+NT_2401 -> DECIMAL | id
+BLOCKSIZE -> (B) (L) (O) (C) (K) (S) (I) (Z) (E)
+NT_2402 -> COMMA
+NT_2403 -> NT_2402 |
+NT_2404 -> DECIMAL | id
+BUFFERCOUNT -> (B) (U) (F) (F) (E) (R) (C) (O) (U) (N) (T)
+NT_2405 -> COMMA
+NT_2406 -> NT_2405 |
+NT_2407 -> DECIMAL | id
+MAXTRANSFER -> (M) (A) (X) (T) (R) (A) (N) (S) (F) (E) (R)
+NT_2408 -> COMMA
+NT_2409 -> NT_2408 |
+NT_2410 -> NO_CHECKSUM | CHECKSUM
+NO_CHECKSUM -> (N) (O) \x5F (C) (H) (E) (C) (K) (S) (U) (M)
+NT_2411 -> COMMA
+NT_2412 -> NT_2411 |
+NT_2413 -> STOP_ON_ERROR | CONTINUE_AFTER_ERROR
+STOP_ON_ERROR -> (S) (T) (O) (P) \x5F (O) (N) \x5F (E) (R) (R) (O) (R)
+CONTINUE_AFTER_ERROR -> (C) (O) (N) (T) (I) (N) (U) (E) \x5F (A) (F) (T) (E) (R) \x5F (E) (R) (R) (O) (R)
+NT_2414 -> COMMA
+NT_2415 -> NT_2414 |
+NT_2416 -> COMMA
+NT_2417 -> NT_2416 |
+NT_2418 -> EQUAL DECIMAL
+NT_2419 -> NT_2418
+NT_2420 -> NT_2419 |
+STATS -> (S) (T) (A) (T) (S)
+NT_2421 -> COMMA
+NT_2422 -> NT_2421 |
+NT_2423 -> REWIND | NOREWIND
+REWIND -> (R) (E) (W) (I) (N) (D)
+NOREWIND -> (N) (O) (R) (E) (W) (I) (N) (D)
+NT_2424 -> COMMA
+NT_2425 -> NT_2424 |
+NT_2426 -> LOAD | NOUNLOAD
+LOAD -> (L) (O) (A) (D)
+NOUNLOAD -> (N) (O) (U) (N) (L) (O) (A) (D)
+NT_2427 -> COMMA
+NT_2428 -> NT_2427 |
+NT_2429 -> AES_128 | AES_192 | AES_256 | TRIPLE_DES_3KEY
+NT_2430 -> id | SERVER ASYMMETRIC KEY EQUAL id
+NT_2431 -> NT_2362
+NT_2432 -> NT_2431 | NT_2432 NT_2432 |
+NT_2361 -> WITH NT_2432
+NT_2433 -> NT_2361
+NT_2434 -> NT_2433 |
+BACKUP -> (B) (A) (C) (K) (U) (P)
+NT_2435 -> id
+NT_2438 -> COMMA
+NT_2439 -> NT_2438 |
+NT_2437 -> NT_2439 id
+NT_2440 -> NT_2437
+NT_2441 -> NT_2440 | NT_2441 NT_2441
+NT_2436 -> TO NT_2441 | TO NT_2448
+NT_2443 -> COMMA
+NT_2444 -> NT_2443 |
+NT_2445 -> DISK | TAPE | URL
+NT_2446 -> STRING | id
+NT_2442 -> NT_2444 NT_2445 EQUAL NT_2446
+NT_2447 -> NT_2442
+NT_2448 -> NT_2447 | NT_2448 NT_2448
+NT_2452 -> COMMA
+NT_2453 -> NT_2452 |
+NT_2451 -> NT_2453 id
+NT_2454 -> NT_2451
+NT_2455 -> NT_2454 | NT_2455 NT_2455
+NT_2450 -> MIRROR TO NT_2455
+NT_2456 -> NT_2450
+NT_2457 -> NT_2456 | NT_2457 NT_2457
+NT_2449 -> NT_2457 | NT_2467
+NT_2460 -> COMMA
+NT_2461 -> NT_2460 |
+NT_2462 -> DISK | TAPE | URL
+NT_2463 -> STRING | id
+NT_2459 -> NT_2461 NT_2462 EQUAL NT_2463
+NT_2464 -> NT_2459
+NT_2465 -> NT_2464 | NT_2465 NT_2465
+NT_2458 -> MIRROR TO NT_2465
+NT_2466 -> NT_2458
+NT_2467 -> NT_2466 | NT_2467 NT_2467
+NT_2468 -> NT_2449
+NT_2469 -> NT_2468 |
+NT_2472 -> COMMA
+NT_2473 -> NT_2472 |
+NT_2471 -> NT_2473 DIFFERENTIAL | NT_2475 COPY_ONLY | NT_2477 NT_2478 | NT_2480 DESCRIPTION EQUAL NT_2481 | NT_2483 NAME EQUAL id | NT_2485 CREDENTIAL | NT_2487 FILE_SNAPSHOT | NT_2489 NT_2490 | NT_2494 NT_2495 | NT_2497 NT_2498 | NT_2500 NT_2501 | NT_2503 MEDIADESCRIPTION EQUAL NT_2504 | NT_2506 MEDIANAME EQUAL NT_2507 | NT_2509 BLOCKSIZE EQUAL NT_2510 | NT_2512 BUFFERCOUNT EQUAL NT_2513 | NT_2515 MAXTRANSFER EQUAL NT_2516 | NT_2518 NT_2519 | NT_2521 NT_2522 | NT_2524 RESTART | NT_2526 STATS NT_2529 | NT_2531 NT_2532 | NT_2534 NT_2535 | NT_2537 NT_2538 | NT_2540 NO_TRUNCATE | NT_2542 ENCRYPTION LR_BRACKET ALGORITHM EQUAL NT_2543 COMMA SERVER CERTIFICATE EQUAL NT_2544
+NT_2474 -> COMMA
+NT_2475 -> NT_2474 |
+NT_2476 -> COMMA
+NT_2477 -> NT_2476 |
+NT_2478 -> COMPRESSION | NO_COMPRESSION
+NT_2479 -> COMMA
+NT_2480 -> NT_2479 |
+NT_2481 -> STRING | id
+NT_2482 -> COMMA
+NT_2483 -> NT_2482 |
+NT_2484 -> COMMA
+NT_2485 -> NT_2484 |
+NT_2486 -> COMMA
+NT_2487 -> NT_2486 |
+NT_2488 -> COMMA
+NT_2489 -> NT_2488 |
+NT_2491 -> STRING | id
+NT_2490 -> EXPIREDATE EQUAL NT_2491 | RETAINDAYS EQUAL NT_2492
+NT_2492 -> DECIMAL | id
+NT_2493 -> COMMA
+NT_2494 -> NT_2493 |
+NT_2495 -> NOINIT | INIT
+NT_2496 -> COMMA
+NT_2497 -> NT_2496 |
+NT_2498 -> NOSKIP | SKIP_KEYWORD
+NT_2499 -> COMMA
+NT_2500 -> NT_2499 |
+NT_2501 -> NOFORMAT | FORMAT
+NT_2502 -> COMMA
+NT_2503 -> NT_2502 |
+NT_2504 -> STRING | id
+NT_2505 -> COMMA
+NT_2506 -> NT_2505 |
+NT_2507 -> STRING
+NT_2508 -> COMMA
+NT_2509 -> NT_2508 |
+NT_2510 -> DECIMAL | id
+NT_2511 -> COMMA
+NT_2512 -> NT_2511 |
+NT_2513 -> DECIMAL | id
+NT_2514 -> COMMA
+NT_2515 -> NT_2514 |
+NT_2516 -> DECIMAL | id
+NT_2517 -> COMMA
+NT_2518 -> NT_2517 |
+NT_2519 -> NO_CHECKSUM | CHECKSUM
+NT_2520 -> COMMA
+NT_2521 -> NT_2520 |
+NT_2522 -> STOP_ON_ERROR | CONTINUE_AFTER_ERROR
+NT_2523 -> COMMA
+NT_2524 -> NT_2523 |
+NT_2525 -> COMMA
+NT_2526 -> NT_2525 |
+NT_2527 -> EQUAL DECIMAL
+NT_2528 -> NT_2527
+NT_2529 -> NT_2528 |
+NT_2530 -> COMMA
+NT_2531 -> NT_2530 |
+NT_2532 -> REWIND | NOREWIND
+NT_2533 -> COMMA
+NT_2534 -> NT_2533 |
+NT_2535 -> LOAD | NOUNLOAD
+NT_2536 -> COMMA
+NT_2537 -> NT_2536 |
+NT_2538 -> NORECOVERY | STANDBY EQUAL STRING
+NORECOVERY -> (N) (O) (R) (E) (C) (O) (V) (E) (R) (Y)
+STANDBY -> (S) (T) (A) (N) (D) (B) (Y)
+NT_2539 -> COMMA
+NT_2540 -> NT_2539 |
+NO_TRUNCATE -> (N) (O) \x5F (T) (R) (U) (N) (C) (A) (T) (E)
+NT_2541 -> COMMA
+NT_2542 -> NT_2541 |
+NT_2543 -> AES_128 | AES_192 | AES_256 | TRIPLE_DES_3KEY
+NT_2544 -> id | SERVER ASYMMETRIC KEY EQUAL id
+NT_2545 -> NT_2471
+NT_2546 -> NT_2545 | NT_2546 NT_2546 |
+NT_2470 -> WITH NT_2546
+NT_2547 -> NT_2470
+NT_2548 -> NT_2547 |
+NT_2551 -> COMMA
+NT_2552 -> NT_2551 |
+NT_2550 -> NT_2552 FILE EQUAL STRING | NT_2554 ENCRYPTION BY PASSWORD EQUAL STRING | NT_2556 DECRYPTION BY PASSWORD EQUAL STRING
+NT_2553 -> COMMA
+NT_2554 -> NT_2553 |
+NT_2555 -> COMMA
+NT_2556 -> NT_2555 |
+NT_2557 -> NT_2550
+NT_2558 -> NT_2557 | NT_2558 NT_2558
+NT_2549 -> WITH PRIVATE KEY LR_BRACKET NT_2558 RR_BRACKET
+NT_2559 -> NT_2549
+NT_2560 -> NT_2559 |
+execute_body -> NT_2563 NT_2564 NT_2570 NT_2572 | \x28 execute_var_string NT_2575 \x29 NT_2581 NT_2583
+NT_2561 -> LOCAL_ID =
+NT_2562 -> NT_2561
+NT_2563 -> NT_2562 |
+NT_2564 -> func_proc_name_server_database_schema | expression
+func_proc_name_server_database_schema -> func_proc_name_database_schema | NT_3322 id
+NT_2566 -> \x2C execute_statement_arg
+execute_statement_arg -> NT_2586 NT_2587
+NT_2567 -> NT_2566
+NT_2568 -> NT_2567 | NT_2568 NT_2568 |
+NT_2565 -> execute_statement_arg NT_2568
+NT_2569 -> NT_2565
+NT_2570 -> NT_2569 |
+NT_2571 -> ;
+NT_2572 -> NT_2571 |
+NT_2573 -> \x2B execute_var_string
+execute_var_string -> LOCAL_ID | STRING
+NT_2574 -> NT_2573
+NT_2575 -> NT_2574 | NT_2575 NT_2575 |
+NT_2577 -> AS
+NT_2578 -> NT_2577 |
+NT_2579 -> LOGIN | USER
+NT_2576 -> NT_2578 NT_2579 = STRING
+NT_2580 -> NT_2576
+NT_2581 -> NT_2580 |
+NT_2582 -> ;
+NT_2583 -> NT_2582 |
+NT_2584 -> LOCAL_ID =
+NT_2585 -> NT_2584
+NT_2586 -> NT_2585 |
+NT_2588 -> constant_LOCAL_ID | id
+NT_2589 -> OUTPUT | OUT
+NT_2590 -> NT_2589
+NT_2591 -> NT_2590 |
+NT_2587 -> NT_2588 NT_2591 | DEFAULT | NULL
+NT_2592 -> ;
+NT_2593 -> NT_2592 |
+NT_2595 -> PRIVILEGES
+PRIVILEGES -> (P) (R) (I) (V) (I) (L) (E) (G) (E) (S)
+NT_2596 -> NT_2595 |
+NT_2594 -> ALL NT_2596 | grant_permission NT_2599
+NT_2597 -> \x28 column_name_list \x29
+NT_2598 -> NT_2597
+NT_2599 -> NT_2598 |
+grant_permission -> EXECUTE | VIEW id | TAKE id | CONTROL NT_2664 | CREATE NT_2665 | SHOWPLAN | IMPERSONATE | SELECT | REFERENCES | INSERT | ALTER NT_2671
+NT_2600 -> ON table_name
+NT_2601 -> NT_2600
+NT_2602 -> NT_2601 |
+NT_2603 -> \x2C id
+NT_2604 -> NT_2603
+NT_2605 -> NT_2604 | NT_2605 NT_2605 |
+NT_2606 -> WITH GRANT OPTION
+NT_2607 -> NT_2606
+NT_2608 -> NT_2607 |
+NT_2609 -> AS id
+NT_2610 -> NT_2609
+NT_2611 -> NT_2610 |
+NT_2612 -> ;
+NT_2613 -> NT_2612 |
+NT_2614 -> \x28 WITH COOKIE = LOCAL_ID \x29
+COOKIE -> (C) (O) (O) (K) (I) (E)
+NT_2615 -> NT_2614
+NT_2616 -> NT_2615 |
+NT_2617 -> ;
+NT_2618 -> NT_2617 |
+REVERT -> (R) (E) (V) (E) (R) (T)
+open_key -> OPEN SYMMETRIC KEY id DECRYPTION BY decryption_mechanism | OPEN MASTER KEY DECRYPTION BY PASSWORD = STRING
+close_key -> CLOSE SYMMETRIC KEY id | CLOSE ALL SYMMETRIC KEYS | CLOSE MASTER KEY
+create_key -> CREATE MASTER KEY ENCRYPTION BY PASSWORD = STRING | CREATE SYMMETRIC KEY id NT_2646 NT_2649 WITH NT_2655
+create_certificate -> CREATE CERTIFICATE id NT_2621 NT_2622 NT_2626
+NT_2619 -> AUTHORIZATION id
+NT_2620 -> NT_2619
+NT_2621 -> NT_2620 |
+NT_2622 -> FROM existing_keys | generate_new_keys
+existing_keys -> ASSEMBLY id | NT_2628 FILE EQUAL STRING NT_2631
+generate_new_keys -> NT_2639 WITH SUBJECT EQUAL STRING NT_2642
+NT_2624 -> ON | OFF
+NT_2623 -> ACTIVE FOR BEGIN DIALOG = NT_2624
+DIALOG -> (D) (I) (A) (L) (O) (G)
+NT_2625 -> NT_2623
+NT_2626 -> NT_2625 |
+NT_2627 -> EXECUTABLE
+EXECUTABLE -> (E) (X) (E) (C) (U) (T) (A) (B) (L) (E)
+NT_2628 -> NT_2627 |
+NT_2629 -> WITH PRIVATE KEY \x28 private_key_options \x29
+private_key_options -> NT_2632 = STRING NT_2636
+NT_2630 -> NT_2629
+NT_2631 -> NT_2630 |
+NT_2632 -> FILE | BINARY
+NT_2634 -> DECRYPTION | ENCRYPTION
+NT_2633 -> \x2C NT_2634 BY PASSWORD = STRING
+NT_2635 -> NT_2633
+NT_2636 -> NT_2635 |
+NT_2637 -> ENCRYPTION BY PASSWORD = STRING
+NT_2638 -> NT_2637
+NT_2639 -> NT_2638 |
+NT_2640 -> \x2C date_options
+date_options -> NT_2643 EQUAL STRING
+NT_2641 -> NT_2640
+NT_2642 -> NT_2641 | NT_2642 NT_2642 |
+SUBJECT -> (S) (U) (B) (J) (E) (C) (T)
+NT_2643 -> START_DATE | EXPIRY_DATE
+START_DATE -> (S) (T) (A) (R) (T) \x5F (D) (A) (T) (E)
+EXPIRY_DATE -> (E) (X) (P) (I) (R) (Y) \x5F (D) (A) (T) (E)
+decryption_mechanism -> CERTIFICATE id NT_2659 | ASYMMETRIC KEY id NT_2662 | SYMMETRIC KEY id | PASSWORD EQUAL STRING
+KEYS -> (K) (E) (Y) (S)
+NT_2644 -> AUTHORIZATION id
+NT_2645 -> NT_2644
+NT_2646 -> NT_2645 |
+NT_2647 -> FROM PROVIDER id
+NT_2648 -> NT_2647
+NT_2649 -> NT_2648 |
+NT_2651 -> key_options | ENCRYPTION BY encryption_mechanism
+key_options -> KEY_SOURCE EQUAL STRING | ALGORITHM EQUAL algorithm | IDENTITY_VALUE EQUAL STRING | PROVIDER_KEY_NAME EQUAL STRING | CREATION_DISPOSITION EQUAL NT_2656
+encryption_mechanism -> CERTIFICATE id | ASYMMETRIC KEY id | SYMMETRIC KEY id | PASSWORD = STRING
+NT_2652 -> \x2C
+NT_2653 -> NT_2652 |
+NT_2650 -> NT_2651 NT_2653
+NT_2654 -> NT_2650
+NT_2655 -> NT_2654 | NT_2655 NT_2655
+algorithm -> DES | TRIPLE_DES | TRIPLE_DES_3KEY | RC2 | RC4 | RC4_128 | DESX | AES_128 | AES_192 | AES_256
+NT_2656 -> CREATE_NEW | OPEN_EXISTING
+NT_2657 -> WITH PASSWORD EQUAL STRING
+NT_2658 -> NT_2657
+NT_2659 -> NT_2658 |
+NT_2660 -> WITH PASSWORD EQUAL STRING
+NT_2661 -> NT_2660
+NT_2662 -> NT_2661 |
+TAKE -> (T) (A) (K) (E)
+NT_2663 -> id
+NT_2664 -> NT_2663 |
+CONTROL -> (C) (O) (N) (T) (R) (O) (L)
+NT_2665 -> TABLE | VIEW
+SHOWPLAN -> (S) (H) (O) (W) (P) (L) (A) (N)
+IMPERSONATE -> (I) (M) (P) (E) (R) (S) (O) (N) (A) (T) (E)
+NT_2667 -> ANY
+NT_2668 -> NT_2667 |
+NT_2669 -> id | DATABASE
+NT_2666 -> NT_2668 NT_2669
+NT_2670 -> NT_2666
+NT_2671 -> NT_2670 |
+NT_2672 -> [^\n] id
+NT_2673 -> NT_2672
+NT_2674 -> NT_2673 |
+NT_2675 -> ;
+NT_2676 -> NT_2675 |
+NT_2677 -> ;
+NT_2678 -> NT_2677 |
+assignment_operator -> \x2B = | \x2D = | \x2A = | / = | \x25 = | \x26 = | \x5E = | \x7C =
+NT_2680 -> READ ONLY | UPDATE NT_2683
+READ -> (R) (E) (A) (D)
+ONLY -> (O) (N) (L) (Y)
+NT_2681 -> OF column_name_list
+NT_2682 -> NT_2681
+NT_2683 -> NT_2682 |
+NT_2679 -> FOR NT_2680
+NT_2684 -> NT_2679
+NT_2685 -> NT_2684 |
+NT_2686 -> ;
+NT_2687 -> NT_2686 |
+declare_set_cursor_common -> NT_2872 FOR select_statement
+set_special -> SET id NT_2894 NT_2896 | SET TRANSACTION ISOLATION LEVEL NT_2897 NT_2899 | SET IDENTITY_INSERT table_name on_off NT_2901 | SET ANSI_NULLS on_off | SET QUOTED_IDENTIFIER on_off | SET ANSI_PADDING on_off | SET ANSI_WARNINGS on_off | SET modify_method
+NT_2688 -> TRAN | TRANSACTION
+TRAN -> (T) (R) (A) (N)
+TRANSACTION -> (T) (R) (A) (N) (S) (A) (C) (T) (I) (O) (N)
+NT_2689 -> id | LOCAL_ID
+NT_2690 -> NT_2689
+NT_2691 -> NT_2690 |
+NT_2692 -> ;
+NT_2693 -> NT_2692 |
+DISTRIBUTED -> (D) (I) (S) (T) (R) (I) (B) (U) (T) (E) (D)
+NT_2694 -> TRAN | TRANSACTION
+NT_2696 -> id | LOCAL_ID
+NT_2697 -> WITH MARK STRING
+MARK -> (M) (A) (R) (K)
+NT_2698 -> NT_2697
+NT_2699 -> NT_2698 |
+NT_2695 -> NT_2696 NT_2699
+NT_2700 -> NT_2695
+NT_2701 -> NT_2700 |
+NT_2702 -> ;
+NT_2703 -> NT_2702 |
+NT_2704 -> TRAN | TRANSACTION
+NT_2706 -> id | LOCAL_ID
+NT_2708 -> OFF | ON
+NT_2707 -> WITH \x28 DELAYED_DURABILITY EQUAL NT_2708 \x29
+NT_2709 -> NT_2707
+NT_2710 -> NT_2709 |
+NT_2705 -> NT_2706 NT_2710
+NT_2711 -> NT_2705
+NT_2712 -> NT_2711 |
+NT_2713 -> ;
+NT_2714 -> NT_2713 |
+COMMIT -> (C) (O) (M) (M) (I) (T)
+NT_2715 -> WORK
+WORK -> (W) (O) (R) (K)
+NT_2716 -> NT_2715 |
+NT_2717 -> ;
+NT_2718 -> NT_2717 |
+NT_2719 -> TRAN | TRANSACTION
+NT_2720 -> id | LOCAL_ID
+NT_2721 -> NT_2720
+NT_2722 -> NT_2721 |
+NT_2723 -> ;
+NT_2724 -> NT_2723 |
+NT_2725 -> WORK
+NT_2726 -> NT_2725 |
+NT_2727 -> ;
+NT_2728 -> NT_2727 |
+NT_2729 -> TRAN | TRANSACTION
+NT_2730 -> id | LOCAL_ID
+NT_2731 -> NT_2730
+NT_2732 -> NT_2731 |
+NT_2733 -> ;
+NT_2734 -> NT_2733 |
+SAVE -> (S) (A) (V) (E)
+NT_2735 -> DECIMAL
+NT_2736 -> NT_2735
+NT_2737 -> NT_2736 |
+go_statement -> GO NT_2737
+GO -> (G) (O)
+NT_2738 -> ;
+NT_2739 -> NT_2738 |
+USE -> (U) (S) (E)
+NT_2740 -> STRING
+NT_2741 -> NT_2740 |
+SETUSER -> (S) (E) (T) (U) (S) (E) (R)
+NT_2742 -> \x28 expression_list \x29
+expression_list -> expression NT_3205
+NT_2743 -> NT_2742
+NT_2744 -> NT_2743 |
+NT_2745 -> WITH dbcc_options
+dbcc_options -> simple_id NT_2752
+NT_2746 -> NT_2745
+NT_2747 -> NT_2746 |
+NT_2748 -> ;
+NT_2749 -> NT_2748 |
+DBCC -> (D) (B) (C) (C)
+NT_2750 -> \x2C simple_id
+NT_2751 -> NT_2750
+NT_2752 -> NT_2751 |
+NT_2753 -> CALLER | SELF | OWNER | STRING
+CALLER -> (C) (A) (L) (L) (E) (R)
+NT_2754 -> AS
+NT_2755 -> NT_2754 |
+NT_2756 -> = expression
+NT_2757 -> NT_2756
+NT_2758 -> NT_2757 |
+NT_2759 -> CONTENT | DOCUMENT
+DOCUMENT -> (D) (O) (C) (U) (M) (E) (N) (T)
+NT_2760 -> NT_2759
+NT_2761 -> NT_2760 |
+xml_schema_collection -> ID [^\n] ID
+NT_2763 -> \x2C
+NT_2764 -> NT_2763 |
+NT_2762 -> NT_2764 column_def_table_constraint
+NT_2765 -> NT_2762
+NT_2766 -> NT_2765 | NT_2766 NT_2766 |
+materialized_column_definition -> id NT_2791 expression NT_2794
+table_constraint -> NT_2816 NT_2817
+NT_2767 -> data_type | AS expression
+NT_2768 -> COLLATE id
+NT_2769 -> NT_2768
+NT_2770 -> NT_2769 |
+NT_2771 -> null_notnull
+null_notnull -> NT_3360 NULL
+NT_2772 -> NT_2771 |
+NT_2774 -> CONSTRAINT id
+NT_2775 -> NT_2774
+NT_2776 -> NT_2775 |
+NT_2777 -> null_or_default
+null_or_default -> NT_3361
+NT_2778 -> NT_2777 |
+NT_2773 -> NT_2776 null_or_default NT_2778 | IDENTITY NT_2781 NT_2784
+NT_2779 -> \x28 DECIMAL \x2C DECIMAL \x29
+NT_2780 -> NT_2779
+NT_2781 -> NT_2780 |
+NT_2782 -> NOT FOR REPLICATION
+NT_2783 -> NT_2782
+NT_2784 -> NT_2783 |
+NT_2785 -> NT_2773
+NT_2786 -> NT_2785 |
+NT_2787 -> ROWGUIDCOL
+ROWGUIDCOL -> (R) (O) (W) (G) (U) (I) (D) (C) (O) (L)
+NT_2788 -> NT_2787 |
+NT_2789 -> column_constraint
+column_constraint -> NT_2797 NT_2798
+NT_2790 -> NT_2789 | NT_2790 NT_2790 |
+NT_2791 -> COMPUTE | AS
+COMPUTE -> (C) (O) (M) (P) (U) (T) (E)
+NT_2792 -> MATERIALIZED | NOT MATERIALIZED
+MATERIALIZED -> (M) (A) (T) (E) (R) (I) (A) (L) (I) (Z) (E) (D)
+NT_2793 -> NT_2792
+NT_2794 -> NT_2793 |
+NT_2795 -> CONSTRAINT id
+NT_2796 -> NT_2795
+NT_2797 -> NT_2796 |
+NT_2799 -> PRIMARY KEY | UNIQUE
+NT_2800 -> clustered
+NT_2801 -> NT_2800 |
+NT_2802 -> index_options
+NT_2803 -> NT_2802 |
+NT_2798 -> NT_2799 NT_2801 NT_2803 | CHECK NT_2806 \x28 search_condition \x29 | NT_2809 REFERENCES table_name \x28 column_name_list \x29 NT_2811 NT_2813 | null_notnull
+NT_2804 -> NOT FOR REPLICATION
+NT_2805 -> NT_2804
+NT_2806 -> NT_2805 |
+NT_2807 -> FOREIGN KEY
+NT_2808 -> NT_2807
+NT_2809 -> NT_2808 |
+NT_2810 -> on_delete
+on_delete -> ON DELETE NT_2843
+NT_2811 -> NT_2810 |
+NT_2812 -> on_update
+on_update -> ON UPDATE NT_2844
+NT_2813 -> NT_2812 |
+NT_2814 -> CONSTRAINT id
+NT_2815 -> NT_2814
+NT_2816 -> NT_2815 |
+NT_2818 -> PRIMARY KEY | UNIQUE
+NT_2819 -> clustered
+NT_2820 -> NT_2819 |
+NT_2821 -> index_options
+NT_2822 -> NT_2821 |
+NT_2823 -> ON id
+NT_2824 -> NT_2823
+NT_2825 -> NT_2824 |
+NT_2817 -> NT_2818 NT_2820 \x28 column_name_list_with_order \x29 NT_2822 NT_2825 | CHECK NT_2828 \x28 search_condition \x29 | DEFAULT NT_2830 NT_2833 NT_2835 FOR id | FOREIGN KEY \x28 column_name_list \x29 REFERENCES table_name NT_2838 NT_2840 NT_2842
+NT_2826 -> NOT FOR REPLICATION
+NT_2827 -> NT_2826
+NT_2828 -> NT_2827 |
+NT_2829 -> \x28
+NT_2830 -> NT_2829 |
+NT_2831 -> STRING | PLUS | function_call | DECIMAL
+PLUS -> \x2B
+function_call -> ranking_windowed_function | aggregate_windowed_function | analytic_windowed_function | scalar_function_name \x28 NT_3145 \x29 | BINARY_CHECKSUM \x28 \x2A \x29 | CAST \x28 expression AS data_type \x29 | CONVERT \x28 data_type \x2C expression NT_3148 \x29 | CHECKSUM \x28 \x2A \x29 | COALESCE \x28 expression_list \x29 | CURRENT_TIMESTAMP | CURRENT_USER | DATEADD \x28 ID \x2C expression \x2C expression \x29 | DATEDIFF \x28 ID \x2C expression \x2C expression \x29 | DATENAME \x28 ID \x2C expression \x29 | DATEPART \x28 ID \x2C expression \x29 | GETDATE \x28 \x29 | GETUTCDATE \x28 \x29 | IDENTITY \x28 data_type NT_3151 NT_3154 \x29 | MIN_ACTIVE_ROWVERSION | NULLIF \x28 expression \x2C expression \x29 | STUFF \x28 expression \x2C DECIMAL \x2C DECIMAL \x2C expression \x29 | SESSION_USER | SYSTEM_USER | ISNULL \x28 expression \x2C expression \x29 | xml_data_type_methods | IIF \x28 search_condition \x2C expression \x2C expression \x29
+NT_2832 -> NT_2831
+NT_2833 -> NT_2832 | NT_2833 NT_2833
+NT_2834 -> \x29
+NT_2835 -> NT_2834 |
+NT_2836 -> \x28 column_name_list \x29
+NT_2837 -> NT_2836
+NT_2838 -> NT_2837 |
+NT_2839 -> on_delete
+NT_2840 -> NT_2839 |
+NT_2841 -> on_update
+NT_2842 -> NT_2841 |
+NT_2843 -> NO ACTION | CASCADE | SET NULL | SET DEFAULT
+CASCADE -> (C) (A) (S) (C) (A) (D) (E)
+NT_2844 -> NO ACTION | CASCADE | SET NULL | SET DEFAULT
+NT_2845 -> \x2C index_option
+NT_2846 -> NT_2845
+NT_2847 -> NT_2846 | NT_2847 NT_2847 |
+NT_2848 -> simple_id | on_off | DECIMAL
+NT_2852 -> OF column_name_list
+NT_2853 -> NT_2852
+NT_2854 -> NT_2853 |
+NT_2851 -> FOR UPDATE NT_2854
+NT_2855 -> NT_2851
+NT_2856 -> NT_2855 |
+NT_2850 -> declare_set_cursor_common NT_2856
+NT_2857 -> NT_2850
+NT_2858 -> NT_2857 |
+NT_2849 -> CURSOR NT_2858 | NT_2861 NT_2863 CURSOR FOR select_statement NT_2868
+NT_2859 -> SEMI_SENSITIVE | INSENSITIVE
+SEMI_SENSITIVE -> (S) (E) (M) (I) \x5F (S) (E) (N) (S) (I) (T) (I) (V) (E)
+INSENSITIVE -> (I) (N) (S) (E) (N) (S) (I) (T) (I) (V) (E)
+NT_2860 -> NT_2859
+NT_2861 -> NT_2860 |
+NT_2862 -> SCROLL
+SCROLL -> (S) (C) (R) (O) (L) (L)
+NT_2863 -> NT_2862 |
+NT_2865 -> READ ONLY | UPDATE | NT_2866
+NT_2866 -> OF column_name_list
+NT_2864 -> FOR NT_2865
+NT_2867 -> NT_2864
+NT_2868 -> NT_2867 |
+NT_2869 -> ;
+NT_2870 -> NT_2869 |
+NT_2871 -> declare_set_cursor_common_partial
+declare_set_cursor_common_partial -> NT_2873 | NT_2874 | NT_2875 | NT_2876 | TYPE_WARNING
+NT_2872 -> NT_2871 | NT_2872 NT_2872 |
+NT_2873 -> LOCAL | GLOBAL
+NT_2874 -> FORWARD_ONLY | SCROLL
+FORWARD_ONLY -> (F) (O) (R) (W) (A) (R) (D) \x5F (O) (N) (L) (Y)
+NT_2875 -> STATIC | KEYSET | DYNAMIC | FAST_FORWARD
+STATIC -> (S) (T) (A) (T) (I) (C)
+KEYSET -> (K) (E) (Y) (S) (E) (T)
+DYNAMIC -> (D) (Y) (N) (A) (M) (I) (C)
+FAST_FORWARD -> (F) (A) (S) (T) \x5F (F) (O) (R) (W) (A) (R) (D)
+NT_2876 -> READ_ONLY | SCROLL_LOCKS | OPTIMISTIC
+SCROLL_LOCKS -> (S) (C) (R) (O) (L) (L) \x5F (L) (O) (C) (K) (S)
+OPTIMISTIC -> (O) (P) (T) (I) (M) (I) (S) (T) (I) (C)
+TYPE_WARNING -> (T) (Y) (P) (E) \x5F (W) (A) (R) (N) (I) (N) (G)
+NT_2878 -> NEXT | PRIOR | FIRST | LAST | NT_2879 expression
+PRIOR -> (P) (R) (I) (O) (R)
+FIRST -> (F) (I) (R) (S) (T)
+LAST -> (L) (A) (S) (T)
+NT_2879 -> ABSOLUTE | RELATIVE
+ABSOLUTE -> (A) (B) (S) (O) (L) (U) (T) (E)
+RELATIVE -> (R) (E) (L) (A) (T) (I) (V) (E)
+NT_2880 -> NT_2878
+NT_2881 -> NT_2880 |
+NT_2877 -> NT_2881 FROM
+NT_2882 -> NT_2877
+NT_2883 -> NT_2882 |
+NT_2884 -> GLOBAL
+NT_2885 -> NT_2884 |
+NT_2887 -> \x2C LOCAL_ID
+NT_2888 -> NT_2887
+NT_2889 -> NT_2888 | NT_2889 NT_2889 |
+NT_2886 -> INTO LOCAL_ID NT_2889
+NT_2890 -> NT_2886
+NT_2891 -> NT_2890 |
+NT_2892 -> ;
+NT_2893 -> NT_2892 |
+FETCH -> (F) (E) (T) (C) (H)
+NT_2894 -> id | constant_LOCAL_ID | on_off
+NT_2895 -> ;
+NT_2896 -> NT_2895 |
+NT_2897 -> READ UNCOMMITTED | READ COMMITTED | REPEATABLE READ | SNAPSHOT | SERIALIZABLE | DECIMAL
+UNCOMMITTED -> (U) (N) (C) (O) (M) (M) (I) (T) (T) (E) (D)
+COMMITTED -> (C) (O) (M) (M) (I) (T) (T) (E) (D)
+REPEATABLE -> (R) (E) (P) (E) (A) (T) (A) (B) (L) (E)
+SNAPSHOT -> (S) (N) (A) (P) (S) (H) (O) (T)
+SERIALIZABLE -> (S) (E) (R) (I) (A) (L) (I) (Z) (A) (B) (L) (E)
+NT_2898 -> ;
+NT_2899 -> NT_2898 |
+ISOLATION -> (I) (S) (O) (L) (A) (T) (I) (O) (N)
+LEVEL -> (L) (E) (V) (E) (L)
+NT_2900 -> ;
+NT_2901 -> NT_2900 |
+IDENTITY_INSERT -> (I) (D) (E) (N) (T) (I) (T) (Y) \x5F (I) (N) (S) (E) (R) (T)
+modify_method -> NT_3161 [^\n] MODIFY \x28 STRING \x29
+primitive_expression -> DEFAULT | NULL | LOCAL_ID | constant
+case_expression -> CASE expression NT_2905 NT_2908 END | CASE NT_2910 NT_2913 END
+full_column_name -> NT_3325 id | NT_3328 COMPATIBILITY_LEVEL | NT_3331 STATUS | NT_3334 QUOTED_IDENTIFIER | NT_3337 ARITHABORT | NT_3340 ANSI_WARNINGS | NT_3343 ANSI_PADDING | NT_3346 ANSI_NULLS
+bracket_expression -> \x28 expression \x29 | \x28 subquery \x29
+unary_operator_expression -> \x7E expression | NT_2914 expression
+NT_2902 -> \x2A | / | \x25
+NT_2903 -> \x2B | \x2D | \x26 | \x5E | \x7C | \x7C \x7C
+comparison_operator -> = | \x3E | \x3C | \x3C = | \x3E = | \x3C \x3E | ! = | ! \x3E | ! \x3C
+over_clause -> OVER \x28 NT_3227 NT_3229 NT_3231 \x29
+NT_2904 -> switch_section
+switch_section -> WHEN expression THEN expression
+NT_2905 -> NT_2904 | NT_2905 NT_2905
+NT_2906 -> ELSE expression
+NT_2907 -> NT_2906
+NT_2908 -> NT_2907 |
+CASE -> (C) (A) (S) (E)
+NT_2909 -> switch_search_condition_section
+switch_search_condition_section -> WHEN search_condition THEN expression
+NT_2910 -> NT_2909 | NT_2910 NT_2910
+NT_2911 -> ELSE expression
+NT_2912 -> NT_2911
+NT_2913 -> NT_2912 |
+NT_2914 -> \x2B | \x2D
+subquery -> select_statement
+constant_expression -> NULL | constant | function_call | LOCAL_ID | \x28 constant_expression \x29
+NT_2915 -> XMLNAMESPACES \x2C
+NT_2916 -> NT_2915
+NT_2917 -> NT_2916 |
+NT_2918 -> \x2C common_table_expression
+common_table_expression -> id NT_2926 AS \x28 select_statement \x29
+NT_2919 -> NT_2918
+NT_2920 -> NT_2919 | NT_2920 NT_2920 |
+NT_2921 -> \x28 full_column_name_list \x29
+full_column_name_list -> full_column_name NT_3134
+NT_2922 -> NT_2921
+NT_2923 -> NT_2922 |
+BLOCKING_HIERARCHY -> (B) (L) (O) (C) (K) (I) (N) (G) \x5F (H) (I) (E) (R) (A) (R) (C) (H) (Y)
+NT_2924 -> \x28 column_name_list \x29
+NT_2925 -> NT_2924
+NT_2926 -> NT_2925 |
+NT_2927 -> full_column_name | LOCAL_ID
+NT_2928 -> = | assignment_operator
+NT_2929 -> \x2C search_condition
+NT_2930 -> NT_2929
+NT_2931 -> NT_2930 | NT_2931 NT_2931 |
+NT_2932 -> OR search_condition_and
+search_condition_and -> search_condition_not NT_2937
+NT_2933 -> NT_2932
+NT_2934 -> NT_2933 | NT_2934 NT_2934 |
+NT_2935 -> AND search_condition_not
+search_condition_not -> NT_2939 predicate
+NT_2936 -> NT_2935
+NT_2937 -> NT_2936 | NT_2937 NT_2937 |
+NT_2938 -> NOT
+NT_2939 -> NT_2938 |
+predicate -> EXISTS \x28 subquery \x29 | expression comparison_operator expression | expression comparison_operator NT_2940 \x28 subquery \x29 | expression NT_2942 BETWEEN expression AND expression | expression NT_2944 IN \x28 NT_2945 \x29 | expression NT_2947 LIKE expression NT_2950 | expression IS null_notnull | \x28 search_condition \x29
+NT_2940 -> ALL | SOME | ANY
+SOME -> (S) (O) (M) (E)
+NT_2941 -> NOT
+NT_2942 -> NT_2941 |
+BETWEEN -> (B) (E) (T) (W) (E) (E) (N)
+NT_2943 -> NOT
+NT_2944 -> NT_2943 |
+NT_2945 -> subquery | expression_list
+NT_2946 -> NOT
+NT_2947 -> NT_2946 |
+NT_2948 -> ESCAPE expression
+ESCAPE -> (E) (S) (C) (A) (P) (E)
+NT_2949 -> NT_2948
+NT_2950 -> NT_2949 |
+LIKE -> (L) (I) (K) (E)
+IS -> (I) (S)
+NT_2951 -> query_specification | \x28 query_expression \x29
+query_specification -> SELECT NT_2961 NT_2963 select_list NT_2966 NT_2969 NT_2972 NT_2981 NT_2984
+NT_2952 -> sql_union
+sql_union -> NT_2954 NT_2957
+NT_2953 -> NT_2952 | NT_2953 NT_2953 |
+NT_2955 -> ALL
+NT_2956 -> NT_2955 |
+NT_2954 -> UNION NT_2956 | EXCEPT | INTERSECT
+UNION -> (U) (N) (I) (O) (N)
+EXCEPT -> (E) (X) (C) (E) (P) (T)
+INTERSECT -> (I) (N) (T) (E) (R) (S) (E) (C) (T)
+NT_2957 -> query_specification | NT_2958
+NT_2958 -> \x28 query_expression \x29
+NT_2959 -> ALL | DISTINCT
+NT_2960 -> NT_2959
+NT_2961 -> NT_2960 |
+NT_2962 -> top_clause
+NT_2963 -> NT_2962 |
+NT_2964 -> INTO table_name
+NT_2965 -> NT_2964
+NT_2966 -> NT_2965 |
+NT_2967 -> FROM table_sources
+NT_2968 -> NT_2967
+NT_2969 -> NT_2968 |
+NT_2970 -> WHERE search_condition
+NT_2971 -> NT_2970
+NT_2972 -> NT_2971 |
+NT_2974 -> ALL
+NT_2975 -> NT_2974
+NT_2976 -> NT_2975 |
+NT_2977 -> \x2C group_by_item
+group_by_item -> expression
+NT_2978 -> NT_2977
+NT_2979 -> NT_2978 | NT_2979 NT_2979 |
+NT_2973 -> GROUP BY NT_2976 group_by_item NT_2979
+NT_2980 -> NT_2973
+NT_2981 -> NT_2980 |
+NT_2982 -> HAVING search_condition
+HAVING -> (H) (A) (V) (I) (N) (G)
+NT_2983 -> NT_2982
+NT_2984 -> NT_2983 |
+select_list -> select_list_elem NT_3064
+NT_2985 -> top_percent | top_count
+top_percent -> NT_2989 PERCENT | \x28 expression \x29 PERCENT
+top_count -> DECIMAL | \x28 expression \x29
+NT_2986 -> WITH TIES
+TIES -> (T) (I) (E) (S)
+NT_2987 -> NT_2986
+NT_2988 -> NT_2987 |
+NT_2989 -> REAL | FLOAT
+REAL -> NT_3499 NT_3500
+FLOAT -> DEC_DOT_DEC
+NT_2990 -> \x2C order_by_expression
+order_by_expression -> expression NT_3049
+NT_2991 -> NT_2990
+NT_2992 -> NT_2991 | NT_2992 NT_2992 |
+NT_2994 -> ROW | ROWS
+ROW -> (R) (O) (W)
+NT_2996 -> FIRST | NEXT
+NT_2997 -> ROW | ROWS
+NT_2995 -> FETCH NT_2996 expression NT_2997 ONLY
+NT_2998 -> NT_2995
+NT_2999 -> NT_2998 |
+NT_2993 -> OFFSET expression NT_2994 NT_2999
+OFFSET -> (O) (F) (F) (S) (E) (T)
+NT_3000 -> NT_2993
+NT_3001 -> NT_3000 |
+ORDER -> (O) (R) (D) (E) (R)
+BROWSE -> (B) (R) (O) (W) (S) (E)
+NT_3003 -> \x28 STRING \x29
+NT_3004 -> NT_3003
+NT_3005 -> NT_3004 |
+NT_3002 -> RAW NT_3005 | AUTO
+RAW -> (R) (A) (W)
+NT_3006 -> xml_common_directives
+xml_common_directives -> \x2C NT_3046
+NT_3007 -> NT_3006 | NT_3007 NT_3007 |
+NT_3009 -> XMLDATA | XMLSCHEMA NT_3012
+XMLDATA -> (X) (M) (L) (D) (A) (T) (A)
+NT_3010 -> \x28 STRING \x29
+NT_3011 -> NT_3010
+NT_3012 -> NT_3011 |
+XMLSCHEMA -> (X) (M) (L) (S) (C) (H) (E) (M) (A)
+NT_3008 -> COMMA NT_3009
+NT_3013 -> NT_3008
+NT_3014 -> NT_3013 |
+NT_3016 -> XSINIL | ABSENT
+XSINIL -> (X) (S) (I) (N) (I) (L)
+ABSENT -> (A) (B) (S) (E) (N) (T)
+NT_3015 -> COMMA ELEMENTS NT_3016
+ELEMENTS -> (E) (L) (E) (M) (E) (N) (T) (S)
+NT_3017 -> NT_3015
+NT_3018 -> NT_3017 |
+NT_3019 -> xml_common_directives
+NT_3020 -> NT_3019 | NT_3020 NT_3020 |
+NT_3021 -> COMMA XMLDATA
+NT_3022 -> NT_3021
+NT_3023 -> NT_3022 |
+EXPLICIT -> (E) (X) (P) (L) (I) (C) (I) (T)
+NT_3024 -> \x28 STRING \x29
+NT_3025 -> NT_3024
+NT_3026 -> NT_3025 |
+NT_3027 -> xml_common_directives
+NT_3028 -> NT_3027 | NT_3028 NT_3028 |
+NT_3030 -> XSINIL | ABSENT
+NT_3029 -> COMMA ELEMENTS NT_3030
+NT_3031 -> NT_3029
+NT_3032 -> NT_3031 |
+NT_3033 -> AUTO | PATH
+NT_3035 -> \x28 STRING \x29
+NT_3036 -> NT_3035
+NT_3037 -> NT_3036 |
+NT_3034 -> COMMA ROOT NT_3037
+ROOT -> (R) (O) (O) (T)
+NT_3038 -> NT_3034
+NT_3039 -> NT_3038 |
+NT_3040 -> COMMA INCLUDE_NULL_VALUES
+INCLUDE_NULL_VALUES -> (I) (N) (C) (L) (U) (D) (E) \x5F (N) (U) (L) (L) \x5F (V) (A) (L) (U) (E) (S)
+NT_3041 -> NT_3040
+NT_3042 -> NT_3041 |
+NT_3043 -> COMMA WITHOUT_ARRAY_WRAPPER
+WITHOUT_ARRAY_WRAPPER -> (W) (I) (T) (H) (O) (U) (T) \x5F (A) (R) (R) (A) (Y) \x5F (W) (R) (A) (P) (P) (E) (R)
+NT_3044 -> NT_3043
+NT_3045 -> NT_3044 |
+JSON -> (J) (S) (O) (N)
+NT_3046 -> BINARY_BASE64 | TYPE | ROOT
+BINARY_BASE64 -> (B) (I) (N) (A) (R) (Y) \x20 (B) (A) (S) (E) 6 4
+NT_3047 -> ASC | DESC
+ASC -> (A) (S) (C)
+DESC -> (D) (E) (S) (C)
+NT_3048 -> NT_3047
+NT_3049 -> NT_3048 |
+NT_3050 -> \x2C option
+option -> FAST DECIMAL | NT_3053 GROUP | NT_3054 UNION | NT_3055 JOIN | EXPAND VIEWS | FORCE ORDER | IGNORE_NONCLUSTERED_COLUMNSTORE_INDEX | KEEP PLAN | KEEPFIXED PLAN | MAXDOP DECIMAL | MAXRECURSION DECIMAL | OPTIMIZE FOR \x28 optimize_for_arg NT_3058 \x29 | OPTIMIZE FOR UNKNOWN | PARAMETERIZATION NT_3059 | RECOMPILE | ROBUST PLAN | USE PLAN STRING
+NT_3051 -> NT_3050
+NT_3052 -> NT_3051 | NT_3052 NT_3052 |
+FAST -> (F) (A) (S) (T)
+NT_3053 -> HASH | ORDER
+HASH -> (H) (A) (S) (H)
+NT_3054 -> MERGE | HASH | CONCAT
+CONCAT -> (C) (O) (N) (C) (A) (T)
+NT_3055 -> LOOP | MERGE | HASH
+LOOP -> (L) (O) (O) (P)
+EXPAND -> (E) (X) (P) (A) (N) (D)
+VIEWS -> (V) (I) (E) (W) (S)
+IGNORE_NONCLUSTERED_COLUMNSTORE_INDEX -> (I) (G) (N) (O) (R) (E) \x5F (N) (O) (N) (C) (L) (U) (S) (T) (E) (R) (E) (D) \x5F (C) (O) (L) (U) (M) (N) (S) (T) (O) (R) (E) \x5F (I) (N) (D) (E) (X)
+KEEP -> (K) (E) (E) (P)
+PLAN -> (P) (L) (A) (N)
+KEEPFIXED -> (K) (E) (E) (P) (F) (I) (X) (E) (D)
+MAXRECURSION -> (M) (A) (X) (R) (E) (C) (U) (R) (S) (I) (O) (N)
+NT_3056 -> \x2C optimize_for_arg
+optimize_for_arg -> LOCAL_ID NT_3060
+NT_3057 -> NT_3056
+NT_3058 -> NT_3057 | NT_3058 NT_3058 |
+OPTIMIZE -> (O) (P) (T) (I) (M) (I) (Z) (E)
+UNKNOWN -> (U) (N) (K) (N) (O) (W) (N)
+NT_3059 -> SIMPLE | FORCED
+ROBUST -> (R) (O) (B) (U) (S) (T)
+NT_3060 -> UNKNOWN | = NT_3061
+NT_3061 -> constant | NULL
+NT_3062 -> \x2C select_list_elem
+select_list_elem -> asterisk | column_elem | udt_elem | expression_elem
+NT_3063 -> NT_3062
+NT_3064 -> NT_3063 | NT_3064 NT_3064 |
+NT_3065 -> \x2C execute_var_string
+NT_3066 -> NT_3065
+NT_3067 -> NT_3066 | NT_3067 NT_3067 |
+udt_method_arguments -> \x28 execute_var_string NT_3067 \x29
+asterisk -> \x2A | table_name [^\n] asterisk
+NT_3068 -> table_name [^\n]
+NT_3069 -> NT_3068
+NT_3070 -> NT_3069 |
+NT_3071 -> id | \x24 IDENTITY | \x24 ROWGUID
+ROWGUID -> (R) (O) (W) (G) (U) (I) (D)
+NT_3072 -> as_column_alias
+NT_3073 -> NT_3072 |
+column_elem -> NT_3070 NT_3071 NT_3073
+NT_3074 -> as_column_alias
+NT_3075 -> NT_3074 |
+udt_elem -> id [^\n] id udt_method_arguments NT_3075 | id \x3A \x3A id NT_3077 NT_3079
+NT_3076 -> udt_method_arguments
+NT_3077 -> NT_3076 |
+NT_3078 -> as_column_alias
+NT_3079 -> NT_3078 |
+expression_elem -> column_alias = expression | expression NT_3081
+column_alias -> id | STRING
+NT_3080 -> as_column_alias
+NT_3081 -> NT_3080 |
+NT_3082 -> \x2C table_source
+table_source -> table_source_item_joined | \x28 table_source_item_joined \x29
+NT_3083 -> NT_3082
+NT_3084 -> NT_3083 | NT_3084 NT_3084 |
+table_source_item_joined -> table_source_item NT_3086
+NT_3085 -> join_part
+join_part -> NT_3122 NT_3131 JOIN table_source ON search_condition | CROSS JOIN table_source | CROSS APPLY table_source | OUTER APPLY table_source | PIVOT pivot_clause as_table_alias | UNPIVOT unpivot_clause as_table_alias
+NT_3086 -> NT_3085 | NT_3086 NT_3086 |
+table_source_item -> table_name_with_hint NT_3088 | full_table_name NT_3090 | rowset_function NT_3092 | derived_table NT_3097 | change_table as_table_alias | function_call NT_3099 | LOCAL_ID NT_3101 | LOCAL_ID [^\n] function_call NT_3106 | open_xml | \x3A \x3A function_call NT_3108
+NT_3087 -> as_table_alias
+NT_3088 -> NT_3087 |
+NT_3089 -> as_table_alias
+NT_3090 -> NT_3089 |
+NT_3091 -> as_table_alias
+NT_3092 -> NT_3091 |
+rowset_function -> NT_3137 | NT_3138
+NT_3094 -> column_alias_list
+column_alias_list -> \x28 column_alias NT_3199 \x29
+NT_3095 -> NT_3094 |
+NT_3093 -> as_table_alias NT_3095
+NT_3096 -> NT_3093
+NT_3097 -> NT_3096 |
+change_table -> CHANGETABLE \x28 CHANGES table_name \x2C NT_3121 \x29
+NT_3098 -> as_table_alias
+NT_3099 -> NT_3098 |
+NT_3100 -> as_table_alias
+NT_3101 -> NT_3100 |
+NT_3103 -> column_alias_list
+NT_3104 -> NT_3103 |
+NT_3102 -> as_table_alias NT_3104
+NT_3105 -> NT_3102
+NT_3106 -> NT_3105 |
+open_xml -> OPENXML \x28 expression \x2C expression NT_3111 \x29 NT_3114
+NT_3107 -> as_table_alias
+NT_3108 -> NT_3107 |
+NT_3109 -> \x2C expression
+NT_3110 -> NT_3109
+NT_3111 -> NT_3110 |
+NT_3112 -> WITH \x28 schema_declaration \x29
+schema_declaration -> column_declaration NT_3117
+NT_3113 -> NT_3112
+NT_3114 -> NT_3113 |
+OPENXML -> (O) (P) (E) (N) (X) (M) (L)
+NT_3115 -> \x2C column_declaration
+column_declaration -> ID data_type NT_3120
+NT_3116 -> NT_3115
+NT_3117 -> NT_3116 | NT_3117 NT_3117 |
+NT_3118 -> STRING
+NT_3119 -> NT_3118
+NT_3120 -> NT_3119 |
+NT_3121 -> NULL | DECIMAL | LOCAL_ID
+CHANGETABLE -> (C) (H) (A) (N) (G) (E) (T) (A) (B) (L) (E)
+CHANGES -> (C) (H) (A) (N) (G) (E) (S)
+NT_3123 -> INNER
+INNER -> (I) (N) (N) (E) (R)
+NT_3124 -> NT_3123 |
+NT_3122 -> NT_3124 | NT_3125 NT_3127
+NT_3125 -> LEFT | RIGHT | FULL
+LEFT -> (L) (E) (F) (T)
+RIGHT -> (R) (I) (G) (H) (T)
+NT_3126 -> OUTER
+OUTER -> (O) (U) (T) (E) (R)
+NT_3127 -> NT_3126 |
+NT_3129 -> LOOP | HASH | MERGE | REMOTE
+NT_3128 -> NT_3129
+NT_3130 -> NT_3128
+NT_3131 -> NT_3130 |
+CROSS -> (C) (R) (O) (S) (S)
+APPLY -> (A) (P) (P) (L) (Y)
+PIVOT -> (P) (I) (V) (O) (T)
+pivot_clause -> \x28 aggregate_windowed_function FOR full_column_name IN column_alias_list \x29
+UNPIVOT -> (U) (N) (P) (I) (V) (O) (T)
+unpivot_clause -> \x28 expression FOR full_column_name IN \x28 full_column_name_list \x29 \x29
+aggregate_windowed_function -> NT_3207 \x28 all_distinct_expression \x29 NT_3209 | NT_3210 \x28 NT_3211 \x29 NT_3213 | CHECKSUM_AGG \x28 all_distinct_expression \x29 | GROUPING \x28 expression \x29 | GROUPING_ID \x28 expression_list \x29
+NT_3132 -> \x2C full_column_name
+NT_3133 -> NT_3132
+NT_3134 -> NT_3133 | NT_3134 NT_3134 |
+NT_3135 -> with_table_hints
+NT_3136 -> NT_3135 |
+NT_3137 -> OPENROWSET LR_BRACKET STRING COMMA STRING COMMA STRING RR_BRACKET
+OPENROWSET -> (O) (P) (E) (N) (R) (O) (W) (S) (E) (T)
+NT_3140 -> \x2C bulk_option
+bulk_option -> id = NT_3143
+NT_3141 -> NT_3140
+NT_3142 -> NT_3141 | NT_3142 NT_3142 |
+NT_3139 -> bulk_option NT_3142 | id
+NT_3138 -> OPENROWSET \x28 BULK STRING \x2C NT_3139 \x29
+BULK -> (B) (U) (L) (K)
+NT_3143 -> DECIMAL | STRING
+ranking_windowed_function -> NT_3206 \x28 \x29 over_clause | NTILE \x28 expression \x29 over_clause
+analytic_windowed_function -> NT_3214 \x28 expression \x29 over_clause | NT_3215 \x28 expression NT_3221 \x29 over_clause
+NT_3144 -> expression_list
+NT_3145 -> NT_3144 |
+scalar_function_name -> func_proc_name_server_database_schema | RIGHT | LEFT | BINARY_CHECKSUM | CHECKSUM
+BINARY_CHECKSUM -> (B) (I) (N) (A) (R) (Y) \x5F (C) (H) (E) (C) (K) (S) (U) (M)
+CAST -> NT_3460 (C) (A) (S) (T)
+NT_3146 -> \x2C expression
+NT_3147 -> NT_3146
+NT_3148 -> NT_3147 |
+CONVERT -> NT_3452 (C) (O) (N) (V) (E) (R) (T)
+COALESCE -> (C) (O) (A) (L) (E) (S) (C) (E)
+CURRENT_TIMESTAMP -> (C) (U) (R) (R) (E) (N) (T) \x5F (T) (I) (M) (E) (S) (T) (A) (M) (P)
+CURRENT_USER -> (C) (U) (R) (R) (E) (N) (T) \x5F (U) (S) (E) (R)
+DATEADD -> (D) (A) (T) (E) (A) (D) (D)
+DATEDIFF -> (D) (A) (T) (E) (D) (I) (F) (F)
+DATENAME -> (D) (A) (T) (E) (N) (A) (M) (E)
+DATEPART -> (D) (A) (T) (E) (P) (A) (R) (T)
+GETDATE -> (G) (E) (T) (D) (A) (T) (E)
+GETUTCDATE -> (G) (E) (T) (U) (T) (C) (D) (A) (T) (E)
+NT_3149 -> \x2C DECIMAL
+NT_3150 -> NT_3149
+NT_3151 -> NT_3150 |
+NT_3152 -> \x2C DECIMAL
+NT_3153 -> NT_3152
+NT_3154 -> NT_3153 |
+MIN_ACTIVE_ROWVERSION -> (M) (I) (N) \x5F (A) (C) (T) (I) (V) (E) \x5F (R) (O) (W) (V) (E) (R) (S) (I) (O) (N)
+NULLIF -> (N) (U) (L) (L) (I) (F)
+STUFF -> (S) (T) (U) (F) (F)
+SESSION_USER -> (S) (E) (S) (S) (I) (O) (N) \x5F (U) (S) (E) (R)
+SYSTEM_USER -> (S) (Y) (S) (T) (E) (M) \x5F (U) (S) (E) (R)
+ISNULL -> (I) (S) (N) (U) (L) (L)
+xml_data_type_methods -> value_method | query_method | exist_method | modify_method | nodes_method
+IIF -> (I) (I) (F)
+value_method -> NT_3155 [^\n] VALUE \x28 STRING \x2C STRING \x29 | NT_3156 [^\n] ROW [^\n] VALUE \x28 STRING \x2C STRING \x29 | NT_3157 [^\n] PARAM_NODE [^\n] VALUE \x28 STRING \x2C STRING \x29
+query_method -> NT_3158 [^\n] QUERY \x28 STRING \x29 | NT_3159 [^\n] ROW [^\n] QUERY \x28 STRING \x29
+exist_method -> NT_3160 [^\n] EXIST \x28 STRING \x29
+nodes_method -> NT_3162 [^\n] NODES \x28 STRING \x29
+NT_3155 -> LOCAL_ID | ID | EVENTDATA | query_method
+EVENTDATA -> (E) (V) (E) (N) (T) (D) (A) (T) (A) \x28 \x29
+NT_3156 -> LOCAL_ID | ID | EVENTDATA | query_method
+NT_3157 -> LOCAL_ID | ID | EVENTDATA | query_method
+PARAM_NODE -> (P) (A) (R) (A) (M) \x5F (N) (O) (D) (E)
+NT_3158 -> LOCAL_ID | ID | full_table_name
+QUERY -> (Q) (U) (E) (R) (Y)
+NT_3159 -> LOCAL_ID | ID | full_table_name
+NT_3160 -> LOCAL_ID | ID
+EXIST -> (E) (X) (I) (S) (T)
+NT_3161 -> LOCAL_ID | ID
+NT_3162 -> LOCAL_ID | ID
+NODES -> (N) (O) (D) (E) (S)
+NT_3163 -> AS
+NT_3164 -> NT_3163 |
+NT_3165 -> AS
+NT_3166 -> NT_3165 |
+NT_3167 -> with_table_hints
+NT_3168 -> NT_3167 |
+NT_3169 -> WITH
+NT_3170 -> NT_3169 |
+NT_3172 -> \x2C
+NT_3173 -> NT_3172 |
+NT_3171 -> NT_3173 table_hint
+table_hint -> NT_3182 NT_3183
+NT_3174 -> NT_3171
+NT_3175 -> NT_3174 | NT_3175 NT_3175 |
+NT_3177 -> \x2C
+NT_3178 -> NT_3177 |
+NT_3176 -> NT_3178 table_hint
+NT_3179 -> NT_3176
+NT_3180 -> NT_3179 | NT_3180 NT_3180 |
+NT_3181 -> NOEXPAND
+NOEXPAND -> (N) (O) (E) (X) (P) (A) (N) (D)
+NT_3182 -> NT_3181 |
+NT_3185 -> \x2C index_value
+index_value -> id | DECIMAL
+NT_3186 -> NT_3185
+NT_3187 -> NT_3186 | NT_3187 NT_3187 |
+NT_3184 -> \x28 index_value NT_3187 \x29 | index_value NT_3190
+NT_3188 -> \x2C index_value
+NT_3189 -> NT_3188
+NT_3190 -> NT_3189 | NT_3190 NT_3190 |
+NT_3183 -> INDEX NT_3184 | INDEX = index_value | FORCESEEK NT_3196 | SERIALIZABLE | SNAPSHOT | SPATIAL_WINDOW_MAX_CELLS = DECIMAL | ID
+NT_3192 -> \x2C ID
+NT_3193 -> NT_3192
+NT_3194 -> NT_3193 | NT_3194 NT_3194 |
+NT_3191 -> \x28 index_value \x28 ID NT_3194 \x29 \x29
+NT_3195 -> NT_3191
+NT_3196 -> NT_3195 |
+FORCESEEK -> (F) (O) (R) (C) (E) (S) (E) (E) (K)
+SPATIAL_WINDOW_MAX_CELLS -> (S) (P) (A) (T) (I) (A) (L) \x5F (W) (I) (N) (D) (O) (W) \x5F (M) (A) (X) \x5F (C) (E) (L) (L) (S)
+NT_3197 -> \x2C column_alias
+NT_3198 -> NT_3197
+NT_3199 -> NT_3198 | NT_3199 NT_3199 |
+NT_3200 -> \x2C \x28 expression_list \x29
+NT_3201 -> NT_3200
+NT_3202 -> NT_3201 | NT_3202 NT_3202 |
+NT_3203 -> \x2C expression
+NT_3204 -> NT_3203
+NT_3205 -> NT_3204 | NT_3205 NT_3205 |
+NT_3206 -> RANK | DENSE_RANK | ROW_NUMBER
+RANK -> (R) (A) (N) (K)
+DENSE_RANK -> (D) (E) (N) (S) (E) \x5F (R) (A) (N) (K)
+ROW_NUMBER -> (R) (O) (W) \x5F (N) (U) (M) (B) (E) (R)
+NTILE -> (N) (T) (I) (L) (E)
+NT_3207 -> AVG | MAX | MIN | SUM | STDEV | STDEVP | VAR | VARP
+AVG -> (A) (V) (G)
+MAX -> (M) (A) (X)
+MIN -> (M) (I) (N)
+SUM -> (S) (U) (M)
+STDEV -> (S) (T) (D) (E) (V)
+STDEVP -> (S) (T) (D) (E) (V) (P)
+VAR -> (V) (A) (R)
+VARP -> (V) (A) (R) (P)
+NT_3208 -> over_clause
+NT_3209 -> NT_3208 |
+all_distinct_expression -> NT_3224 expression
+NT_3210 -> COUNT | COUNT_BIG
+COUNT -> (C) (O) (U) (N) (T)
+COUNT_BIG -> (C) (O) (U) (N) (T) \x5F (B) (I) (G)
+NT_3211 -> \x2A | all_distinct_expression
+NT_3212 -> over_clause
+NT_3213 -> NT_3212 |
+CHECKSUM_AGG -> (C) (H) (E) (C) (K) (S) (U) (M) \x5F (A) (G) (G)
+GROUPING -> (G) (R) (O) (U) (P) (I) (N) (G)
+GROUPING_ID -> (G) (R) (O) (U) (P) (I) (N) (G) \x5F (I) (D)
+NT_3214 -> FIRST_VALUE | LAST_VALUE
+FIRST_VALUE -> (F) (I) (R) (S) (T) \x5F (V) (A) (L) (U) (E)
+LAST_VALUE -> (L) (A) (S) (T) \x5F (V) (A) (L) (U) (E)
+NT_3215 -> LAG | LEAD
+LAG -> (L) (A) (G)
+LEAD -> (L) (E) (A) (D)
+NT_3217 -> \x2C expression
+NT_3218 -> NT_3217
+NT_3219 -> NT_3218 |
+NT_3216 -> \x2C expression NT_3219
+NT_3220 -> NT_3216
+NT_3221 -> NT_3220 |
+NT_3222 -> ALL | DISTINCT
+NT_3223 -> NT_3222
+NT_3224 -> NT_3223 |
+NT_3225 -> PARTITION BY expression_list
+NT_3226 -> NT_3225
+NT_3227 -> NT_3226 |
+NT_3228 -> order_by_clause
+NT_3229 -> NT_3228 |
+NT_3230 -> row_or_range_clause
+row_or_range_clause -> NT_3232 window_frame_extent
+NT_3231 -> NT_3230 |
+OVER -> (O) (V) (E) (R)
+NT_3232 -> ROWS | RANGE
+window_frame_extent -> window_frame_preceding | BETWEEN window_frame_bound AND window_frame_bound
+window_frame_preceding -> UNBOUNDED PRECEDING | DECIMAL PRECEDING | CURRENT ROW
+window_frame_bound -> window_frame_preceding | window_frame_following
+window_frame_following -> UNBOUNDED FOLLOWING | DECIMAL FOLLOWING
+UNBOUNDED -> (U) (N) (B) (O) (U) (N) (D) (E) (D)
+PRECEDING -> (P) (R) (E) (C) (E) (D) (I) (N) (G)
+FOLLOWING -> (F) (O) (L) (L) (O) (W) (I) (N) (G)
+NT_3234 -> \x2C database_filestream_option
+NT_3235 -> NT_3234
+NT_3236 -> NT_3235 | NT_3236 NT_3236 |
+NT_3233 -> database_filestream_option NT_3236
+NT_3237 -> id | STRING
+NT_3238 -> id | STRING
+NT_3239 -> OFF | ON
+NT_3240 -> OFF | ON
+NT_3241 -> OFF | ON
+NT_3242 -> OFF | ON
+NT_3245 -> OFF | READ_ONLY | FULL
+NT_3244 -> NON_TRANSACTED_ACCESS EQUAL NT_3245
+NON_TRANSACTED_ACCESS -> (N) (O) (N) \x5F (T) (R) (A) (N) (S) (A) (C) (T) (E) (D) \x5F (A) (C) (C) (E) (S) (S)
+NT_3243 -> NT_3244 | NT_3246
+NT_3246 -> DIRECTORY_NAME EQUAL STRING
+DIRECTORY_NAME -> (D) (I) (R) (E) (C) (T) (O) (R) (Y) \x5F (N) (A) (M) (E)
+file_group -> FILEGROUP id NT_3249 NT_3252 NT_3255 file_spec NT_3258
+file_spec -> LR_BRACKET NAME EQUAL NT_3259 NT_3261 FILENAME EQUAL STRING NT_3263 NT_3268 NT_3274 NT_3279 RR_BRACKET
+NT_3247 -> CONTAINS FILESTREAM
+CONTAINS -> (C) (O) (N) (T) (A) (I) (N) (S)
+NT_3248 -> NT_3247
+NT_3249 -> NT_3248 |
+NT_3250 -> DEFAULT
+NT_3251 -> NT_3250
+NT_3252 -> NT_3251 |
+NT_3253 -> CONTAINS MEMORY_OPTIMIZED_DATA
+MEMORY_OPTIMIZED_DATA -> (M) (E) (M) (O) (R) (Y) \x5F (O) (P) (T) (I) (M) (I) (Z) (E) (D) \x5F (D) (A) (T) (A)
+NT_3254 -> NT_3253
+NT_3255 -> NT_3254 |
+NT_3256 -> \x2C file_spec
+NT_3257 -> NT_3256
+NT_3258 -> NT_3257 | NT_3258 NT_3258 |
+NT_3259 -> id | STRING
+NT_3260 -> \x2C
+NT_3261 -> NT_3260 |
+NT_3262 -> \x2C
+NT_3263 -> NT_3262 |
+NT_3265 -> \x2C
+NT_3266 -> NT_3265 |
+NT_3264 -> SIZE EQUAL file_size NT_3266
+file_size -> DECIMAL NT_3449
+NT_3267 -> NT_3264
+NT_3268 -> NT_3267 |
+NT_3270 -> file_size | UNLIMITED
+NT_3271 -> \x2C
+NT_3272 -> NT_3271 |
+NT_3269 -> MAXSIZE EQUAL NT_3270 NT_3272
+NT_3273 -> NT_3269
+NT_3274 -> NT_3273 |
+NT_3276 -> \x2C
+NT_3277 -> NT_3276 |
+NT_3275 -> FILEGROWTH EQUAL file_size NT_3277
+FILEGROWTH -> (F) (I) (L) (E) (G) (R) (O) (W) (T) (H)
+NT_3278 -> NT_3275
+NT_3279 -> NT_3278 |
+NT_3280 -> id [^\n] id [^\n] id [^\n] | id [^\n] NT_3283 [^\n] | id [^\n]
+NT_3281 -> id
+NT_3282 -> NT_3281
+NT_3283 -> NT_3282 |
+NT_3284 -> NT_3280
+NT_3285 -> NT_3284 |
+NT_3286 -> id [^\n] id [^\n] id [^\n] | id [^\n] NT_3289 [^\n] | id [^\n]
+NT_3287 -> id
+NT_3288 -> NT_3287
+NT_3289 -> NT_3288 |
+NT_3290 -> NT_3286
+NT_3291 -> NT_3290 |
+NT_3293 -> id
+NT_3294 -> NT_3293
+NT_3295 -> NT_3294 |
+NT_3292 -> id [^\n] NT_3295 [^\n] | id [^\n]
+NT_3296 -> NT_3292
+NT_3297 -> NT_3296 |
+NT_3299 -> id
+NT_3300 -> NT_3299
+NT_3301 -> NT_3300 |
+NT_3298 -> id [^\n] NT_3301 [^\n] | id [^\n]
+NT_3302 -> NT_3298
+NT_3303 -> NT_3302 |
+NT_3304 -> id [^\n]
+NT_3305 -> NT_3304
+NT_3306 -> NT_3305 |
+NT_3308 -> id
+NT_3307 -> NT_3308 [^\n]
+NT_3309 -> NT_3307
+NT_3310 -> NT_3309 |
+NT_3312 -> id
+NT_3313 -> NT_3312
+NT_3314 -> NT_3313 |
+NT_3311 -> id [^\n] NT_3314 [^\n]
+NT_3315 -> NT_3311
+NT_3316 -> NT_3315 |
+NT_3318 -> id
+NT_3319 -> NT_3318
+NT_3320 -> NT_3319 |
+NT_3317 -> id [^\n] id [^\n] NT_3320 [^\n]
+NT_3321 -> NT_3317
+NT_3322 -> NT_3321 |
+NT_3323 -> table_name [^\n]
+NT_3324 -> NT_3323
+NT_3325 -> NT_3324 |
+NT_3326 -> table_name [^\n]
+NT_3327 -> NT_3326
+NT_3328 -> NT_3327 |
+NT_3329 -> table_name [^\n]
+NT_3330 -> NT_3329
+NT_3331 -> NT_3330 |
+NT_3332 -> table_name [^\n]
+NT_3333 -> NT_3332
+NT_3334 -> NT_3333 |
+NT_3335 -> table_name [^\n]
+NT_3336 -> NT_3335
+NT_3337 -> NT_3336 |
+NT_3338 -> table_name [^\n]
+NT_3339 -> NT_3338
+NT_3340 -> NT_3339 |
+NT_3341 -> table_name [^\n]
+NT_3342 -> NT_3341
+NT_3343 -> NT_3342 |
+NT_3344 -> table_name [^\n]
+NT_3345 -> NT_3344
+NT_3346 -> NT_3345 |
+NT_3347 -> ASC | DESC
+NT_3348 -> NT_3347
+NT_3349 -> NT_3348 |
+NT_3351 -> ASC | DESC
+NT_3352 -> NT_3351
+NT_3353 -> NT_3352 |
+NT_3350 -> \x2C id NT_3353
+NT_3354 -> NT_3350
+NT_3355 -> NT_3354 | NT_3355 NT_3355 |
+NT_3356 -> \x2C id
+NT_3357 -> NT_3356
+NT_3358 -> NT_3357 | NT_3358 NT_3358 |
+CLUSTERED -> (C) (L) (U) (S) (T) (E) (R) (E) (D)
+NONCLUSTERED -> (N) (O) (N) (C) (L) (U) (S) (T) (E) (R) (E) (D)
+NT_3359 -> NOT
+NT_3360 -> NT_3359 |
+NT_3361 -> null_notnull | DEFAULT constant_expression NT_3364
+NT_3362 -> WITH VALUES
+NT_3363 -> NT_3362
+NT_3364 -> NT_3363 |
+NT_3365 -> ;
+NT_3366 -> NT_3365 |
+TIMER -> (T) (I) (M) (E) (R)
+NT_3367 -> CONVERSATION
+NT_3368 -> NT_3367
+NT_3369 -> NT_3368 |
+NT_3370 -> \x2C STRING
+NT_3371 -> NT_3370
+NT_3372 -> NT_3371 |
+NT_3375 -> RELATED_CONVERSATION | RELATED_CONVERSATION_GROUP
+RELATED_CONVERSATION -> (R) (E) (L) (A) (T) (E) (D) \x5F (C) (O) (N) (V) (E) (R) (S) (A) (T) (I) (O) (N)
+RELATED_CONVERSATION_GROUP -> (R) (E) (L) (A) (T) (E) (D) \x5F (C) (O) (N) (V) (E) (R) (S) (A) (T) (I) (O) (N) \x5F (G) (R) (O) (U) (P)
+NT_3376 -> \x2C
+NT_3377 -> NT_3376 |
+NT_3374 -> NT_3375 = LOCAL_ID NT_3377
+NT_3378 -> NT_3374
+NT_3379 -> NT_3378 |
+NT_3381 -> DECIMAL | LOCAL_ID
+NT_3382 -> \x2C
+NT_3383 -> NT_3382 |
+NT_3380 -> LIFETIME = NT_3381 NT_3383
+NT_3384 -> NT_3380
+NT_3385 -> NT_3384 |
+NT_3387 -> ON | OFF
+NT_3386 -> ENCRYPTION = NT_3387
+NT_3388 -> NT_3386
+NT_3389 -> NT_3388 |
+NT_3373 -> WITH NT_3379 NT_3385 NT_3389
+NT_3390 -> NT_3373
+NT_3391 -> NT_3390 |
+NT_3392 -> ;
+NT_3393 -> NT_3392 |
+service_name -> NT_3395
+NT_3394 -> id | expression
+NT_3395 -> id | expression
+NT_3396 -> ;
+NT_3397 -> NT_3396 |
+NT_3400 -> LOCAL_ID | STRING
+NT_3401 -> LOCAL_ID | STRING
+NT_3399 -> ERROR = NT_3400 DESCRIPTION = NT_3401
+ERROR -> (E) (R) (R) (O) (R)
+NT_3402 -> NT_3399
+NT_3403 -> NT_3402 |
+NT_3404 -> CLEANUP
+CLEANUP -> (C) (L) (E) (A) (N) (U) (P)
+NT_3405 -> NT_3404 |
+NT_3398 -> WITH NT_3403 NT_3405
+NT_3406 -> NT_3398
+NT_3407 -> NT_3406 |
+NT_3408 -> WAITFOR
+NT_3409 -> NT_3408 |
+NT_3411 -> \x2C
+NT_3412 -> NT_3411 |
+NT_3410 -> NT_3412 TIMEOUT time
+NT_3413 -> NT_3410
+NT_3414 -> NT_3413 |
+NT_3415 -> ;
+NT_3416 -> NT_3415 |
+NT_3417 -> STRING | LOCAL_ID
+NT_3418 -> ;
+NT_3419 -> NT_3418 |
+GET -> (G) (E) (T)
+queue_id -> NT_3420 | id
+NT_3420 -> id [^\n] id [^\n] id
+NT_3421 -> STRING | LOCAL_ID
+NT_3423 -> STRING | LOCAL_ID
+NT_3422 -> \x28 NT_3423 \x29
+NT_3424 -> NT_3422
+NT_3425 -> NT_3424 |
+NT_3426 -> ;
+NT_3427 -> NT_3426 |
+SEND -> (S) (E) (N) (D)
+NT_3428 -> IDENTITY
+NT_3429 -> NT_3428 |
+NT_3431 -> DECIMAL | MAX
+NT_3432 -> \x2C DECIMAL
+NT_3433 -> NT_3432
+NT_3434 -> NT_3433 |
+NT_3430 -> \x28 NT_3431 NT_3434 \x29
+NT_3435 -> NT_3430
+NT_3436 -> NT_3435 |
+NT_3437 -> PRECISION
+PRECISION -> (P) (R) (E) (C) (I) (S) (I) (O) (N)
+NT_3438 -> NT_3437 |
+DOUBLE -> (D) (O) (U) (B) (L) (E)
+INT -> (I) (N) (T)
+TINYINT -> (T) (I) (N) (Y) (I) (N) (T)
+SMALLINT -> (S) (M) (A) (L) (L) (I) (N) (T)
+BIGINT -> (B) (I) (G) (I) (N) (T)
+NT_3439 -> sign
+sign -> \x2B | \x2D
+NT_3440 -> NT_3439 |
+NT_3441 -> sign
+NT_3442 -> NT_3441 |
+NT_3443 -> REAL | FLOAT
+NT_3444 -> sign
+NT_3445 -> NT_3444 |
+NT_3446 -> DECIMAL | FLOAT
+SQUARE_BRACKET_ID -> R3466_Q0
+DATA_COMPRESSION -> (D) (A) (T) (A) \x5F (C) (O) (M) (P) (R) (E) (S) (S) (I) (O) (N)
+FAILURE -> (F) (A) (I) (L) (U) (R) (E)
+FILLFACTOR -> (F) (I) (L) (L) (F) (A) (C) (T) (O) (R)
+NOCOUNT -> (N) (O) (C) (O) (U) (N) (T)
+NUMBER -> (N) (U) (M) (B) (E) (R)
+OFFSETS -> (O) (F) (F) (S) (E) (T) (S)
+PAGE -> (P) (A) (G) (E)
+PUBLIC -> (P) (U) (B) (L) (I) (C)
+ROWCOUNT -> (R) (O) (W) (C) (O) (U) (N) (T)
+NT_3447 -> KB | MB | GB | TB | \x25
+NT_3448 -> NT_3447
+NT_3449 -> NT_3448 |
+R3450_Q0 -> \x5C R3450_Q1
+R3450_Q1 ->
+BACKSLASH -> R3450_Q0
+CHECKPOINT -> (C) (H) (E) (C) (K) (P) (O) (I) (N) (T)
+CONTAINSTABLE -> (C) (O) (N) (T) (A) (I) (N) (S) (T) (A) (B) (L) (E)
+NT_3451 -> (T) (R) (Y) \x5F
+NT_3452 -> NT_3451 |
+CURRENT_DATE -> (C) (U) (R) (R) (E) (N) (T) \x5F (D) (A) (T) (E)
+CURRENT_TIME -> (C) (U) (R) (R) (E) (N) (T) \x5F (T) (I) (M) (E)
+R3453_Q0 -> \x5C R3453_Q1
+R3453_Q1 -> \x5C R3453_Q2
+R3453_Q2 ->
+DUMP -> (D) (U) (M) (P)
+ERRLVL -> (E) (R) (R) (L) (V) (L)
+NT_3454 -> (U) (T) (E)
+NT_3455 -> NT_3454 |
+EXIT -> (E) (X) (I) (T)
+FREETEXT -> (F) (R) (E) (E) (T) (E) (X) (T)
+FREETEXTTABLE -> (F) (R) (E) (E) (T) (E) (X) (T) (T) (A) (B) (L) (E)
+IDENTITYCOL -> (I) (D) (E) (N) (T) (I) (T) (Y) (C) (O) (L)
+R3456_Q0 -> \x27 R3456_Q1 |
+R3456_Q1 ->
+R3457_Q0 -> \x27 R3457_Q1 |
+R3457_Q1 ->
+IPV4_OCTECT -> R3508_Q0
+R3458_Q0 -> \x27 R3458_Q1 | R3458_Q2
+R3458_Q1 -> R3458_Q2
+R3458_Q2 -> [0-9A-F] R3458_Q3 | R3458_Q4
+R3458_Q3 -> R3458_Q4
+R3458_Q4 -> [0-9A-F] R3458_Q5 | R3458_Q6
+R3458_Q5 -> R3458_Q6
+R3458_Q6 -> [0-9A-F] R3458_Q7 | R3458_Q8
+R3458_Q7 -> R3458_Q8
+R3458_Q8 -> [0-9A-F] R3458_Q9 | R3458_Q10
+R3458_Q9 -> R3458_Q10
+R3458_Q10 -> \x3A R3458_Q12
+R3458_Q12 -> [0-9A-F] R3458_Q13 | R3458_Q14
+R3458_Q14 -> [0-9A-F] R3458_Q15 | R3458_Q16
+R3458_Q15 -> R3458_Q16
+R3458_Q16 -> [0-9A-F] R3458_Q17 | R3458_Q18
+R3458_Q13 -> R3458_Q14
+R3458_Q17 -> R3458_Q18
+R3458_Q18 -> [0-9A-F] R3458_Q19 | R3458_Q20
+R3458_Q19 -> R3458_Q20
+R3458_Q20 -> \x3A R3458_Q22
+R3458_Q22 -> [0-9A-F] R3458_Q23 | R3458_Q24
+R3458_Q24 -> [0-9A-F] R3458_Q25 | R3458_Q26
+R3458_Q25 -> R3458_Q26
+R3458_Q26 -> [0-9A-F] R3458_Q27 | R3458_Q28
+R3458_Q23 -> R3458_Q24
+R3458_Q27 -> R3458_Q28
+R3458_Q28 -> [0-9A-F] R3458_Q29 | R3458_Q30
+R3458_Q29 -> R3458_Q30
+R3458_Q30 -> \x3A R3458_Q32
+R3458_Q32 -> [0-9A-F] R3458_Q33 | R3458_Q34
+R3458_Q34 -> [0-9A-F] R3458_Q35 | R3458_Q36
+R3458_Q35 -> R3458_Q36
+R3458_Q36 -> [0-9A-F] R3458_Q37 | R3458_Q38
+R3458_Q33 -> R3458_Q34
+R3458_Q37 -> R3458_Q38
+R3458_Q38 -> [0-9A-F] R3458_Q39 | R3458_Q40
+R3458_Q39 -> R3458_Q40
+R3458_Q40 -> \x3A R3458_Q42
+R3458_Q42 -> [0-9A-F] R3458_Q43 | R3458_Q44
+R3458_Q44 -> [0-9A-F] R3458_Q45 | R3458_Q46
+R3458_Q45 -> R3458_Q46
+R3458_Q46 -> [0-9A-F] R3458_Q47 | R3458_Q48
+R3458_Q43 -> R3458_Q44
+R3458_Q47 -> R3458_Q48
+R3458_Q48 -> [0-9A-F] R3458_Q49 | R3458_Q50
+R3458_Q49 -> R3458_Q50
+R3458_Q50 -> \x3A R3458_Q52
+R3458_Q52 -> [0-9A-F] R3458_Q53 | R3458_Q54
+R3458_Q54 -> [0-9A-F] R3458_Q55 | R3458_Q56
+R3458_Q55 -> R3458_Q56
+R3458_Q56 -> [0-9A-F] R3458_Q57 | R3458_Q58
+R3458_Q53 -> R3458_Q54
+R3458_Q57 -> R3458_Q58
+R3458_Q58 -> [0-9A-F] R3458_Q59 | R3458_Q60
+R3458_Q59 -> R3458_Q60
+R3458_Q60 -> \x3A R3458_Q62
+R3458_Q62 -> [0-9A-F] R3458_Q63 | R3458_Q64
+R3458_Q64 -> [0-9A-F] R3458_Q65 | R3458_Q66
+R3458_Q65 -> R3458_Q66
+R3458_Q66 -> [0-9A-F] R3458_Q67 | R3458_Q68
+R3458_Q63 -> R3458_Q64
+R3458_Q67 -> R3458_Q68
+R3458_Q68 -> [0-9A-F] R3458_Q69 | R3458_Q70
+R3458_Q69 -> R3458_Q70
+R3458_Q70 -> \x3A R3458_Q72
+R3458_Q72 -> [0-9A-F] R3458_Q73 | R3458_Q74
+R3458_Q74 -> [0-9A-F] R3458_Q75 | R3458_Q76
+R3458_Q75 -> R3458_Q76
+R3458_Q76 -> [0-9A-F] R3458_Q77 | R3458_Q78
+R3458_Q73 -> R3458_Q74
+R3458_Q77 -> R3458_Q78
+R3458_Q78 -> [0-9A-F] R3458_Q79 | R3458_Q80
+R3458_Q79 -> R3458_Q80
+R3458_Q80 -> \x27 R3458_Q81 |
+R3458_Q81 ->
+KILL -> (K) (I) (L) (L)
+LINENO -> (L) (I) (N) (E) (N) (O)
+NATIONAL -> (N) (A) (T) (I) (O) (N) (A) (L)
+NOCHECK -> (N) (O) (C) (H) (E) (C) (K)
+READTEXT -> (R) (E) (A) (D) (T) (E) (X) (T)
+RESTORE -> (R) (E) (S) (T) (O) (R) (E)
+RESTRICT -> (R) (E) (S) (T) (R) (I) (C) (T)
+SECURITYAUDIT -> (S) (E) (C) (U) (R) (I) (T) (Y) (A) (U) (D) (I) (T)
+SEMANTICKEYPHRASETABLE -> (S) (E) (M) (A) (N) (T) (I) (C) (K) (E) (Y) (P) (H) (R) (A) (S) (E) (T) (A) (B) (L) (E)
+SEMANTICSIMILARITYDETAILSTABLE -> (S) (E) (M) (A) (N) (T) (I) (C) (S) (I) (M) (I) (L) (A) (R) (I) (T) (Y) (D) (E) (T) (A) (I) (L) (S) (T) (A) (B) (L) (E)
+SEMANTICSIMILARITYTABLE -> (S) (E) (M) (A) (N) (T) (I) (C) (S) (I) (M) (I) (L) (A) (R) (I) (T) (Y) (T) (A) (B) (L) (E)
+TABLESAMPLE -> (T) (A) (B) (L) (E) (S) (A) (M) (P) (L) (E)
+TEXTSIZE -> (T) (E) (X) (T) (S) (I) (Z) (E)
+TSEQUAL -> (T) (S) (E) (Q) (U) (A) (L)
+UPDATETEXT -> (U) (P) (D) (A) (T) (E) (T) (E) (X) (T)
+WITHIN -> (W) (I) (T) (H) (I) (N)
+WRITETEXT -> (W) (R) (I) (T) (E) (T) (E) (X) (T)
+NT_3459 -> (T) (R) (Y) \x5F
+NT_3460 -> NT_3459 |
+R3461_Q0 -> \x22 R3461_Q1
+R3461_Q1 ->
+R3462_Q0 -> \x22 R3462_Q1
+R3462_Q1 ->
+R3463_Q0 -> [A-Z] R3463_Q2
+R3463_Q2 -> \x3A R3463_Q3
+R3463_Q3 ->
+R3464_Q0 -> \x22 R3464_Q2
+R3464_Q2 -> [^\x22] R3464_Q3
+R3464_Q4 -> \x22 R3464_Q5
+R3464_Q5 ->
+R3464_Q3 -> [^\x22] R3464_Q3 | R3464_Q4
+R3465_Q0 -> \x27 R3465_Q1
+R3465_Q1 ->
+R3466_Q0 -> \x5B R3466_Q2
+R3466_Q2 -> [^\x5B] R3466_Q3
+R3466_Q4 -> \x5D R3466_Q5
+R3466_Q5 ->
+R3466_Q3 -> [^\x5B] R3466_Q3 | R3466_Q4
+R3468_Q0 -> [\x23\x240-9\x40-Z\x5F] R3468_Q1
+R3468_Q1 ->
+NT_3467 -> R3468_Q0 | FullWidthLetter
+FullWidthLetter -> R3514_Q0
+NT_3469 -> NT_3467
+NT_3470 -> NT_3469 | NT_3470 NT_3470
+NT_3471 -> DEC_DIGIT
+DEC_DIGIT -> R3513_Q0
+NT_3472 -> NT_3471 | NT_3472 NT_3472
+R3474_Q0 -> [\x23A-Z\x5F] R3474_Q1
+R3474_Q1 ->
+NT_3473 -> R3474_Q0 | FullWidthLetter
+R3476_Q0 -> [\x23\x240-9\x40-Z\x5F] R3476_Q1
+R3476_Q1 ->
+NT_3475 -> R3476_Q0 | FullWidthLetter
+NT_3477 -> NT_3475
+NT_3478 -> NT_3477 | NT_3478 NT_3478 |
+R3480_Q0 -> [A-Z] R3480_Q2
+R3480_Q2 -> [A-Z] R3480_Q3
+R3480_Q4 -> \x3A R3480_Q5
+R3480_Q5 ->
+R3480_Q3 -> [A-Z] R3480_Q3 | R3480_Q4
+NT_3479 -> R3480_Q0
+R3483_Q0 -> R3483_Q1 | R3483_Q7
+R3483_Q1 -> [A-Z] R3483_Q2
+R3483_Q7 -> . R3483_Q7 | R3483_Q5
+R3483_Q2 -> [A-Z] R3483_Q2 | R3483_Q3
+R3483_Q3 -> \x2E R3483_Q4
+R3483_Q4 -> . R3483_Q4 |
+R3483_Q5 -> [A-Z] R3483_Q6
+R3483_Q6 -> [A-Z] R3483_Q6 |
+NT_3482 -> R3483_Q0
+NT_3481 -> NT_3482 | IPV4_ADDR
+R3484_Q0 -> \x3A R3484_Q1
+R3484_Q1 ->
+R3487_Q0 -> R3487_Q1 | R3487_Q7
+R3487_Q1 -> [A-Z] R3487_Q2
+R3487_Q7 -> . R3487_Q7 | R3487_Q5
+R3487_Q2 -> [A-Z] R3487_Q2 | R3487_Q3
+R3487_Q3 -> \x2E R3487_Q4
+R3487_Q4 -> . R3487_Q4 |
+R3487_Q5 -> [A-Z] R3487_Q6
+R3487_Q6 -> [A-Z] R3487_Q6 |
+NT_3486 -> R3487_Q0
+NT_3485 -> NT_3486 | IPV4_ADDR
+R3489_Q0 -> \x3A R3489_Q1
+R3489_Q1 ->
+NT_3488 -> R3489_Q0 DECIMAL
+NT_3490 -> (N)
+NT_3491 -> NT_3490 |
+R3493_Q0 -> [^\x27] R3493_Q1
+R3493_Q1 ->
+NT_3492 -> R3493_Q0 | R3494_Q0
+R3494_Q0 -> \x27 R3494_Q1
+R3494_Q1 -> \x27 R3494_Q2
+R3494_Q2 ->
+NT_3495 -> NT_3492
+NT_3496 -> NT_3495 | NT_3496 NT_3496 |
+NT_3497 -> HEX_DIGIT
+HEX_DIGIT -> R3512_Q0
+NT_3498 -> NT_3497 | NT_3498 NT_3498 |
+DEC_DOT_DEC -> R3509_Q0 | R3510_Q0 | R3511_Q0
+NT_3499 -> DECIMAL | DEC_DOT_DEC
+R3501_Q0 -> [\x2B\x2D] R3501_Q1
+R3501_Q1 ->
+NT_3502 -> R3501_Q0
+NT_3503 -> NT_3502 |
+NT_3504 -> DEC_DIGIT
+NT_3505 -> NT_3504 | NT_3505 NT_3505
+NT_3500 -> (E) NT_3503 NT_3505
+PLUS_ASSIGN -> \x2B =
+MINUS_ASSIGN -> \x2D =
+MULT_ASSIGN -> \x2A =
+DIV_ASSIGN -> / =
+MOD_ASSIGN -> \x25 =
+AND_ASSIGN -> \x26 =
+XOR_ASSIGN -> \x5E =
+OR_ASSIGN -> \x7C =
+DOUBLE_BAR -> \x7C \x7C
+UNDERLINE -> \x5F
+AT -> \x40
+SHARP -> \x23
+DOLLAR -> \x24
+STAR -> \x2A
+DIVIDE -> /
+MODULE -> \x25
+BIT_NOT -> \x7E
+BIT_OR -> \x7C
+BIT_AND -> \x26
+BIT_XOR -> \x5E
+R3506_Q0 -> [A-Z\x5F] R3506_Q1
+R3506_Q1 ->
+LETTER -> R3506_Q0
+R3507_Q0 -> [0-9A-F] R3507_Q2
+R3507_Q2 -> [0-9A-F] R3507_Q4
+R3507_Q4 -> [0-9A-F] R3507_Q6
+R3507_Q6 -> [0-9A-F] R3507_Q7
+R3507_Q7 ->
+IPV6_OCTECT -> R3507_Q0
+R3508_Q0 -> [0-9] R3508_Q1 | R3508_Q2
+R3508_Q1 -> R3508_Q2
+R3508_Q2 -> [0-9] R3508_Q3 | R3508_Q4
+R3508_Q3 -> R3508_Q4
+R3508_Q4 -> [0-9] R3508_Q5
+R3508_Q5 ->
+R3509_Q0 -> [0-9] R3509_Q1
+R3509_Q1 -> [0-9] R3509_Q1 | R3509_Q2
+R3509_Q2 -> \x2E R3509_Q4
+R3509_Q4 -> [0-9] R3509_Q5
+R3509_Q5 -> [0-9] R3509_Q5 |
+R3510_Q0 -> [0-9] R3510_Q1
+R3510_Q1 -> [0-9] R3510_Q1 | R3510_Q2
+R3510_Q2 -> \x2E R3510_Q3
+R3510_Q3 ->
+R3511_Q0 -> \x2E R3511_Q2
+R3511_Q2 -> [0-9] R3511_Q3
+R3511_Q3 -> [0-9] R3511_Q3 |
+R3512_Q0 -> [0-9A-F] R3512_Q1
+R3512_Q1 ->
+R3513_Q0 -> [0-9] R3513_Q1
+R3513_Q1 ->
+R3514_Q0 -> [A-Za-z] R3514_Q1
+R3514_Q1 ->

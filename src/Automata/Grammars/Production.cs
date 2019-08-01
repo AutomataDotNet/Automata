@@ -152,7 +152,15 @@ namespace Microsoft.Automata.Grammars
                 StringBuilder sb = new StringBuilder();
                 foreach (GrammarSymbol s in Rhs)
                 {
-                    sb.Append(s.Name);
+                    if (s is Nonterminal || s.Name.StartsWith("("))
+                        sb.Append(s.Name);
+                    else
+                    {
+
+                        sb.Append("(");
+                        sb.Append(s.Name);
+                        sb.Append(")");
+                    }
                     sb.Append(" ");
                 }
                 return sb.ToString();

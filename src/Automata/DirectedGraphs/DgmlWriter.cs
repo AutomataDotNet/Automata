@@ -19,6 +19,7 @@ namespace Microsoft.Automata.DirectedGraphs
         /// <summary>
         /// Write the automaton in dgml format.
         /// </summary>
+        /// <param name="k">restiction on label length</param>
         /// <param name="fa">the automaton to write</param>
         /// <param name="name">the name of the output file, if filename does not end with .dgml then .dgml is added as suffix</param>
         public static void AutomatonToDgml<S>(int k, IAutomaton<S> fa, string name)
@@ -28,18 +29,114 @@ namespace Microsoft.Automata.DirectedGraphs
             sw.Close();
         }
 
+        static bool __tried_to_load_VS = false;
+        /// <summary>
+        /// Top-level Visual Studio automation object model, if available.
+        /// Used to close and open dgml graph files.
+        /// </summary>
+        static object VS = null;
+
         /// <summary>
         /// Write the automaton in dgml format in the current directory and open the file in a new process.
         /// </summary>
+        /// <param name="k">restiction on label length</param>
         /// <param name="fa">the automaton to write</param>
         /// <param name="name">the name of the output file, if filename does not end with .dgml then .dgml is added as suffix</param>
-        public static void ShowGraph<S>(int k, IAutomaton<S> fa, string name, Func<S,string> describeS = null)
+        /// <param name="describeS">custom viewer for S, default is null, if null then ToString is used</param>
+        public static void ShowGraph<S>(int k, IAutomaton<S> fa, string name, Func<S, string> describeS = null)
+        {
+            string filename = name + (name.EndsWith(".dgml") ? "" : ".dgml");
+            if (!__tried_to_load_VS)
+            {
+                //only try to load VS automation object model one time
+                TryLoadVS();
+                __tried_to_load_VS = true;
+            }
+            if (VS == null)
+            {
+                SaveGraph(k, fa, filename, describeS);
+                OpenFileInNewProcess(filename);
+            }
+            else
+                ShowGraphInVS(k, fa, filename, describeS);
+        }
+
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        static void ShowGraphInVS<S>(int k, IAutomaton<S> fa, string filename, Func<S, string> describeS = null)
+        {
+            //Access the top-level VS automation object model
+            EnvDTE.DTE dte = (EnvDTE.DTE)VS;
+            #region Close the dgml file if it is open
+            try
+            {
+                System.Collections.IEnumerator wins = dte.Windows.GetEnumerator();
+                while (wins.MoveNext() == true)
+                {
+                    EnvDTE.Window w = wins.Current as EnvDTE.Window;
+                    if (filename.Equals(w.Caption))
+                    {
+                        w.Close(EnvDTE.vsSaveChanges.vsSaveChangesNo);
+                        break;
+                    }
+                }
+            }
+            catch
+            {
+                //the operation dte.Windows.GetEnumerator()
+                //may sometimes cause COMException
+                //Ignore this exception, 
+                //then the window with given filename may still be open
+                //and VS may ask to save changes, instead of ignoring
+                //when the file is subsequently changed on disk
+            }
+            #endregion
+            SaveGraph(k, fa, filename, describeS);
+            #region Open the dgml file in VS
+            try
+            {
+                var dir = System.Environment.CurrentDirectory;
+                var fullfilename = dir + "/" + filename;
+                dte.ExecuteCommand("File.OpenFile", dir + "/" + filename);
+            }
+            catch
+            {
+                OpenFileInNewProcess(filename);
+            }
+            #endregion
+        }
+
+        static void TryLoadVS()
+        {
+            try
+            {
+                //first try to access VS 2015
+                VS = System.Runtime.InteropServices.Marshal.GetActiveObject("VisualStudio.DTE.14.0");
+            }
+            catch (Exception)
+            {
+                try
+                {
+                    //second try tom access VS 2017
+                    VS = System.Runtime.InteropServices.Marshal.GetActiveObject("VisualStudio.DTE.15.0");
+                }
+                catch (Exception)
+                {
+
+                }
+            }
+        }
+
+        /// <summary>
+        /// Write the automaton in dgml format in the current directory.
+        /// </summary>
+        /// <param name="fa">the automaton to write</param>
+        /// <param name="name">the name of the output file, if filename does not end with .dgml then .dgml is added as suffix</param>
+        public static void SaveGraph<S>(int k, IAutomaton<S> fa, string name, Func<S, string> describeS = null)
         {
             string filename = name + (name.EndsWith(".dgml") ? "" : ".dgml");
             System.IO.StreamWriter sw = new System.IO.StreamWriter(filename);
             AutomatonToDgml(k, fa, name, sw, describeS);
             sw.Close();
-            OpenFileInNewProcess(filename);
         }
 
         private static void OpenFileInNewProcess(string file)
@@ -105,7 +202,7 @@ namespace Microsoft.Automata.DirectedGraphs
             foreach (int state in fa.GetStates())
                 if (state == fa.InitialState && fa.IsFinalState(state))
                 {
-                    tw.WriteLine("<Node Id=\"{0}\" Label=\"{1}\" Category=\"State\" >", state, fa.DescribeState(state));
+                    tw.WriteLine("<Node Id=\"{0}\" Label=\"{1}\" Category=\"State\" >", state, EncodeChars(fa.DescribeState(state)));
                     if (!finalMoves.ContainsKey(state))
                     {
                         //if (IsEpsilonState(state))
@@ -125,13 +222,13 @@ namespace Microsoft.Automata.DirectedGraphs
                 }
                 else if (state == fa.InitialState)
                 {
-                    tw.WriteLine("<Node Id=\"{0}\" Label=\"{1}\" Category=\"State\" >", state, fa.DescribeState(state));
+                    tw.WriteLine("<Node Id=\"{0}\" Label=\"{1}\" Category=\"State\" >", state, EncodeChars(fa.DescribeState(state)));
                     tw.WriteLine("<Category Ref=\"InitialState\" />");
                     tw.WriteLine("</Node>");
                 }
                 else if (fa.IsFinalState(state))
                 {
-                    tw.WriteLine("<Node Id=\"{0}\" Label=\"{1}\" Category=\"State\" >", state, fa.DescribeState(state));
+                    tw.WriteLine("<Node Id=\"{0}\" Label=\"{1}\" Category=\"State\" >", state, EncodeChars(fa.DescribeState(state)));
                     if (!finalMoves.ContainsKey(state))
                     {
                         //if (IsEpsilonState(state))
@@ -149,10 +246,10 @@ namespace Microsoft.Automata.DirectedGraphs
                     }
                 }
                 else
-                    tw.WriteLine("<Node Id=\"{0}\" Label=\"{1}\" Category=\"State\" />", state, fa.DescribeState(state));
+                    tw.WriteLine("<Node Id=\"{0}\" Label=\"{1}\" Category=\"State\" />", state, EncodeChars(fa.DescribeState(state)));
             tw.WriteLine("</Nodes>");
             tw.WriteLine("<Links>");
-            tw.WriteLine("<Link Source=\"init\" Target=\"{0}\" Label=\"{1}\" Category=\"StartTransition\" />", fa.InitialState, fa.DescribeStartLabel());
+            tw.WriteLine("<Link Source=\"init\" Target=\"{0}\" Label=\"{1}\" Category=\"StartTransition\" />", fa.InitialState, EncodeChars(fa.DescribeStartLabel()));
             foreach (var move in epsilonmoves)
                 tw.WriteLine("<Link Source=\"{0}\" Target=\"{1}\" Category=\"EpsilonTransition\" />", move.SourceState, move.TargetState);
 
@@ -195,7 +292,7 @@ namespace Microsoft.Automata.DirectedGraphs
             string info = "";
             for (int i = 0; i < rules.Count; i++)
             {
-                lab += (lab == "" ? "" : ", ") + describeS(rules[i]);
+                lab += (lab == "" ? "" : ",\n ") + describeS(rules[i]);
                 if (trans != null)
                     info += string.Format("Rule{0}.Guard = \"{1}\" Rule{0}.Update = \"{2}\" Rule{0}.Yields = \"{3}\" ", i + 1,
                         EncodeChars(trans.DescribeGuard(rules[i])), 
@@ -215,7 +312,8 @@ namespace Microsoft.Automata.DirectedGraphs
 
         private static string EncodeChars(string s)
         {
-            return s.Replace("&true", "").Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;").Replace(@"\\", @"\").Replace("\"", "&quot;").Replace("\u0001", "\\u0001");
+            var v = System.Net.WebUtility.HtmlEncode(s).Replace("\n", "&#13;");
+            return v;
         }
 
         private static void WriteCategoriesAndStyles(System.IO.TextWriter tw)

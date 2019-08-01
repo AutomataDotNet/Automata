@@ -43,7 +43,7 @@ namespace Microsoft.Automata
         /// <returns></returns>
         public static RegexMatcher Compile(this Regex regex, params Regex[] regexes)
         {
-            return Compile(regex, true, true, regexes);
+            return Compile(regex, true, true, false, regexes);
         }
 
         /// <summary>
@@ -54,7 +54,7 @@ namespace Microsoft.Automata
         /// <param name="keepAnchors">if false missing anchors are replaced by .* else just omitted</param>
         /// <param name="unwindLowerBounds">if true then lower bounds of loops are unwound</param>
         /// <returns></returns>
-        public static RegexMatcher Compile(this Regex regex, bool keepAnchors, bool unwindLowerBounds, params Regex[] regexes)
+        public static RegexMatcher Compile(this Regex regex, bool keepAnchors, bool unwindLowerBounds, bool isMatchOnly = false, params Regex[] regexes)
         {
             //first test if this regex is a simple string, i.e., a toplevel multi-node
             RegexTree rt = RegexParser.Parse(regex.ToString(), regex.Options);
@@ -72,6 +72,10 @@ namespace Microsoft.Automata
                 context = new CharSetSolver();
 
             var first = context.RegexConverter.ConvertToSymbolicRegex(rt._root, keepAnchors, unwindLowerBounds);
+
+            if (!isMatchOnly && first.CheckIfContainsLazyLoop() && !first.CheckIfAllLoopsAreLazy())
+                throw new AutomataException("Match generation with mixed lazy and eager loops currently not supported.");
+
             var others = Array.ConvertAll(regexes, r => context.RegexConverter.ConvertToSymbolicRegex(r, keepAnchors, unwindLowerBounds));
             var all = new SymbolicRegexNode<BDD>[1 + regexes.Length];
             all[0] = first;

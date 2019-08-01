@@ -19,11 +19,14 @@ namespace Automata.Tests
     [TestClass]
     public class CountingAutomatonTests
     {
+        static object dte = null;
+
         [ClassInitialize]
         static public void Initialize(TestContext context)
         {
             //increase label length for viewing
             Microsoft.Automata.DirectedGraphs.Options.MaxDgmlTransitionLabelLength = 500;
+            //dte = System.Runtime.InteropServices.Marshal.GetActiveObject("VisualStudio.DTE.14.0");
         }
 
         [TestMethod]
@@ -34,7 +37,9 @@ namespace Automata.Tests
             var aut = q1.CreateCountingAutomaton();
             Assert.IsTrue(aut.StateCount == 2);
             Assert.IsTrue(aut.NrOfCounters == 1);
-            //aut.ShowGraph("a3");
+            //aut.ShowGraph("aaa");
+            var daut = CsAutomaton<ulong>.CreateFrom(aut);
+            //daut.ShowGraph("aaa_det", true);
         }
 
         [TestMethod]
@@ -51,13 +56,15 @@ namespace Automata.Tests
         [TestMethod]
         public void TestCA_LoopTwice()
         {
-            var regex = new Regex("a{9}a{9}", RegexOptions.Singleline);
+            var regex = new Regex("[ab]{5,9}[bc]{7,19}", RegexOptions.Singleline);
             var q1 = ((SymbolicRegex<ulong>)regex.Compile(true, false)).Pattern;
             var aut = q1.CreateCountingAutomaton();
-            Assert.IsTrue(aut.NrOfCounters == 2);
-            Assert.IsTrue(aut.MoveCount == 4);
-            Assert.IsTrue(aut.NrOfCounters == 2);
-            //aut.ShowGraph("LoopTwice",true);
+            var daut = CsAutomaton<ulong>.CreateFrom(aut);
+            //Assert.IsTrue(aut.NrOfCounters == 2);
+            //Assert.IsTrue(aut.MoveCount == 4);
+            //Assert.IsTrue(aut.NrOfCounters == 2);
+            aut.ShowGraph("LoopTwice",true);
+            daut.ShowGraph("LoopTwice_det", true);
         }
 
         [TestMethod]
@@ -162,14 +169,16 @@ namespace Automata.Tests
         [TestMethod]
         public void TestCA_ATVARunningExample()
         {
-            var regex = new Regex(".*a.{10}", RegexOptions.Singleline);
+            var regex = new Regex(".*a.{300}", RegexOptions.Singleline);
             var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
             var q1 = sr.Pattern;
             Assert.IsTrue(q1.kind == SymbolicRegexKind.Concat);
             Assert.IsTrue(q1.ConcatCount == 2);
             var aut = q1.CreateCountingAutomaton();
             Assert.IsTrue(aut.NrOfCounters == 1);
-            //aut.ShowGraph("ATVARunningExample");
+            aut.ShowGraph("ATVARunningExample");
+            var CsA = CsAutomaton<ulong>.CreateFrom(aut);
+            CsA.ShowGraph("ATVARunningExample_det", true);
         }
 
         [TestMethod]
@@ -216,6 +225,16 @@ namespace Automata.Tests
             var aut = sr.Pattern.CreateCountingAutomaton();
             Assert.IsTrue(aut.NrOfCounters == 2);
             //aut.ShowGraph("TwoOverlappingMonadicLoops");
+        }
+
+        [TestMethod]
+        public void TestCA_TwoOverlappingMonadicLoops2()
+        {
+            var regex = new Regex("a{10,100}aa{4,49}", RegexOptions.Singleline);
+            var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
+            var aut = sr.Pattern.CreateCountingAutomaton();
+            Assert.IsTrue(aut.NrOfCounters == 2);
+            //aut.ShowGraph("TwoOverlappingMonadicLoops2");
         }
 
         [TestMethod]
@@ -316,5 +335,94 @@ namespace Automata.Tests
             Assert.IsTrue(aut.IsMatch("xaaaaaa"));
             Assert.IsTrue(aut.IsMatch("xaaaaabaa"));
         }
+
+        [TestMethod]
+        public void TestCA_CsAutomatonConstruction1()
+        {
+            var regex = new Regex(".*(a{5}|[aA]a{5})*", RegexOptions.Singleline);
+            var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
+            var aut = sr.Pattern.CreateCountingAutomaton();
+            //aut.ShowGraph("CsAutomatonConstruction1");
+            Assert.IsTrue(aut.IsMatch("xAaaaaa"));
+            Assert.IsTrue(aut.IsMatch("xaaaaaa"));
+            Assert.IsTrue(aut.IsMatch("xaaaaabaa"));
+            var det = CsAutomaton<ulong>.CreateFrom(aut);
+        }
+
+        [TestMethod]
+        public void TestCA_CsAutomatonConstruction2()
+        {
+            Microsoft.Automata.DirectedGraphs.Options.MaxDgmlTransitionLabelLength = 500;
+            var regex = new Regex("((.{5,10}){2})*", RegexOptions.Singleline);
+            var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
+            var aut = sr.Pattern.CreateCountingAutomaton();
+            //aut.ShowGraph("CsAutomatonConstruction2_nondet");
+            var det = CsAutomaton<ulong>.CreateFrom(aut);
+            //det.ShowGraph("CsAutomatonConstruction2_det_dbg",true);
+            //det.ShowGraph("CsAutomatonConstruction2_det", true);
+            Assert.IsTrue(det.StateCount == 4);
+        }
+
+        [TestMethod]
+        public void TestCA_CsAutomatonConstruction3()
+        {
+            Microsoft.Automata.DirectedGraphs.Options.MaxDgmlTransitionLabelLength = 500;
+            var regex = new Regex(".*ab{9}d", RegexOptions.Singleline);
+            var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
+            var aut = sr.Pattern.CreateCountingAutomaton();
+            //aut.ShowGraph("CsAutomatonConstruction3_nondet");
+            var det = CsAutomaton<ulong>.CreateFrom(aut);
+            //det.ShowGraph("CsAutomatonConstruction3_det");
+            Assert.IsTrue(det.StateCount == 3);
+        }
+
+        [TestMethod]
+        public void TestCA_IsMatch_PosAndNeg()
+        {
+            var regex = new System.Text.RegularExpressions.Regex("^ab{4,10}c$");
+            var sr = (SymbolicRegex<ulong>)regex.Compile(false, false);
+            var pos_samples = regex.GenerateRandomDataSet(10);
+            var neg_samples = regex.Complement().GenerateRandomDataSet(10);
+            var ca = sr.Pattern.CreateCountingAutomaton();
+            foreach (var str in pos_samples)
+            {
+                Assert.IsTrue(ca.IsMatch(str));
+                Assert.IsTrue(regex.IsMatch(str));
+            }
+            foreach (var str in neg_samples)
+            {
+                Assert.IsFalse(ca.IsMatch(str));
+                Assert.IsFalse(regex.IsMatch(str));
+            }
+        }
+
+        [TestMethod]
+        public void TestCA_TrickyCase()
+        {
+            var regex = new Regex("([ab]{3,6}[bc]{4,8})*", RegexOptions.Singleline);
+            var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
+            var q1 = sr.Pattern;
+            var aut = q1.CreateCountingAutomaton();
+            Assert.IsTrue(aut.NrOfCounters == 2);
+            var CsA = CsAutomaton<ulong>.CreateFrom(aut);
+            //aut.ShowGraph("TrickyCase_NCA", true);
+            //CsA.ShowGraph("TrickyCase_DCA_dbg", true, false);
+            //CsA.ShowGraph("TrickyCase_DCA", false, true);
+        }
+
+        [TestMethod]
+        public void TestCA_TrickyCase2()
+        {
+            var regex = new Regex("d{1,20}aUa$|d{1,20}aOa$", RegexOptions.Singleline);
+            var sr = (SymbolicRegex<ulong>)regex.Compile(false, false);
+            var q1 = sr.Pattern;
+            var aut = q1.CreateCountingAutomaton();
+            Assert.IsTrue(aut.NrOfCounters == 2);
+            var CsA = CsAutomaton<ulong>.CreateFrom(aut);
+            //aut.ShowGraph("TrickyCase2_NCA", true);
+            //CsA.ShowGraph("TrickyCase2_DCA_dbg", true, false);
+            //CsA.ShowGraph("TrickyCase2_DCA", false, true);
+        }
+
     }
 }
