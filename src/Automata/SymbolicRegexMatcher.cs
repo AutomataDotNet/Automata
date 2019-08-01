@@ -131,6 +131,12 @@ namespace Microsoft.Automata
         Vector<ushort>[] A_StartSet_Vec = null;
 
         /// <summary>
+        /// If A_StartSet_Vec is length 1 then contains the corresponding character
+        /// </summary>
+        [NonSerialized]
+        ushort A_StartSet_singleton;
+
+        /// <summary>
         /// First byte of A_prefixUTF8 in vector
         /// </summary>
         [NonSerialized]
@@ -179,6 +185,12 @@ namespace Microsoft.Automata
         /// Set of elements that matter as first element of A. 
         /// </summary>
         internal BooleanDecisionTree A_StartSet;
+
+        /// <summary>
+        /// A vectorized decision stree evaluator generated and compiled from  A_StartSet. 
+        /// </summary>
+        [NonSerialized]
+        internal Func<Vector<ushort>, Vector<ushort>> A_StartSet_compiled;
 
         /// <summary>
         /// predicate over characters that make some progress
@@ -503,7 +515,7 @@ namespace Microsoft.Automata
         /// <summary>
         /// Constructs matcher for given symbolic regex
         /// </summary>
-        internal SymbolicRegex(SymbolicRegexNode<S> sr, CharSetSolver css, BDD[] minterms, int StateLimit = 1000, int startSetSizeLimit = 1)
+        internal SymbolicRegex(SymbolicRegexNode<S> sr, CharSetSolver css, BDD[] minterms, int StateLimit = 1000, int startSetSizeLimit = 128)
         {
             this.StartSetSizeLimit = startSetSizeLimit;
             this.builder = sr.builder;
@@ -601,7 +613,10 @@ namespace Microsoft.Automata
             {
                 char[] startchars = new List<char>(builder.solver.GenerateAllCharacters(A_startset)).ToArray();
                 A_StartSet_Vec = Array.ConvertAll(startchars, c => new Vector<ushort>(c));
+                A_StartSet_singleton = (ushort)startchars[0];
             }
+
+            this.A_StartSet_compiled = VectorizedIndexOf.CompileBooleanDecisionTree(this.A_StartSet);
 
             if (this.A_prefix != string.Empty)
             {
@@ -1443,17 +1458,39 @@ namespace Microsoft.Automata
             //TBD: dont enforce match_start_boundary when match overlaps are allowed
             bool A_has_nonempty_prefix = (this.A_prefix != string.Empty);
             fixed (char* inputp = input)
+                if (A_has_nonempty_prefix)
+                {
                 while (true)
                 {
                     int i_q0_A1;
-                    if (A_has_nonempty_prefix)
-                    {
                         i = FindFinalStatePositionOpt_(input, i, out i_q0_A1);
+
+                        if (i == k)
+                    {
+                            //end of input has been reached without reaching a final state, so no more matches
+                            break;
+                        }
+
+                        int i_start = FindStartPosition_(inputp, i, i_q0_A1);
+
+                        int i_end = FindEndPosition_(inputp, k, i_start);
+
+                        var newmatch = new Tuple<int, int>(i_start, i_end + 1 - i_start);
+                        matches.Add(newmatch);
+                        if (limit > 0 && matches.Count == limit)
+                            break;
+
+                        //continue matching from the position following last match
+                        i = i_end + 1;
+                        match_start_boundary = i;
+                    }
                     }
                     else
                     {
+                    while (true)
+                    {
+                        int i_q0_A1;
                         i = FindFinalStatePosition_(inputp, k, i, out i_q0_A1);
-                    }
 
                     if (i == k)
                     {
@@ -1473,6 +1510,7 @@ namespace Microsoft.Automata
                     //continue matching from the position following last match
                     i = i_end + 1;
                     match_start_boundary = i;
+                }
                 }
 
             return matches.ToArray();
@@ -1500,11 +1538,11 @@ namespace Microsoft.Automata
                     }
                     else if (A_StartSet_Vec.Length == 1)
                     {
-                        i = VectorizedIndexOf.UnsafeIndexOf(inputp, k, i, this.A_StartSet, A_StartSet_Vec[0]);
+                        i = VectorizedIndexOf.UnsafeIndexOf1(inputp, k, i, this.A_StartSet_singleton, A_StartSet_Vec[0]);
                     }
                     else
                     {
-                        i = VectorizedIndexOf.UnsafeIndexOf(inputp, k, i, this.A_StartSet, A_StartSet_Vec);
+                        i = VectorizedIndexOf.UnsafeIndexOf(inputp, k, i, this.A_StartSet, A_StartSet_compiled);
                     }
 
                     if (i == -1)
@@ -1606,7 +1644,7 @@ namespace Microsoft.Automata
                     if (this.A_fixedPrefix_ignoreCase)
                         i = input.IndexOf(A_prefix, i, comparison);
                     else
-                        i = IndexOfStartPrefix_(inputp, k, i);
+                            i = VectorizedIndexOf.UnsafeIndexOf(inputp, k, i, A_prefix);
 
                     if (i == -1)
                     {
@@ -2750,6 +2788,29 @@ namespace Microsoft.Automata
             while (true)
             {
                 int res = input.IndexOf(pattern, i, comp);
+                if (res >= 0 && (limit <= 0 || matches.Count < limit) && res + pattern.Length - 1 <= k)
+                {
+                    matches.Add(new Tuple<int, int>(res, pattern.Length));
+                    i = res + pattern.Length;
+                }
+                else
+                    break;
+            }
+            return matches.ToArray();
+        }
+
+        public unsafe Tuple<int, int>[] Matches_(string input, int limit = 0, int startat = 0, int endat = -1)
+        {
+            if (caseInsensitive)
+                return Matches(input, limit, startat, endat);
+            var matches = new List<Tuple<int, int>>();
+            int k = (endat == -1 ? (input.Length - 1) : (endat < input.Length ? endat : input.Length - 1));
+            int length = input.Length;
+            int i = startat;
+            fixed (char *inputp = input)
+            while (true)
+            {
+                int res = VectorizedIndexOf.UnsafeIndexOf(inputp, length, i, pattern);
                 if (res >= 0 && (limit <= 0 || matches.Count < limit) && res + pattern.Length - 1 <= k)
                 {
                     matches.Add(new Tuple<int, int>(res, pattern.Length));
