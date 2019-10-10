@@ -61,6 +61,7 @@ namespace Microsoft.Automata
                 }
             }
             this.productAlgebra = productAlgebra;
+            stateDescr[InitialState] = "s" + SpecialCharacters.ToSubscript(0);
         }
 
         int GetOriginalInitialState()
@@ -87,12 +88,21 @@ namespace Microsoft.Automata
             base.SaveGraph(name);
         }
 
+
+        Dictionary<int, string> stateDescr = new Dictionary<int, string>();
+        
         /// <summary>
         /// Describe the state information, including original states if determinized, as well as counters.
         /// </summary>
         public override string DescribeState(int state)
         {
-            string s = state.ToString();
+            string s;
+            if (!stateDescr.TryGetValue(state, out s))
+            {
+                s = "s" + SpecialCharacters.ToSubscript(stateDescr.Count);
+                stateDescr[state] = s;
+            }
+
             var mems = new List<int>(stateBuilder.GetMembers(state));
             mems.Sort();
             if (!__hidePowersets)
@@ -102,7 +112,7 @@ namespace Microsoft.Automata
                 {
                     if (!s.EndsWith("{"))
                         s += ",";
-                    s += q.ToString();
+                    s += "q" + SpecialCharacters.ToSubscript(q);
                 }
                 s += "}";
             }
@@ -112,10 +122,14 @@ namespace Microsoft.Automata
             foreach (var c in state_counters_list)
             {
                 s += "\n";
-                s += "(" + counters[c].LowerBound + 
-                    SpecialCharacters.LEQ + SpecialCharacters.Cntr(c) + SpecialCharacters.LEQ + counters[c].UpperBound + ")";
+                s += "(" + SpecialCharacters.Cntr(c) + ")";
+                //s += "(" + counters[c].LowerBound + 
+                //    SpecialCharacters.LEQ + SpecialCharacters.Cntr(c) + SpecialCharacters.LEQ + counters[c].UpperBound + ")";
                 if (finalCounterSet.Contains(c))
+                {
+                    s += SpecialCharacters.XI_LOWERCASE + SpecialCharacters.ToSubscript(c);
                     s += SpecialCharacters.CHECKMARK;
+                }
             }
             return s;
         }
@@ -384,7 +398,7 @@ namespace Microsoft.Automata
                 var upd = DescribeCounterUpdate(debugmode);
                 if (upd != "")
                 {
-                    s += ":" + upd;
+                    s += SpecialCharacters.IMPLIES + upd;
                 }
                 return s;
             }
@@ -627,41 +641,44 @@ namespace Microsoft.Automata
                 string s = "";
                 for (int i = 0; i < Length; i++)
                 {
+                    string c = SpecialCharacters.Cntr(i);
+                    char assign = SpecialCharacters.ASSIGN;
+                    char union = SpecialCharacters.UNION;
                     switch (this[i])
                     {
                         case CsUpdate.INCR:
                             {
-                                s += string.Format("{0}++;", SpecialCharacters.Cntr(i));
+                                s += c + "++";
                                 break;
                             }
                         case CsUpdate.INCR0:
                             {
-                                s += string.Format("{0}++{{0}};", SpecialCharacters.Cntr(i));
+                                s += c + "++" + union + "{0}";
                                 break;
                             }
                         case CsUpdate.INCR1:
                             {
-                                s += string.Format("{0}++{{1}};", SpecialCharacters.Cntr(i));
+                                s += c + "++" + union + "{1}";
                                 break;
                             }
                         case CsUpdate.INCR01:
                             {
-                                s += string.Format("{0}++{{0,1}};", SpecialCharacters.Cntr(i));
+                                s += c + "++" + union + "{0,1}";
                                 break;
                             }
                         case CsUpdate.SET0:
                             {
-                                s += string.Format("{0}{1}{{0}};", SpecialCharacters.Cntr(i), SpecialCharacters.ASSIGN);
+                                s += c + assign + "{0}";
                                 break;
                             }
                         case CsUpdate.SET1:
                             {
-                                s += string.Format("{0}{1}{{1}};", SpecialCharacters.Cntr(i), SpecialCharacters.ASSIGN);
+                                s += c + assign + "{1}";
                                 break;
                             }
                         case CsUpdate.SET01:
                             {
-                                s += string.Format("{0}{1}{{0,1}};", SpecialCharacters.Cntr(i), SpecialCharacters.ASSIGN);
+                                s += c + assign + "{0,1}";
                                 break;
                             }
                         default:
@@ -800,36 +817,66 @@ namespace Microsoft.Automata
 
         public static string DescribeCondition<S>(CsAlgebra<S> algebra, CsCondition cond, int i)
         {
+            string c = SpecialCharacters.Cntr(i);
+            string canExit = SpecialCharacters.XI_LOWERCASE + SpecialCharacters.ToSubscript(i);
+            string canIncr = SpecialCharacters.IOTA_LOWERCASE + SpecialCharacters.ToSubscript(i);
+            char and = SpecialCharacters.AND;
+            char or = SpecialCharacters.OR;
+            char not = SpecialCharacters.NOT;
+            string empty = string.Format("{0}={1}", c, SpecialCharacters.EMPTYSET);
+            string nonempty = string.Format("{0}{1}{2}", c, SpecialCharacters.NEQ, SpecialCharacters.EMPTYSET);
+            string _true = SpecialCharacters.TOP.ToString();
+            string _false = SpecialCharacters.BOT.ToString();
             switch (cond)
             {
                 case CsCondition.TRUE:
-                    return SpecialCharacters.TOP.ToString();
+                    return _true;
                 case CsCondition.FALSE:
-                    return SpecialCharacters.BOT.ToString();
+                    return _false;
                 case CsCondition.EMPTY:
-                    return string.Format("{0}={1}", SpecialCharacters.Cntr(i), SpecialCharacters.EMPTYSET);
+                    return empty;
                 case CsCondition.NONEMPTY:
-                    return string.Format("{0}{1}{2}", SpecialCharacters.Cntr(i), SpecialCharacters.NEQ, SpecialCharacters.EMPTYSET);
+                    return nonempty;
                 case CsCondition.LOW:
-                    return string.Format("{0}{2}{3}{4}max({0})<{1}", SpecialCharacters.Cntr(i), algebra.GetCounter(i).LowerBound, SpecialCharacters.NEQ, SpecialCharacters.EMPTYSET, SpecialCharacters.AND);
+                    //return string.Format("{0}{2}{3}{4}max({0})<{1}", SpecialCharacters.Cntr(i), algebra.GetCounter(i).LowerBound, SpecialCharacters.NEQ, SpecialCharacters.EMPTYSET, SpecialCharacters.AND);
+                    //return canIncr + and + not + canExit;
+                    return not + canExit;
                 case CsCondition.HIGH:
-                    return string.Format("{0}={{{1}}}", SpecialCharacters.Cntr(i), algebra.GetCounter(i).UpperBound);
+                    //return string.Format("{0}={{{1}}}", SpecialCharacters.Cntr(i), algebra.GetCounter(i).UpperBound);
+                    //return not + canIncr + and + canExit;
+                    return not + canIncr;
                 case CsCondition.CANEXIT:
-                    return string.Format("{0}{1}{2}", SpecialCharacters.Cntr(i), SpecialCharacters.GEQ, algebra.GetCounter(i).LowerBound);
+                    //return string.Format("{0}{1}{2}", SpecialCharacters.Cntr(i), SpecialCharacters.GEQ, algebra.GetCounter(i).LowerBound);
+                    return canExit;
                 case CsCondition.CANNOTEXIT:
-                    return string.Format("{0}{1}{2}", SpecialCharacters.Cntr(i), SpecialCharacters.NOTGEQ, algebra.GetCounter(i).LowerBound);
+                    //return string.Format("{0}{1}{2}", SpecialCharacters.Cntr(i), SpecialCharacters.NOTGEQ, algebra.GetCounter(i).LowerBound);
+                    return not + canExit;
                 case CsCondition.CANLOOP:
                     //return string.Format("{0}+1{1}{2}", SpecialCharacters.Cntr(i), SpecialCharacters.NEQ, SpecialCharacters.EMPTYSET);
-                    return string.Format("{0}x{1}{2}(x<{3})", SpecialCharacters.EXISTS, SpecialCharacters.IN, SpecialCharacters.Cntr(i), algebra.GetCounter(i).UpperBound);
+                    //return string.Format("{0}x{1}{2}(x<{3})", SpecialCharacters.EXISTS, SpecialCharacters.IN, SpecialCharacters.Cntr(i), algebra.GetCounter(i).UpperBound);
+                    return canIncr;
                 case CsCondition.CANNOTLOOP:
                     //return string.Format("{0}+1{1}{2}", SpecialCharacters.Cntr(i), "=", SpecialCharacters.EMPTYSET);
-                    return string.Format("{0}x{1}{2}(x<{3})", SpecialCharacters.NOTEXISTS, SpecialCharacters.IN, SpecialCharacters.Cntr(i), algebra.GetCounter(i).UpperBound);
+                    //return string.Format("{0}x{1}{2}(x<{3})", SpecialCharacters.NOTEXISTS, SpecialCharacters.IN, SpecialCharacters.Cntr(i), algebra.GetCounter(i).UpperBound);
+                    return not + canIncr;
                 case CsCondition.MIDDLE:
-                    return string.Format("{2}{4}{5}{6}{0}{1}max({2})<{3}", algebra.GetCounter(i).LowerBound, SpecialCharacters.LEQ, SpecialCharacters.Cntr(i), algebra.GetCounter(i).UpperBound, SpecialCharacters.NEQ, SpecialCharacters.EMPTYSET, SpecialCharacters.AND);
+                    //return string.Format("{2}{4}{5}{6}{0}{1}max({2})<{3}", algebra.GetCounter(i).LowerBound, SpecialCharacters.LEQ, SpecialCharacters.Cntr(i), algebra.GetCounter(i).UpperBound, SpecialCharacters.NEQ, SpecialCharacters.EMPTYSET, SpecialCharacters.AND);
+                    return canIncr + and + canExit;
+                #region these cases should not occur
                 case CsCondition.LOWorHIGH:
-                    return string.Format("({0}{1}{2})", DescribeCondition<S>(algebra, CsCondition.LOW, i), SpecialCharacters.OR, DescribeCondition<S>(algebra, CsCondition.HIGH, i));
+                    //return string.Format("({0}{1}{2})", DescribeCondition<S>(algebra, CsCondition.LOW, i), SpecialCharacters.OR, DescribeCondition<S>(algebra, CsCondition.HIGH, i));
+                    return "(" + not + canIncr + or + not + canExit + ")";
+                case CsCondition.EMPTYorCANEXIT:
+                    return "(" + empty + or + canExit + ")";
+                case CsCondition.EMPTYorCANLOOP:
+                    return "(" + empty + or + canIncr + ")";
+                case CsCondition.EMPTYorHIGHorLOW:
+                    return "(" + empty + or + not + canIncr + or + not + canExit + ")";
+                case CsCondition.EMPTYorMIDDLE:
+                    return "(" + empty + or + canIncr + and + canExit + ")";
                 default:
-                    return string.Format("{0}({1})", cond, SpecialCharacters.Cntr(i));
+                    throw new AutomataException(AutomataExceptionKind.UndefinedEnum);
+               #endregion
             }
         }
 

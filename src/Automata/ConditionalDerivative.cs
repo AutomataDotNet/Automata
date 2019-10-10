@@ -82,12 +82,8 @@ namespace Microsoft.Automata
             get
             {
                 if (Counter.LowerBound > 0)
-                {
-                    if (Counter.LowerBound == Counter.UpperBound)
-                        return string.Format("{0}={1}", SpecialCharacters.Cntr(Counter.CounterId), Counter.LowerBound);
-                    else
-                        return string.Format("{0}{1}{2}", SpecialCharacters.Cntr(Counter.CounterId), SpecialCharacters.GEQ, Counter.LowerBound);
-                }
+                    return string.Format("{0}{1}{2}", SpecialCharacters.Cntr(Counter.CounterId), SpecialCharacters.GEQ, Counter.LowerBound);
+                    //return SpecialCharacters.XI_LOWERCASE + SpecialCharacters.ToSubscript(Counter.CounterId);
                 else
                     return "";
             }
@@ -99,6 +95,7 @@ namespace Microsoft.Automata
             {
                 if (Counter.UpperBound < int.MaxValue)
                     return string.Format("{0}<{1}", SpecialCharacters.Cntr(Counter.CounterId), Counter.UpperBound);
+                    //return SpecialCharacters.IOTA_LOWERCASE + SpecialCharacters.ToSubscript(Counter.CounterId);
                 else
                     return "";
             }
@@ -113,13 +110,13 @@ namespace Microsoft.Automata
                 case CounterOp.SET0:
                     return string.Format("{0}{1}0", SpecialCharacters.Cntr(Counter.CounterId), SpecialCharacters.ASSIGN);
                 case CounterOp.EXIT_SET0:
-                    return string.Format("{2}:{0}{1}0", SpecialCharacters.Cntr(Counter.CounterId),SpecialCharacters.ASSIGN, LowerBoundCheck);
+                    return string.Format("{2}{3}{0}{1}0", SpecialCharacters.Cntr(Counter.CounterId), SpecialCharacters.ASSIGN, LowerBoundCheck, SpecialCharacters.IMPLIES);
                 case CounterOp.SET1:
                     return string.Format("{0}{1}1", SpecialCharacters.Cntr(Counter.CounterId), SpecialCharacters.ASSIGN);
                 case CounterOp.EXIT_SET1:
-                    return string.Format("{2}:{0}{1}1", SpecialCharacters.Cntr(Counter.CounterId), SpecialCharacters.ASSIGN, LowerBoundCheck);
+                    return string.Format("{2}{3}{0}{1}1", SpecialCharacters.Cntr(Counter.CounterId), SpecialCharacters.ASSIGN, LowerBoundCheck, SpecialCharacters.IMPLIES);
                 case CounterOp.INCR:
-                    return string.Format("{0}<{2}:{0}{1}{0}+1", SpecialCharacters.Cntr(Counter.CounterId), SpecialCharacters.ASSIGN, Counter.UpperBound);
+                    return string.Format("{2}{3}{0}++", SpecialCharacters.Cntr(Counter.CounterId), SpecialCharacters.ASSIGN, UpperBoundCheck, SpecialCharacters.IMPLIES);
                 default:
                     throw new NotImplementedException(elems.Item2.ToString());
             }

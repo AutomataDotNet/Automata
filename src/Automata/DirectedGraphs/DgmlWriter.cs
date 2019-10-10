@@ -45,7 +45,6 @@ namespace Microsoft.Automata.DirectedGraphs
         /// <param name="describeS">custom viewer for S, default is null, if null then ToString is used</param>
         public static void ShowGraph<S>(int k, IAutomaton<S> fa, string name, Func<S, string> describeS = null)
         {
-            string filename = name + (name.EndsWith(".dgml") ? "" : ".dgml");
             if (!__tried_to_load_VS)
             {
                 //only try to load VS automation object model one time
@@ -54,16 +53,17 @@ namespace Microsoft.Automata.DirectedGraphs
             }
             if (VS == null)
             {
-                SaveGraph(k, fa, filename, describeS);
-                OpenFileInNewProcess(filename);
+                SaveGraph(k, fa, name, describeS);
+                OpenFileInNewProcess(name + (name.EndsWith(".dgml") ? "" : ".dgml"));
             }
             else
-                ShowGraphInVS(k, fa, filename, describeS);
+                ShowGraphInVS(k, fa, name, describeS);
         }
 
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-        static void ShowGraphInVS<S>(int k, IAutomaton<S> fa, string filename, Func<S, string> describeS = null)
+        static void ShowGraphInVS<S>(int k, IAutomaton<S> fa, string name, Func<S, string> describeS = null)
         {
+            string filename = name + (name.EndsWith(".dgml") ? "" : ".dgml");
             //Access the top-level VS automation object model
             EnvDTE.DTE dte = (EnvDTE.DTE)VS;
             #region Close the dgml file if it is open
@@ -90,7 +90,7 @@ namespace Microsoft.Automata.DirectedGraphs
                 //when the file is subsequently changed on disk
             }
             #endregion
-            SaveGraph(k, fa, filename, describeS);
+            SaveGraph(k, fa, name, describeS);
             #region Open the dgml file in VS
             try
             {

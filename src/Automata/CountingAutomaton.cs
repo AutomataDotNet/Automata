@@ -57,20 +57,24 @@ namespace Microsoft.Automata
         {
             string s;
             if (__hideDerivativesInViewer)
-                s = state.ToString();
+                s = "q" + SpecialCharacters.ToSubscript(state);
             else
                 s = stateMap[state].ToString();
-            if (IsCountingState(state))
-                s += "\n(" + SpecialCharacters.Cntr(countingStates[state].CounterId) + ")";
             if (IsFinalState(state) && IsCountingState(state))
             {
+                s += "\n(";
                 var f = GetFinalStateCondition(state);
                 for (int i = 0; i < f.Length; i++)
                 {
+                    if (i > 0)
+                        s += SpecialCharacters.AND;
                     var op = f[i];
-                    s += op.ToString() + ";";
+                    s += op.ToString();
                 }
+                s += ")" + SpecialCharacters.CHECKMARK;
             }
+            else if (IsCountingState(state))
+                    s += "\n(" + SpecialCharacters.Cntr(countingStates[state].CounterId) + ")";
             return s;
         }
 
@@ -83,6 +87,21 @@ namespace Microsoft.Automata
             }
             else
                 return "";
+        }
+        
+        public override string DescribeLabel(Tuple<Maybe<S>, Sequence<CounterOperation>> lab)
+        {
+            string s = "";
+            if (lab.Item1 != Maybe<S>.Nothing)
+            {
+                s += lab.Item1.Element.ToString();
+                s += SpecialCharacters.PROD;
+            }
+            if (lab.Item2.Length > 1)
+                s += lab.Item2.ToString();
+            else if (lab.Item2.Length == 1)
+                s += lab.Item2[0].ToString();
+            return s;
         }
 
         /// <summary>
@@ -643,7 +662,14 @@ namespace Microsoft.Automata
             if (t.Item1.IsSomething)
             {
                 if (t.Item2.Length > 0)
-                    return builder.solver.PrettyPrint(t.Item1.Element) + "/" + t.Item2.ToString();
+                {
+                    if (t.Item2.Length == 1)
+                    {
+                        return builder.solver.PrettyPrint(t.Item1.Element) + "/" + t.Item2[0].ToString();
+                    }
+                    else
+                        return builder.solver.PrettyPrint(t.Item1.Element) + "/" + t.Item2.ToString();
+                }
                 else
                     return builder.solver.PrettyPrint(t.Item1.Element);
             }
@@ -655,20 +681,14 @@ namespace Microsoft.Automata
                     if (t.Item2[i].OperationKind != CounterOp.EXIT)
                         throw new AutomataException(AutomataExceptionKind.InternalError);
 
-                    if (t.Item2[i].Counter.LowerBound == t.Item2[i].Counter.UpperBound)
-                    {
-                        if (s != "")
-                            s += SpecialCharacters.AND;
-                        s += string.Format("{0}={1}", SpecialCharacters.Cntr(t.Item2[i].Counter.CounterId), t.Item2[i].Counter.LowerBound);
-                    }
-                    else if (t.Item2[i].Counter.LowerBound > 0)
+                    if (t.Item2[i].Counter.LowerBound > 0)
                     {
                         if (s != "")
                             s += SpecialCharacters.AND;
                         s += string.Format("{0}{1}{2}", SpecialCharacters.Cntr(t.Item2[i].Counter.CounterId), SpecialCharacters.GEQ, t.Item2[i].Counter.LowerBound);
                     }
                 }
-                return "F:" + (s == "" ? SpecialCharacters.TOP.ToString() : s);
+                return (s == "" ? SpecialCharacters.TOP.ToString() : s) + SpecialCharacters.CHECKMARK;
             }
         }
 

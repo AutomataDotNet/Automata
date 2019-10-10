@@ -133,7 +133,7 @@ namespace Microsoft.Automata
         /// <returns></returns>
         public static RegexMatcher Deserialize(string file, IFormatter formatter = null)
         {
-            Stream stream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.None);
+            Stream stream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read);
             RegexMatcher matcher = Deserialize(stream, formatter);
             stream.Close();
             return matcher;
@@ -1074,7 +1074,7 @@ namespace Microsoft.Automata
             int i = startat;
 
             //after a match is found the match_start_boundary becomes 
-            //the first postion after the last match
+            //the first position after the last match
             int match_start_boundary = i;
 
             bool A_has_nonempty_prefix = (!this.A_prefix.Equals(string.Empty));
@@ -1173,9 +1173,9 @@ namespace Microsoft.Automata
 
             if (this.A.containsAnchors)
             {
-                #region separate case when A contains anchors
-                //TBD prefix optimization  ay still be important here 
-                //but the prefix needs to be computed based on A ... but with start anchors removed or treated specially
+                #region original regex contains anchors
+                //TBD prefix optimization may still be important here 
+                //but the prefix needs to be computed based on A, but with start anchors removed or treated specially
                 if (A2 == null)
                 {
                     #region initialize A2 to A.RemoveAnchors()
@@ -1266,12 +1266,12 @@ namespace Microsoft.Automata
                     q = p;
                     i += 1;
                 }
-                return regex.IsNullable(i == 0, true);
+                return regex.IsNullable;
                 #endregion
             }
             else
             {
-                //reuse A1
+                #region original regex contains no anchors
                 int i;
                 int i_q0;
                 int watchdog;
@@ -1294,6 +1294,7 @@ namespace Microsoft.Automata
                     //thus if input[0...i] is in L(.*A) then input is in L(.*A.*)
                     return true;
                 }
+                #endregion
             }
         }
 
@@ -1648,6 +1649,13 @@ namespace Microsoft.Automata
                 //TBD: anchors
                 int c = input[i];
                 int p;
+
+                #region if original regex contains anchors and c is \n then insert startline and endline characters
+                if (A.containsAnchors && c == '\n')
+                {
+                    //TBD: anchors
+                }
+                #endregion
 
 #if INLINE
                 #region copy&paste region of the definition of Delta being inlined

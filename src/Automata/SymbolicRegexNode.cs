@@ -46,8 +46,6 @@ namespace Microsoft.Automata
 
         int hashcode = -1;
 
-        ICounter counter = null;
-
         #region serialization
 
         /// <summary>
@@ -1200,9 +1198,9 @@ namespace Microsoft.Automata
         /// </summary>
         /// <param name="elem">given element wrt which the derivative is taken</param>
         /// <returns></returns>
-        public SymbolicRegexNode<S> MkDerivative(S elem, bool isFirst = false, bool isLast = false)
+        public SymbolicRegexNode<S> MkDerivative(S elem)
         {
-            return builder.MkDerivative(elem, isFirst, isLast, this);
+            return builder.MkDerivative(elem, this);
         }
 
         /// <summary>
@@ -1531,48 +1529,48 @@ namespace Microsoft.Automata
         /// <summary>
         /// true iff epsilon is accepted
         /// </summary>
-        public bool IsNullable(bool isFirst = false, bool isLast = false)
+        public bool IsNullable
         {
-            if (isNullable || !(isFirst || isLast))
+            get
+            {
                 return isNullable;
-            else
-                return IsNullableAtBorder(isFirst, isLast);
+            }
         }
 
-        /// <summary>
-        /// true if epsilon is accepted at the start or at the end
-        /// </summary>
-        /// <param name="isStart">if true then returns true for start anchor</param>
-        /// <param name="isEnd">if true then returns true for end anchor</param>
-        /// <returns></returns>
-        bool IsNullableAtBorder(bool isStart, bool isEnd)
-        {
-            if (isNullable)
-                return true;
-            else
-                switch (kind)
-                {
-                    case SymbolicRegexKind.StartAnchor:
-                        return isStart;
-                    case SymbolicRegexKind.EndAnchor:
-                        return isEnd;
-                    case SymbolicRegexKind.Epsilon:
-                        return true;
-                    case SymbolicRegexKind.WatchDog:
-                        return true;
-                    case SymbolicRegexKind.Singleton:
-                        return false;
-                    case SymbolicRegexKind.Loop:
-                        return this.left.IsNullableAtBorder(isStart, isEnd);
-                    case SymbolicRegexKind.Or:
-                    case SymbolicRegexKind.And:
-                        return this.alts.IsNullable(isStart, isEnd);
-                    case SymbolicRegexKind.Concat:
-                        return this.left.IsNullableAtBorder(isStart, isEnd) && this.right.IsNullableAtBorder(isStart, isEnd);
-                    default: //ITE
-                        return (this.iteCond.IsNullableAtBorder(isStart, isEnd) ? this.left.IsNullableAtBorder(isStart, isEnd) : this.right.IsNullableAtBorder(isStart, isEnd));
-                }
-        }
+        ///// <summary>
+        ///// true if epsilon is accepted at the start or at the end
+        ///// </summary>
+        ///// <param name="isStart">if true then returns true for start anchor</param>
+        ///// <param name="isEnd">if true then returns true for end anchor</param>
+        ///// <returns></returns>
+        //bool IsNullableAtBorder(bool isStart, bool isEnd)
+        //{
+        //    if (isNullable)
+        //        return true;
+        //    else
+        //        switch (kind)
+        //        {
+        //            case SymbolicRegexKind.StartAnchor:
+        //                return isStart;
+        //            case SymbolicRegexKind.EndAnchor:
+        //                return isEnd;
+        //            case SymbolicRegexKind.Epsilon:
+        //                return true;
+        //            case SymbolicRegexKind.WatchDog:
+        //                return true;
+        //            case SymbolicRegexKind.Singleton:
+        //                return false;
+        //            case SymbolicRegexKind.Loop:
+        //                return this.left.IsNullableAtBorder(isStart, isEnd);
+        //            case SymbolicRegexKind.Or:
+        //            case SymbolicRegexKind.And:
+        //                return this.alts.IsNullable(isStart, isEnd);
+        //            case SymbolicRegexKind.Concat:
+        //                return this.left.IsNullableAtBorder(isStart, isEnd) && this.right.IsNullableAtBorder(isStart, isEnd);
+        //            default: //ITE
+        //                return (this.iteCond.IsNullableAtBorder(isStart, isEnd) ? this.left.IsNullableAtBorder(isStart, isEnd) : this.right.IsNullableAtBorder(isStart, isEnd));
+        //        }
+        //}
 
         [NonSerialized]
         static int prime = 31;
@@ -2986,7 +2984,7 @@ namespace Microsoft.Automata
             }
         }
 
-        public bool IsNullable(bool isFirst = false, bool isLast = false)
+        internal bool IsNullable()
         {
             var e = this.GetEnumerator();
             if (kind == SymbolicRegexSetKind.Disjunction)
@@ -2994,7 +2992,7 @@ namespace Microsoft.Automata
                 #region some element must be nullable
                 while (e.MoveNext())
                 {
-                    if (e.Current.IsNullable(isFirst, isLast))
+                    if (e.Current.IsNullable)
                         return true;
                 }
                 return false;
@@ -3005,7 +3003,7 @@ namespace Microsoft.Automata
                 #region  all elements must be nullable
                 while (e.MoveNext())
                 {
-                    if (!e.Current.IsNullable(isFirst, isLast))
+                    if (!e.Current.IsNullable)
                         return false;
                 }
                 return true;
@@ -3119,18 +3117,32 @@ namespace Microsoft.Automata
                 return CreateConjunction(builder, RemoveAnchorsElems(builder, isBeg, isEnd));
         }
 
-        internal SymbolicRegexSet<S> MkDerivative(S elem, bool isFirst, bool isLast)
+        internal SymbolicRegexSet<S> MkDerivative(S elem)
         {
             if (kind == SymbolicRegexSetKind.Disjunction)
-                return CreateDisjunction(builder, MkDerivativesOfElems(elem, isFirst, isLast));
+                return CreateDisjunction(builder, MkDerivativesOfElems(elem));
             else
-                return CreateConjunction(builder, MkDerivativesOfElems(elem, isFirst, isLast));
+                return CreateConjunction(builder, MkDerivativesOfElems(elem));
         }
 
-        internal IEnumerable<SymbolicRegexNode<S>> MkDerivativesOfElems(S elem, bool isFirst, bool isLast)
+        internal SymbolicRegexSet<S> MkDerivative_StartOfLine()
+        {
+            if (kind == SymbolicRegexSetKind.Disjunction)
+                return CreateDisjunction(builder, MkDerivatives_StartOfLine_OfElems());
+            else
+                return CreateConjunction(builder, MkDerivatives_StartOfLine_OfElems());
+        }
+
+        IEnumerable<SymbolicRegexNode<S>> MkDerivativesOfElems(S elem)
         {
             foreach (var s in this)
-                yield return s.MkDerivative(elem, isFirst, isLast);
+                yield return s.MkDerivative(elem);
+        }
+
+        IEnumerable<SymbolicRegexNode<S>> MkDerivatives_StartOfLine_OfElems()  
+        {
+            foreach (var s in this)
+                yield return s.builder.MkDerivative_StartOfLine(s);
         }
 
         IEnumerable<SymbolicRegexNode<T>> TransformElems<T>(SymbolicRegexBuilder<T> builderT, Func<S, T> predicateTransformer)

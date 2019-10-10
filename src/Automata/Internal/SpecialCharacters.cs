@@ -26,6 +26,7 @@ namespace Microsoft.Automata
         public static char INTERSECT = '\u2229';
         public static char IN = '\u2208';
         public static char NOTIN = '\u2209';
+        public static char PROD = '\u00D7';
         //misc
         public static char ASSIGN = '\u2254';
         public static char SUBSCRIPTMINUS = '\u208B';
@@ -34,6 +35,7 @@ namespace Microsoft.Automata
         public static char LARGEBULLET = '\u26AB';
         public static char BLACKSQUARE = '\u220E';
         public static char CHECKMARK = '\u2713';
+        public static char MIDDOT = '\u00B7';
         //arithmetic
         public static char NEQ = '\u2260';
         public static char LEQ = '\u2264';
@@ -42,6 +44,43 @@ namespace Microsoft.Automata
         public static char NOTGT = '\u226F';
         public static char GEQ = '\u2265';
         public static char NOTGEQ = '\u2271';
+        //lowercase greek letters
+        public static char ALPHA_LOWERCASE = '\u03B1';
+        public static char BETA_LOWERCASE = '\u03B2';
+        public static char GAMMA_LOWERCASE = '\u03B3';
+        public static char DELTA_LOWERCASE = '\u03B4';
+        public static char EPSILON_LOWERCASE = '\u03B5';
+        public static char ZETA_LOWERCASE = '\u03B6';
+        public static char ETA_LOWERCASE = '\u03B7';
+        public static char THETA_LOWERCASE = '\u03B8';
+        public static char IOTA_LOWERCASE = '\u03B9';
+        public static char KAPPA_LOWERCASE = '\u03BA';
+        public static char LAMBDA_LOWERCASE = '\u03BB';
+        public static char MU_LOWERCASE = '\u03BC';
+        public static char NU_LOWERCASE = '\u03BD';
+        public static char XI_LOWERCASE = '\u03BE';
+        public static char OMICRON_LOWERCASE = '\u03BF';
+        public static char PI_LOWERCASE = '\u03C0';
+        public static char RHO_LOWERCASE = '\u03C1';
+        public static char FINAL_SIGMA_LOWERCASE = '\u03C2';	 
+        public static char SIGMA_LOWERCASE = '\u03C3';
+        public static char TAU_LOWERCASE = '\u03C4';
+        public static char UPSILON_LOWERCASE = '\u03C5';
+        public static char PHI_LOWERCASE = '\u03C6';
+        public static char CHI_LOWERCASE = '\u03C7';
+        public static char PSI_LOWERCASE = '\u03C8';
+        public static char OMEGA_LOWERCASE = '\u03C9';
+        //--- some common capital greek letters
+        public static char GAMMA_CAPITAL = '\u0393';
+        public static char DELTA_CAPITAL = '\u0394';
+        public static char THETA_CAPITA = '\u0398';
+        public static char LAMBDA_CAPITAL = '\u039B';
+        public static char XI_CAPITAL = '\u039E';
+        public static char PI_CAPITAL = '\u03A0';
+        public static char SIGMA_CAPITAL = '\u03A3';
+        public static char PHI_CAPITAL = '\u03A6';
+        public static char PSI_CAPITAL = '\u03A8';
+        public static char OMEGA_CAPITAL = '\u03A9';
 
         /// <summary>
         /// Produces subscript index

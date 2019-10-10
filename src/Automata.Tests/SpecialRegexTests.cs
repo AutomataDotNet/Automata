@@ -146,8 +146,8 @@ namespace Automata.Tests
         public void TestMatchTermination()
         {
             //exponetial time
-            string[] s = new string[] { 
-                "_a_aa_aa_aa@", 
+            string[] s = new string[] {
+                "_a_aa_aa_aa@",
                 "_a_aa_aa__aa@",
                 "_a_aa_aa___aa@",
                 "_a_aa_aa____aa@",
@@ -190,6 +190,29 @@ namespace Automata.Tests
             var A3 = A1.Minus(A1n).Minimize();
             var L3 = css.ConvertToRegex(A3);
             Console.WriteLine(L3);
+        }
+
+        [TestMethod]
+        public void TestAnchors()
+        {
+            Regex r = new Regex("^AA$|^BB$|^$", RegexOptions.Multiline);
+            string input = "xxx\nAA\nBB\n";
+            var matches = r.Matches(input);
+            var match0 = matches[0];
+            var match1 = matches[1];
+            var match2 = matches[2];
+            var match3 = matches[3];
+            Console.WriteLine(match0.Value);
+        }
+
+        [TestMethod]
+        public void TestOptions()
+        {
+            Regex r = new Regex("(?i:a)b", RegexOptions.Multiline);
+            string input = "xxx\nAb\naB\n";
+            var matches = r.Matches(input);
+            var match0 = matches[0];
+            Console.WriteLine(match0.Value);
         }
     }
 }

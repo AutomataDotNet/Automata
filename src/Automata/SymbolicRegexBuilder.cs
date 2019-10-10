@@ -550,7 +550,7 @@ namespace Microsoft.Automata
             }
         }
 
-        internal SymbolicRegexNode<S> MkDerivative(S elem, bool isFirst, bool isLast, SymbolicRegexNode<S> sr)
+        internal SymbolicRegexNode<S> MkDerivative(S elem, SymbolicRegexNode<S> sr)
         {
             if (sr == this.dotStar)
                 return this.dotStar;
@@ -579,23 +579,10 @@ namespace Microsoft.Automata
                             }
                             #endregion
                         }
-                    //case SymbolicRegexKind.Sequence: //guaranteed to be nonempty
-                    //    {
-                    //        #region d(a,[R|Rest]) = Rest if (a in R) else nothing
-                    //        if (this.solver.IsSatisfiable(this.solver.MkAnd(elem, sr.sequence.First)))
-                    //        {
-                    //            return this.MkSequence(sr.sequence.Rest());
-                    //        }
-                    //        else
-                    //        {
-                    //            return this.nothing;
-                    //        }
-                    //        #endregion
-                    //    }
                     case SymbolicRegexKind.Loop:
                         {
                             #region d(a, R*) = d(a,R)R*
-                            var step = MkDerivative(elem, isFirst, isLast, sr.left);
+                            var step = MkDerivative(elem, sr.left);
                             if (step == this.nothing)
                             {
                                 return this.nothing;
@@ -633,10 +620,10 @@ namespace Microsoft.Automata
                     case SymbolicRegexKind.Concat:
                         {
                             #region d(a, AB) = d(a,A)B | (if A nullable then d(a,B))
-                            var first = this.MkConcat(this.MkDerivative(elem, isFirst, isLast, sr.left), sr.right);
-                            if (sr.left.IsNullable(isFirst, isLast))
+                            var first = this.MkConcat(this.MkDerivative(elem, sr.left), sr.right);
+                            if (sr.left.IsNullable)
                             {
-                                var second = this.MkDerivative(elem, isFirst, isLast, sr.right);
+                                var second = this.MkDerivative(elem, sr.right);
                                 var deriv = this.MkOr2(first, second);
                                 return deriv;
                             }
@@ -649,41 +636,150 @@ namespace Microsoft.Automata
                     case SymbolicRegexKind.Or:
                         {
                             #region d(a,A|B) = d(a,A)|d(a,B)
-                            var alts_deriv = sr.alts.MkDerivative(elem, isFirst, isLast);
+                            var alts_deriv = sr.alts.MkDerivative(elem);
                             return this.MkOr(alts_deriv);
                             #endregion
                         }
                     case SymbolicRegexKind.And:
                         {
                             #region d(a,A & B) = d(a,A) & d(a,B)
-                            var derivs = sr.alts.MkDerivative(elem, isFirst, isLast);
+                            var derivs = sr.alts.MkDerivative(elem);
                             return this.MkAnd(derivs);
                             #endregion
                         }
                     default: //ITE 
                         {
                             #region d(a,Ite(A,B,C)) = Ite(d(a,A),d(a,B),d(a,C))
-                            var condD = this.MkDerivative(elem, isFirst, isLast, sr.iteCond);
+                            var condD = this.MkDerivative(elem, sr.iteCond);
                             if (condD == this.nothing)
                             {
-                                var rightD = this.MkDerivative(elem, isFirst, isLast, sr.right);
+                                var rightD = this.MkDerivative(elem, sr.right);
                                 return rightD;
                             }
                             else if (condD == this.dotStar)
                             {
-                                var leftD = this.MkDerivative(elem, isFirst, isLast, sr.left);
+                                var leftD = this.MkDerivative(elem, sr.left);
                                 return leftD;
                             }
                             else
                             {
-                                var leftD = this.MkDerivative(elem, isFirst, isLast, sr.left);
-                                var rightD = this.MkDerivative(elem, isFirst, isLast, sr.right);
+                                var leftD = this.MkDerivative(elem, sr.left);
+                                var rightD = this.MkDerivative(elem, sr.right);
                                 var ite = this.MkIfThenElse(condD, leftD, rightD);
                                 return ite;
                             }
                             #endregion
                         }
                 }
+        }
+
+        internal SymbolicRegexNode<S> MkDerivative_StartOfLine(SymbolicRegexNode<S> sr)
+        {
+            if (sr.IsStartOfLineAnchor)
+            {
+                return this.epsilon;
+            }
+            else if (sr.IsAnchor)
+            {
+                return this.nothing;
+            }
+            else if (!sr.containsAnchors)
+            {
+                return sr;
+            }
+            else
+            {
+                switch (sr.kind)
+                {
+                    case SymbolicRegexKind.Concat:
+                        {
+                            #region d(a, AB) = d(a,A)B | (if A nullable then d(a,B))
+                            var deriv = this.MkDerivative_StartOfLine(sr.left);
+                            if (deriv == sr.left && !deriv.isNullable)
+                            {
+                                return sr;
+                            }
+                            else
+                            {
+                                var first = this.MkConcat(deriv, sr.right);
+                                if (sr.left.IsNullable)
+                                {
+                                    var second = this.MkDerivative_StartOfLine(sr.right);
+                                    var or = this.MkOr2(first, second);
+                                    return or;
+                                }
+                                else
+                                {
+                                    return first;
+                                }
+                            }
+                            #endregion
+                        }
+                    case SymbolicRegexKind.Loop:
+                        {
+                            //TBD:...
+                            #region d(a, R*) = d(a,R)R*
+                            var step = MkDerivative_StartOfLine(sr.left);
+                            if (step == sr.left)
+                            {
+                                return sr;
+                            }
+                            else if (step == this.nothing)
+                            {
+                                if (sr.isNullable)
+                                    return this.epsilon;
+                                else
+                                    return this.nothing;
+                            }
+                            else
+                            { 
+                                int newupper = (sr.upper == int.MaxValue ? int.MaxValue : sr.upper - 1);
+                                int newlower = (sr.lower == 0 ? 0 : sr.lower - 1);
+                                var rest = this.MkLoop(sr.left, sr.isLazyLoop, newlower, newupper);
+                                var deriv = this.MkConcat(step, rest);
+                                return deriv;
+                            }
+                            #endregion
+                        }
+                    case SymbolicRegexKind.Or:
+                        {
+                            #region d(a,A|B) = d(a,A)|d(a,B)
+                            var alts_deriv = sr.alts.MkDerivative_StartOfLine();
+                            return this.MkOr(alts_deriv);
+                            #endregion
+                        }
+                    case SymbolicRegexKind.And:
+                        {
+                            #region d(a,A & B) = d(a,A) & d(a,B)
+                            var derivs = sr.alts.MkDerivative_StartOfLine();
+                            return this.MkAnd(derivs);
+                            #endregion
+                        }
+                    default: //ITE 
+                        {
+                            #region d(a,Ite(A,B,C)) = Ite(d(a,A),d(a,B),d(a,C))
+                            var condD = this.MkDerivative_StartOfLine(sr.iteCond);
+                            if (condD == this.nothing)
+                            {
+                                var rightD = this.MkDerivative_StartOfLine(sr.right);
+                                return rightD;
+                            }
+                            else if (condD == this.dotStar)
+                            {
+                                var leftD = this.MkDerivative_StartOfLine(sr.left);
+                                return leftD;
+                            }
+                            else
+                            {
+                                var leftD = this.MkDerivative_StartOfLine(sr.left);
+                                var rightD = this.MkDerivative_StartOfLine(sr.right);
+                                var ite = this.MkIfThenElse(condD, leftD, rightD);
+                                return ite;
+                            }
+                            #endregion
+                        }
+                }
+            }
         }
 
         internal SymbolicRegexNode<S> NormalizeGeneralLoops(SymbolicRegexNode<S> sr)

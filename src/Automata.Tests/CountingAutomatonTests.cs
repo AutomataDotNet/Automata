@@ -178,7 +178,7 @@ namespace Automata.Tests
             Assert.IsTrue(aut.NrOfCounters == 1);
             aut.ShowGraph("ATVARunningExample");
             var CsA = CsAutomaton<ulong>.CreateFrom(aut);
-            CsA.ShowGraph("ATVARunningExample_det", true);
+            CsA.ShowGraph("ATVARunningExample_det", false);
         }
 
         [TestMethod]
@@ -208,13 +208,47 @@ namespace Automata.Tests
         }
 
         [TestMethod]
-        public void TestCA_MonadicLoopInStar()
+        public void TestCA_MonadicLoopInStar0()
         {
-            var regex = new Regex("(aaa{10})*", RegexOptions.Singleline);
+            var regex = new Regex("(..{8})*", RegexOptions.Singleline);
             var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
             var aut = sr.Pattern.CreateCountingAutomaton();
             Assert.IsTrue(aut.NrOfCounters == 1);
-            //aut.ShowGraph("MonadicLoopInStar");
+            aut.ShowGraph("MonadicLoopInStar0");
+        }
+
+        [TestMethod]
+        public void TestCA_MonadicLoopInStar1()
+        {
+            var regex = new Regex("(.{9})*", RegexOptions.Singleline);
+            var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
+            var aut = sr.Pattern.CreateCountingAutomaton();
+            Assert.IsTrue(aut.NrOfCounters == 1);
+            aut.ShowGraph("MonadicLoopInStar1");
+        }
+
+        [TestMethod]
+        public void TestCA_DotStarMonadicLoopInStar()
+        {
+            var regex = new Regex(".*(.{9})*", RegexOptions.Singleline);
+            var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
+            var aut = sr.Pattern.CreateCountingAutomaton();
+            var det = CsAutomaton<ulong>.CreateFrom(aut);
+            Assert.IsTrue(aut.NrOfCounters == 1);
+            aut.ShowGraph("DotStarMonadicLoopInStar");
+            det.ShowGraph("DotStarMonadicLoopInStar_det",true);
+        }
+
+        [TestMethod]
+        public void TestCA_DetSample()
+        {
+            var regex = new Regex(".*a.{4,8}a", RegexOptions.Singleline);
+            var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
+            var aut = sr.Pattern.CreateCountingAutomaton();
+            var det = CsAutomaton<ulong>.CreateFrom(aut);
+            Assert.IsTrue(aut.NrOfCounters == 1);
+            aut.ShowGraph("", true);
+            det.ShowGraph("det", false, true);
         }
 
         [TestMethod]
@@ -405,9 +439,23 @@ namespace Automata.Tests
             var aut = q1.CreateCountingAutomaton();
             Assert.IsTrue(aut.NrOfCounters == 2);
             var CsA = CsAutomaton<ulong>.CreateFrom(aut);
-            //aut.ShowGraph("TrickyCase_NCA", true);
-            //CsA.ShowGraph("TrickyCase_DCA_dbg", true, false);
-            //CsA.ShowGraph("TrickyCase_DCA", false, true);
+            aut.ShowGraph("TrickyCase_NCA", true);
+            CsA.ShowGraph("TrickyCase_DCA_dbg", true, false);
+            CsA.ShowGraph("TrickyCase_DCA", false, true);
+        }
+
+        [TestMethod]
+        public void TestCA_Discussion()
+        {
+            var regex = new Regex("b*[ab][ab]{9}", RegexOptions.Singleline);
+            var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
+            var q1 = sr.Pattern;
+            var aut = q1.CreateCountingAutomaton();
+            Assert.IsTrue(aut.NrOfCounters == 1);
+            var CsA = CsAutomaton<ulong>.CreateFrom(aut);
+            aut.ShowGraph("Discussion_NCA", true);
+            CsA.ShowGraph("Discussion_DCA_dbg", true, false);
+            CsA.ShowGraph("Discussion_DCA", false, true);
         }
 
         [TestMethod]
@@ -424,5 +472,15 @@ namespace Automata.Tests
             //CsA.ShowGraph("TrickyCase2_DCA", false, true);
         }
 
+        [TestMethod]
+        public void TestCA_StartOne()
+        {
+            var regex = new Regex(".*a{5}", RegexOptions.Singleline);
+            var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
+            var aut = sr.Pattern.CreateCountingAutomaton();
+            Assert.IsTrue(aut.IsMatch("aaaaa"));
+            Assert.IsTrue(!aut.IsMatch("aaaa"));
+            aut.ShowGraph("One");
+        }
     }
 }
