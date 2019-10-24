@@ -45,65 +45,66 @@ namespace Microsoft.Automata.DirectedGraphs
         /// <param name="describeS">custom viewer for S, default is null, if null then ToString is used</param>
         public static void ShowGraph<S>(int k, IAutomaton<S> fa, string name, Func<S, string> describeS = null)
         {
-            if (!__tried_to_load_VS)
-            {
-                //only try to load VS automation object model one time
-                TryLoadVS();
-                __tried_to_load_VS = true;
-            }
-            if (VS == null)
-            {
+            //if (!__tried_to_load_VS)
+            //{
+            //    //only try to load VS automation object model one time
+            //    TryLoadVS();
+            //    __tried_to_load_VS = true;
+            //}
+            //if (VS == null)
+            //{
                 SaveGraph(k, fa, name, describeS);
                 OpenFileInNewProcess(name + (name.EndsWith(".dgml") ? "" : ".dgml"));
-            }
-            else
-                ShowGraphInVS(k, fa, name, describeS);
+            //}
+            //else
+            //    ShowGraphInVS(k, fa, name, describeS);
         }
 
-        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-        static void ShowGraphInVS<S>(int k, IAutomaton<S> fa, string name, Func<S, string> describeS = null)
-        {
-            string filename = name + (name.EndsWith(".dgml") ? "" : ".dgml");
-            //Access the top-level VS automation object model
-            EnvDTE.DTE dte = (EnvDTE.DTE)VS;
-            #region Close the dgml file if it is open
-            try
-            {
-                System.Collections.IEnumerator wins = dte.Windows.GetEnumerator();
-                while (wins.MoveNext() == true)
-                {
-                    EnvDTE.Window w = wins.Current as EnvDTE.Window;
-                    if (filename.Equals(w.Caption))
-                    {
-                        w.Close(EnvDTE.vsSaveChanges.vsSaveChangesNo);
-                        break;
-                    }
-                }
-            }
-            catch
-            {
-                //the operation dte.Windows.GetEnumerator()
-                //may sometimes cause COMException
-                //Ignore this exception, 
-                //then the window with given filename may still be open
-                //and VS may ask to save changes, instead of ignoring
-                //when the file is subsequently changed on disk
-            }
-            #endregion
-            SaveGraph(k, fa, name, describeS);
-            #region Open the dgml file in VS
-            try
-            {
-                var dir = System.Environment.CurrentDirectory;
-                var fullfilename = dir + "/" + filename;
-                dte.ExecuteCommand("File.OpenFile", dir + "/" + filename);
-            }
-            catch
-            {
-                OpenFileInNewProcess(filename);
-            }
-            #endregion
-        }
+        //[System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        //static void ShowGraphInVS<S>(int k, IAutomaton<S> fa, string name, Func<S, string> describeS = null)
+        //{
+        //    string filename = name + (name.EndsWith(".dgml") ? "" : ".dgml");
+        //    //Access the top-level VS automation object model
+        //    EnvDTE.DTE dte = (EnvDTE.DTE)VS;
+        //    #region Close the dgml file if it is open
+        //    try
+        //    {
+        //        System.Reflection.
+        //        System.Collections.IEnumerator wins = dte.Windows.GetEnumerator();
+        //        while (wins.MoveNext() == true)
+        //        {
+        //            EnvDTE.Window w = wins.Current as EnvDTE.Window;
+        //            if (filename.Equals(w.Caption))
+        //            {
+        //                w.Close(EnvDTE.vsSaveChanges.vsSaveChangesNo);
+        //                break;
+        //            }
+        //        }
+        //    }
+        //    catch
+        //    {
+        //        //the operation dte.Windows.GetEnumerator()
+        //        //may sometimes cause COMException
+        //        //Ignore this exception, 
+        //        //then the window with given filename may still be open
+        //        //and VS may ask to save changes, instead of ignoring
+        //        //when the file is subsequently changed on disk
+        //    }
+        //    #endregion
+        //    SaveGraph(k, fa, name, describeS);
+        //    #region Open the dgml file in VS
+        //    try
+        //    {
+        //        var dir = System.Environment.CurrentDirectory;
+        //        var fullfilename = dir + "/" + filename;
+        //        dte.ExecuteCommand("File.OpenFile", dir + "/" + filename);
+        //    }
+        //    catch
+        //    {
+        //        OpenFileInNewProcess(filename);
+        //    }
+        //    #endregion
+        //}
 
         static void TryLoadVS()
         {
