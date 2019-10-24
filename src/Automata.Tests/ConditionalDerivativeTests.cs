@@ -123,10 +123,10 @@ namespace Automata.Tests
         [TestMethod]
         public void TestCACreation_Nonmonadic3()
         {
-            var regex = new Regex(".*(dedfg(abcdedfg){4,9}a+|abcdedfg(abcdedfg){4,9}a+)");
+            var regex = new Regex(".*(dedfg(abcdedfg){4,9}a+|abcdedfg(abcdedfg){4,9}a+)", RegexOptions.Singleline);
             var q1 = ((SymbolicRegex<ulong>)regex.Compile(true, false)).Pattern;
             var aut = q1.CreateCountingAutomaton(false);
-            //Assert.IsTrue(aut.NrOfCounters == 1);
+            Assert.IsTrue(aut.NrOfCounters == 1);
             aut.ShowGraph("CA");
         }
     }

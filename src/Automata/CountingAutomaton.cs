@@ -56,7 +56,7 @@ namespace Microsoft.Automata
         {
             get
             {
-                return countingStates.Count;
+                return counters.Length;
             }
         }
 
