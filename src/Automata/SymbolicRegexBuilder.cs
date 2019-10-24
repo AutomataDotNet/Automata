@@ -807,7 +807,7 @@ namespace Microsoft.Automata
                         }
                         else if (sr.upper == int.MaxValue)
                         {
-                            var fixed_loop = this.MkLoop(sr.left, false, sr.lower, sr.lower);
+                            var fixed_loop = this.MkLoop(sr.left, sr.isLazyLoop, sr.lower, sr.lower);
                             var star = this.MkLoop(sr.left, sr.isLazyLoop);
                             var concat = this.MkConcat(fixed_loop, star);
                             return concat;
@@ -837,7 +837,7 @@ namespace Microsoft.Automata
             }
         }
 
-        internal IEnumerable<ConditionalDerivative<S>> EnumerateConditionalDerivatives(S elem, SymbolicRegexNode<S> node, bool monadic, bool top = false)
+        internal IEnumerable<ConditionalDerivative<S>> EnumerateConditionalDerivatives(S elem, SymbolicRegexNode<S> node, bool top = false)
         {
             if (node == this.dotStar)
                 yield return new ConditionalDerivative<S>(this.dotStar);
@@ -870,7 +870,7 @@ namespace Microsoft.Automata
                             //for two different members the derivatives may be the same
                             var derivs = new HashSet<ConditionalDerivative<S>>();
                             foreach (var member in node.alts)
-                                foreach (var deriv in this.EnumerateConditionalDerivatives(elem, member, monadic))
+                                foreach (var deriv in this.EnumerateConditionalDerivatives(elem, member))
                                     if (derivs.Add(deriv))
                                         yield return deriv;
                             yield break;
@@ -894,7 +894,7 @@ namespace Microsoft.Automata
                             var derivs = new HashSet<ConditionalDerivative<S>>();
                             //observe that left will be already in the left-assoc form so the above loop will 
                             //not be used again to normalize left to left-assoc form in the recursive call
-                            foreach (var deriv in this.EnumerateConditionalDerivatives(elem, left, monadic, top))
+                            foreach (var deriv in this.EnumerateConditionalDerivatives(elem, left, top))
                             {
                                 var deriv1 = new ConditionalDerivative<S>(deriv.Condition, 
                                                     this.MkConcat(deriv.PartialDerivative, right));
@@ -902,11 +902,11 @@ namespace Microsoft.Automata
                                     yield return deriv1;
                             }
 
-                            var reset = left.GetNullabilityCondition(monadic, top);
+                            var reset = left.GetNullabilityCondition(top);
                             if (reset != null)
                             {
                                 var cd_reset = new ConditionalDerivative<S>(reset, this.epsilon);
-                                foreach (var deriv in this.EnumerateConditionalDerivatives(elem, right, monadic))
+                                foreach (var deriv in this.EnumerateConditionalDerivatives(elem, right))
                                 {
                                     //it is possible that the composition is not enabled
                                     //in which case the returned result is null
@@ -924,7 +924,7 @@ namespace Microsoft.Automata
                             #region d(a, R*) = d(a,R)R*
                             if (node.IsStar)
                             {
-                                foreach (var step in this.EnumerateConditionalDerivatives(elem, node.left, monadic))
+                                foreach (var step in this.EnumerateConditionalDerivatives(elem, node.left))
                                 {
                                     var deriv = this.MkConcat(step.PartialDerivative, node);
                                     var cd = new ConditionalDerivative<S>(step.Condition, deriv);
@@ -934,7 +934,7 @@ namespace Microsoft.Automata
                             else //assumes that loops have been normalized
                             {
                                 CounterOperation ca = new CounterOperation(node, CounterOp.INCR);
-                                foreach (var step in this.EnumerateConditionalDerivatives(elem, node.left, monadic))
+                                foreach (var step in this.EnumerateConditionalDerivatives(elem, node.left))
                                 {
                                     var deriv = this.MkConcat(step.PartialDerivative, node);
                                     var cond = step.Condition.Append(ca);

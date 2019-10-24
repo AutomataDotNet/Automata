@@ -19,30 +19,30 @@ namespace Automata.Tests
     [TestClass]
     public class ConditionalDerivativeTests
     {
-        //[TestMethod]
+        [TestMethod]
         public void TestConditionalDerivativeEnumeration()
         {
             var regex = new Regex("((ab){3,9}){7}");
-            var q1 = ((SymbolicRegex<ulong>)regex.Compile(true,false)).Pattern;
+            var q1 = ((SymbolicRegex<ulong>)regex.Compile(true, false)).Pattern;
             var a = q1.builder.solver.MkCharConstraint('a');
             var b = q1.builder.solver.MkCharConstraint('b');
             //---
-            var q1_a_derivs = q1.GetConditinalDerivatives(a, false);
-            var q1_b_derivs = q1.GetConditinalDerivatives(b, false);
+            var q1_a_derivs = q1.GetConditinalDerivatives(a);
+            var q1_b_derivs = q1.GetConditinalDerivatives(b);
             Assert.IsTrue(q1_b_derivs.Count == 0);
             Assert.IsTrue(q1_a_derivs.Count == 1);
             Assert.IsTrue(q1_a_derivs[0].Condition.Length == 2);
             //---
             var q2 = q1_a_derivs[0].PartialDerivative;
-            var q2_a_derivs = q2.GetConditinalDerivatives(a, false);
-            var q2_b_derivs = q2.GetConditinalDerivatives(b, false);
+            var q2_a_derivs = q2.GetConditinalDerivatives(a);
+            var q2_b_derivs = q2.GetConditinalDerivatives(b);
             Assert.IsTrue(q2_a_derivs.Count == 0);
             Assert.IsTrue(q2_b_derivs.Count == 1);
             Assert.IsTrue(q2_b_derivs[0].Condition.Length == 0);
             //---
             var q3 = q2_b_derivs[0].PartialDerivative;
-            var q3_a_derivs = q3.GetConditinalDerivatives(a, false);
-            var q3_b_derivs = q3.GetConditinalDerivatives(b, false);
+            var q3_a_derivs = q3.GetConditinalDerivatives(a);
+            var q3_b_derivs = q3.GetConditinalDerivatives(b);
             Assert.IsTrue(q3_b_derivs.Count == 0);
             Assert.IsTrue(q3_a_derivs.Count == 2);
         }
@@ -55,15 +55,15 @@ namespace Automata.Tests
             var a = q1.builder.solver.MkCharConstraint('a');
             var b = q1.builder.solver.MkCharConstraint('b');
             //---
-            var q1_a_derivs = q1.GetConditinalDerivatives(a, true);
-            var q1_b_derivs = q1.GetConditinalDerivatives(b, true);
+            var q1_a_derivs = q1.GetConditinalDerivatives(a);
+            var q1_b_derivs = q1.GetConditinalDerivatives(b);
             Assert.IsTrue(q1_b_derivs.Count == 0);
             Assert.IsTrue(q1_a_derivs.Count == 1);
             Assert.IsTrue(q1_a_derivs[0].Condition.Length == 0);
             //---
             var q2 = q1_a_derivs[0].PartialDerivative;
-            var q2_a_derivs = q2.GetConditinalDerivatives(a, true);
-            var q2_b_derivs = q2.GetConditinalDerivatives(b, true);
+            var q2_a_derivs = q2.GetConditinalDerivatives(a);
+            var q2_b_derivs = q2.GetConditinalDerivatives(b);
             Assert.IsTrue(q2_a_derivs.Count == 1);
             Assert.IsTrue(q2_b_derivs.Count == 1);
             Assert.IsTrue(q2_b_derivs[0].Condition.Length == 1);
@@ -77,7 +77,7 @@ namespace Automata.Tests
 
         }
 
-        //[TestMethod]
+        [TestMethod]
         public void TestConditionalDerivativeEnumeration3()
         {
             var regex = new Regex("((ac){10}|(ab){20}){50}");
@@ -85,19 +85,49 @@ namespace Automata.Tests
             var a = q1.builder.solver.MkCharConstraint('a');
             var b = q1.builder.solver.MkCharConstraint('b');
             //---
-            var q1_a_derivs = q1.GetConditinalDerivatives(a, false);
-            var q1_b_derivs = q1.GetConditinalDerivatives(b, false);
+            var q1_a_derivs = q1.GetConditinalDerivatives(a);
+            var q1_b_derivs = q1.GetConditinalDerivatives(b);
             Assert.IsTrue(q1_b_derivs.Count == 0);
             Assert.IsTrue(q1_a_derivs.Count == 2);
             Assert.IsTrue(q1_a_derivs[0].Condition.Length == 2);
             //---
             var q2 = q1_a_derivs[1].PartialDerivative;
-            var q2_a_derivs = q2.GetConditinalDerivatives(a, false);
-            var q2_b_derivs = q2.GetConditinalDerivatives(b, false);
+            var q2_a_derivs = q2.GetConditinalDerivatives(a);
+            var q2_b_derivs = q2.GetConditinalDerivatives(b);
             Assert.IsTrue(q2_a_derivs.Count == 0);
             Assert.IsTrue(q2_b_derivs.Count == 1);
             Assert.IsTrue(q2_b_derivs[0].Condition.Length == 0);
             //---
+        }
+
+        [TestMethod]
+        public void TestCACreation_Nonmonadic()
+        {
+            var regex = new Regex("a(xyz){4,9}ef");
+            var q1 = ((SymbolicRegex<ulong>)regex.Compile(true, false)).Pattern;
+            var aut = q1.CreateCountingAutomaton(false);
+            //Assert.IsTrue(aut.NrOfCounters == 1);
+            aut.ShowGraph("CA");
+        }
+
+        [TestMethod]
+        public void TestCACreation_Nonmonadic2()
+        {
+            var regex = new Regex("ab(ab){4,9}a+");
+            var q1 = ((SymbolicRegex<ulong>)regex.Compile(true, false)).Pattern;
+            var aut = q1.CreateCountingAutomaton(false);
+            //Assert.IsTrue(aut.NrOfCounters == 1);
+            aut.ShowGraph("CA");
+        }
+
+        [TestMethod]
+        public void TestCACreation_Nonmonadic3()
+        {
+            var regex = new Regex(".*(dedfg(abcdedfg){4,9}a+|abcdedfg(abcdedfg){4,9}a+)");
+            var q1 = ((SymbolicRegex<ulong>)regex.Compile(true, false)).Pattern;
+            var aut = q1.CreateCountingAutomaton(false);
+            //Assert.IsTrue(aut.NrOfCounters == 1);
+            aut.ShowGraph("CA");
         }
     }
 }

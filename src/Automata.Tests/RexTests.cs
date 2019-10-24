@@ -370,7 +370,7 @@ namespace Automata.Tests
         }
 
         [TestMethod]
-        public void TestBDD()
+        public void TestBDD_digit()
         {
             var d = @"^[0-9]$"; //between 2 and 3 word letters
 
@@ -380,6 +380,71 @@ namespace Automata.Tests
             var bdd = sfa.GetMoveFrom(sfa.InitialState).Label;
 
             //bdd.ToDot("C:/tmp/dot/digit.dot");
+        }
+
+        [TestMethod]
+        public void TestBDD_evendigit()
+        {
+            var d = @"^[02468]$"; //between 2 and 3 word letters
+
+            var rex = new Microsoft.Automata.Rex.RexEngine(BitWidth.BV7); //using ascii
+            var sfa = rex.Minimize(rex.CreateFromRegexes(d));
+
+            var bdd = sfa.GetMoveFrom(sfa.InitialState).Label;
+
+           // bdd.ToDot("C:/tmp/dot/evendigit.dot");
+        }
+
+        [TestMethod]
+        public void TestBDD_odddigit()
+        {
+            var d = @"^[13579]$"; //between 2 and 3 word letters
+
+            var rex = new Microsoft.Automata.Rex.RexEngine(BitWidth.BV7); //using ascii
+            var sfa = rex.Minimize(rex.CreateFromRegexes(d));
+
+            var bdd = sfa.GetMoveFrom(sfa.InitialState).Label;
+
+            //bdd.ToDot("C:/tmp/dot/odddigit.dot");
+        }
+
+        [TestMethod]
+        public void TestBDD_uppercase()
+        {
+            var d = @"^[A-Z]$";
+
+            var rex = new Microsoft.Automata.Rex.RexEngine(BitWidth.BV7); //using ascii
+            var sfa = rex.Minimize(rex.CreateFromRegexes(d));
+
+            var bdd = sfa.GetMoveFrom(sfa.InitialState).Label;
+
+            //bdd.ToDot("C:/tmp/dot/uppercase.dot");
+        }
+
+        [TestMethod]
+        public void TestBDD_lowercase()
+        {
+            var d = @"^[a-z]$";
+
+            var rex = new Microsoft.Automata.Rex.RexEngine(BitWidth.BV7); //using ascii
+            var sfa = rex.Minimize(rex.CreateFromRegexes(d));
+
+            var bdd = sfa.GetMoveFrom(sfa.InitialState).Label;
+
+            //bdd.ToDot("C:/tmp/dot/lowercase.dot");
+        }
+
+        [TestMethod]
+        public void TestBDD_letter()
+        {
+            var d = @"^[A-Za-z]$";
+
+            var rex = new Microsoft.Automata.Rex.RexEngine(BitWidth.BV7); //using ascii
+            var sfa = rex.Minimize(rex.CreateFromRegexes(d));
+
+            var bdd = sfa.GetMoveFrom(sfa.InitialState).Label;
+
+            //bdd.ToDot("C:/tmp/dot/letter.dot");
         }
 
         [TestMethod]

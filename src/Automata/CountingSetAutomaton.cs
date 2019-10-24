@@ -61,7 +61,7 @@ namespace Microsoft.Automata
                 }
             }
             this.productAlgebra = productAlgebra;
-            stateDescr[InitialState] = "s" + SpecialCharacters.ToSubscript(0);
+            stateDescr[InitialState] = SpecialCharacters.S(0);
         }
 
         int GetOriginalInitialState()
@@ -99,7 +99,7 @@ namespace Microsoft.Automata
             string s;
             if (!stateDescr.TryGetValue(state, out s))
             {
-                s = "s" + SpecialCharacters.ToSubscript(stateDescr.Count);
+                s = SpecialCharacters.S(stateDescr.Count);
                 stateDescr[state] = s;
             }
 
@@ -112,7 +112,7 @@ namespace Microsoft.Automata
                 {
                     if (!s.EndsWith("{"))
                         s += ",";
-                    s += "q" + SpecialCharacters.ToSubscript(q);
+                    s += SpecialCharacters.q(q);
                 }
                 s += "}";
             }
@@ -122,7 +122,7 @@ namespace Microsoft.Automata
             foreach (var c in state_counters_list)
             {
                 s += "\n";
-                s += "(" + SpecialCharacters.Cntr(c) + ")";
+                s += "(" + SpecialCharacters.c(c) + ")";
                 //s += "(" + counters[c].LowerBound + 
                 //    SpecialCharacters.LEQ + SpecialCharacters.Cntr(c) + SpecialCharacters.LEQ + counters[c].UpperBound + ")";
                 if (finalCounterSet.Contains(c))
@@ -143,7 +143,7 @@ namespace Microsoft.Automata
             if (initcounters.MoveNext())
             {
                 var c = initcounters.Current;
-                return string.Format("{0}={{0}}", SpecialCharacters.Cntr(c));
+                return string.Format("{0}={{0}}", SpecialCharacters.c(c));
             }
             else
                 return "";
@@ -386,7 +386,7 @@ namespace Microsoft.Automata
                 cond += (pp != null ? pp.PrettyPrint(psi.Item2) : psi.Item2.ToString());
                 var countercond = (debugmode ? psi.Item1.ToString() : psi.Item1.ToString<S>(Guard.Algebra));
                 if (countercond != SpecialCharacters.TOP.ToString())
-                    cond += "/" + countercond;
+                    cond += SpecialCharacters.MIDDOT + countercond;
             }
             if (isFinalCondition)
             {
@@ -626,7 +626,7 @@ namespace Microsoft.Automata
             string s = "";
             for (int i = 0; i < Length; i++)
                 if (this[i] != CsUpdate.NOOP)
-                    s += string.Format("{0}({1});", this[i], SpecialCharacters.Cntr(i));
+                    s += string.Format("{0}({1});", this[i], SpecialCharacters.c(i));
             return s;
         }
 
@@ -641,7 +641,7 @@ namespace Microsoft.Automata
                 string s = "";
                 for (int i = 0; i < Length; i++)
                 {
-                    string c = SpecialCharacters.Cntr(i);
+                    string c = SpecialCharacters.c(i);
                     char assign = SpecialCharacters.ASSIGN;
                     char union = SpecialCharacters.UNION;
                     switch (this[i])
@@ -817,7 +817,7 @@ namespace Microsoft.Automata
 
         public static string DescribeCondition<S>(CsAlgebra<S> algebra, CsCondition cond, int i)
         {
-            string c = SpecialCharacters.Cntr(i);
+            string c = SpecialCharacters.c(i);
             string canExit = SpecialCharacters.XI_LOWERCASE + SpecialCharacters.ToSubscript(i);
             string canIncr = SpecialCharacters.IOTA_LOWERCASE + SpecialCharacters.ToSubscript(i);
             char and = SpecialCharacters.AND;
@@ -891,7 +891,7 @@ namespace Microsoft.Automata
                     {
                         if (s != "")
                             s += SpecialCharacters.AND;
-                        s += string.Format("{0}({1})", this[i], SpecialCharacters.Cntr(i));
+                        s += string.Format("{0}({1})", this[i], SpecialCharacters.c(i));
                     }
                 }
                 if (s == "")
@@ -905,7 +905,7 @@ namespace Microsoft.Automata
                     {
                         if (s != "")
                             s += SpecialCharacters.OR;
-                        s += string.Format("{0}({1})", this[i], SpecialCharacters.Cntr(i));
+                        s += string.Format("{0}({1})", this[i], SpecialCharacters.c(i));
                     }
                 }
                 if (s == "")

@@ -8,8 +8,17 @@ namespace Microsoft.Automata
 
     public partial class CountingAutomaton<S> : Automaton<Tuple<Maybe<S>, Sequence<CounterOperation>>>
     {
+        /// <summary>
+        /// Maps a counting state to its associated counter
+        /// </summary>
         internal Dictionary<int, ICounter> countingStates;
+        /// <summary>
+        /// Maps a state to the underlying regex AST node
+        /// </summary>
         Dictionary<int, SymbolicRegexNode<S>> stateMap;
+        /// <summary>
+        /// Array of all counters, counter with identifier i is the element counters[i]
+        /// </summary>
         internal ICounter[] counters;
 
         internal ICharAlgebra<S> solver;
@@ -20,9 +29,23 @@ namespace Microsoft.Automata
             this.countingStates = countingStates;
             this.stateMap = stateMap;
             this.solver = ((CABA<S>)Algebra).builder.solver;
-            this.counters = new ICounter[countingStates.Count];
-            foreach (var pair in countingStates)
-                counters[pair.Value.CounterId] = pair.Value;
+            //countingStates only defined in monadic case
+            if (countingStates != null)
+            {
+                this.counters = new ICounter[countingStates.Count];
+                foreach (var pair in countingStates)
+                    counters[pair.Value.CounterId] = pair.Value;
+            }
+            else
+            {
+                var cntrsSet = new HashSet<ICounter>();
+                foreach (var m in aut.GetMoves())
+                    foreach (var c in m.Label.Item2)
+                        cntrsSet.Add(c.Counter);
+                this.counters = new ICounter[cntrsSet.Count];
+                foreach (var c in cntrsSet)
+                    this.counters[c.CounterId] = c;
+            }
         }
 
         /// <summary>
@@ -57,24 +80,27 @@ namespace Microsoft.Automata
         {
             string s;
             if (__hideDerivativesInViewer)
-                s = "q" + SpecialCharacters.ToSubscript(state);
+                s = SpecialCharacters.q(state);
             else
                 s = stateMap[state].ToString();
-            if (IsFinalState(state) && IsCountingState(state))
+            if (countingStates != null)
             {
-                s += "\n(";
-                var f = GetFinalStateCondition(state);
-                for (int i = 0; i < f.Length; i++)
+                if (IsFinalState(state) && IsCountingState(state))
                 {
-                    if (i > 0)
-                        s += SpecialCharacters.AND;
-                    var op = f[i];
-                    s += op.ToString();
+                    s += "\n(";
+                    var f = GetFinalStateCondition(state);
+                    for (int i = 0; i < f.Length; i++)
+                    {
+                        if (i > 0)
+                            s += SpecialCharacters.AND;
+                        var op = f[i];
+                        s += op.ToString();
+                    }
+                    s += ")" + SpecialCharacters.CHECKMARK;
                 }
-                s += ")" + SpecialCharacters.CHECKMARK;
+                else if (IsCountingState(state))
+                    s += "\n(" + SpecialCharacters.c(countingStates[state].CounterId) + ")";
             }
-            else if (IsCountingState(state))
-                    s += "\n(" + SpecialCharacters.Cntr(countingStates[state].CounterId) + ")";
             return s;
         }
 
@@ -83,7 +109,7 @@ namespace Microsoft.Automata
             if (IsCountingState(InitialState))
             {
                 var c = countingStates[InitialState];
-                return string.Format("{0}{1}0", SpecialCharacters.Cntr(c.CounterId),SpecialCharacters.ASSIGN);
+                return string.Format("{0}{1}0", SpecialCharacters.c(c.CounterId),SpecialCharacters.ASSIGN);
             }
             else
                 return "";
@@ -95,7 +121,7 @@ namespace Microsoft.Automata
             if (lab.Item1 != Maybe<S>.Nothing)
             {
                 s += lab.Item1.Element.ToString();
-                s += SpecialCharacters.PROD;
+                s += SpecialCharacters.MIDDOT;
             }
             if (lab.Item2.Length > 1)
                 s += lab.Item2.ToString();
@@ -110,7 +136,10 @@ namespace Microsoft.Automata
         /// <param name="q">given state</param>
         public bool IsCountingState(int q)
         {
-            return countingStates.ContainsKey(q);
+            if (countingStates == null)
+                return false;
+            else
+                return countingStates.ContainsKey(q);
         }
 
         Dictionary<int, bool> IsSingletonCountingState_result = new Dictionary<int, bool>();
@@ -663,12 +692,17 @@ namespace Microsoft.Automata
             {
                 if (t.Item2.Length > 0)
                 {
+                    char imp = SpecialCharacters.IMPLIES;
+                    char prod = SpecialCharacters.MIDDOT;
                     if (t.Item2.Length == 1)
                     {
-                        return builder.solver.PrettyPrint(t.Item1.Element) + "/" + t.Item2[0].ToString();
+                        if (t.Item2[0].OperationKind == CounterOp.SET0 || t.Item2[0].OperationKind == CounterOp.SET1)
+                            return builder.solver.PrettyPrint(t.Item1.Element) + imp + t.Item2[0].ToString();
+                        else
+                            return builder.solver.PrettyPrint(t.Item1.Element) + prod + t.Item2[0].ToString();
                     }
                     else
-                        return builder.solver.PrettyPrint(t.Item1.Element) + "/" + t.Item2.ToString();
+                        return builder.solver.PrettyPrint(t.Item1.Element) + prod + t.Item2.ToString();
                 }
                 else
                     return builder.solver.PrettyPrint(t.Item1.Element);
@@ -685,7 +719,7 @@ namespace Microsoft.Automata
                     {
                         if (s != "")
                             s += SpecialCharacters.AND;
-                        s += string.Format("{0}{1}{2}", SpecialCharacters.Cntr(t.Item2[i].Counter.CounterId), SpecialCharacters.GEQ, t.Item2[i].Counter.LowerBound);
+                        s += string.Format("{0}{1}{2}", SpecialCharacters.c(t.Item2[i].Counter.CounterId), SpecialCharacters.GEQ, t.Item2[i].Counter.LowerBound);
                     }
                 }
                 return (s == "" ? SpecialCharacters.TOP.ToString() : s) + SpecialCharacters.CHECKMARK;

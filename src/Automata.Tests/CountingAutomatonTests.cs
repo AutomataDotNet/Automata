@@ -214,7 +214,7 @@ namespace Automata.Tests
             var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
             var aut = sr.Pattern.CreateCountingAutomaton();
             Assert.IsTrue(aut.NrOfCounters == 1);
-            aut.ShowGraph("MonadicLoopInStar0");
+            aut.ShowGraph("");
         }
 
         [TestMethod]
@@ -224,7 +224,7 @@ namespace Automata.Tests
             var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
             var aut = sr.Pattern.CreateCountingAutomaton();
             Assert.IsTrue(aut.NrOfCounters == 1);
-            aut.ShowGraph("MonadicLoopInStar1");
+            aut.ShowGraph("");
         }
 
         [TestMethod]
@@ -235,8 +235,8 @@ namespace Automata.Tests
             var aut = sr.Pattern.CreateCountingAutomaton();
             var det = CsAutomaton<ulong>.CreateFrom(aut);
             Assert.IsTrue(aut.NrOfCounters == 1);
-            aut.ShowGraph("DotStarMonadicLoopInStar");
-            det.ShowGraph("DotStarMonadicLoopInStar_det",true);
+            aut.ShowGraph("");
+            det.ShowGraph("DotStarMonadicLoopInStar_det");
         }
 
         [TestMethod]

@@ -36,6 +36,7 @@ namespace Microsoft.Automata
         public static char BLACKSQUARE = '\u220E';
         public static char CHECKMARK = '\u2713';
         public static char MIDDOT = '\u00B7';
+        public static char AND_DOT_ABOVE = '\u2A51';
         //arithmetic
         public static char NEQ = '\u2260';
         public static char LEQ = '\u2264';
@@ -94,11 +95,27 @@ namespace Microsoft.Automata
         }
 
         /// <summary>
-        /// Produces counter 'c' with subscript i
+        /// Produces 'c' with subscript i
         /// </summary>
-        public static string Cntr(int i)
+        public static string c(int i)
         {
             return "c" + SpecialCharacters.ToSubscript(i);
+        }
+
+        /// <summary>
+        /// Produces 'S' with subscript i
+        /// </summary>
+        public static string S(int i)
+        {
+            return "S" + SpecialCharacters.ToSubscript(i);
+        }
+
+        /// <summary>
+        /// Produces 'q' with subscript i
+        /// </summary>
+        public static string q(int i)
+        {
+            return "q" + SpecialCharacters.ToSubscript(i);
         }
     }
 }
