@@ -128,6 +128,16 @@ namespace Automata.Tests
             var aut = q1.CreateCountingAutomaton(false);
             Assert.IsTrue(aut.NrOfCounters == 1);
             aut.ShowGraph("CA",true);
+        }  
+
+        [TestMethod]
+        public void TestCACreation_Nonmonadic4()
+        {
+            var regex = new Regex(".*(dedfg(abcdedfg){4,9}a+|abcdedfg(ab(cde){3,100}dfg){5,8}a+)", RegexOptions.Singleline);
+            var q1 = ((SymbolicRegex<ulong>)regex.Compile(true, false)).Pattern;
+            var aut = q1.CreateCountingAutomaton(false);
+            Assert.IsTrue(aut.NrOfCounters == 3);
+            aut.ShowGraph("CA", true);
         }
     }
 }
