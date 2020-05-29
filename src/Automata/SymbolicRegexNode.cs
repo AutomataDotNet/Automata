@@ -807,6 +807,190 @@ namespace Microsoft.Automata
             }
         }
 
+        /// <summary>
+        /// Produces a string in smtlib format of this regex. Assumes there are no anchors.
+        /// </summary>
+        /// <returns></returns>
+        public string ToSMTlibFormat(bool ascii = true)
+        {
+            var filter = (ascii ? this.builder.solver.CharSetProvider.MkCharSetFromRange('\0', '\x7F') : 
+                this.builder.solver.CharSetProvider.True);
+            return ToSMT_(filter);
+        }
+
+        string ToSMT_(BDD filter)
+        {
+            string epsilon = "(str.to_re \"\")";
+            switch (this.kind)
+            {
+                case SymbolicRegexKind.EndAnchor:
+                case SymbolicRegexKind.StartAnchor:
+                    {
+                        throw new AutomataException(AutomataExceptionKind.RegexConstructNotSupported);
+                    }
+                case SymbolicRegexKind.WatchDog:
+                case SymbolicRegexKind.Epsilon:
+                    {
+                        return epsilon;
+                    }
+                case SymbolicRegexKind.Singleton:
+                    {
+                        var bdd = this.builder.solver.ConvertToCharSet(this.builder.solver.CharSetProvider, this.set);
+                        if (bdd.IsFull)
+                            return "(re.allchar)";
+                        else if (bdd.IsEmpty)
+                            return "(re.none)";
+                        else
+                        {
+                            bdd = this.builder.solver.CharSetProvider.MkAnd(bdd, filter);
+                            var ranges = bdd.ToRanges();
+                            string res = "";
+                            for (int i = 0; i < ranges.Length; i++)
+                            {
+                                string l_i = getSMTlibChar(ranges[i].Item1);
+                                string h_i = getSMTlibChar(ranges[i].Item2);
+                                string range_i;
+                                if (l_i == h_i)
+                                {
+                                    range_i = "(str.to_re " + l_i + ")";
+                                }
+                                else
+                                {
+                                    range_i = "(re.range " + l_i + " " + h_i + ")";
+                                }
+                                if (res == "")
+                                    res = range_i;
+                                else
+                                    res = "(re.union " + res + " " + range_i + ")";
+                            }
+                            return res;
+                        }
+                    }
+                case SymbolicRegexKind.Loop:
+                    {
+                        var body = this.left.ToSMT_(filter);
+                        if (this.IsDotStar)
+                            return "(re.all)";
+                        else if (this.IsMaybe)
+                            return "(re.opt " + body + ")";
+                        else if (this.IsStar)
+                            return "(re.* " + body + ")";
+                        else if (this.IsPlus)
+                            return "(re.+ " + body + ")";
+                        else if (this.upper == int.MaxValue)
+                            //only lower bound > 1
+                            return string.Format("(re.++ ((_ re.^ {0}) {1}) (re.* {1}))", this.lower, body);
+                        else if (this.lower == this.upper)
+                            //lower'th power
+                            return string.Format("((_ re.^ {0}) {1})", this.lower, body);
+                        else
+                            //general bounded loop
+                            return string.Format("((_ re.loop {0} {1}) {2})", this.lower, this.upper, body);
+                    }
+                case SymbolicRegexKind.Concat:
+                    {
+                        string lhs = this.left.ToSMT_(filter);
+                        string rhs = this.right.ToSMT_(filter);
+                        //skip rhs epsilons
+                        if (rhs == epsilon)
+                            return lhs;
+                        string res;
+                        if (lhs.StartsWith("(str.to_re \"") && rhs.StartsWith("(str.to_re \""))
+                        {
+                            //extract the relevant string parts
+                            string lhs_str = lhs.Substring(0, lhs.Length - 2);
+                            string rhs_str = rhs.Substring(12);
+                            //append the strings into one string
+                            res = lhs_str + rhs_str;
+                        }
+                        else
+                        {
+                            res = string.Format("(re.++ {0} {1})", lhs, rhs);
+                        }
+                        return res;
+                    }
+                case SymbolicRegexKind.Or:
+                    {
+                        var enumerator = this.alts.GetEnumerator();
+                        string res = "(re.none)";
+                        while (enumerator.MoveNext())
+                        {
+                            string str = enumerator.Current.ToSMT_(filter);
+                            if (res == "(re.none)")
+                                res = str;
+                            else
+                                res = string.Format("(re.union {0} {1})", res, str);
+                        }
+                        return res;
+                    }
+                case SymbolicRegexKind.And:
+                    {
+                        var enumerator = this.alts.GetEnumerator();
+                        string res = "(re.all)";
+                        while (enumerator.MoveNext())
+                        {
+                            string str = enumerator.Current.ToSMT_(filter);
+                            if (res == "(re.all)")
+                                res = str;
+                            else
+                                res = string.Format("(re.inter {0} {1})", res, str);
+                        }
+                        return res;
+                    }
+                default: //if-then-else
+                    {
+                        string cond = this.iteCond.ToSMT_(filter);
+                        string truecase = this.left.ToSMT_(filter);
+                        string falsecase = this.right.ToSMT_(filter);
+                        string res;
+                        if ((truecase == "(re.none)") && (falsecase == "(re.all)"))
+                            //the ite represents a complement
+                            res = string.Format("(re.comp {0})", cond);
+                        else if (falsecase == "(re.none)")
+                        {
+                            res = string.Format("(re.inter {0} {1})", cond, truecase);
+                        }
+                        else if (truecase == "(re.none)")
+                        {
+                            res = string.Format("(re.inter (re.comp {0}) {1})", cond, falsecase);
+                        }
+                        else
+                        {
+                            res = string.Format("(re.union (re.inter {0} {1}) (re.inter (re.comp {0}) {2}))", cond, truecase, falsecase);
+                        }
+                        return res;
+                    }
+            }
+        }
+
+        private IEnumerable<SymbolicRegexNode<S>> EnumerateConcatElems()
+        {
+            if (this.kind != SymbolicRegexKind.Concat)
+                yield return this;
+            else
+            {
+                foreach (var elem in left.EnumerateConcatElems())
+                    yield return elem;
+                foreach (var elem in right.EnumerateConcatElems())
+                    yield return elem;
+            }
+        }
+
+        string getSMTlibChar(uint code)
+        {
+            string res;
+            //view the printable character as singleton string with that character
+            if ((35 <= code) && (code <= 122))
+            {
+                 res = "\"" + ((char)code).ToString() + "\"";
+            }
+            else
+            {
+                res = "(_ char #x" + code.ToString("X") + ")";
+            }
+            return res;
+        }
+
         private static void ComputeToString(SymbolicRegexNode<S> top, StringBuilder sb)
         {
             var solver = top.builder.solver;

@@ -164,7 +164,7 @@ namespace Microsoft.Automata
         {
             get
             {
-                throw new NotSupportedException();
+                return RegexExtensionMethods.Context;
             }
         }
 

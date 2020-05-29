@@ -31,6 +31,15 @@ namespace Microsoft.Automata.Tests
         }
 
         [TestMethod]
+        public void TestDotGenTmp()
+        {
+            CharSetSolver solver = new CharSetSolver(BitWidth.BV7);
+            BDD cond = solver.MkCharSetFromRange('0', '9');
+            int cnt = (int)solver.ComputeDomainSize(cond);
+            cond.ToDot(@"C:\git\loris\msrpapers\CACM\figures\is_digit_bdd.dot");
+        }
+
+        [TestMethod]
         public void TestRanges2()
         {
             BitWidth enc = BitWidth.BV7;

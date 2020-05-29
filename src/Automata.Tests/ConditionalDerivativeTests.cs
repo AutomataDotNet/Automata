@@ -107,7 +107,7 @@ namespace Automata.Tests
             var q1 = ((SymbolicRegex<ulong>)regex.Compile(true, false)).Pattern;
             var aut = q1.CreateCountingAutomaton(false);
             //Assert.IsTrue(aut.NrOfCounters == 1);
-            aut.ShowGraph("CA");
+            //aut.ShowGraph("CA");
         }
 
         [TestMethod]
@@ -117,7 +117,7 @@ namespace Automata.Tests
             var q1 = ((SymbolicRegex<ulong>)regex.Compile(true, false)).Pattern;
             var aut = q1.CreateCountingAutomaton(false);
             //Assert.IsTrue(aut.NrOfCounters == 1);
-            aut.ShowGraph("CA");
+            //aut.ShowGraph("CA");
         }
 
         [TestMethod]
@@ -127,7 +127,7 @@ namespace Automata.Tests
             var q1 = ((SymbolicRegex<ulong>)regex.Compile(true, false)).Pattern;
             var aut = q1.CreateCountingAutomaton(false);
             Assert.IsTrue(aut.NrOfCounters == 1);
-            aut.ShowGraph("CA",true);
+            //aut.ShowGraph("CA",true);
         }  
 
         [TestMethod]
@@ -137,7 +137,7 @@ namespace Automata.Tests
             var q1 = ((SymbolicRegex<ulong>)regex.Compile(true, false)).Pattern;
             var aut = q1.CreateCountingAutomaton(false);
             Assert.IsTrue(aut.NrOfCounters == 3);
-            aut.ShowGraph("CA", true);
+            //aut.ShowGraph("CA", true);
         }
     }
 }

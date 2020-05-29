@@ -63,8 +63,8 @@ namespace Automata.Tests
             //Assert.IsTrue(aut.NrOfCounters == 2);
             //Assert.IsTrue(aut.MoveCount == 4);
             //Assert.IsTrue(aut.NrOfCounters == 2);
-            aut.ShowGraph("LoopTwice",true);
-            daut.ShowGraph("LoopTwice_det", true);
+            //aut.ShowGraph("LoopTwice",true);
+            //daut.ShowGraph("LoopTwice_det", true);
         }
 
         [TestMethod]
@@ -176,9 +176,9 @@ namespace Automata.Tests
             Assert.IsTrue(q1.ConcatCount == 2);
             var aut = q1.CreateCountingAutomaton();
             Assert.IsTrue(aut.NrOfCounters == 1);
-            aut.ShowGraph("ATVARunningExample");
+            //aut.ShowGraph("ATVARunningExample");
             var CsA = CsAutomaton<ulong>.CreateFrom(aut);
-            CsA.ShowGraph("ATVARunningExample_det", false);
+            //CsA.ShowGraph("ATVARunningExample_det", false);
         }
 
         [TestMethod]
@@ -214,7 +214,7 @@ namespace Automata.Tests
             var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
             var aut = sr.Pattern.CreateCountingAutomaton();
             Assert.IsTrue(aut.NrOfCounters == 1);
-            aut.ShowGraph("");
+            //aut.ShowGraph("");
         }
 
         [TestMethod]
@@ -224,7 +224,7 @@ namespace Automata.Tests
             var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
             var aut = sr.Pattern.CreateCountingAutomaton();
             Assert.IsTrue(aut.NrOfCounters == 1);
-            aut.ShowGraph("");
+            //aut.ShowGraph("");
         }
 
         [TestMethod]
@@ -235,8 +235,8 @@ namespace Automata.Tests
             var aut = sr.Pattern.CreateCountingAutomaton();
             var det = CsAutomaton<ulong>.CreateFrom(aut);
             Assert.IsTrue(aut.NrOfCounters == 1);
-            aut.ShowGraph("");
-            det.ShowGraph("DotStarMonadicLoopInStar_det");
+            //aut.ShowGraph("");
+            //det.ShowGraph("DotStarMonadicLoopInStar_det");
         }
 
         [TestMethod]
@@ -247,8 +247,8 @@ namespace Automata.Tests
             var aut = sr.Pattern.CreateCountingAutomaton();
             var det = CsAutomaton<ulong>.CreateFrom(aut);
             Assert.IsTrue(aut.NrOfCounters == 1);
-            aut.ShowGraph("", true);
-            det.ShowGraph("det", false, true);
+            //aut.ShowGraph("", true);
+            //det.ShowGraph("det", false, true);
         }
 
         [TestMethod]
@@ -439,9 +439,9 @@ namespace Automata.Tests
             var aut = q1.CreateCountingAutomaton();
             Assert.IsTrue(aut.NrOfCounters == 2);
             var CsA = CsAutomaton<ulong>.CreateFrom(aut);
-            aut.ShowGraph("TrickyCase_NCA", true);
-            CsA.ShowGraph("TrickyCase_DCA_dbg", true, false);
-            CsA.ShowGraph("TrickyCase_DCA", false, true);
+            //aut.ShowGraph("TrickyCase_NCA", true);
+            //CsA.ShowGraph("TrickyCase_DCA_dbg", true, false);
+            //CsA.ShowGraph("TrickyCase_DCA", false, true);
         }
 
         [TestMethod]
@@ -453,9 +453,9 @@ namespace Automata.Tests
             var aut = q1.CreateCountingAutomaton();
             Assert.IsTrue(aut.NrOfCounters == 1);
             var CsA = CsAutomaton<ulong>.CreateFrom(aut);
-            aut.ShowGraph("Discussion_NCA", true);
-            CsA.ShowGraph("Discussion_DCA_dbg", true, false);
-            CsA.ShowGraph("Discussion_DCA", false, true);
+            //aut.ShowGraph("Discussion_NCA", true);
+            //CsA.ShowGraph("Discussion_DCA_dbg", true, false);
+            //CsA.ShowGraph("Discussion_DCA", false, true);
         }
 
         [TestMethod]
@@ -480,7 +480,18 @@ namespace Automata.Tests
             var aut = sr.Pattern.CreateCountingAutomaton();
             Assert.IsTrue(aut.IsMatch("aaaaa"));
             Assert.IsTrue(!aut.IsMatch("aaaa"));
-            aut.ShowGraph("One");
+            //aut.ShowGraph("One");
+        }
+
+        [TestMethod]
+        public void TestCA_BugRepo()
+        {
+            var regex = new Regex("(([0-1]|())[0-9])|2", RegexOptions.Singleline);
+            var sr = (SymbolicRegex<ulong>)regex.Compile(true, false);
+            var aut = sr.Pattern.CreateCountingAutomaton();
+            //Assert.IsTrue(aut.IsMatch("3"));
+            //Assert.IsTrue(!aut.IsMatch("a"));
+            //aut.ShowGraph("TestCA_BugRepo");
         }
     }
 }

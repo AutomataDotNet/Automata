@@ -43,6 +43,8 @@ namespace Microsoft.Automata
         /// <returns></returns>
         public static RegexMatcher Compile(this Regex regex, params Regex[] regexes)
         {
+            if (regex.ToString() == "")
+                throw new AutomataException(AutomataExceptionKind.InvalidRegex);
             return Compile(regex, true, true, false, regexes);
         }
 
@@ -58,15 +60,15 @@ namespace Microsoft.Automata
         {
             //first test if this regex is a simple string, i.e., a toplevel multi-node
             RegexTree rt = RegexParser.Parse(regex.ToString(), regex.Options);
-            if (regexes.Length == 0)
-            {
-                if (rt._root._type == RegexNode.Capture && rt._root.Child(0)._type == RegexNode.Multi)
-                {
-                    //this is an explicit string
-                    var pattern = rt._root.Child(0)._str;
-                    return new FixedStringMatcher(pattern, (regex.Options & RegexOptions.IgnoreCase) == RegexOptions.IgnoreCase);
-                }
-            }
+            //if (regexes.Length == 0)
+            //{
+            //    if (rt._root._type == RegexNode.Capture && rt._root.Child(0)._type == RegexNode.Multi)
+            //    {
+            //        //this is an explicit string
+            //        var pattern = rt._root.Child(0)._str;
+            //        return new FixedStringMatcher(pattern, (regex.Options & RegexOptions.IgnoreCase) == RegexOptions.IgnoreCase);
+            //    }
+            //}
 
             if (context == null)
                 context = new CharSetSolver();

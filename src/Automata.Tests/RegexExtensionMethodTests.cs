@@ -1082,7 +1082,7 @@ namespace Automata.Tests
             var a1 = css.Convert(r1).Determinize().Minimize();
             var a2 = css.Convert(r2).Determinize().Minimize();
             var a = a1.Intersect(a2);
-            a.ShowGraph();
+            //a.ShowGraph();
         }
 
         [TestMethod]
