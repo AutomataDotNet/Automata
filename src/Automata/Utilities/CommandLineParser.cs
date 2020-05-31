@@ -862,13 +862,13 @@ namespace Microsoft.Automata.Utilities
             Assembly assembly = Assembly.GetEntryAssembly();
             if (assembly != null)
             {
-                builder.AppendFormat("{0} version {1}", GetTitle(assembly), assembly.GetName().Version);
-                builder.AppendLine();
+                //builder.AppendFormat("{0} version {1}", GetTitle(assembly), assembly.GetName().Version);
+                //builder.AppendLine();
 
-                AssemblyCopyrightAttribute copyright = GetAssemblyAttribute<AssemblyCopyrightAttribute>(assembly);
-                if (copyright != null && !string.IsNullOrEmpty(copyright.Copyright))
-                    builder.AppendLine(copyright.Copyright.Replace("©", "(C)"));
-                builder.AppendLine();
+                //AssemblyCopyrightAttribute copyright = GetAssemblyAttribute<AssemblyCopyrightAttribute>(assembly);
+                //if (copyright != null && !string.IsNullOrEmpty(copyright.Copyright))
+                //    builder.AppendLine(copyright.Copyright.Replace("©", "(C)"));
+                //builder.AppendLine();
 
                 builder.AppendFormat("Usage: {0}", Path.GetFileNameWithoutExtension(assembly.Location));
                 foreach (ArgumentHelpStrings helpStrings in strings)

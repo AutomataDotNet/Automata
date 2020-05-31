@@ -35,6 +35,8 @@ namespace Microsoft.Automata
             context = null;
         }
 
+        /*
+         
         /// <summary>
         /// Compiles this regex and possibly other regexes into a common symbolic regex representing their intersection
         /// </summary>
@@ -253,5 +255,6 @@ namespace Microsoft.Automata
             var pattern = solver.ConvertToRegex(aut_min_c);
             return new Regex(pattern, regex.Options);
         }
+        */
     }
 }

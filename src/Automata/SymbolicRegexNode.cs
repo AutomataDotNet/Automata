@@ -811,10 +811,8 @@ namespace Microsoft.Automata
         /// Produces a string in smtlib format of this regex. Assumes there are no anchors.
         /// </summary>
         /// <returns></returns>
-        public string ToSMTlibFormat(bool ascii = true)
+        internal string ToSMTlibFormat(BDD filter)
         {
-            var filter = (ascii ? this.builder.solver.CharSetProvider.MkCharSetFromRange('\0', '\x7F') : 
-                this.builder.solver.CharSetProvider.True);
             return ToSMT_(filter);
         }
 
@@ -889,24 +887,9 @@ namespace Microsoft.Automata
                     }
                 case SymbolicRegexKind.Concat:
                     {
-                        string lhs = this.left.ToSMT_(filter);
-                        string rhs = this.right.ToSMT_(filter);
-                        //skip rhs epsilons
-                        if (rhs == epsilon)
-                            return lhs;
-                        string res;
-                        if (lhs.StartsWith("(str.to_re \"") && rhs.StartsWith("(str.to_re \""))
-                        {
-                            //extract the relevant string parts
-                            string lhs_str = lhs.Substring(0, lhs.Length - 2);
-                            string rhs_str = rhs.Substring(12);
-                            //append the strings into one string
-                            res = lhs_str + rhs_str;
-                        }
-                        else
-                        {
-                            res = string.Format("(re.++ {0} {1})", lhs, rhs);
-                        }
+                        string res = null;
+                        foreach (var elem in this.EnumerateConcatElemsSMTlib(filter))
+                            res = (res== null ? elem : string.Format("(re.++ {0} {1})", res, elem));
                         return res;
                     }
                 case SymbolicRegexKind.Or:
@@ -963,6 +946,49 @@ namespace Microsoft.Automata
             }
         }
 
+        static bool Is_str_to_re(string s)
+        {
+            return s.StartsWith("(str.to_re \"");
+        }
+
+        static string Concat_str_to_re(string str_to_re1, string str_to_re2)
+        {
+            string lhs = str_to_re1.Substring(0, str_to_re1.Length - 2);
+            string rhs = str_to_re2.Substring(12);
+            return lhs + rhs;
+        }
+
+        private IEnumerable<string> EnumerateConcatElemsSMTlib(BDD filter)
+        {
+            string prev = null;
+            foreach (var elem in EnumerateConcatElems())
+            {
+                var curr = elem.ToSMTlibFormat(filter);
+                if (Is_str_to_re(curr))
+                {
+                    if (prev == null)
+                        prev = curr;
+                    else
+                        prev = Concat_str_to_re(prev, curr);
+                }
+                else
+                {
+                    if (prev == null)
+                    {
+                        yield return curr;
+                    }
+                    else
+                    {
+                        yield return prev;
+                        yield return curr;
+                        prev = null;
+                    }
+                }
+            }
+            if (prev != null)
+                yield return prev;
+        }
+
         private IEnumerable<SymbolicRegexNode<S>> EnumerateConcatElems()
         {
             if (this.kind != SymbolicRegexKind.Concat)
@@ -979,10 +1005,13 @@ namespace Microsoft.Automata
         string getSMTlibChar(uint code)
         {
             string res;
-            //view the printable character as singleton string with that character
-            if ((35 <= code) && (code <= 122))
+            if (32 <= code && code <= 126 && code != 34)
             {
                  res = "\"" + ((char)code).ToString() + "\"";
+            }
+            else if (code == 10)
+            {
+                return "\"\\n\"";
             }
             else
             {
