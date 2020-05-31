@@ -72,12 +72,12 @@ namespace Microsoft.Automata
                     string inter = smt_regexes[0];
                     for (int i = 1; i < smt_regexes.Length; i++)
                         inter = string.Format("(re.inter {0} {1})", inter, smt_regexes[i]);
-                    assertion = string.Format("(declare-const x String)\n(assert(str.in_re x {0}))\n(check-sat)", inter);
+                    assertion = string.Format("(declare-const x String)\n(assert(str.in_re x {0}))\n(check-sat)\n(get-model)", inter);
                 }
                 else if (settings.op == OP.nequiv)
-                    assertion = string.Format("(assert (not (= {0} {1})))\n(check-sat)", smt_regexes[0], smt_regexes[1]);
+                    assertion = string.Format("(assert (not (= {0} {1})))\n(check-sat)\n(get-model)", smt_regexes[0], smt_regexes[1]);
                 else
-                    assertion = string.Format("(assert (subset {0} {1}))\n(check-sat)", smt_regexes[0], smt_regexes[1]);
+                    assertion = string.Format("(assert (subset {0} {1}))\n(check-sat)\n(get-model)", smt_regexes[0], smt_regexes[1]);
 
                 if (settings.output != null)
                     System.IO.File.WriteAllText(settings.output, assertion);
