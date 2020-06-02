@@ -835,9 +835,9 @@ namespace Microsoft.Automata
                     {
                         var bdd = this.builder.solver.ConvertToCharSet(this.builder.solver.CharSetProvider, this.set);
                         if (bdd.IsFull)
-                            return "(re.allchar)";
+                            return "re.allchar";
                         else if (bdd.IsEmpty)
-                            return "(re.none)";
+                            return "re.none";
                         else
                         {
                             bdd = this.builder.solver.CharSetProvider.MkAnd(bdd, filter);
@@ -868,7 +868,7 @@ namespace Microsoft.Automata
                     {
                         var body = this.left.ToSMT_(filter);
                         if (this.IsDotStar)
-                            return "(re.all)";
+                            return "re.all";
                         else if (this.IsMaybe)
                             return "(re.opt " + body + ")";
                         else if (this.IsStar)
@@ -895,11 +895,11 @@ namespace Microsoft.Automata
                 case SymbolicRegexKind.Or:
                     {
                         var enumerator = this.alts.GetEnumerator();
-                        string res = "(re.none)";
+                        string res = "re.none";
                         while (enumerator.MoveNext())
                         {
                             string str = enumerator.Current.ToSMT_(filter);
-                            if (res == "(re.none)")
+                            if (res == "re.none")
                                 res = str;
                             else
                                 res = string.Format("(re.union {0} {1})", res, str);
@@ -909,11 +909,11 @@ namespace Microsoft.Automata
                 case SymbolicRegexKind.And:
                     {
                         var enumerator = this.alts.GetEnumerator();
-                        string res = "(re.all)";
+                        string res = "re.all";
                         while (enumerator.MoveNext())
                         {
                             string str = enumerator.Current.ToSMT_(filter);
-                            if (res == "(re.all)")
+                            if (res == "re.all")
                                 res = str;
                             else
                                 res = string.Format("(re.inter {0} {1})", res, str);

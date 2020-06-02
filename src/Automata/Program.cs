@@ -37,9 +37,9 @@ namespace Microsoft.Automata
             if (settings.input != null)
                 regexes.AddRange(System.IO.File.ReadAllLines(settings.input));
 
-            if ((settings.op == OP.subset || settings.op == OP.nequiv) && regexes.Count != 2)
+            if ((settings.op == OP.subset || settings.op == OP.nequiv || settings.op == OP.equiv || settings.op == OP.nsubset) && regexes.Count != 2)
             {
-                Console.WriteLine("/op:subset or /op:equiv take two regexes as arguments");
+                Console.WriteLine("two regexes as expected");
                 return;
             }
 
@@ -74,10 +74,14 @@ namespace Microsoft.Automata
                         inter = string.Format("(re.inter {0} {1})", inter, smt_regexes[i]);
                     assertion = string.Format("(declare-const x String)\n(assert(str.in_re x {0}))\n(check-sat)\n(get-model)", inter);
                 }
+                else if (settings.op == OP.equiv)
+                    assertion = string.Format("(assert (= {0} {1}))\n(check-sat)\n(get-model)", smt_regexes[0], smt_regexes[1]);
                 else if (settings.op == OP.nequiv)
                     assertion = string.Format("(assert (not (= {0} {1})))\n(check-sat)\n(get-model)", smt_regexes[0], smt_regexes[1]);
-                else
-                    assertion = string.Format("(assert (subset {0} {1}))\n(check-sat)\n(get-model)", smt_regexes[0], smt_regexes[1]);
+                else if (settings.op == OP.subset)
+                    assertion = string.Format("(assert (= re.empty (re.diff {0} {1})))\n(check-sat)\n(get-model)", smt_regexes[0], smt_regexes[1]);
+                else //nsubset
+                    assertion = string.Format("(declare-const x String)\n(assert(str.in_re x (re.diff {0} {1})))\n(check-sat)\n(get-model)", smt_regexes[0], smt_regexes[1]);
 
                 if (settings.output != null)
                     System.IO.File.WriteAllText(settings.output, assertion);
@@ -105,6 +109,8 @@ namespace Microsoft.Automata
         {
             member,
             subset,
+            nsubset,
+            equiv,
             nequiv,
             none
         }
